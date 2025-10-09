@@ -13,8 +13,8 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Load business data
-with open("business.json", "r", encoding="utf-8") as f:
-    business_data = json.load(f)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, "business.json"), "r", encoding="utf-8") as f:
 
 app = FastAPI()
 
