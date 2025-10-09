@@ -20,7 +20,7 @@ with open(os.path.join(BASE_DIR, "business.json"), "r", encoding="utf-8") as f:
     
 app = FastAPI()
 
-app.get("/")
+@app.get("/")
 def home():
     return {"message": "Svaadh Kitchen Backend is Live 🍲"}
 
