@@ -1,0 +1,68 @@
+{
+  "name": "Svaadh Kitchen",
+  "type": "Cloud Kitchen",
+  "tagline": "Wholesome homemade vegetarian meals, straight from our kitchen to your plate.",
+  "about": {
+    "summary": "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals.",
+    "description": "We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing weekly menu. We serve Magarpatta, Amanora Township, and Bhosale Garden areas of Hadapsar, Pune. Our meals are cooked with care using fresh ingredients and traditional recipes, designed to bring the warmth of home-cooked food to your daily routine."
+  },
+  "locations_served": ["Magarpatta", "Amanora Township", "Bhosale Garden", "Hadapsar, Pune"],
+  "order timings": {
+    "breakfast": "7:00 AM - 9:00 AM (orders before 7:00 AM)",
+    "lunch": "11:00 AM - 1:00 PM (orders before 9:45 AM)",
+    "dinner": "5:00 PM - 7:00 PM (orders before 5:15 PM)",
+    "closed_on": "Sunday"
+  },
+  "delivery": {
+    "self_delivery": true,
+    "zomato": true,
+    "radius_km": 3,
+    "order_process": "Customers place daily orders via WhatsApp group messages. Each meal type has a cut-off time. Deliveries are done in one or two rounds depending on volume."
+  },
+  "menu": {
+    "structure": "Weekly fixed menu (Monday to Saturday), rotated and reversed weekly between lunch and dinner to ensure variety.",
+    "meal_types": [
+      {
+        "category": "Half Meals",
+        "items": [
+          {"id": 1, "name": "Half Meal 1", "price": 65, "description": "1 sabji (250ml) + 3 chapati"},
+          {"id": 2, "name": "Half Meal 2", "price": 70, "description": "1 sabji + salad + 3 chapati"},
+          {"id": 3, "name": "Half Meal 3", "price": 80, "description": "1 sabji + dal + 3 chapati"},
+          {"id": 4, "name": "Half Meal 4", "price": 90, "description": "2 sabji + 3 chapati"}
+        ]
+      },
+      {
+        "category": "Full Meals",
+        "items": [
+          {"id": 5, "name": "Full Meal 1", "price": 90, "description": "1 sabji + salad + 3 chapati + dal + rice"},
+          {"id": 6, "name": "Full Meal 2", "price": 110, "description": "2 sabji + salad + 3 chapati + dal + rice"}
+        ]
+      }
+    ],
+    "customization": [
+      "Option to reduce chapati count (e.g., 2 instead of 3)",
+      "Option to exclude rice or dal (price adjusted accordingly)"
+    ]
+  },
+  "ordering": {
+    "platform": "WhatsApp group",
+    "example_message": {
+      "type": "Lunch Menu Update",
+      "text": "🍛 Today's Lunch 🍛\n- Dry Sabji: Aloo Gobi\n- Curry Sabji: Paneer Masala\n- Order before 9:45 AM\n📞 Place order at: 9876543210"
+    }
+  },
+  "contact": {
+    "phone": {
+		"primary": "9930748908",
+		"alternative": "9819969682"
+		},
+    "email": "svaadh.kitchen@gmail.com",
+	"google_page" : "https://share.google/UnZM2xcLOF2QVO9cj",
+    "google_maps": "https://maps.google.com/?q=Svaadh+Kitchen,+Hadapsar,+Pune",
+    "socials": {
+      "zomato": "https://zomato.com/pune/svaadh-kitchen"
+    },
+	"whatsapp_group": "https://chat.whatsapp.com/EpLv7mtYipm61ScKjbOiuk"
+  },
+  "vision": "To make homemade vegetarian meals easily accessible and affordable for everyone, while maintaining taste, quality, and consistency."
+}
