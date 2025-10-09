@@ -21,7 +21,7 @@ with open(os.path.join(BASE_DIR, "business.json"), "r", encoding="utf-8") as f:
 app = FastAPI()
 
 app.get("/")
-def home();
+def home():
     return {"message": "Svaadh Kitchen Backend is Live 🍲"}
 
 app.add_middleware(
