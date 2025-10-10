@@ -1,0 +1,22 @@
+name: Keep Render Backend Awake
+
+# Runs every 5 minutes and can be triggered manually
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes (UTC)
+  workflow_dispatch:        # allows manual run from GitHub UI
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend
+        run: |
+          URL="https://svaadhkitchenwebsite.onrender.com/chat"
+          echo "Pinging $URL"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Non-200 status: $STATUS"
+            exit 1
+          fi
