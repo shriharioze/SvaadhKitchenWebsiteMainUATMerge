@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Ping Render backend
         run: |
-          URL="https://svaadhkitchenwebsite.onrender.com/chat"
+          URL="https://svaadhkitchenwebsite.onrender.com"
           echo "Pinging $URL"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
           echo "HTTP status: $STATUS"
