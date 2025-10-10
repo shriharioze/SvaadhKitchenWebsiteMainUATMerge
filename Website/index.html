@@ -15,7 +15,7 @@
     .menu-card, .icons div { background:#FFE0B2; padding:20px; border-radius:10px; }
     .gallery-images img { width:200px; border-radius:10px; }
     footer { background:#FF7043; color:white; text-align:center; padding:20px 0; }
-    a { color:#f47c3c; text-decoration:none; }
+    a { color:#FF7043; text-decoration:none; }
     nav a { margin:0 15px; color:white; font-weight:bold; }
     nav { margin-top:10px; }
     #hero { background:#fff3e0; padding:80px 20px; }
@@ -29,7 +29,6 @@
     <h1>Svaadh Kitchen 🧡</h1>
     <p>Wholesome homemade vegetarian meals, straight from our kitchen to your plate.</p>
     <nav>
-      <a href="#serve">What We Serve</a>
       <a href="#menu">Menu</a>
       <a href="#about">About Us</a>
       <a href="#gallery">Gallery</a>
@@ -44,48 +43,15 @@
   </section>
 
   <!-- What We Serve -->
-  <section id="serve">
-    <h2>What We Serve</h2>
-    <p>Breakfast, Lunch, Dinner – all vegetarian and homemade with love.</p>
-    <div class="icons">
-      <div><img src="images/breakfast.png" alt="Breakfast"><p>Breakfast</p></div>
-      <div><img src="images/lunch.png" alt="Lunch"><p>Lunch</p></div>
-      <div><img src="images/dinner.png" alt="Dinner"><p>Dinner</p></div>
-    </div>
-  </section>
-
-  <!-- Menu -->
-  <section id="menu">
-    <h2>Our Menu</h2>
-    <div class="menu-items">
-      <!-- Half Meals -->
-      <div class="menu-card">
-        <h3>Half Meal 1</h3>
-        <p>₹65 – 1 sabji + 3 chapati</p>
-      </div>
-      <div class="menu-card">
-        <h3>Half Meal 2</h3>
-        <p>₹70 – 1 sabji + salad + 3 chapati</p>
-      </div>
-      <div class="menu-card">
-        <h3>Half Meal 3</h3>
-        <p>₹80 – 1 sabji + dal + 3 chapati</p>
-      </div>
-      <div class="menu-card">
-        <h3>Half Meal 4</h3>
-        <p>₹90 – 2 sabji + 3 chapati</p>
-      </div>
-
-      <!-- Full Meals -->
-      <div class="menu-card">
-        <h3>Full Meal 1</h3>
-        <p>₹90 – 1 sabji + salad + 3 chapati + dal + rice</p>
-      </div>
-      <div class="menu-card">
-        <h3>Full Meal 2</h3>
-        <p>₹110 – 2 sabji + salad + 3 chapati + dal + rice</p>
-      </div>
-    </div>
+  <section id="menu" class="menu-section">
+	  <div class="menu-item">
+		<img src="images/breakfast.png" alt="Breakfast">
+		<p>Breakfast</p>
+	  </div>
+	  <div class="menu-item">
+		<img src="images/Meals.png" alt="Meals">
+		<p>Meals</p>
+	  </div>
   </section>
 
   <!-- About Us -->
@@ -106,8 +72,9 @@
 
   <!-- Google Reviews -->
   <section id="reviews">
-    <h2>What Our Customers Say</h2>
-    <iframe src="YOUR_GOOGLE_REVIEW_EMBED_LINK" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+	<h2></h2>
+	<script src="https://elfsightcdn.com/platform.js" async></script>
+	<div class="elfsight-app-29b50ffa-11cc-48ad-b364-53bc05795c02" data-elfsight-app-lazy></div>
   </section>
 
   <!-- Chat Widget -->
@@ -116,8 +83,13 @@
 
   <!-- Footer -->
   <footer>
-    <p>© 2025 Svaadh Kitchen | Hadapsar, Pune</p>
-    <p>Contact: <a href="tel:+919930748908">9930748908</a> | <a href="mailto:svaadh.kitchen@gmail.com">svaadh.kitchen@gmail.com</a></p>
+    <p>© 2025 Svaadh Kitchen | Hadapsar, Pune</p>  
+    <a href="tel:+91993089938" class="contact-btn call-btn">
+		📞 Call Us
+    </a>
+    <a href="mailto:svaadh.kit@gmail.com" class="contact-btn email-btn">
+    ✉️ Email Us
+    </a>
   </footer>
 </body>
 </html>

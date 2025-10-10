@@ -86,3 +86,79 @@
   padding: 8px 16px;
   cursor: pointer;
 }
+
+.menu-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.menu-item {
+  text-align: center;
+  max-width: 400px;
+  transition: transform 0.3s ease;
+}
+
+.menu-item img {
+  width: 400px;
+  height: 400px;
+  object-fit: contain; /* keeps proportions clean */
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item p {
+  margin-top: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.menu-item:hover {
+  transform: scale(1.05);
+}
+
+footer a {
+  color: #2c2c2c; /* dark grey for contrast */
+  font-weight: 500;
+}
+
+footer a:hover {
+  color: #000; /* slightly darker on hover */
+  text-decoration: underline;
+}
+
+/* Contact buttons */
+.contact-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 5px;
+  border-radius: 25px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Call button color */
+.call-btn {
+  background-color: #2E7D32; /* Fresh green */
+  color: white;
+}
+
+/* Email button color */
+.email-btn {
+  background-color: #0277BD; /* Calm blue */
+  color: white;
+}
+
+/* Hover effects */
+.contact-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+
