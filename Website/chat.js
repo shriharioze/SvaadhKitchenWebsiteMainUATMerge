@@ -37,19 +37,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function sendMessage() {
-    const text = userInput.value.trim();
-    if (!text) return;
-    appendMessage(text, "user");
-    userInput.value = "";
+  const text = userInput.value.trim();
+  if (!text) return;
 
+  // Append user's message to chat
+  appendMessage(text, "user");
+  userInput.value = "";
+
+  // 🔹 Google Analytics Event: User Message Sent
+  if (typeof gtag === "function") {
+    gtag("event", "chat_message", {
+      event_category: "Chatbot",
+      event_label: text, // captures user's actual message
+      value: 1,
+    });
+  }
+
+  try {
     const res = await fetch("https://svaadhkitchenwebsite.onrender.com/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text }),
     });
+
     const data = await res.json();
+
+    // Append chatbot's reply to chat
     appendMessage(data.reply, "bot");
+
+    // 🔹 Google Analytics Event: Bot Reply Sent
+    if (typeof gtag === "function") {
+      gtag("event", "chatbot_reply", {
+        event_category: "Chatbot",
+        event_label: data.reply, // captures bot’s response
+        value: 1,
+      });
+    }
+  } catch (error) {
+    console.error("Chat error:", error);
   }
+}
+
 
   sendBtn.addEventListener("click", sendMessage);
   userInput.addEventListener("keydown", (e) => {
