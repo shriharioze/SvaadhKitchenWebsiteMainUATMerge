@@ -8,10 +8,10 @@
   },
   "locations_served": ["Magarpatta", "Amanora Township", "Bhosale Garden", "Hadapsar, Pune"],
   "order timings": {
-    "breakfast": "7:00 AM - 9:00 AM (orders before 7:00 AM)",
-    "lunch": "11:00 AM - 1:00 PM (orders before 9:45 AM)",
-    "dinner": "5:00 PM - 7:00 PM (orders before 5:15 PM)",
-    "closed_on": "Sunday"
+    "breakfast": "Orders before 7:00 AM)",
+    "lunch": "Orders before 9:45 AM)",
+    "dinner": "Orders before 5:15 PM)",
+    "closed_on": "SundaOy"
   },
   "delivery": {
     "self_delivery": true,
@@ -19,38 +19,47 @@
     "radius_km": 3,
     "order_process": "Customers place daily orders via WhatsApp group messages. Each meal type has a cut-off time. Deliveries are done in one or two rounds depending on volume."
   },
+  "delivery timings": {
+    "breakfast": "8:00 AM - 9:00 AM (orders before 7:00 AM)",
+    "lunch": "11:00 AM - 1:00 PM (orders before 9:45 AM)",
+    "dinner": "7:00 PM - 9:00 PM (orders before 5:15 PM)",
+    "closed_on": "Sunday"
+  },
   "menu": {
-    "structure": "Weekly fixed menu (Monday to Saturday), rotated and reversed weekly between lunch and dinner to ensure variety.",
-    "meal_types": [
-      {
-        "category": "Half Meals",
-        "items": [
-          {"id": 1, "name": "Half Meal 1", "price": 65, "description": "1 sabji (250ml) + 3 chapati"},
-          {"id": 2, "name": "Half Meal 2", "price": 70, "description": "1 sabji + salad + 3 chapati"},
-          {"id": 3, "name": "Half Meal 3", "price": 80, "description": "1 sabji + dal + 3 chapati"},
-          {"id": 4, "name": "Half Meal 4", "price": 90, "description": "2 sabji + 3 chapati"}
-        ]
-      },
-      {
-        "category": "Full Meals",
-        "items": [
-          {"id": 5, "name": "Full Meal 1", "price": 90, "description": "1 sabji + salad + 3 chapati + dal + rice"},
-          {"id": 6, "name": "Full Meal 2", "price": 110, "description": "2 sabji + salad + 3 chapati + dal + rice"}
-        ]
-      }
-    ],
-    "customization": [
-      "Option to reduce chapati count (e.g., 2 instead of 3)",
-      "Option to exclude rice or dal (price adjusted accordingly)"
-    ]
-  },
-  "ordering": {
-    "platform": "WhatsApp group",
-    "example_message": {
-      "type": "Lunch Menu Update",
-      "text": "🍛 Today's Lunch 🍛\n- Dry Sabji: Aloo Gobi\n- Curry Sabji: Paneer Masala\n- Order before 9:45 AM\n📞 Place order at: 9876543210"
+  "structure": "Make Your Own Meal — customers can mix and match from below items to create their preferred portion and combination.",
+  "meal_types": [
+    {
+      "category": "Make Your Own Meal",
+      "items": [
+        { "id": 1, "name": "Dry Sabji Mini (100ml)", "price": 20, "description": "Small portion of dry vegetable curry" },
+        { "id": 2, "name": "Curry Sabji Mini (100ml)", "price": 20, "description": "Small portion of curry-style sabji" },
+        { "id": 3, "name": "Dry Sabji (250ml)", "price": 45, "description": "Full portion of dry vegetable curry" },
+        { "id": 4, "name": "Curry Sabji (250ml)", "price": 45, "description": "Full portion of curry-style sabji" },
+        { "id": 5, "name": "Dal (200ml)", "price": 20, "description": "Homemade dal, mildly spiced" },
+        { "id": 6, "name": "Rice (100gms)", "price": 10, "description": "Steamed white rice" },
+        { "id": 7, "name": "Chapati / Phulka (3 pcs)", "price": 20, "description": "Soft handmade chapatis" },
+        { "id": 8, "name": "Ghee Phulka (3 pcs)", "price": 30, "description": "Soft phulkas brushed with ghee" },
+        { "id": 9, "name": "Jowar Bhakri / Bajra Bhakri (1 pc)", "price": 20, "description": "Traditional millet flatbread, fresh and soft" },
+        { "id": 10, "name": "Salad (40gms)", "price": 5, "description": "Fresh seasonal salad" },
+        { "id": 11, "name": "Curd (50gms)", "price": 10, "description": "Curd" }
+      ]
     }
+  ],
+  "customization": [
+    "Mix and match items to create your own meal combination.",
+    "Choose chapati or bhakri as per preference.",
+    "Ghee or plain phulka options available."
+  ]
+}
+
+  "ordering": {
+  "platform": "WhatsApp group",
+  "example_message": {
+    "type": "Lunch Menu Update",
+    "text": "🍛 Today's Lunch 🍛\n- Dry Sabji: Aloo Gobi\n- Curry Sabji: Paneer Masala\n- Order before 9:45 AM\n📞 Place order at: 9876543210"
   },
+  "order_form_link": "https://tally.so/r/w4WKZd"
+}
   "contact": {
     "phone": {
 		"primary": "9930748908",
