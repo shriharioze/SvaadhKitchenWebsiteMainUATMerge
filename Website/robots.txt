@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://your-domain.com/sitemap.xml
+Sitemap: https://www.svaadhkitchen.in/sitemap.xml
 
 # Block unnecessary bots
 User-agent: AhrefsBot
