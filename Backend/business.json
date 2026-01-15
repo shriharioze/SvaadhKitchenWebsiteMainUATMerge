@@ -8,10 +8,10 @@
   },
   "locations_served": ["Magarpatta", "Amanora Township", "Bhosale Garden", "Hadapsar, Pune"],
   "order timings": {
-    "breakfast": "Orders before 7:00 AM)",
-    "lunch": "Orders before 9:45 AM)",
-    "dinner": "Orders before 5:15 PM)",
-    "closed_on": "SundaOy"
+    "breakfast": "Orders before 7:00 AM",
+    "lunch": "Orders before 9:45 AM",
+    "dinner": "Orders before 5:15 PM",
+    "closed_on": "Sunday"
   },
   "delivery": {
     "self_delivery": true,
@@ -50,7 +50,7 @@
     "Choose chapati or bhakri as per preference.",
     "Ghee or plain phulka options available."
   ]
-}
+},
 
   "ordering": {
   "platform": "WhatsApp group",
@@ -59,12 +59,12 @@
     "text": "🍛 Today's Lunch 🍛\n- Dry Sabji: Aloo Gobi\n- Curry Sabji: Paneer Masala\n- Order before 9:45 AM\n📞 Place order at: 9876543210"
   },
   "order_form_link": "https://tally.so/r/w4WKZd"
-}
+},
   "contact": {
     "phone": {
 		"primary": "9930748908",
 		"alternative": "9819969682"
-		},
+	},
     "email": "svaadh.kitchen@gmail.com",
 	"google_page" : "https://share.google/UnZM2xcLOF2QVO9cj",
     "google_maps": "https://maps.google.com/?q=Svaadh+Kitchen,+Hadapsar,+Pune",

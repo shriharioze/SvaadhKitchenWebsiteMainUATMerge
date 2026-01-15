@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import google.generativeai as genai
 import json
 import os
 from dotenv import load_dotenv
@@ -9,8 +8,8 @@ from dotenv import load_dotenv
 # Load .env (your GEMINI_API_KEY should be set here)
 load_dotenv()
 
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Configure Gemini API (temporarily disabled due to deprecation)
+# genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Load business data
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,41 +31,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = genai.GenerativeModel("gemini-2.0-flash")
+# Temporarily disabled model due to library deprecation
+# model = genai.GenerativeModel("gemini-1.5-flash")
+
+def get_fallback_response(user_message):
+    """Fallback response system for testing"""
+    message_lower = user_message.lower()
+    
+    if "menu" in message_lower or "food" in message_lower:
+        return "🍛 Our menu includes: Dry Sabji (₹20-₹45), Curry Sabji (₹20-₹45), Dal (₹20), Rice (₹10), Chapati (₹20), Ghee Phulka (₹30), Bhakri (₹20), Salad (₹5), and Curd (₹10). You can mix and match to create your perfect meal! Click '📋 Full Menu' for detailed options."
+    
+    elif "timing" in message_lower or "time" in message_lower or "when" in message_lower:
+        return "⏰ Order timings: Breakfast (order before 7:00 AM), Lunch (order before 9:45 AM), Dinner (order before 5:15 PM). We're closed on Sundays. Delivery: Breakfast 8-9 AM, Lunch 11 AM-1 PM, Dinner 7-9 PM."
+    
+    elif "delivery" in message_lower or "area" in message_lower or "location" in message_lower:
+        return "📍 We deliver to Magarpatta, Amanora Township, Bhosale Garden, and Hadapsar areas within 3km radius. We offer both self-delivery and Zomato delivery!"
+    
+    elif "order" in message_lower:
+        return "📞 To place an order, you can: 1) Click the '📞 Place Order' button to fill our Tally form, 2) Call us at 9930748908, or 3) Join our WhatsApp group. The Tally form is fastest for order confirmation!"
+    
+    else:
+        return f"👋 Hello! Welcome to Svaadh Kitchen! We're a homemade vegetarian cloud kitchen in Hadapsar, Pune. How can I help you today? You can ask about our menu, order timings, delivery areas, or place an order!"
 
 @app.post("/chat")
 async def chat(request: Request):
     data = await request.json()
     user_message = data.get("message", "")
 
-    # Construct context prompt using business data
-    system_prompt = f"""
-You are an assistant for {business_data['name']}, a homemade vegetarian cloud kitchen in Pune.
-About: {business_data['about']['summary']}
-Details:
-- Description: {business_data['about']['description']}
-- Order Timings: Breakfast {business_data['order timings']['breakfast']}, Lunch {business_data['order timings']['lunch']}, Dinner {business_data['order timings']['dinner']}, Closed on {business_data['order timings']['closed_on']}
-- Delivery: Self Delivery ({business_data['delivery']['self_delivery']}), Zomato ({business_data['delivery']['zomato']}), within {business_data['delivery']['radius_km']} km radius
-- Menu (Make Your Own Meal):
-{''.join([f"  • {item['name']} (₹{item['price']}) - {item['description']}\n" for meal in business_data['menu']['meal_types'] for item in meal['items']])}
-- Customization Options: {', '.join(business_data['menu']['customization'])}
-- Ordering Platform: {business_data['ordering']['platform']}
-- Order Form: {business_data['ordering']['order form link']}
-- Example Message: {business_data['ordering']['example_message']['text']}
-- Contact: {business_data['contact']['phone']['primary']}, Email: {business_data['contact']['email']}, WhatsApp Group: {business_data['contact']['whatsapp_group']}
-- Locations Served: {', '.join(business_data['locations_served'])}
-
-Behave like a friendly local kitchen staff replying to customers’ messages.
-Also, act like an expert salesperson — be polite but persuasive.
-Encourage customers to place their orders using our Tally form link ({business_data['ordering']['order form link']}) for faster confirmation and easy processing.
-Keep responses short, natural, and helpful.
-"""
-
-
-
-    # Generate response from Gemini
-    response = model.generate_content(f"{system_prompt}\nCustomer: {user_message}\nKitchen Assistant:")
-
-    bot_reply = response.text.strip()
-
+    # Use fallback response system for now
+    bot_reply = get_fallback_response(user_message)
+    
     return JSONResponse({"reply": bot_reply})

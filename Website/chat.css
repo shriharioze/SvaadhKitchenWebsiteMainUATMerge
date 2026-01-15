@@ -29,6 +29,30 @@
   overflow: hidden;
 }
 
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  #chat-widget {
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .chat-box {
+    width: calc(100vw - 40px);
+    height: calc(100vh - 120px);
+    max-width: 350px;
+    max-height: 500px;
+    bottom: 70px;
+    right: 10px;
+    position: fixed;
+  }
+  
+  .chat-button {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
 .chat-header {
   background: #f47c3c;
   color: white;
@@ -41,6 +65,304 @@
   flex: 1;
   padding: 10px;
   overflow-y: auto;
+}
+
+.quick-replies {
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #fff9f3;
+}
+
+.quick-reply-btn {
+  background: #f47c3c;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.quick-reply-btn:hover {
+  background: #e56b2f;
+  transform: translateY(-1px);
+}
+
+/* Menu tabs and categories */
+.menu-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: #f47c3c;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  background: #e56b2f;
+  transform: translateY(-2px);
+}
+
+.tab-btn.active {
+  background: #d84315;
+  box-shadow: 0 4px 8px rgba(216, 67, 21, 0.3);
+}
+
+.menu-category {
+  display: none;
+}
+
+.menu-category.active {
+  display: block;
+}
+
+.menu-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.menu-item-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.menu-item-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.menu-item-card h4 {
+  color: #f47c3c;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.menu-item-card p {
+  color: #666;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.menu-item-card .price {
+  background: #f47c3c;
+  color: white;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: bold;
+  font-size: 16px;
+  display: inline-block;
+}
+
+/* Combo cards */
+.combo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.combo-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.combo-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.combo-card h3 {
+  color: #f47c3c;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.combo-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.combo-items span {
+  background: #ffe2cc;
+  color: #f47c3c;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.combo-price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f47c3c;
+  margin-bottom: 20px;
+}
+
+.combo-card button {
+  background: #f47c3c;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 30px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.combo-card button:hover {
+  background: #e56b2f;
+  transform: translateY(-2px);
+}
+
+/* FAQ Section */
+#faq {
+  padding: 60px 20px;
+  background: #fff9f3;
+  margin: 40px 0;
+}
+
+.faq-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.faq-question {
+  width: 100%;
+  background: #f47c3c;
+  color: white;
+  border: none;
+  padding: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.faq-question:hover {
+  background: #e56b2f;
+}
+
+.faq-question span {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.faq-answer {
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: #fff;
+  line-height: 1.6;
+  color: #555;
+  display: none;
+}
+
+.faq-answer[style*="block"] {
+  padding: 20px;
+  max-height: 500px;
+}
+
+/* Mobile responsiveness for new sections */
+@media (max-width: 768px) {
+  .menu-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .menu-items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .combo-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .tab-btn {
+    width: 200px;
+    margin-bottom: 10px;
+  }
+}
+.menu-display {
+  background: #fff;
+  border: 1px solid #f47c3c;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 5px 0;
+  max-width: 100%;
+}
+
+.menu-display h4 {
+  color: #f47c3c;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+.menu-category {
+  margin-bottom: 12px;
+}
+
+.menu-category strong {
+  color: #333;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.menu-item {
+  font-size: 11px;
+  color: #666;
+  margin: 3px 0;
+  padding-left: 10px;
+}
+
+.menu-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ffe2cc;
+  font-size: 11px;
+  color: #666;
 }
 
 .message {
@@ -159,6 +481,53 @@ footer a:hover {
 .contact-btn:hover {
   opacity: 0.9;
   transform: translateY(-2px);
+}
+
+/* Typing indicator animation */
+.typing-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0;
+}
+
+.typing-indicator span {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: #f47c3c;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
 }
 
 
