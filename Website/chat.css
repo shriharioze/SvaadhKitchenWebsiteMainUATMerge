@@ -325,7 +325,110 @@
   max-height: 500px;
 }
 
-/* Mobile responsiveness for new sections */
+/* Contact Section */
+.contact-section {
+  padding: 60px 20px;
+  background: #fff9f3;
+  margin: 40px 0;
+}
+
+.contact-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.contact-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.contact-item {
+  background: var(--bg-white);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  transition: var(--transition);
+}
+
+.contact-item:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.contact-item h3 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.contact-item p {
+  color: var(--text-light);
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.contact-item a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.contact-item a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.map-container {
+  background: var(--bg-white);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.map-container h3 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.map-container iframe {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.map-note {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Mobile responsiveness for contact section */
+@media (max-width: 768px) {
+  .contact-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .contact-info {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .map-container iframe {
+    height: 300px;
+  }
+}
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
