@@ -39,7 +39,7 @@ def get_fallback_response(user_message):
     message_lower = user_message.lower()
     
     if "menu" in message_lower or "food" in message_lower:
-        return "🍛 Our menu includes: Dry Sabji (₹20-₹45), Curry Sabji (₹20-₹45), Dal (₹20), Rice (₹10), Chapati (₹20), Ghee Phulka (₹30), Bhakri (₹20), Salad (₹5), and Curd (₹10). You can mix and match to create your perfect meal! Click '📋 Full Menu' for detailed options."
+        return "🍛 For today's menu and regular updates, please join our WhatsApp group: https://chat.whatsapp.com/EpLv7mtYipm61ScKjbOiuk. You'll get daily menu updates and can place orders directly there!"
     
     elif "timing" in message_lower or "time" in message_lower or "when" in message_lower:
         return "⏰ Order timings: Breakfast (order before 7:00 AM), Lunch (order before 9:45 AM), Dinner (order before 5:15 PM). We're closed on Sundays. Delivery: Breakfast 8-9 AM, Lunch 11 AM-1 PM, Dinner 7-9 PM."
@@ -48,10 +48,10 @@ def get_fallback_response(user_message):
         return "📍 We deliver to Magarpatta, Amanora Township, Bhosale Garden, and Hadapsar areas within 3km radius. We offer both self-delivery and Zomato delivery!"
     
     elif "order" in message_lower:
-        return "📞 To place an order, you can: 1) Click the '📞 Place Order' button to fill our Tally form, 2) Call us at 9930748908, or 3) Join our WhatsApp group. The Tally form is fastest for order confirmation!"
+        return "📞 To place an order, you can: 1) Join our WhatsApp group for daily menu and quick ordering: https://chat.whatsapp.com/EpLv7mtYipm61ScKjbOiuk, 2) Call us at 9930748908, or 3) Click the '📞 Place Order' button for our Tally form. WhatsApp group is fastest for daily menu!"
     
     else:
-        return f"👋 Hello! Welcome to Svaadh Kitchen! We're a homemade vegetarian cloud kitchen in Hadapsar, Pune. How can I help you today? You can ask about our menu, order timings, delivery areas, or place an order!"
+        return f"👋 Hello! Welcome to Svaadh Kitchen! We're a homemade vegetarian cloud kitchen in Hadapsar, Pune. For today's menu and regular updates, please join our WhatsApp group: https://chat.whatsapp.com/EpLv7mtYipm61ScKjbOiuk. How can I help you today?"
 
 @app.post("/chat")
 async def chat(request: Request):
