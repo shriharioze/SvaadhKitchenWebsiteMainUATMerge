@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Backend URL - change this for different environments
-  const BACKEND_URL = "http://localhost:8001";
+  const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? "http://localhost:8001" 
+    : "https://svaadhkitchenwebsite.onrender.com";
   
   const widget = document.getElementById("chat-widget");
   widget.innerHTML = `
