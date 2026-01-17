@@ -8,7 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
   widget.innerHTML = `
     <button id="chat-toggle" class="chat-button">💬</button>
     <div class="chat-box" id="chat-box">
-      <div class="chat-header">Svaadh Kitchen 🧡</div>
+      <div class="chat-header">
+        <span>Svaadh Kitchen 🧡</span>
+        <button id="new-chat-btn" class="new-chat-btn" title="Start New Chat">🔄</button>
+      </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="quick-replies" id="quick-replies"></div>
       <div class="chat-input">
@@ -24,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInput = document.getElementById("user-input");
   const messages = document.getElementById("chat-messages");
   const quickReplies = document.getElementById("quick-replies");
+  const newChatBtn = document.getElementById("new-chat-btn");
 
   // Auto-expand when loaded
   chatBox.style.display = "flex";
@@ -32,13 +36,27 @@ document.addEventListener("DOMContentLoaded", () => {
     chatBox.style.display = chatBox.style.display === "none" ? "flex" : "none";
   });
 
+  // New chat button functionality
+  newChatBtn.addEventListener("click", () => {
+    // Clear chat history
+    localStorage.removeItem('svaadhChatHistory');
+    
+    // Clear messages
+    messages.innerHTML = '';
+    
+    // Show welcome message
+    setTimeout(() => {
+      appendMessage("Hello! 👋 Welcome to Svaadh Kitchen! How can I help you today?", "bot");
+      showQuickReplies();
+    }, 500);
+  });
+
   function showQuickReplies() {
     const quickReplyButtons = [
       { text: "🍛 Today's Menu", message: "What's today's menu?" },
       { text: "⏰ Order Timings", message: "What are your order timings?" },
       { text: "📍 Delivery Areas", message: "Which areas do you deliver to?" },
-      { text: "� Full Menu", message: "Show me the full menu with prices", isMenu: true },
-      { text: "� Place Order", message: "I want to place an order", isOrder: true }
+      { text: "📞 Place Order", message: "I want to place an order", isOrder: true }
     ];
 
     quickReplies.innerHTML = '';
@@ -50,8 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (button.isOrder) {
           window.open("https://tally.so/r/w4WKZd", "_blank");
           appendMessage("Opening order form...", "bot");
-        } else if (button.isMenu) {
-          showFullMenu();
         } else {
           userInput.value = button.message;
           sendMessage();

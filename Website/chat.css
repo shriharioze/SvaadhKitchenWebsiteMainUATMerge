@@ -56,9 +56,30 @@
 .chat-header {
   background: #f47c3c;
   color: white;
-  padding: 10px;
-  text-align: center;
-  font-weight: bold;
+  padding: 15px;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.new-chat-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.new-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(180deg);
 }
 
 .chat-messages {
