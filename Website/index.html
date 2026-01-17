@@ -395,7 +395,7 @@
 
   <!-- Footer -->
   <footer>
-    <p>© 2026 Svaadh Kitchen | Hadapsar, Pune</p>  
+    <p>© <span id="current-year"></span> Svaadh Kitchen | Hadapsar, Pune</p>  
     <a href="tel:+919930748908" class="contact-btn call-btn">
 		📞 Call Us
     </a>
@@ -403,5 +403,10 @@
     ✉️ Email Us
     </a>
   </footer>
+  
+  <!-- Auto-update copyright year -->
+  <script>
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
