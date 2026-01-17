@@ -85,6 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="menu-item">• Ghee Phulka (3 pcs) - ₹30</div>
           <div class="menu-item">• Jowar/Bajra Bhakri (1 pc) - ₹20</div>
         </div>
+        <div class="menu-category">
+          <strong>Special Items:</strong>
+          <div class="menu-item">• Special Thali (Complete Meal) - ₹120</div>
+          <div class="menu-item">• Weekend Special - ₹150</div>
+        </div>
         <div class="menu-note">
           💡 <em>Mix and match items to create your perfect meal!</em><br>
           📞 <strong>Order via WhatsApp or click "Place Order" button</strong>
@@ -92,7 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
     
-    appendMessage(menuHTML, "bot");
+    // Create a temporary div to render HTML properly
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = menuHTML;
+    appendMessage(tempDiv.innerHTML, "bot");
   }
 
   // Load chat history and show initial greeting
