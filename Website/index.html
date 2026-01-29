@@ -1,38 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <!-- SEO Meta Tags -->
   <title>Svaadh Kitchen - Homemade Vegetarian Meals in Hadapsar, Pune | Order Online</title>
-  <meta name="description" content="Order fresh homemade vegetarian meals from Svaadh Kitchen in Hadapsar, Pune. Daily breakfast, lunch, dinner delivery. Authentic homemade food with quick delivery service.">
-  <meta name="keywords" content="homemade vegetarian food, cloud kitchen hadapsar, pune food delivery, tiffin service, vegetarian meals, breakfast delivery, lunch delivery, dinner delivery, svaadh kitchen, hadapsar food, pure vegetarian food, daily meal service">
+  <meta name="description"
+    content="Order fresh homemade vegetarian meals from Svaadh Kitchen in Hadapsar, Pune. Daily breakfast, lunch, dinner delivery. Authentic homemade food with quick delivery service.">
+  <meta name="keywords"
+    content="homemade vegetarian food, cloud kitchen hadapsar, pune food delivery, tiffin service, vegetarian meals, breakfast delivery, lunch delivery, dinner delivery, svaadh kitchen, hadapsar food, pure vegetarian food, daily meal service">
   <meta name="author" content="Svaadh Kitchen">
   <meta name="robots" content="index, follow">
-  
+
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="Svaadh Kitchen - Homemade Vegetarian Meals in Hadapsar, Pune">
-  <meta property="og:description" content="Order fresh homemade vegetarian meals from Svaadh Kitchen. Daily breakfast, lunch, dinner delivery in Hadapsar, Pune.">
+  <meta property="og:description"
+    content="Order fresh homemade vegetarian meals from Svaadh Kitchen. Daily breakfast, lunch, dinner delivery in Hadapsar, Pune.">
   <meta property="og:image" content="https://your-domain.com/images/svaadh-kitchen-hero.PNG">
   <meta property="og:url" content="https://www.svaadhkitchen.in">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Svaadh Kitchen">
-  
+
   <!-- Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Svaadh Kitchen - Homemade Vegetarian Meals">
-  <meta name="twitter:description" content="Order fresh homemade vegetarian meals from Svaadh Kitchen in Hadapsar, Pune.">
+  <meta name="twitter:description"
+    content="Order fresh homemade vegetarian meals from Svaadh Kitchen in Hadapsar, Pune.">
   <meta name="twitter:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
-  
+
   <!-- Canonical URL -->
   <link rel="canonical" href="https://www.svaadhkitchen.in">
-  
+
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/x-icon" href="images/svaadh-kitchen-hero.PNG">
   <link rel="shortcut icon" href="images/svaadh-kitchen-hero.PNG">
-  
+
   <!-- Structured Data -->
   <script type="application/ld+json">
   {
@@ -57,35 +62,155 @@
     ]
   }
   </script>
-  
+
   <link rel="stylesheet" href="chat.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* Additional CSS for the website sections */
-    body { font-family: 'Roboto', sans-serif; margin:0; padding:0; line-height:1.6; }
-    header { background:#FF7043; color:white; padding:20px 10px; text-align:center; }
-    section { padding:50px 20px; text-align:center; }
-    .menu-items, .gallery-images, .icons { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
-    .menu-card, .icons div { background:#FFE0B2; padding:20px; border-radius:10px; }
-    .gallery-images img { width:200px; border-radius:10px; }
-    footer { background:#FF7043; color:white; text-align:center; padding:20px 0; }
-    a { color:#FF7043; text-decoration:none; }
-    nav a { margin:0 15px; color:white; font-weight:bold; }
-    nav { margin-top:10px; }
-    #hero { background:#fff3e0; padding:80px 20px; }
-    h2 { color:#f47c3c; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #FF7043;
+      color: white;
+      padding: 20px 10px;
+      text-align: center;
+    }
+
+    section {
+      padding: 50px 20px;
+      text-align: center;
+    }
+
+    .menu-items,
+    .gallery-images,
+    .icons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .menu-card,
+    .icons div {
+      background: #FFE0B2;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .gallery-images img {
+      width: 200px;
+      border-radius: 10px;
+    }
+
+    footer {
+      background: #FF7043;
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    a {
+      color: #FF7043;
+      text-decoration: none;
+    }
+
+    nav a {
+      margin: 0 15px;
+      color: white;
+      font-weight: bold;
+    }
+
+    nav {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    #hero {
+      background: #fff3e0;
+      padding: 80px 20px;
+    }
+
+    h2 {
+      color: #f47c3c;
+    }
+
+    /* Button Styles */
+    .btn-white {
+      background: white;
+      color: #FF7043;
+      padding: 10px 22px;
+      border-radius: 25px;
+      font-weight: bold;
+      border: 2px solid white;
+      transition: all 0.3s ease;
+    }
+
+    .btn-white:hover {
+      background: #f47c3c;
+      color: white;
+      text-decoration: none;
+    }
+
+    .btn-orange {
+      background: #FF7043;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 25px;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 1.1em;
+      box-shadow: 0 4px 10px rgba(255, 112, 67, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .btn-orange:hover {
+      background: #e64a19;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(255, 112, 67, 0.4);
+    }
+
+    /* Pulse Animation */
+    .pulse {
+      animation: pulse-animation 2s infinite;
+    }
+
+    @keyframes pulse-animation {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+      }
+    }
   </style>
-  
+
   <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-TF5YJ0QP5K"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-TF5YJ0QP5K');
-</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TF5YJ0QP5K"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-TF5YJ0QP5K');
+  </script>
 
 </head>
+
 <body>
 
   <!-- Header & Navbar -->
@@ -106,36 +231,41 @@
       <a href="#reviews">Reviews</a>
       <a href="#faq">FAQ</a>
       <a href="#contact">Contact</a>
+      <a href="https://tally.so/r/w4WKZd" target="_blank" class="btn-white pulse">Order Now</a>
     </nav>
   </header>
 
   <!-- Hero -->
   <section id="hero">
     <h2>Fresh, Healthy, Homemade Vegetarian Meals in Hadapsar, Pune</h2>
-    <p>Order delicious homemade breakfast, lunch, and dinner delivered to your doorstep. Authentic taste, quality ingredients, and quick service.</p>
-    <a href="#menu" class="cta-button">View Menu & Order</a>
+    <p>Order delicious homemade breakfast, lunch, and dinner delivered to your doorstep. Authentic taste, quality
+      ingredients, and quick service.</p>
+    <a href="https://tally.so/r/w4WKZd" target="_blank" class="btn-orange">Order Now &raquo;</a>
   </section>
 
   <!-- What We Serve -->
   <section id="menu" class="menu-section">
     <h2>Our Menu - Fresh Homemade Vegetarian Meals</h2>
-    <p>Choose from our daily selection of breakfast, lunch, and dinner options. All meals are prepared fresh with authentic homemade recipes.</p>
+    <p>Choose from our daily selection of breakfast, lunch, and dinner options. All meals are prepared fresh with
+      authentic homemade recipes.</p>
     <div class="menu-item">
-		<img src="images/breakfast.png" alt="Fresh homemade breakfast options at Svaadh Kitchen">
-		<h3>Breakfast</h3>
-		<p>Start your day with nutritious poha, upma, and idli</p>
-	  </div>
-	  <div class="menu-item">
-		<img src="images/Meals.png" alt="Complete lunch and dinner meals at Svaadh Kitchen">
-		<h3>Lunch & Dinner</h3>
-		<p>Wholesome thalis with dal, sabji, roti, and rice</p>
-	  </div>
+      <img src="images/breakfast.png" alt="Fresh homemade breakfast options at Svaadh Kitchen">
+      <h3>Breakfast</h3>
+      <p>Start your day with nutritious poha, upma, and idli</p>
+    </div>
+    <div class="menu-item">
+      <img src="images/Meals.png" alt="Complete lunch and dinner meals at Svaadh Kitchen">
+      <h3>Lunch & Dinner</h3>
+      <p>Wholesome thalis with dal, sabji, roti, and rice</p>
+    </div>
   </section>
 
   <!-- About Us -->
   <section id="about">
     <h2>About Svaadh Kitchen - Hadapsar's Trusted Homemade Food Service</h2>
-    <p>Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals for over 2.5 years. Our passion is to make healthy vegetarian food easily accessible and delicious for everyone in the community.</p>
+    <p>Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade
+      meals for over 2.5 years. Our passion is to make healthy vegetarian food easily accessible and delicious for
+      everyone in the community.</p>
     <div class="about-highlights">
       <div class="highlight-item">
         <h3>🍛 Fresh Daily</h3>
@@ -165,9 +295,9 @@
 
   <!-- Google Reviews -->
   <section id="reviews">
-	<h2></h2>
-	<script src="https://elfsightcdn.com/platform.js" async></script>
-	<div class="elfsight-app-29b50ffa-11cc-48ad-b364-53bc05795c02" data-elfsight-app-lazy></div>
+    <h2></h2>
+    <script src="https://elfsightcdn.com/platform.js" async></script>
+    <div class="elfsight-app-29b50ffa-11cc-48ad-b364-53bc05795c02" data-elfsight-app-lazy></div>
   </section>
 
   <!-- FAQ Section -->
@@ -181,70 +311,83 @@
           <span>+</span>
         </button>
         <div class="faq-answer">
-          To ensure we prepare your meal with the freshest ingredients, please place your orders before these cutoff times: <strong>Breakfast before 7:00 AM</strong>, <strong>Lunch before 9:30 AM</strong>, and <strong>Dinner before 5:00 PM</strong>. This helps us maintain quality and ensure timely delivery.
+          To ensure we prepare your meal with the freshest ingredients, please place your orders before these cutoff
+          times: <strong>Breakfast before 7:00 AM</strong>, <strong>Lunch before 9:30 AM</strong>, and <strong>Dinner
+            before 5:00 PM</strong>. This helps us maintain quality and ensure timely delivery.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Which areas do you deliver to?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We currently deliver to select areas in Hadapsar: <strong>Bhosale Garden</strong>, <strong>DP Road</strong>, <strong>Magarpatta</strong>, and <strong>Amanora Township</strong>. We're focused on providing excellent service within these locations to ensure timely delivery and food quality.
+          We currently deliver to select areas in Hadapsar: <strong>Bhosale Garden</strong>, <strong>DP Road</strong>,
+          <strong>Magarpatta</strong>, and <strong>Amanora Township</strong>. We're focused on providing excellent
+          service within these locations to ensure timely delivery and food quality.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           What are your delivery charges?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We offer <strong>free delivery</strong> for orders above ₹100. For orders below ₹100, a nominal delivery charge of ₹10 applies to cover our delivery costs. This helps us keep our food prices affordable while maintaining quality service.
+          We offer <strong>free delivery</strong> for orders above ₹100. For orders below ₹100, a nominal delivery
+          charge of ₹10 applies to cover our delivery costs. This helps us keep our food prices affordable while
+          maintaining quality service.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Can I order for the entire week?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes! You can conveniently place weekly orders by selecting your preferred dates in advance. For assistance with weekly meal planning or special requirements, feel free to message us, and we'll be happy to help customize your meal schedule.
+          Yes! You can conveniently place weekly orders by selecting your preferred dates in advance. For assistance
+          with weekly meal planning or special requirements, feel free to message us, and we'll be happy to help
+          customize your meal schedule.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you provide bulk orders for offices and events?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Absolutely! We specialize in bulk catering for offices, meetings, and special events. Please contact us with your requirements at least 2-3 days in advance, and we'll provide customized menu options and special pricing for your group.
+          Absolutely! We specialize in bulk catering for offices, meetings, and special events. Please contact us with
+          your requirements at least 2-3 days in advance, and we'll provide customized menu options and special pricing
+          for your group.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           What is your cancellation policy?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          You can cancel your order free of charge before the cutoff times: <strong>Breakfast before 7:00 AM</strong>, <strong>Lunch before 9:30 AM</strong>, and <strong>Dinner before 5:00 PM</strong>. After these times, cancellations will be chargeable as ingredients would have been prepared.
+          You can cancel your order free of charge before the cutoff times: <strong>Breakfast before 7:00 AM</strong>,
+          <strong>Lunch before 9:30 AM</strong>, and <strong>Dinner before 5:00 PM</strong>. After these times,
+          cancellations will be chargeable as ingredients would have been prepared.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Can I modify my order after placing it?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes, you can modify your order before the cutoff times (Breakfast: 7:00 AM, Lunch: 9:30 AM, Dinner: 5:00 PM). Simply message us with your changes, and we'll do our best to accommodate your request based on availability.
+          Yes, you can modify your order before the cutoff times (Breakfast: 7:00 AM, Lunch: 9:30 AM, Dinner: 5:00 PM).
+          Simply message us with your changes, and we'll do our best to accommodate your request based on availability.
         </div>
       </div>
-      
+
       <!-- Menu & Food -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
@@ -252,70 +395,85 @@
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Our thalis offer complete, balanced meals with customizable portions: <strong>Dal (₹20)</strong>, <strong>Dry/Curry Sabji Mini (₹20)</strong> or <strong>Full (₹45)</strong>, <strong>Rice (₹10)</strong>, <strong>Chapati (₹20)</strong> or <strong>Ghee Phulka (₹30)</strong>, <strong>Salad (₹5)</strong>, and <strong>Curd (₹10)</strong>. Mix and match to create your perfect meal!
+          Our thalis offer complete, balanced meals with customizable portions: <strong>Dal (₹20)</strong>,
+          <strong>Dry/Curry Sabji Mini (₹20)</strong> or <strong>Full (₹45)</strong>, <strong>Rice (₹10)</strong>,
+          <strong>Chapati (₹20)</strong> or <strong>Ghee Phulka (₹30)</strong>, <strong>Salad (₹5)</strong>, and
+          <strong>Curd (₹10)</strong>. Mix and match to create your perfect meal!
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you offer Jain food options?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes, we provide authentic Jain food options prepared without onion and garlic. Simply mention "Jain" when placing your order, and we'll ensure your meal is prepared according to Jain dietary principles while maintaining the same delicious taste.
+          Yes, we provide authentic Jain food options prepared without onion and garlic. Simply mention "Jain" when
+          placing your order, and we'll ensure your meal is prepared according to Jain dietary principles while
+          maintaining the same delicious taste.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Is your food really homemade?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Absolutely! We cook in small batches using traditional family recipes passed down through generations. Every meal is prepared with the same care and attention as we would for our own family, using fresh ingredients and no artificial preservatives.
+          Absolutely! We cook in small batches using traditional family recipes passed down through generations. Every
+          meal is prepared with the same care and attention as we would for our own family, using fresh ingredients and
+          no artificial preservatives.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you use fresh ingredients daily?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes, we source fresh ingredients daily from trusted local vendors. Our commitment to quality means we never use frozen or stored ingredients - everything is prepared fresh each morning to ensure you receive the most nutritious and flavorful meals.
+          Yes, we source fresh ingredients daily from trusted local vendors. Our commitment to quality means we never
+          use frozen or stored ingredients - everything is prepared fresh each morning to ensure you receive the most
+          nutritious and flavorful meals.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Can I customize my meal?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes! We believe in personalized meals. You can customize your thali by choosing individual items, adjusting quantities, or requesting specific preparations. Just let us know your preferences when ordering, and we'll prepare your meal exactly how you like it.
+          Yes! We believe in personalized meals. You can customize your thali by choosing individual items, adjusting
+          quantities, or requesting specific preparations. Just let us know your preferences when ordering, and we'll
+          prepare your meal exactly how you like it.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you have gluten-free options?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Currently, we don't offer dedicated gluten-free options as our kitchen handles wheat-based ingredients. However, many of our dishes like rice, dal, and sabji are naturally gluten-free. Please inform us about your dietary restrictions, and we'll guide you accordingly.
+          Currently, we don't offer dedicated gluten-free options as our kitchen handles wheat-based ingredients.
+          However, many of our dishes like rice, dal, and sabji are naturally gluten-free. Please inform us about your
+          dietary restrictions, and we'll guide you accordingly.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           How spicy is your food?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Our food is prepared with <strong>regular homemade spice levels</strong> - flavorful but not overly spicy, suitable for all age groups. We use traditional Indian spices in balanced proportions. If you prefer milder or spicier versions, just let us know when ordering!
+          Our food is prepared with <strong>regular homemade spice levels</strong> - flavorful but not overly spicy,
+          suitable for all age groups. We use traditional Indian spices in balanced proportions. If you prefer milder or
+          spicier versions, just let us know when ordering!
         </div>
       </div>
-      
+
       <!-- Payment & Pricing -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
@@ -323,30 +481,35 @@
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We accept <strong>UPI payments</strong> and <strong>Cash on Delivery</strong> for your convenience. Our UPI details are shared upon order confirmation. This ensures secure and hassle-free payment options for all our customers.
+          We accept <strong>UPI payments</strong> and <strong>Cash on Delivery</strong> for your convenience. Our UPI
+          details are shared upon order confirmation. This ensures secure and hassle-free payment options for all our
+          customers.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you offer any discounts?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes! We value our regular customers: <strong>10% discount</strong> on orders above ₹300, and <strong>15% discount</strong> on orders above ₹450. Additionally, we occasionally offer special promotions and weekly combo deals - follow our updates for the latest offers!
+          Yes! We value our regular customers: <strong>10% discount</strong> on orders above ₹300, and <strong>15%
+            discount</strong> on orders above ₹450. Additionally, we occasionally offer special promotions and weekly
+          combo deals - follow our updates for the latest offers!
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Is there a minimum order amount?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          No, there's no minimum order amount! Whether you want a single item or a full thali, we're happy to serve you. However, orders above ₹100 qualify for free delivery, making it more economical to order more items.
+          No, there's no minimum order amount! Whether you want a single item or a full thali, we're happy to serve you.
+          However, orders above ₹100 qualify for free delivery, making it more economical to order more items.
         </div>
       </div>
-      
+
       <!-- Quality & Service -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
@@ -354,37 +517,45 @@
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We follow strict hygiene protocols: daily fresh ingredients, sanitized kitchen environment, food-grade packaging, and regular quality checks. Our team follows proper food handling procedures, and we maintain temperature controls throughout preparation and delivery.
+          We follow strict hygiene protocols: daily fresh ingredients, sanitized kitchen environment, food-grade
+          packaging, and regular quality checks. Our team follows proper food handling procedures, and we maintain
+          temperature controls throughout preparation and delivery.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Can I provide feedback on the food?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We absolutely welcome and value your feedback! Your suggestions help us improve. Please reach out to us via phone, WhatsApp, or our website chat with your thoughts, concerns, or compliments. We're always listening and committed to serving you better.
+          We absolutely welcome and value your feedback! Your suggestions help us improve. Please reach out to us via
+          phone, WhatsApp, or our website chat with your thoughts, concerns, or compliments. We're always listening and
+          committed to serving you better.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           How long have you been in business?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          We've been proudly serving the Hadapsar community for <strong>2.5 years</strong>. What started as a small home kitchen has grown into a trusted cloud kitchen, thanks to our wonderful customers who appreciate authentic homemade food.
+          We've been proudly serving the Hadapsar community for <strong>2.5 years</strong>. What started as a small home
+          kitchen has grown into a trusted cloud kitchen, thanks to our wonderful customers who appreciate authentic
+          homemade food.
         </div>
       </div>
-      
+
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
           Do you have proper food licenses and certifications?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Yes, we are fully licensed and certified. We hold all necessary <strong>food safety licenses</strong> and are <strong>GST registered</strong>, ensuring complete compliance with food regulations and quality standards. Your trust and safety are our top priorities.
+          Yes, we are fully licensed and certified. We hold all necessary <strong>food safety licenses</strong> and are
+          <strong>GST registered</strong>, ensuring complete compliance with food regulations and quality standards.
+          Your trust and safety are our top priorities.
         </div>
       </div>
     </div>
@@ -414,12 +585,8 @@
       </div>
       <div class="map-container">
         <h3>🗺️ Find Us on Google Maps</h3>
-        <iframe 
-          src="https://storage.googleapis.com/maps-solutions-ibajotxtr7/commutes/c61j/commutes.html"
-          width="100%" 
-          height="400"
-          style="border:0; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
-          loading="lazy"
+        <iframe src="https://storage.googleapis.com/maps-solutions-ibajotxtr7/commutes/c61j/commutes.html" width="100%"
+          height="400" style="border:0; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" loading="lazy"
           allowfullscreen>
         </iframe>
         <p class="map-note">
@@ -435,18 +602,19 @@
 
   <!-- Footer -->
   <footer>
-    <p>© <span id="current-year"></span> Svaadh Kitchen | Hadapsar, Pune</p>  
+    <p>© <span id="current-year"></span> Svaadh Kitchen | Hadapsar, Pune</p>
     <a href="tel:+919930748908" class="contact-btn call-btn">
-		📞 Call Us
+      📞 Call Us
     </a>
     <a href="mailto:svaadh.kitchen@gmail.com" class="contact-btn email-btn">
-    ✉️ Email Us
+      ✉️ Email Us
     </a>
   </footer>
-  
+
   <!-- Auto-update copyright year -->
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
   </script>
 </body>
+
 </html>
