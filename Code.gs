@@ -1001,10 +1001,9 @@ function callGemini(systemPrompt, history, userMessage) {
     if (data.candidates && data.candidates[0] && data.candidates[0].content) {
       return data.candidates[0].content.parts[0].text;
     }
-    // DEBUG: return the raw Gemini response so we can see the error
-    return "[DEBUG Gemini no candidates] " + raw.slice(0, 400);
+    return "I'm not sure how to answer that. Please WhatsApp us at +91 99307 48908!";
   } catch(e) {
-    return "[DEBUG catch] " + e.message;
+    return "I'm having trouble right now. Please call or WhatsApp us at +91 99307 48908.";
   }
 }
 
