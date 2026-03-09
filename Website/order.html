@@ -948,13 +948,14 @@ async function lookupCustomer(){
       const def={area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps||"",landmark:S.profile.landmark||""};
       S.mealAddrs={Breakfast:{...def},Lunch:{...def},Dinner:{...def}};
     }
+    $("btnNext").textContent="Continue →";$("btnNext").disabled=false;
     S.step++;updateNav();window.scrollTo(0,0);
   }catch(err){
     clearTimeout(_lTid);
     if(err.name==="AbortError"){toast("Server is taking too long — please try again.",4000);$("btnNext").textContent="Continue →";$("btnNext").disabled=false;return;}
     S.isFirstTime=true;$("returningBadge").innerHTML="";
-    S.step++;updateNav();window.scrollTo(0,0);
     $("btnNext").textContent="Continue →";$("btnNext").disabled=false;
+    S.step++;updateNav();window.scrollTo(0,0);
   }
 }
 
