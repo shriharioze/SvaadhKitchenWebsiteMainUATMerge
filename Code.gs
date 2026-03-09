@@ -179,6 +179,10 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getAdminData());
     }
+    if (action === "getUnpaidCustomers") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getUnpaidCustomers(p));
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -207,6 +211,10 @@ function doPost(e) {
       return jsonRes(saveSabjiItem(body));
     }
     if (action === "chat")            return jsonRes(handleChat(body));
+    if (action === "markCustomersPaid") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markCustomersPaid(body));
+    }
     if (body.pin === ADMIN_PIN)       return jsonRes(saveMenu(body));
     // Regular order submission
     return jsonRes(submitOrder(body));
@@ -1040,4 +1048,68 @@ function callGemini(systemPrompt, history, userMessage) {
   } catch(e) {
     return "I'm having trouble right now. Please call or WhatsApp us at +91 99307 48908.";
   }
+}
+
+// ── GET UNPAID CUSTOMERS (reconciliation) ────────────────────────────────────
+function getUnpaidCustomers(p) {
+  const dateFrom = p.dateFrom;
+  const dateTo   = p.dateTo;
+  if (!dateFrom || !dateTo) return {success:false, error:"dateFrom and dateTo required"};
+
+  const ss   = getSpreadsheet();
+  const ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(ws);
+
+  // Collect all unpaid orders in the range
+  const relevant = rows.filter(r =>
+    String(r.Order_Date) >= dateFrom &&
+    String(r.Order_Date) <= dateTo   &&
+    (r.Payment_Status === "10-Day Pending" ||
+     r.Payment_Status === "Pending"         ||
+     !r.Payment_Status)
+  );
+
+  // Group by customer phone → sum net totals
+  const map = {};
+  relevant.forEach(r => {
+    const key = String(r.Phone || "").trim();
+    if (!key) return;
+    if (!map[key]) map[key] = {phone:key, name:String(r.Customer_Name||"").trim(), total:0, orderCount:0};
+    map[key].total      += Number(r.Net_Total) || 0;
+    map[key].orderCount += 1;
+  });
+
+  const customers = Object.values(map).map(c => ({...c, total: Math.round(c.total)}));
+  const grandTotal = customers.reduce((s,c) => s + c.total, 0);
+  return {success:true, customers, period:{from:dateFrom, to:dateTo}, grandTotal};
+}
+
+// ── MARK CUSTOMERS PAID (reconciliation) ─────────────────────────────────────
+function markCustomersPaid(body) {
+  const phones   = body.phones   || [];   // array of phone strings
+  const dateFrom = body.dateFrom;
+  const dateTo   = body.dateTo;
+  if (!phones.length || !dateFrom || !dateTo)
+    return {success:false, error:"phones, dateFrom, dateTo required"};
+
+  const ss      = getSpreadsheet();
+  const ws      = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const headers = ws.getRange(1,1,1,ws.getLastColumn()).getValues()[0];
+  const hIdx    = {};
+  headers.forEach((h,i) => { hIdx[h] = i+1; });
+
+  const rows    = getAllRows(ws);
+  let   updated = 0;
+  rows.forEach(r => {
+    if (phones.includes(String(r.Phone||"").trim()) &&
+        String(r.Order_Date) >= dateFrom &&
+        String(r.Order_Date) <= dateTo   &&
+        (r.Payment_Status === "10-Day Pending" ||
+         r.Payment_Status === "Pending"         ||
+         !r.Payment_Status)) {
+      ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
+      updated++;
+    }
+  });
+  return {success:true, updatedRows:updated, customersMarked:phones.length};
 }
