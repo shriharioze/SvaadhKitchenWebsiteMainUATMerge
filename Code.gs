@@ -1041,13 +1041,15 @@ function callGemini(systemPrompt, history, userMessage) {
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-    const data = JSON.parse(response.getContentText());
+    const raw = response.getContentText();
+    const data = JSON.parse(raw);
     if (data.candidates && data.candidates[0] && data.candidates[0].content) {
       return data.candidates[0].content.parts[0].text;
     }
-    return "I'm not sure how to answer that. Please WhatsApp us at +91 99307 48908!";
+    // DEBUG: return the raw Gemini response so we can see the error
+    return "[DEBUG Gemini no candidates] " + raw.slice(0, 400);
   } catch(e) {
-    return "I'm having trouble right now. Please call or WhatsApp us at +91 99307 48908.";
+    return "[DEBUG catch] " + e.message;
   }
 }
 
