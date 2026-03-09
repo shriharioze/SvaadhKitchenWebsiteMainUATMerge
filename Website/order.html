@@ -560,7 +560,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <h2>🍽️ Select Meals</h2>
     <p class="text-sm" style="color:#888;">Expand each meal to select items. Switch dates using the tabs below.</p>
   </div>
-  <div id="dateTabsWrap" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+    <div id="dateTabsWrap" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:1;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
+    <button id="copyToAllBtn" onclick="copyMealsToAllDates()" style="display:none;flex-shrink:0;padding:5px 10px;border-radius:8px;font-size:0.72rem;font-weight:600;background:#fff3cd;color:#856404;border:1px solid #ffc107;cursor:pointer;white-space:nowrap;">📋 Copy to all dates</button>
+  </div>
   <div id="mealSelectionContent"></div>
 </div>
 
@@ -579,14 +582,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before completing payment.</span>
     </div>
     <div class="upi-section">
-      <p class="text-sm">Scan QR or tap to pay via UPI</p>
+      <p class="text-sm">Scan QR code <strong>or</strong> tap the button below to pay</p>
       <div id="qrcode" style="margin:14px auto 0;"></div>
       <div class="upi-amount" id="upiAmountDisplay">₹0</div>
       <div class="upi-id">UPI: shriharioze07-1@okhdfcbank</div>
       <div style="background:#f0f4ff;border-radius:8px;padding:8px 10px;margin:10px 0;font-size:0.73rem;color:#444;text-align:left;">
         📝 <strong>Payment note:</strong> <span id="upiNoteDisplay" style="color:#1a3c8f;"></span>
       </div>
-      <a id="upiDeepLink" href="#" class="btn btn-primary" style="text-decoration:none;margin-top:6px;">📲 Pay via UPI App</a>
+      <a id="upiDeepLink" href="#" class="btn btn-primary" style="text-decoration:none;margin-top:6px;font-size:1rem;">👆 Tap here to pay via UPI</a>
       <div class="upi-or">or</div>
       <button class="btn btn-secondary" id="codBtn">🏠 Cash on Delivery</button>
       <div style="margin-top:14px;">
@@ -865,7 +868,18 @@ async function goNext(){
   if(!validate(S.step)) return;
   if(S.step===0){await lookupCustomer();return;}
   if(S.step===2){if(!S.selectedDates.length){toast("Select at least one date");return;}await loadMealScreen();}
-  if(S.step===3){if(!hasAnyOrder()){toast("Select at least one item");return;}buildBillScreen();}
+  if(S.step===3){
+    if(!hasAnyOrder()){toast("Select at least one item");return;}
+    // Warn if some selected dates have no meals at all
+    if(S.selectedDates.length>1){
+      const emptyDates=S.selectedDates.filter(d=>!["Breakfast","Lunch","Dinner"].some(m=>(S.orders[d]?.[m]?.subtotal||0)>0));
+      if(emptyDates.length>0){
+        const names=emptyDates.map(d=>formatDate(d)).join(", ");
+        if(!confirm(`⚠️ ${emptyDates.length} date(s) have no meals selected:\n${names}\n\nContinue anyway?`))return;
+      }
+    }
+    buildBillScreen();
+  }
   if(S.step===4){await placeOrder();return;}
   S.step++;updateNav();window.scrollTo(0,0);
 }
@@ -922,7 +936,10 @@ async function lookupCustomer(){
       $("returningBadge").innerHTML=`<div class="customer-badge">
         <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
         <div><div class="cname">👋 Welcome back, ${fn}!</div>
-        <div class="csub">Details pre-filled — update anything that's changed.</div></div></div>`;
+        <div class="csub">Details pre-filled — tap <strong>Continue →</strong> if nothing has changed.</div></div></div>
+      <div style="background:#f0faf4;border:1px solid #6fcf97;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.78rem;color:#1a6640;">
+        ✅ No changes needed? Just scroll down and tap <strong>Continue →</strong>
+      </div>`;
     } else {
       S.isFirstTime=true;
       $("returningBadge").innerHTML="";
@@ -1090,6 +1107,24 @@ function buildDateTabs(){
              border:1.5px solid ${i===0?"#e74c3c":"#ddd"};background:${i===0?"#e74c3c":"white"};
              color:${i===0?"white":"#555"};cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;">
       ${formatDate(date)}</button>`).join("");
+  $("copyToAllBtn").style.display = S.selectedDates.length > 1 ? "block" : "none";
+}
+function copyMealsToAllDates(){
+  if(!activeDate||S.selectedDates.length<2){return;}
+  const src=S.orders[activeDate];
+  if(!src||!["Breakfast","Lunch","Dinner"].some(m=>(src[m]?.subtotal||0)>0)){
+    toast("No meals selected on this date to copy",2500);return;
+  }
+  const others=S.selectedDates.filter(d=>d!==activeDate);
+  if(!confirm(`Copy meals from ${formatDate(activeDate)} to ${others.length} other date(s)?`))return;
+  others.forEach(d=>{
+    S.orders[d]={};
+    ["Breakfast","Lunch","Dinner"].forEach(m=>{
+      if(src[m])S.orders[d][m]=JSON.parse(JSON.stringify(src[m]));
+    });
+  });
+  toast(`Copied to ${others.length} date(s) ✅`,2000);
+  renderMealContent(activeDate); // refresh current view to show updated state
 }
 function switchTab(date){
   document.querySelectorAll("[id^='tab_']").forEach(b=>{b.style.background="white";b.style.color="#555";b.style.borderColor="#ddd";});
@@ -1378,7 +1413,7 @@ function setupUPI(amount){
   } else {
     deepLinkBtn.href=upiStr;
     deepLinkBtn.onclick=null;
-    deepLinkBtn.textContent=`📲 Pay ₹${amount} via UPI App`;
+    deepLinkBtn.textContent=`👆 Click here to pay ₹${amount} via any UPI app`;
   }
 
   $("codBtn").onclick=()=>{
