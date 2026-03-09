@@ -137,7 +137,8 @@ const BUSINESS_CONTEXT = {
       {name:"Salad (40g)", price:6},
       {name:"Curd (50g)", price:12}
     ],
-    breakfast: "Rotating daily — items like Kanda Poha, Aloo Paratha, Paneer Paratha with Curd. Check the order form for today's options."
+    breakfast: "Rotating daily (₹35–₹70). Items include Kanda Poha ₹35, Ghee Upma ₹40, Sabudana Khichdi ₹40, Tikhi Pudi ₹45, Idli Chutney ₹45, Masala Dosa ₹45, Aloo Paratha ₹50, Veg Sandwich ₹50, Thalipeeth ₹50, Ghee Sheera ₹50, Paneer Paratha ₹70. Curd available extra ₹12. Check the order form for today's options.",
+    breakfast_note: "Curd (50g ₹12) is available as an add-on for breakfast — not included by default. Pure Ghee is used to make breakfast items."
   },
   discounts: {
     tier1: "5% off when the day total is ₹300 or more",
@@ -1030,7 +1031,11 @@ function buildSystemPrompt() {
     +" Closed Sundays. Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
     +" Areas: Bhosale Garden(free), Magarpatta/Amanora/DP Road(₹10/meal if subtotal<₹100).\n"
     + todayLine
-    +"Menu — Breads:"+breads+" | Sabji:"+sabji+" | Basics:"+basics+" | BF: daily rotating.\n"
+    +"MEAL MODEL: Make Your Own Meal (not a fixed thali). Customers pick items individually.\n"
+    +"Lunch/Dinner — Breads:"+breads+" | Sabji:"+sabji+" | Basics:"+basics+"\n"
+    +"Breakfast: daily rotating ₹35–₹70. "+B.menu.breakfast_note+"\n"
+    +"Self pickup also available (no delivery charge).\n"
+    +"Uses Pure Ghee & Groundnut refined oil.\n"
     +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
     +"Payment: UPI("+B.payment.upi_id+"), COD, 10-day billing.\n"
     +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
