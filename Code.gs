@@ -15,6 +15,7 @@ const TAB_CUSTOMERS  = "SK_Customers";
 const TAB_MENU       = "SK_Daily_Menu";
 const TAB_BF_MASTER  = "SK_Master_Breakfast";
 const TAB_SABJI      = "SK_Master_Sabjis";
+const TAB_AREAS      = "SK_Areas";
 
 // ── COLUMN LAYOUT — SK_Orders ────────────────────────────────
 // A   Submission_ID
@@ -172,6 +173,7 @@ function doGet(e) {
   const action = p.action || "";
   try {
     if (action === "version")       return jsonRes({version: CODE_VERSION, status:"ok"});
+    if (action === "getAreas")      return jsonRes(getAreas());
     if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
     if (action === "getMenu")       return jsonRes(getMenu(p.date));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
@@ -212,6 +214,14 @@ function doPost(e) {
       return jsonRes(saveSabjiItem(body));
     }
     if (action === "chat")            return jsonRes(handleChat(body));
+    if (action === "saveArea") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(saveArea(body));
+    }
+    if (action === "deleteArea") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(deleteArea(body));
+    }
     if (action === "markCustomersPaid") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markCustomersPaid(body));
@@ -379,6 +389,11 @@ function submitOrder(body) {
   // Build the header→index map once
   const hIdx = headerIndex(ordersWs);
 
+  // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Garden")
+  const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
+  const DELIVERY  = 10;
+  const FREE_THR  = 100;
+
   const submissionIds = [];
 
   for (const order of orders) {
@@ -403,11 +418,8 @@ function submitOrder(body) {
       const sub    = meal.subtotal || 0;
       const mealArea  = meal.area || profile.area || "";
 
-      // Delivery charge
-      const FREE_AREA = "Bhosale Garden";
-      const DELIVERY  = 10;
-      const FREE_THR  = 100;
-      const delCharge = (mealArea !== FREE_AREA && sub > 0 && sub < FREE_THR) ? DELIVERY : 0;
+      // Delivery charge (free areas loaded dynamically from SK_Areas sheet)
+      const delCharge = (!freeAreaNames.includes(mealArea) && sub > 0 && sub < FREE_THR) ? DELIVERY : 0;
       const discAmt   = getDisc(sub);
       const netTotal  = sub + delCharge - discAmt;
 
@@ -924,6 +936,67 @@ function _updateLedger(ss, profile, orders) {
       ws.appendRow([order.date, meal.type, summary, meal.subtotal, delCharge, discAmt, netTotal]);
     }
   }
+}
+
+// ── AREAS ────────────────────────────────────────────────────
+
+const AREAS_HEADERS = ["Area_Name", "Area_Label", "Free_Delivery"];
+
+const DEFAULT_AREAS = [
+  ["Bhosale Garden", "🏠 Bhosale Garden (Free Delivery)", "TRUE"],
+  ["Magarpatta",     "🏙️ Magarpatta",                    "FALSE"],
+  ["Amanora",        "🏢 Amanora Township",               "FALSE"],
+  ["DP Road",        "🛣️ DP Road",                        "FALSE"]
+];
+
+function getAreas() {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_AREAS, AREAS_HEADERS);
+  const rows = getAllRows(ws);
+  // Seed defaults on first run
+  if (rows.length === 0) {
+    DEFAULT_AREAS.forEach(function(r) { ws.appendRow(r); });
+    return DEFAULT_AREAS.map(function(r) { return {name:r[0], label:r[1], free:true}; });
+  }
+  return rows.map(function(r) {
+    return {name: r.Area_Name, label: r.Area_Label, free: String(r.Free_Delivery) === "TRUE"};
+  });
+}
+
+function saveArea(body) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_AREAS, AREAS_HEADERS);
+  const data = ws.getDataRange().getValues();
+  const headers = data[0];
+  const nameIdx = headers.indexOf("Area_Name");
+  const labelIdx = headers.indexOf("Area_Label");
+  const freeIdx = headers.indexOf("Free_Delivery");
+  // Update if exists
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][nameIdx]).toLowerCase() === String(body.name).toLowerCase()) {
+      data[i][labelIdx] = body.label;
+      data[i][freeIdx]  = body.free ? "TRUE" : "FALSE";
+      ws.getDataRange().setValues(data);
+      return {success: true};
+    }
+  }
+  // Add new
+  ws.appendRow([body.name, body.label, body.free ? "TRUE" : "FALSE"]);
+  return {success: true};
+}
+
+function deleteArea(body) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_AREAS, AREAS_HEADERS);
+  const data = ws.getDataRange().getValues();
+  const nameIdx = data[0].indexOf("Area_Name");
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][nameIdx]) === String(body.name)) {
+      ws.deleteRow(i + 1);
+      return {success: true};
+    }
+  }
+  return {success: false, error: "Area not found"};
 }
 
 // ── CHATBOT ──────────────────────────────────────────────────

@@ -639,6 +639,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="manage-tabs">
           <button class="manage-tab active" onclick="switchManageTab('bf')">🌅 Breakfast Items</button>
           <button class="manage-tab" onclick="switchManageTab('sabji')">🥗 Sabjis</button>
+          <button class="manage-tab" onclick="switchManageTab('areas')">🗺️ Delivery Areas</button>
         </div>
 
         <!-- Breakfast table -->
@@ -675,6 +676,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                 <option value="Both">Both (Dry & Curry)</option>
               </select>
               <button class="add-btn" onclick="addSabjiItem()">+ Add Sabji</button>
+            </div>
+          </div>
+        </div>
+        <!-- Areas table -->
+        <div id="areasManagePanel" style="display:none;">
+          <div class="manage-table">
+            <div class="mt-head" style="grid-template-columns:2fr 3fr 1fr 1fr 1fr;">
+              <div>Area Name</div><div>Label (shown to customer)</div><div>Free Delivery</div><div>Edit</div><div>Delete</div>
+            </div>
+            <div id="areasMasterRows"></div>
+            <div class="add-row" style="grid-template-columns:2fr 3fr 1fr 1fr;" id="areasAddRow">
+              <input type="text" id="newAreaName" placeholder="e.g. Kharadi">
+              <input type="text" id="newAreaLabel" placeholder="e.g. 🏘️ Kharadi">
+              <select id="newAreaFree">
+                <option value="no">₹10 Delivery</option>
+                <option value="yes">Free Delivery</option>
+              </select>
+              <button class="add-btn" onclick="addAreaItem()">+ Add Area</button>
             </div>
           </div>
         </div>
@@ -1125,9 +1144,11 @@ async function saveCurrentMenu() {
 // MANAGE TABS
 // ════════════════════════════════════════════════════════
 function switchManageTab(tab) {
-  document.querySelectorAll(".manage-tab").forEach((el,i) => el.classList.toggle("active", (i===0&&tab==="bf")||(i===1&&tab==="sabji")));
+  document.querySelectorAll(".manage-tab").forEach((el,i) => el.classList.toggle("active", (i===0&&tab==="bf")||(i===1&&tab==="sabji")||(i===2&&tab==="areas")));
   document.getElementById("bfManagePanel").style.display    = tab === "bf"    ? "block" : "none";
   document.getElementById("sabjiManagePanel").style.display = tab === "sabji" ? "block" : "none";
+  document.getElementById("areasManagePanel").style.display = tab === "areas" ? "block" : "none";
+  if (tab === "areas") loadAreasMaster();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1767,6 +1788,78 @@ function toggleMealSection(meal) {
   chevron.style.transform = isOpen ? "rotate(-90deg)" : "rotate(0deg)";
 }
 
+
+// ════════════════════════════════════════════════════════
+// DELIVERY AREAS MASTER TABLE
+// ════════════════════════════════════════════════════════
+let _areasList = [];
+
+async function loadAreasMaster() {
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getAreas&_t=${Date.now()}`);
+    _areasList = await res.json();
+    renderAreasMasterTable();
+  } catch(e) { toast("Failed to load areas: " + e.message, 3000); }
+}
+
+function renderAreasMasterTable() {
+  const wrap = document.getElementById("areasMasterRows");
+  if (!wrap) return;
+  if (_areasList.length === 0) {
+    wrap.innerHTML = '<div style="padding:12px;color:#999;text-align:center;">No areas yet.</div>';
+    return;
+  }
+  wrap.innerHTML = _areasList.map((a, i) => `
+    <div class="mt-row" style="grid-template-columns:2fr 3fr 1fr 1fr 1fr;" id="areaRow_${i}">
+      <div>${a.name}</div>
+      <div id="areaLabel_${i}">${a.label}</div>
+      <div>${a.free ? "✅ Free" : "₹10"}</div>
+      <div><button class="icon-btn" onclick="editAreaItem(${i})" title="Edit">✏️</button></div>
+      <div><button class="icon-btn del" onclick="deleteAreaItem('${a.name}')" title="Delete">🗑️</button></div>
+    </div>`).join("");
+}
+
+async function addAreaItem() {
+  const name  = document.getElementById("newAreaName").value.trim();
+  const label = document.getElementById("newAreaLabel").value.trim();
+  const free  = document.getElementById("newAreaFree").value === "yes";
+  if (!name || !label) { toast("Enter area name and label", 2000); return; }
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST", body: JSON.stringify({_action:"saveArea", pin:S.sessionPin, name, label, free})});
+    const data = await res.json();
+    if (data.error) { toast("Error: " + data.error, 3000); return; }
+    document.getElementById("newAreaName").value  = "";
+    document.getElementById("newAreaLabel").value = "";
+    toast("Area added ✅", 2000);
+    loadAreasMaster();
+  } catch(e) { toast("Error: " + e.message, 3000); }
+}
+
+async function deleteAreaItem(name) {
+  if (!confirm(`Delete area "${name}"? Orders already placed won't be affected.`)) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST", body: JSON.stringify({_action:"deleteArea", pin:S.sessionPin, name})});
+    const data = await res.json();
+    if (data.error) { toast("Error: " + data.error, 3000); return; }
+    toast("Area deleted", 2000);
+    loadAreasMaster();
+  } catch(e) { toast("Error: " + e.message, 3000); }
+}
+
+function editAreaItem(i) {
+  const a = _areasList[i];
+  const newLabel = prompt("Edit label for " + a.name + ":", a.label);
+  if (newLabel === null) return;
+  const freeStr = prompt("Free delivery? (yes/no):", a.free ? "yes" : "no");
+  if (freeStr === null) return;
+  const free = freeStr.trim().toLowerCase() === "yes";
+  fetch(APPS_SCRIPT_URL, {method:"POST", body: JSON.stringify({_action:"saveArea", pin:S.sessionPin, name:a.name, label:newLabel.trim(), free})})
+    .then(r => r.json()).then(d => {
+      if (d.error) { toast("Error: " + d.error, 3000); return; }
+      toast("Area updated ✅", 2000);
+      loadAreasMaster();
+    }).catch(e => toast("Error: " + e.message, 3000));
+}
 
 // ════════════════════════════════════════════════════════
 // PAYMENT RECONCILIATION

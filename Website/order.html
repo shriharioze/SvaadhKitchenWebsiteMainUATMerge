@@ -695,7 +695,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 const APPS_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
 const UPI_VPA          = "shriharioze07-1@okhdfcbank";
 const UPI_NAME         = "Svaadh Kitchen";
-const FREE_AREA        = "Bhosale Garden";
+let   FREE_AREAS       = ["Bhosale Garden"];   // populated dynamically from API
 const DELIVERY_CHARGE  = 10;
 const FREE_THRESHOLD   = 100;
 const DISC_T1          = { min:300, rate:0.05 };
@@ -1265,7 +1265,7 @@ function buildBillScreen(){
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
       const mAddr=getMealAddr(meal);
-      if(mAddr.area!==FREE_AREA&&sub>0&&sub<FREE_THRESHOLD){
+      if(!FREE_AREAS.includes(mAddr.area)&&sub>0&&sub<FREE_THRESHOLD){
         html+=`<div class="bill-line delivery-line"><span>🚚 Delivery (${meal})</span><span>₹${DELIVERY_CHARGE}</span></div>`;
         totalDelivery+=DELIVERY_CHARGE;
       }
@@ -1662,7 +1662,23 @@ async function deleteOrder(rowId,date,meal){
 // ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+async function loadAreas() {
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAreas`);
+    const areas = await res.json();
+    if (!Array.isArray(areas) || areas.length === 0) return;
+    FREE_AREAS = areas.filter(a => a.free).map(a => a.name);
+    const opts = '<option value="">— Select area —</option>'
+      + areas.map(a => `<option value="${a.name}">${a.label}</option>`).join("");
+    ["areaSelect","bf_areaSelect","l_areaSelect","d_areaSelect"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = opts;
+    });
+  } catch(e) { /* keep hardcoded fallback options if API fails */ }
+}
+
 document.addEventListener("DOMContentLoaded",()=>{
+  loadAreas();
   updateNav();
   initCalendar();
   buildFAQ();
