@@ -1290,8 +1290,8 @@ function buildBillScreen(){
     $("hissabPeriod").textContent="Loading your account…";
     fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${S.phone}`)
       .then(r=>r.json()).then(d=>{
-        // Current period (already includes this order since it's saved to sheet)
-        const curTotal = d.running || 0;
+        // Running total from sheet + this order (not yet placed)
+        const curTotal = (d.running || 0) + grandTotal;
         $("hissabAmount").textContent = `₹${curTotal}`;
         $("hissabPeriod").textContent = `Period: ${d.period||getPeriodLabel()} · Includes this order (₹${grandTotal})`;
 
