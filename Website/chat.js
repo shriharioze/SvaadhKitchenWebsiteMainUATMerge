@@ -180,7 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
       loadingDiv.remove();
-      const reply = data.reply || "Sorry, I couldn't process your request.";
+      console.log("[Chat debug]", JSON.stringify(data));
+      const reply = data.reply || (data.error ? "⚠️ Server error: " + data.error : "Sorry, I couldn't process your request.");
       appendMessage(reply, "bot");
 
       if (typeof gtag === "function") {
