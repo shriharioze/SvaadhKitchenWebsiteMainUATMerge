@@ -777,7 +777,7 @@ let S = {
 const $ = id => document.getElementById(id);
 const toISO = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 const getIST = () => new Date(Date.now()+5.5*3600000);
-const todayISO = () => { const t=getIST(); return toISO(t.getFullYear(),t.getMonth(),t.getDate()); };
+const todayISO = () => { const t=getIST(); return toISO(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()); };
 const formatDate = ds => new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
 function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
 
@@ -787,11 +787,11 @@ function getMealAvailability(dateStr){
   if(dateStr<today) return {Breakfast:false,Lunch:false,Dinner:false};
   const ov=S.menuCache[dateStr]?.cutoff_overrides||{};
   const cur={Breakfast:ov.Breakfast??CUTOFFS.Breakfast,Lunch:ov.Lunch??CUTOFFS.Lunch,Dinner:ov.Dinner??CUTOFFS.Dinner};
-  const ist=getIST(),h=ist.getHours()+ist.getMinutes()/60;
+  const ist=getIST(),h=ist.getUTCHours()+ist.getUTCMinutes()/60;
   return {Breakfast:h<cur.Breakfast,Lunch:h<cur.Lunch,Dinner:h<cur.Dinner};
 }
 function fmtHour(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60),ampm=hh<12?"AM":"PM",hr=hh>12?hh-12:(hh||12);return `${hr}:${String(mm).padStart(2,"0")} ${ampm}`;}
-function getPeriodLabel(){const d=getIST().getDate();if(d<=10)return"1st – 10th";if(d<=20)return"11th – 20th";const last=new Date(getIST().getFullYear(),getIST().getMonth()+1,0).getDate();return`21st – ${last}th`;}
+function getPeriodLabel(){const t=getIST(),d=t.getUTCDate();if(d<=10)return"1st – 10th";if(d<=20)return"11th – 20th";const last=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate();return`21st – ${last}th`;}
 function buildAddr(wing,flat,floor,society,area){return [wing&&`Wing ${wing}`,flat&&`Flat ${flat}`,floor&&`${floor} Floor`,society,area].filter(Boolean).join(", ");}
 
 // ═══════════════════════════════════════════════════════════
@@ -1019,7 +1019,7 @@ function getMealAddr(mealType){
 // CALENDAR
 // ═══════════════════════════════════════════════════════════
 function initCalendar(){
-  const ist=getIST();S.calYear=ist.getFullYear();S.calMonth=ist.getMonth();
+  const ist=getIST();S.calYear=ist.getUTCFullYear();S.calMonth=ist.getUTCMonth();
   renderCalendar();
   $("calPrev").onclick=()=>{S.calMonth--;if(S.calMonth<0){S.calMonth=11;S.calYear--;}renderCalendar();};
   $("calNext").onclick=()=>{S.calMonth++;if(S.calMonth>11){S.calMonth=0;S.calYear++;}renderCalendar();};
@@ -1029,7 +1029,7 @@ function renderCalendar(){
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
   $("calMonthTitle").textContent=`${MONTHS[m]} ${y}`;
   $("calDayNames").innerHTML=["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>`<div class="cal-day-name">${d}</div>`).join("");
-  const ist=getIST(),today=toISO(ist.getFullYear(),ist.getMonth(),ist.getDate());
+  const ist=getIST(),today=toISO(ist.getUTCFullYear(),ist.getUTCMonth(),ist.getUTCDate());
   const fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate();
   let html="";
   for(let i=0;i<fd;i++)html+=`<div class="cal-day empty"></div>`;
