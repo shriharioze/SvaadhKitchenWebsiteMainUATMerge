@@ -1012,7 +1012,7 @@ function buildSystemPrompt() {
 }
 
 function callGemini(systemPrompt, history, userMessage) {
-  const apiKey = PropertiesService.getScriptProperties().getProperty("AIzaSyDVGPjjIEL-tdp6XmcN3iDvohthgUR7dBc");
+  const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
   if (!apiKey) {
     return "I'm having trouble connecting right now. Please WhatsApp us at +91 99307 48908 for help!";
   }
