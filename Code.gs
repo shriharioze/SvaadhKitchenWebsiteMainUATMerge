@@ -937,79 +937,33 @@ function handleChat(body) {
 
 function buildSystemPrompt() {
   const B = BUSINESS_CONTEXT;
-  const breads = B.menu.breads.map(function(i){ return i.name + " ₹" + i.price + " " + i.unit; }).join(" | ");
-  const sabji  = B.menu.sabji.map(function(i){ return i.name + " ₹" + i.price; }).join(" | ");
-  const basics = B.menu.basics.map(function(i){ return i.name + " ₹" + i.price; }).join(" | ");
+  const breads = B.menu.breads.map(function(i){ return i.name+"₹"+i.price; }).join(", ");
+  const sabji  = B.menu.sabji.map(function(i){ return i.name+"₹"+i.price; }).join(", ");
+  const basics = B.menu.basics.map(function(i){ return i.name+"₹"+i.price; }).join(", ");
 
-  // Fetch today's live menu from the Sheet
-  var todayMenuSection = "";
+  var todayLine = "";
   try {
-    var ist = new Date(new Date().getTime() + 5.5 * 3600 * 1000);
+    var ist = new Date(new Date().getTime() + 5.5*3600*1000);
     var todayStr = Utilities.formatDate(ist, "Asia/Kolkata", "yyyy-MM-dd");
-    var todayMenu = getMenu(todayStr);
-    var bfItems = (todayMenu.breakfast || []).map(function(x){ return x.name + " ₹" + x.price; }).join(", ");
-    var lDry    = todayMenu.lunch_dry    || "";
-    var lCurry  = todayMenu.lunch_curry  || "";
-    var dDry    = todayMenu.dinner_dry   || "";
-    var dCurry  = todayMenu.dinner_curry || "";
-    todayMenuSection = "TODAY'S LIVE MENU (" + todayStr + "):\n"
-      + (bfItems  ? "- Breakfast items: " + bfItems + "\n" : "- Breakfast: not set yet for today\n")
-      + (lDry     ? "- Lunch Dry Sabji: "    + lDry    + "\n" : "")
-      + (lCurry   ? "- Lunch Curry Sabji: "  + lCurry  + "\n" : "")
-      + (dDry     ? "- Dinner Dry Sabji: "   + dDry    + "\n" : "")
-      + (dCurry   ? "- Dinner Curry Sabji: " + dCurry  + "\n" : "")
-      + (!lDry && !lCurry && !dDry && !dCurry ? "- Today's sabji not set yet — direct user to WhatsApp group for updates.\n" : "")
-      + "\n";
-  } catch(e) {
-    todayMenuSection = "TODAY'S LIVE MENU: Unable to fetch right now — direct user to WhatsApp group.\n\n";
-  }
+    var m = getMenu(todayStr);
+    var bf = (m.breakfast||[]).map(function(x){ return x.name+"₹"+x.price; }).join(", ");
+    todayLine = "Today("+todayStr+"): BF:"+(bf||"TBD")
+      +"|L:"+(m.lunch_dry||"")+(m.lunch_curry?" & "+m.lunch_curry:"")
+      +"|D:"+(m.dinner_dry||"")+(m.dinner_curry?" & "+m.dinner_curry:"")
+      +((!m.lunch_dry&&!m.dinner_dry)?" (sabji TBD—send to WA group)":"")+"\n";
+  } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
-  return "You are a friendly and helpful customer service assistant for " + B.name + ", a " + B.type + " in Hadapsar, Pune.\n\n"
-    + "ABOUT US:\n" + B.about + "\n"
-    + "Our vision: " + B.vision + "\n\n"
-    + "SERVING AREAS: " + B.locations_served.join(", ") + "\n\n"
-    + "ORDER CUTOFF TIMES (orders must be placed BEFORE these times):\n"
-    + "- Breakfast: " + B.order_cutoffs.breakfast + "\n"
-    + "- Lunch: "     + B.order_cutoffs.lunch     + "\n"
-    + "- Dinner: "    + B.order_cutoffs.dinner    + "\n"
-    + "- Closed on: " + B.order_cutoffs.closed_on + "\n\n"
-    + todayMenuSection
-    + "FULL MENU & PRICES:\n"
-    + "Breads: "    + breads  + "\n"
-    + "Sabji: "     + sabji   + "\n"
-    + "Basics: "    + basics  + "\n"
-    + "Breakfast: " + B.menu.breakfast + "\n"
-    + "Note: "      + B.menu.note     + "\n\n"
-    + "DELIVERY:\n"
-    + "- " + B.delivery.charge + "\n"
-    + "- " + B.delivery.per_meal_address + "\n\n"
-    + "DISCOUNTS (automatically applied per day total):\n"
-    + "- " + B.discounts.tier1 + "\n"
-    + "- " + B.discounts.tier2 + "\n"
-    + "- " + B.discounts.note  + "\n\n"
-    + "PAYMENT OPTIONS: " + B.payment.options.join(", ") + "\n"
-    + "UPI ID: " + B.payment.upi_id + "\n"
-    + "10-Day billing cycle: " + B.payment.ten_day + "\n\n"
-    + "HOW TO ORDER:\n"
-    + "- Order form: " + B.ordering.order_url + "\n"
-    + "- Process: " + B.ordering.process + "\n"
-    + "- Advance ordering: " + B.ordering.advance + "\n"
-    + "- Edit/cancel: " + B.ordering.edit_cancel + "\n"
-    + "- " + B.ordering.no_login + "\n\n"
-    + "CONTACT:\n"
-    + "- WhatsApp: " + B.contact.whatsapp + " (" + B.contact.whatsapp_link + ")\n"
-    + "- WhatsApp group (daily menu updates): " + B.contact.whatsapp_group + "\n"
-    + "- Phone: " + B.contact.phone_primary + " (alternate: " + B.contact.phone_alt + ")\n"
-    + "- Email: " + B.contact.email + "\n"
-    + "- Google page / reviews: " + B.contact.google_page + "\n\n"
-    + "INSTRUCTIONS:\n"
-    + "- Respond in the same language the customer writes in (English, Hindi, or Marathi).\n"
-    + "- Keep responses concise, warm, and helpful.\n"
-    + "- When a customer wants to place an order, always direct them to: " + B.ordering.order_url + "\n"
-    + "- When asked about today's menu, use the TODAY'S LIVE MENU section above — if sabji is not set, direct them to the WhatsApp group.\n"
-    + "- Do NOT invent prices, availability, or promotions not listed above.\n"
-    + "- Do NOT discuss competitors or make comparisons.\n"
-    + "- If unsure about anything, direct the customer to WhatsApp: " + B.contact.whatsapp + ".";
+  return "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
+    +" Closed Sundays. Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
+    +" Areas: Bhosale Garden(free), Magarpatta/Amanora/DP Road(₹10/meal if subtotal<₹100).\n"
+    + todayLine
+    +"Menu — Breads:"+breads+" | Sabji:"+sabji+" | Basics:"+basics+" | BF: daily rotating.\n"
+    +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
+    +"Payment: UPI("+B.payment.upi_id+"), COD, 10-day billing.\n"
+    +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
+    +"WhatsApp: "+B.contact.whatsapp+" | WA group: "+B.contact.whatsapp_group+"\n"
+    +"Reply in customer's language(English/Hindi/Marathi). Be brief & warm."
+    +" For orders send to order URL. Don't invent info. Direct unknowns to WhatsApp.";
 }
 
 function callGemini(systemPrompt, history, userMessage) {
@@ -1018,9 +972,10 @@ function callGemini(systemPrompt, history, userMessage) {
     return "I'm having trouble connecting right now. Please WhatsApp us at +91 99307 48908 for help!";
   }
 
-  // Build contents array from history + current message
+  // Build contents array: last 6 history messages + current message (caps token usage)
   const contents = [];
-  (history || []).forEach(function(msg) {
+  const recentHistory = (history || []).slice(-6);
+  recentHistory.forEach(function(msg) {
     if (msg.role === "user" || msg.role === "model") {
       contents.push({role: msg.role, parts: [{text: String(msg.text || "")}]});
     }
@@ -1034,7 +989,7 @@ function callGemini(systemPrompt, history, userMessage) {
   };
 
   try {
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + apiKey;
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
     const response = UrlFetchApp.fetch(url, {
       method: "post",
       contentType: "application/json",
