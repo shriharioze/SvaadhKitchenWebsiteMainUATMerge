@@ -6,7 +6,7 @@
 // ── CONFIG ──────────────────────────────────────────────────
 const SHEET_ID       = "17X7JOrMe1Oj_QykH7mk6UGoBjuguLfyC1RmKYATDXlI";   // ← Create a new blank Google Sheet and paste its ID here
 const ADMIN_PIN      = "7284";                       // ← Updated before go-live
-const CODE_VERSION   = 2;
+const CODE_VERSION   = 3;   // ← bump this each deploy so you can verify version
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // Sheet tab names
@@ -171,6 +171,7 @@ function doGet(e) {
   const p = e.parameter;
   const action = p.action || "";
   try {
+    if (action === "version")       return jsonRes({version: CODE_VERSION, status:"ok"});
     if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
     if (action === "getMenu")       return jsonRes(getMenu(p.date));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
