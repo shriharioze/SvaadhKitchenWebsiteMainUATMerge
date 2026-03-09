@@ -171,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           _action: "chat",
           message: text,
