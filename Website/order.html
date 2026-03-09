@@ -865,14 +865,27 @@ function updateNav(){
   $("stepLabel").textContent=`Step ${s+1} of 5 — ${STEPS[s]}`;
   $("btnBack").style.display=s>0?"block":"none";
   $("btnNext").style.display="block";
+  $("btnNext").disabled=false;$("btnNext").style.opacity="1";
   const labels=["Continue →","Continue →","Continue →","Review Order →","Place Order 🎉"];
   $("btnNext").textContent=labels[s];
+  // On meal screen, disable if nothing ordered yet
+  if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
+}
+function refreshBillBtn(){
+  if(S.step!==3)return;
+  const ok=hasAnyOrder();
+  $("btnNext").disabled=!ok;$("btnNext").style.opacity=ok?"1":"0.45";
 }
 function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
 async function goNext(){
+  if($("btnNext").disabled)return;
   if(!validate(S.step)) return;
   if(S.step===0){await lookupCustomer();return;}
-  if(S.step===2){if(!S.selectedDates.length){toast("Select at least one date");return;}await loadMealScreen();}
+  if(S.step===2){
+    if(!S.selectedDates.length){toast("Select at least one date");return;}
+    $("btnNext").disabled=true;$("btnNext").textContent="Loading…";$("btnNext").style.opacity="0.6";
+    await loadMealScreen();
+  }
   if(S.step===3){
     if(!hasAnyOrder()){toast("Select at least one item");return;}
     // Warn if some selected dates have no meals at all
@@ -883,6 +896,7 @@ async function goNext(){
         if(!confirm(`⚠️ ${emptyDates.length} date(s) have no meals selected:\n${names}\n\nContinue anyway?`))return;
       }
     }
+    $("btnNext").disabled=true;$("btnNext").textContent="Building summary…";$("btnNext").style.opacity="0.6";
     buildBillScreen();
   }
   if(S.step===4){await placeOrder();return;}
@@ -1273,6 +1287,7 @@ function refreshBadge(date,meal){
   const sub=S.orders[date]?.[meal]?.subtotal||0;
   const badge=$(`mtb_${date}_${meal}`);if(!badge)return;
   badge.style.display=sub>0?"block":"none";badge.textContent=`₹${sub}`;
+  refreshBillBtn();
 }
 function hasAnyOrder(){
   for(const date of S.selectedDates)for(const meal of["Breakfast","Lunch","Dinner"])if((S.orders[date]?.[meal]?.subtotal||0)>0)return true;

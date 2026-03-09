@@ -207,6 +207,14 @@
         box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
       }
     }
+
+    /* LIGHTBOX */
+    #imgLightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;}
+    #imgLightbox.open{display:flex;}
+    #imgLightbox img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,0.6);}
+    #imgLightbox .lb-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:1.4rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+    #imgLightbox .lb-close:hover{background:rgba(255,255,255,0.3);}
+    .menu-card img{cursor:zoom-in;}
   </style>
 
   <!-- Google tag (gtag.js) -->
@@ -402,14 +410,14 @@
       <!-- Menu & Food -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          What's included in your thali meals?
+          What's included in your meals?
           <span>+</span>
         </button>
         <div class="faq-answer">
-          Our thalis offer complete, balanced meals with customizable portions: <strong>Dal (₹20)</strong>,
-          <strong>Dry/Curry Sabji Mini (₹20)</strong> or <strong>Full (₹45)</strong>, <strong>Rice (₹10)</strong>,
-          <strong>Chapati (₹20)</strong> or <strong>Ghee Phulka (₹30)</strong>, <strong>Salad (₹5)</strong>, and
-          <strong>Curd (₹10)</strong>. Mix and match to create your perfect meal!
+          We follow a <strong>Make Your Own Meal</strong> model — no fixed thali! Pick exactly what you want:
+          <strong>Dal ₹22</strong>, <strong>Sabji Mini ₹22</strong> or <strong>Full ₹45</strong>,
+          <strong>Rice ₹12</strong>, <strong>Chapati ₹9</strong> or <strong>Ghee Phulka ₹10</strong>,
+          <strong>Salad ₹6</strong>, <strong>Curd ₹12</strong>. Mix and match to create your perfect meal!
         </div>
       </div>
 
@@ -624,6 +632,30 @@
   <!-- Auto-update copyright year -->
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
+  </script>
+
+  <!-- Image Lightbox -->
+  <div id="imgLightbox" onclick="closeLightbox()">
+    <button class="lb-close" onclick="closeLightbox()" title="Close">✕</button>
+    <img id="lbImg" src="" alt="">
+  </div>
+  <script>
+    function openLightbox(src, alt) {
+      const lb = document.getElementById('imgLightbox');
+      document.getElementById('lbImg').src = src;
+      document.getElementById('lbImg').alt = alt || '';
+      lb.classList.add('open');
+    }
+    function closeLightbox() {
+      document.getElementById('imgLightbox').classList.remove('open');
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+    // Stop click on image itself from bubbling up to backdrop close
+    document.getElementById('lbImg').addEventListener('click', e => e.stopPropagation());
+    // Wire up all menu-card images
+    document.querySelectorAll('.menu-card img').forEach(img => {
+      img.addEventListener('click', () => openLightbox(img.src, img.alt));
+    });
   </script>
 </body>
 
