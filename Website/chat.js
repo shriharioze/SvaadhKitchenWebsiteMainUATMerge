@@ -9,7 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="chat-box" id="chat-box">
       <div class="chat-header">
         <span>Svaadh Kitchen 🧡</span>
-        <button id="new-chat-btn" class="new-chat-btn" title="Start New Chat">🔄</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button id="new-chat-btn" class="new-chat-btn" title="Start New Chat">🔄</button>
+          <button id="chat-close-btn" title="Close" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:1.1rem;line-height:1;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="quick-replies" id="quick-replies"></div>
@@ -20,19 +23,24 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
   `;
 
-  const toggle     = document.getElementById("chat-toggle");
-  const chatBox    = document.getElementById("chat-box");
-  const sendBtn    = document.getElementById("send-btn");
-  const userInput  = document.getElementById("user-input");
-  const messages   = document.getElementById("chat-messages");
+  const toggle      = document.getElementById("chat-toggle");
+  const chatBox     = document.getElementById("chat-box");
+  const sendBtn     = document.getElementById("send-btn");
+  const userInput   = document.getElementById("user-input");
+  const messages    = document.getElementById("chat-messages");
   const quickReplies = document.getElementById("quick-replies");
-  const newChatBtn = document.getElementById("new-chat-btn");
+  const newChatBtn  = document.getElementById("new-chat-btn");
+  const closeBtn    = document.getElementById("chat-close-btn");
 
   // Auto-expand when loaded
   chatBox.style.display = "flex";
 
   toggle.addEventListener("click", () => {
     chatBox.style.display = chatBox.style.display === "none" ? "flex" : "none";
+  });
+
+  closeBtn.addEventListener("click", () => {
+    chatBox.style.display = "none";
   });
 
   newChatBtn.addEventListener("click", () => {
