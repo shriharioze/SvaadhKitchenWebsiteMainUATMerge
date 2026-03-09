@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Svaadh Kitchen</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:#1a1a1a;color:#fff;min-height:100vh;}
+
+  /* ── LOGIN ── */
+  #loginWrap{position:fixed;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;z-index:100;}
+  .login-box{background:#2a2a2a;border-radius:16px;padding:32px 28px;width:300px;text-align:center;}
+  .login-box h1{font-size:1.3rem;margin-bottom:4px;color:#f0a500;}
+  .login-box p{font-size:0.8rem;color:#888;margin-bottom:20px;}
+  .pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
+  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #555;transition:all 0.15s;}
+  .pin-dot.filled{background:#f0a500;border-color:#f0a500;}
+  .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .pk{background:#333;border:none;color:#fff;font-size:1.4rem;font-weight:600;border-radius:10px;padding:14px;cursor:pointer;transition:background 0.1s;}
+  .pk:active{background:#555;}
+  .pk.del{background:#2a2a2a;color:#888;}
+  .pk.span2{grid-column:span 2;}
+  .login-err{color:#e74c3c;font-size:0.78rem;margin-top:10px;min-height:18px;}
+
+  /* ── SHELL ── */
+  #shell{display:none;}
+  #shell.on{display:block;}
+
+  /* ── HEADER ── */
+  .kheader{background:#111;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;border-bottom:2px solid #f0a500;}
+  .kheader h1{font-size:1rem;color:#f0a500;font-weight:700;letter-spacing:0.05em;}
+  .kheader .controls{display:flex;gap:8px;align-items:center;}
+  .kheader input[type=date]{background:#222;border:1px solid #444;color:#fff;padding:6px 10px;border-radius:8px;font-size:0.82rem;}
+  .kheader input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  .load-btn{background:#f0a500;color:#111;border:none;font-weight:700;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:0.82rem;}
+  .load-btn:active{opacity:0.8;}
+  .refresh-btn{background:#333;color:#aaa;border:none;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:0.82rem;}
+  .date-label{font-size:0.75rem;color:#888;}
+
+  /* ── BODY ── */
+  .kbody{padding:16px;max-width:960px;margin:0 auto;}
+
+  /* ── MEAL BLOCK ── */
+  .meal-block{background:#222;border-radius:14px;margin-bottom:20px;overflow:hidden;}
+  .meal-head{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #333;}
+  .meal-icon{font-size:1.6rem;}
+  .meal-title{font-size:1.2rem;font-weight:700;letter-spacing:0.03em;}
+  .meal-count{background:#333;color:#aaa;font-size:0.72rem;padding:3px 10px;border-radius:20px;margin-left:auto;}
+  .meal-body{padding:16px 18px;}
+
+  /* ── SECTION LABEL ── */
+  .sec-label{font-size:0.65rem;font-weight:700;color:#666;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;margin-top:4px;}
+
+  /* ── ITEM ROWS ── */
+  .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px;}
+  .item-card{background:#2c2c2c;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+  .item-card .iname{font-size:0.82rem;color:#bbb;}
+  .item-card .inum{font-size:2rem;font-weight:800;color:#fff;}
+  .item-card.zero .inum{color:#444;}
+  .item-card.zero .iname{color:#444;}
+
+  /* Sabji cooking cards — larger, prominent */
+  .sabji-cook-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:18px;}
+  .sabji-cook-card{background:#2c2c2c;border-radius:12px;padding:16px 18px;}
+  .sabji-cook-card .cook-label{font-size:0.72rem;color:#888;margin-bottom:4px;}
+  .sabji-cook-card .cook-val{font-size:2.4rem;font-weight:800;color:#f0a500;}
+  .sabji-cook-card .cook-unit{font-size:0.75rem;color:#888;margin-top:2px;}
+  .sabji-cook-card .cook-breakdown{font-size:0.7rem;color:#555;margin-top:6px;border-top:1px solid #333;padding-top:6px;}
+
+  .dal-card{background:#2c2c2c;border-radius:12px;padding:16px 18px;}
+  .dal-card .cook-label{font-size:0.72rem;color:#888;margin-bottom:4px;}
+  .dal-card .cook-val{font-size:2.4rem;font-weight:800;color:#5dade2;}
+  .dal-card .cook-unit{font-size:0.75rem;color:#888;margin-top:2px;}
+  .dal-card .cook-breakdown{font-size:0.7rem;color:#555;margin-top:6px;border-top:1px solid #333;padding-top:6px;}
+
+  .divider{border:none;border-top:1px solid #333;margin:14px 0;}
+
+  /* ── NO ORDERS ── */
+  .no-orders{text-align:center;padding:40px;color:#555;font-size:0.9rem;}
+
+  /* ── LOADER ── */
+  .spinner{width:32px;height:32px;border:3px solid #333;border-top-color:#f0a500;border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ── LAST UPDATED ── */
+  .last-updated{text-align:center;font-size:0.7rem;color:#555;padding:10px 0 20px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-box">
+    <h1>🍽 Svaadh Kitchen</h1>
+    <p>Enter PIN to view kitchen orders</p>
+    <div class="pin-dots">
+      <div class="pin-dot" id="kd0"></div>
+      <div class="pin-dot" id="kd1"></div>
+      <div class="pin-dot" id="kd2"></div>
+      <div class="pin-dot" id="kd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pk" onclick="kp(1)">1</button><button class="pk" onclick="kp(2)">2</button><button class="pk" onclick="kp(3)">3</button>
+      <button class="pk" onclick="kp(4)">4</button><button class="pk" onclick="kp(5)">5</button><button class="pk" onclick="kp(6)">6</button>
+      <button class="pk" onclick="kp(7)">7</button><button class="pk" onclick="kp(8)">8</button><button class="pk" onclick="kp(9)">9</button>
+      <button class="pk span2" onclick="kp(0)">0</button><button class="pk del" onclick="kd()">⌫</button>
+    </div>
+    <div class="login-err" id="kErr"></div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div id="shell">
+  <div class="kheader">
+    <h1>🍽 SVAADH KITCHEN</h1>
+    <div class="controls">
+      <input type="date" id="datePicker">
+      <button class="load-btn" onclick="loadKitchen()">Load</button>
+      <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
+    </div>
+  </div>
+  <div class="kbody" id="kbody">
+    <div class="no-orders">Select a date and tap Load</div>
+  </div>
+  <div class="last-updated" id="lastUpdated"></div>
+</div>
+
+<script>
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+let K = { pin: "", sessionPin: "" };
+
+// ── PIN ──
+function kp(n) {
+  if (K.pin.length >= 4) return;
+  K.pin += String(n);
+  renderDots();
+  if (K.pin.length === 4) verifyPin();
+}
+function kd() {
+  K.pin = K.pin.slice(0,-1);
+  renderDots();
+  document.getElementById("kErr").textContent = "";
+}
+function renderDots() {
+  for (let i=0;i<4;i++) document.getElementById("kd"+i).classList.toggle("filled", i < K.pin.length);
+}
+async function verifyPin() {
+  document.getElementById("kErr").textContent = "जाँच करत आहे…";
+  try {
+    const today = todayIST();
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) {
+      document.getElementById("kErr").textContent = "चुकीचा PIN — पुन्हा प्रयत्न करा";
+      K.pin = ""; renderDots();
+      return;
+    }
+    // PIN valid
+    K.sessionPin = K.pin;
+    K.pin = ""; renderDots();
+    document.getElementById("loginWrap").style.display = "none";
+    document.getElementById("shell").style.display = "block";
+    document.getElementById("datePicker").value = today;
+    renderKitchen(data);
+    _lastUpdated = new Date();
+    startAutoRefresh();
+  } catch(e) {
+    document.getElementById("kErr").textContent = "त्रुटी (Error): " + e.message;
+    K.pin = ""; renderDots();
+  }
+}
+
+function todayIST() {
+  const now = new Date();
+  const ist = new Date(now.getTime() + 5.5*3600000);
+  return ist.toISOString().slice(0,10);
+}
+
+// ── LOAD ──
+async function loadKitchen() {
+  const date = document.getElementById("datePicker").value;
+  if (!date) { alert("Pick a date"); return; }
+  document.getElementById("kbody").innerHTML = `<div class="spinner"></div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderKitchen(data);
+    _lastUpdated = new Date();
+  } catch(e) {
+    document.getElementById("kbody").innerHTML = `<div class="no-orders" style="color:#e74c3c;">${e.message}</div>`;
+  }
+}
+
+// ── Marathi display names ──
+const MR = {
+  // Rotis
+  "Chapati":             "चपाती",
+  "Without Oil Chapati": "विना तेल चपाती",
+  "Phulka":              "फुलका",
+  "Ghee Phulka":         "तूप फुलका",
+  "Jowar Bhakri":        "ज्वारी भाकरी",
+  "Bajra Bhakri":        "बाजरी भाकरी",
+  // Sabji
+  "Dry Sabji":           "सुकी भाजी",
+  "Curry Sabji":         "रस्सा भाजी",
+  // Other
+  "Dal":                 "वरण",
+  "Rice":                "भात",
+  "Salad":               "सलाड",
+  "Curd":                "दही",
+  "Curd (50g)":          "दही",
+};
+function mr(name) { return MR[name] || name; }
+
+// ── RENDER ──
+function getMealOrder() {
+  const h = new Date(new Date().getTime() + 5.5 * 3600000).getUTCHours();
+  if (h < 8)  return ["Breakfast", "Lunch", "Dinner"];
+  if (h < 14) return ["Lunch", "Dinner", "Breakfast"];
+  if (h < 20) return ["Dinner", "Breakfast", "Lunch"];
+  return ["Dinner", "Breakfast", "Lunch"];
+}
+
+function renderKitchen(data) {
+  const meals = data.meals || {};
+  let html = "";
+
+  if (!Object.keys(meals).length) {
+    html = `<div class="no-orders">😴 ${data.date} साठी कोणतेही order नाहीत</div>`;
+    document.getElementById("kbody").innerHTML = html;
+    return;
+  }
+
+  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  html += `<div style="text-align:center;font-size:0.78rem;color:#666;margin-bottom:14px;">📅 ${fmtDate(data.date)}</div>`;
+
+  // ── BREAKFAST ──
+  const MEAL_META = {
+    Breakfast: { icon:"🌅", label:"न्याहारी" },
+    Lunch:     { icon:"☀️",  label:"दुपारचे जेवण" },
+    Dinner:    { icon:"🌙", label:"रात्रीचे जेवण" },
+  };
+
+  getMealOrder().forEach(meal => {
+    if (!meals[meal]) return;
+    const m = meals[meal];
+    const {icon, label} = MEAL_META[meal];
+
+    if (meal === "Breakfast") {
+      const bfEntries = Object.entries(m.items || {}).filter(([,q]) => q > 0);
+      const bfHtml = bfEntries.length
+        ? bfEntries.map(([name,qty]) =>
+            `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
+          ).join("")
+        : `<div style="color:#555;font-size:0.82rem;padding:8px;">माहिती नाही</div>`;
+      html += `<div class="meal-block">
+        <div class="meal-head">
+          <span class="meal-icon">${icon}</span>
+          <span class="meal-title">${label}</span>
+          <span class="meal-count">${m.count} orders</span>
+        </div>
+        <div class="meal-body">
+          <div class="item-grid">${bfHtml}</div>
+        </div>
+      </div>`;
+      return;
+    }
+
+    const s = m.sabji;
+    const rotiEntries = Object.entries(m.rotis).filter(([,q]) => q > 0);
+    const rotiHtml = rotiEntries.length
+      ? rotiEntries.map(([name,qty]) =>
+          `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
+        ).join("")
+      : `<div class="item-card zero"><span class="iname">—</span><span class="inum">0</span></div>`;
+
+    const sabjiHtml = `
+      <div class="item-card ${s.dry_kg===0?"zero":""}">
+        <span class="iname">${mr("Dry Sabji")}</span>
+        <span class="inum">${s.dry_kg}</span>
+      </div>
+      <div class="item-card ${s.curry_kg===0?"zero":""}">
+        <span class="iname">${mr("Curry Sabji")}</span>
+        <span class="inum">${s.curry_kg}</span>
+      </div>`;
+
+    const dal = m.other["Dal"];
+    const otherHtml = `
+      <div class="item-card ${dal.kg===0?"zero":""}">
+        <span class="iname">${mr("Dal")}</span>
+        <span class="inum">${dal.kg}</span>
+      </div>` +
+      ["Rice","Salad","Curd"].map(name => {
+        const o = m.other[name];
+        return `<div class="item-card ${o.count===0?"zero":""}">
+          <span class="iname">${mr(name)}</span>
+          <span class="inum">${o.count}</span>
+        </div>`;
+      }).join("");
+
+    html += `<div class="meal-block">
+      <div class="meal-head">
+        <span class="meal-icon">${icon}</span>
+        <span class="meal-title">${label}</span>
+        <span class="meal-count">${m.count} orders</span>
+      </div>
+      <div class="meal-body">
+        <div class="sec-label">पोळी / भाकरी</div>
+        <div class="item-grid">${rotiHtml}</div>
+        <hr class="divider">
+        <div class="sec-label">भाजी</div>
+        <div class="item-grid">${sabjiHtml}</div>
+        <hr class="divider">
+        <div class="sec-label">इतर</div>
+        <div class="item-grid">${otherHtml}</div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("kbody").innerHTML = html;
+}
+
+
+// ── AUTO-SET DATE ON LOAD ──
+(function() {
+  document.getElementById("datePicker").value = todayIST();
+})();
+
+// ── AUTO REFRESH ──
+let _lastUpdated = null;
+let _refreshTimer = null;
+let _countdownTimer = null;
+const REFRESH_SECS = 300; // 5 minutes
+
+function startAutoRefresh() {
+  // Clear any existing timers
+  if (window._rt) clearInterval(window._rt);
+  if (window._ct) clearInterval(window._ct);
+
+  function doRefresh() {
+    const date = document.getElementById("datePicker").value;
+    if (date !== todayIST()) return; // only auto-refresh today's data
+    const url = `${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`;
+    fetch(url, { cache: "no-store" })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) { renderKitchen(data); _lastUpdated = new Date(); }
+      })
+      .catch(() => {}); // silent fail — countdown will keep showing last update time
+  }
+
+  window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+
+  window._ct = setInterval(() => {
+    const el = document.getElementById("lastUpdated");
+    if (!el || !_lastUpdated) return;
+    const secsLeft = Math.max(0, REFRESH_SECS - Math.floor((Date.now() - _lastUpdated.getTime()) / 1000));
+    const m = Math.floor(secsLeft / 60);
+    const s = String(secsLeft % 60).padStart(2, "0");
+    el.textContent = `Updated: ${_lastUpdated.toLocaleTimeString("en-IN")}  ·  Refresh in ${m}:${s}`;
+  }, 1000);
+
+  // Pause refresh when tab is hidden, resume when visible
+  document.removeEventListener("visibilitychange", window._visHandler);
+  window._visHandler = () => {
+    if (document.hidden) {
+      if (window._rt) { clearInterval(window._rt); window._rt = null; }
+    } else {
+      if (!window._rt) {
+        doRefresh(); // immediate refresh on return
+        window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+      }
+    }
+  };
+  document.addEventListener("visibilitychange", window._visHandler);
+}
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

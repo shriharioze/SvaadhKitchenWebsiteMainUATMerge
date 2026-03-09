@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Svaadh Kitchen — Menu Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --ink:        #1c1410;
+  --ink2:       #4a3f36;
+  --muted:      #8a7f72;
+  --border:     #e4ddd5;
+  --surface:    #ffffff;
+  --bg:         #f7f3ee;
+  --bg2:        #ede7df;
+  --red:        #c0392b;
+  --red-soft:   #fdf0ee;
+  --red-border: #f4c6c0;
+  --gold:       #c8922a;
+  --gold-soft:  #fdf6e8;
+  --gold-border:#e8d59a;
+  --green:      #2d7a4f;
+  --green-soft: #eaf6f0;
+  --green-border:#a8d8be;
+  --blue:       #1e5fa8;
+  --blue-soft:  #eef4fd;
+  --radius-sm:  8px;
+  --radius:     12px;
+  --radius-lg:  16px;
+  --shadow:     0 2px 12px rgba(0,0,0,0.07);
+  --shadow-md:  0 4px 24px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 14px; }
+
+/* ═══════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════ */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--ink); background-image: radial-gradient(ellipse at 60% 20%, #3d2a1e 0%, transparent 60%);
+}
+.login-card {
+  background: var(--bg); border-radius: var(--radius-lg); padding: 40px 36px;
+  width: 360px; text-align: center; box-shadow: var(--shadow-md);
+}
+.login-wordmark { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--red); }
+.login-sub { font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 6px 0 28px; }
+.pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); transition: all .2s; }
+.pin-dot.filled { background: var(--red); border-color: var(--red); }
+.pin-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; max-width: 240px; margin: 0 auto; }
+.pin-key {
+  aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); font-size: 1.15rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; color: var(--ink); transition: all .15s;
+}
+.pin-key:hover  { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.pin-key:active { transform: scale(.93); }
+.pin-key.span2  { grid-column: span 2; aspect-ratio: auto; padding: 14px; }
+.pin-key.del    { color: var(--muted); font-size: .95rem; }
+.login-err { color: var(--red); font-size: .8rem; min-height: 20px; margin-top: 10px; }
+
+/* ═══════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════ */
+.shell { display: none; height: 100vh; flex-direction: column; }
+.shell.on { display: flex; }
+
+/* Top bar */
+.topbar {
+  height: 52px; background: var(--ink); display: flex; align-items: center;
+  padding: 0 24px; gap: 16px; flex-shrink: 0; z-index: 20;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05);
+}
+.topbar-brand { font-family: 'DM Serif Display', serif; color: var(--gold); font-size: 1.1rem; }
+.topbar-brand span { font-family: 'DM Sans',sans-serif; color: rgba(255,255,255,0.35); font-size: .7rem; margin-left: 8px; letter-spacing: 1px; text-transform: uppercase; }
+.topbar-nav { display: flex; gap: 4px; margin-left: 20px; }
+.topbar-btn {
+  padding: 6px 14px; border-radius: var(--radius-sm); font-size: .82rem; font-weight: 500;
+  border: none; cursor: pointer; font-family: inherit; color: rgba(255,255,255,0.55);
+  background: transparent; transition: all .15s;
+}
+.topbar-btn:hover  { color: white; background: rgba(255,255,255,0.08); }
+.topbar-btn.active { color: white; background: rgba(255,255,255,0.14); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.topbar-right button {
+  padding: 5px 12px; border-radius: 99px; font-size: .75rem; cursor: pointer;
+  font-family: inherit; background: none; border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.45); transition: all .15s;
+}
+.topbar-right button:hover { border-color: rgba(255,255,255,0.4); color: white; }
+
+/* Body */
+.body-wrap { display: flex; flex: 1; overflow: hidden; }
+
+/* ═══════════════════════════════════════════════
+   LEFT SIDEBAR — date strip
+═══════════════════════════════════════════════ */
+.sidebar {
+  width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto; padding: 16px 0 24px;
+}
+.sidebar-section-label {
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); padding: 0 16px; margin-bottom: 8px; margin-top: 16px;
+}
+.sidebar-section-label:first-child { margin-top: 0; }
+
+/* Month nav inside sidebar */
+.month-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; margin-bottom: 8px;
+}
+.month-nav span { font-size: .82rem; font-weight: 600; color: var(--ink); }
+.month-nav button {
+  width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 6px;
+  background: none; cursor: pointer; color: var(--muted); font-size: .85rem;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.month-nav button:hover { border-color: var(--red); color: var(--red); }
+
+/* Day strip */
+.day-strip { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
+.day-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all .15s; border: 1.5px solid transparent;
+}
+.day-item:hover { background: var(--bg); }
+.day-item.active { background: var(--red-soft); border-color: var(--red-border); }
+.day-item.today .day-num { color: var(--red); }
+.day-item.sunday { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.day-item .day-name { font-size: .7rem; font-weight: 600; color: var(--muted); width: 22px; }
+.day-item.active .day-name { color: var(--red); }
+.day-item .day-num { font-size: .88rem; font-weight: 600; min-width: 18px; }
+.day-item .day-month { font-size: .68rem; color: var(--muted); }
+.day-item.active .day-month { color: var(--red); }
+.has-menu-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  margin-left: auto; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════ */
+.main { flex: 1; overflow-y: auto; padding: 24px 32px; }
+
+/* PAGE views */
+.page { display: none; }
+.page.on { display: block; }
+
+/* Page header */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; }
+.page-title small { font-family: 'DM Sans', sans-serif; font-size: .75rem; font-weight: 500; color: var(--muted); display: block; margin-top: 2px; }
+
+/* Date display large */
+.date-hero {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px 20px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow);
+}
+.date-hero-left h2 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; }
+.date-hero-left .date-sub { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+.date-hero-badges { display: flex; gap: 8px; align-items: center; }
+.badge {
+  padding: 3px 10px; border-radius: 99px; font-size: .72rem; font-weight: 600;
+  letter-spacing: .3px;
+}
+.badge-today  { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold-border); }
+.badge-set    { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-border); }
+.badge-notset { background: var(--bg2); color: var(--muted); border: 1px solid var(--border); }
+
+/* Save button hero */
+.save-hero-btn {
+  padding: 10px 22px; border-radius: var(--radius-sm); border: none;
+  background: linear-gradient(135deg, #b52d20, var(--red)); color: white;
+  font-family: inherit; font-size: .88rem; font-weight: 600; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(192,57,43,0.35); transition: all .15s;
+  display: flex; align-items: center; gap: 7px;
+}
+.save-hero-btn:hover   { box-shadow: 0 5px 18px rgba(192,57,43,0.45); transform: translateY(-1px); }
+.save-hero-btn:active  { transform: translateY(0); }
+.save-hero-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+/* Sections */
+.meal-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  margin-bottom: 16px; box-shadow: var(--shadow); overflow: hidden;
+}
+.meal-card-head {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.meal-icon { font-size: 1.3rem; }
+.meal-card-title { font-family: 'DM Serif Display', serif; font-size: 1rem; }
+.meal-cutoff { font-size: .72rem; color: var(--muted); margin-left: auto; background: var(--bg2); padding: 3px 8px; border-radius: 99px; }
+.meal-card-body { padding: 18px 20px; }
+
+/* ── BREAKFAST ITEMS GRID ── */
+.bf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.bf-item {
+  border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px;
+  cursor: pointer; transition: all .15s; background: var(--bg);
+  display: flex; align-items: flex-start; gap: 10px;
+  user-select: none;
+}
+.bf-item:hover  { border-color: var(--red-border); background: var(--red-soft); }
+.bf-item.on     { border-color: var(--red); background: var(--red-soft); box-shadow: 0 0 0 1px var(--red); }
+.bf-check {
+  width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--border);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  margin-top: 1px; transition: all .15s; background: white;
+}
+.bf-item.on .bf-check { background: var(--red); border-color: var(--red); color: white; font-size: .75rem; }
+.bf-item-info .name  { font-size: .85rem; font-weight: 600; line-height: 1.3; }
+.bf-item-info .price { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+.bf-item.on .bf-item-info .price { color: var(--red); }
+
+/* ── SABJI PICKER ── */
+.sabji-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sabji-col-label {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+}
+.sabji-col-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-dry   { background: #d4a843; }
+.dot-curry { background: #1e5fa8; }
+.sabji-list { display: flex; flex-direction: column; gap: 4px; }
+.sabji-option {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: var(--radius-sm); cursor: pointer; border: 1.5px solid transparent;
+  transition: all .12s; background: var(--bg); font-size: .85rem; font-weight: 500;
+}
+.sabji-option:hover  { background: var(--bg2); }
+.sabji-option.on     { background: var(--gold-soft); border-color: var(--gold-border); color: var(--gold); }
+.sabji-radio {
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border);
+  flex-shrink: 0; transition: all .12s; background: white;
+  display: flex; align-items: center; justify-content: center;
+}
+.sabji-option.on .sabji-radio { border-color: var(--gold); background: var(--gold); }
+.sabji-option.on .sabji-radio::after {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; background: white;
+}
+
+/* ═══════════════════════════════════════════════
+   PAGE: MANAGE LISTS
+═══════════════════════════════════════════════ */
+.manage-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.manage-tab {
+  padding: 7px 18px; border-radius: var(--radius-sm); font-size: .85rem; font-weight: 600;
+  border: 1.5px solid var(--border); cursor: pointer; font-family: inherit;
+  background: white; color: var(--muted); transition: all .15s;
+}
+.manage-tab.active { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+
+.manage-table {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.mt-head {
+  display: grid; padding: 11px 16px; background: var(--bg);
+  border-bottom: 1px solid var(--border); font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+}
+.mt-head.bf-cols  { grid-template-columns: 1fr 80px 90px 100px 100px; }
+.mt-head.sabji-cols { grid-template-columns: 1fr 110px 100px 100px; }
+.mt-row {
+  display: grid; padding: 10px 16px; border-bottom: 1px solid var(--bg2);
+  align-items: center; transition: background .1s;
+}
+.mt-row:last-child { border-bottom: none; }
+.mt-row:hover { background: var(--bg); }
+.mt-row.bf-cols  { grid-template-columns: 1fr 80px 90px 100px 100px; }
+.mt-row.sabji-cols { grid-template-columns: 1fr 110px 100px 100px; }
+
+.mt-name { font-size: .88rem; font-weight: 500; }
+.mt-price { font-size: .85rem; color: var(--muted); }
+.mt-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 99px;
+}
+.mt-tag.dry   { background: #fff8e6; color: #8a6000; }
+.mt-tag.curry { background: var(--blue-soft); color: var(--blue); }
+.mt-tag.both  { background: var(--green-soft); color: var(--green); }
+
+/* Toggle switch */
+.toggle {
+  width: 36px; height: 20px; border-radius: 99px; cursor: pointer; position: relative;
+  background: var(--border); transition: background .2s; border: none; flex-shrink: 0;
+}
+.toggle::after {
+  content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+  background: white; top: 3px; left: 3px; transition: all .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle.on { background: var(--green); }
+.toggle.on::after { transform: translateX(16px); }
+
+/* Action buttons */
+.action-btn {
+  padding: 4px 10px; border-radius: 6px; font-size: .75rem; font-weight: 500;
+  border: 1px solid var(--border); cursor: pointer; font-family: inherit;
+  background: white; color: var(--muted); transition: all .15s;
+}
+.action-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+.action-btn.del:hover { border-color: #f0a090; color: #c0392b; }
+
+/* Add row */
+.add-row {
+  display: grid; gap: 8px; padding: 14px 16px; background: var(--bg);
+  border-top: 2px dashed var(--border); align-items: end;
+}
+.add-row.bf-cols    { grid-template-columns: 1fr 80px 90px auto; }
+.add-row.sabji-cols { grid-template-columns: 1fr 110px auto; }
+.add-row input, .add-row select {
+  padding: 8px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: .85rem; background: white; color: var(--ink);
+  transition: border-color .15s;
+}
+.add-row input:focus, .add-row select:focus { outline: none; border-color: var(--red); }
+.add-btn {
+  padding: 8px 16px; border-radius: var(--radius-sm); border: none;
+  background: var(--red); color: white; font-family: inherit; font-size: .85rem;
+  font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.add-btn:hover { background: #a83122; }
+
+/* Edit inline */
+.edit-field {
+  padding: 4px 8px; border: 1.5px solid var(--red-border); border-radius: 6px;
+  font-family: inherit; font-size: .85rem; width: 100%; max-width: 160px;
+  background: var(--red-soft);
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════ */
+.loader { text-align: center; padding: 40px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: white; padding: 10px 20px; border-radius: 99px;
+  font-size: .82rem; font-weight: 500; z-index: 999; opacity: 0;
+  transition: opacity .3s; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.toast.show { opacity: 1; }
+
+.empty-msg { padding: 32px; text-align: center; color: var(--muted); font-size: .85rem; }
+/* ── ORDERS PAGE ── */
+.orders-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;}
+.stat-card{background:#fff;border:1.5px solid #eee;border-radius:12px;padding:14px 16px;text-align:center;}
+.stat-card .sv{font-size:1.6rem;font-weight:700;color:#c0392b;}
+.stat-card .sl{font-size:0.72rem;color:#888;margin-top:2px;}
+.stat-card.green .sv{color:#27ae60;}
+.stat-card.orange .sv{color:#e67e22;}
+.meal-section{background:#fff;border:1.5px solid #eee;border-radius:12px;margin-bottom:16px;overflow:hidden;}
+.meal-section-head{background:#f8f8f8;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;cursor:pointer;}
+.meal-section-head h3{margin:0;font-size:0.95rem;}
+.meal-section-head .meal-stats{display:flex;gap:12px;font-size:0.75rem;color:#888;}
+.meal-section-head .meal-stats span{background:#f0f0f0;padding:2px 8px;border-radius:20px;}
+.meal-section-body{padding:16px;}
+.item-totals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:16px;}
+.item-total-chip{background:#fef9f0;border:1px solid #f5e6c8;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}
+.item-total-chip .iname{font-size:0.78rem;color:#555;}
+.item-total-chip .iqty{font-size:1.1rem;font-weight:700;color:#c0392b;}
+.cust-table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+.cust-table th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee;}
+.cust-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;}
+.cust-table tr:last-child td{border-bottom:none;}
+.pay-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:600;}
+.pay-badge.paid{background:#d5f5e3;color:#1e8449;}
+.pay-badge.pending{background:#fdebd0;color:#ca6f1e;}
+.pay-badge.tenday{background:#d6eaf8;color:#1a5276;}
+.notes-badge{display:inline-block;background:#fff3cd;color:#856404;padding:1px 6px;border-radius:4px;font-size:0.68rem;margin-top:2px;}
+.area-chip{display:inline-block;background:#f0f0f0;padding:1px 6px;border-radius:4px;font-size:0.68rem;color:#666;}
+.no-orders-msg{text-align:center;padding:30px;color:#aaa;font-size:0.85rem;}
+/* ── PACKAGING EXPENSES PAGE ── */
+.pkg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.pkg-table{width:100%;border-collapse:collapse;font-size:0.85rem;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.pkg-table th{background:#f5f5f5;padding:10px 14px;text-align:left;font-weight:600;border-bottom:2px solid #eee;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.04em;color:#888;}
+.pkg-table td{padding:12px 14px;border-bottom:1px solid #f0f0f0;color:#333;}
+.pkg-table tr:last-child td{border-bottom:none;font-weight:700;background:#fef9f0;color:#c0392b;}
+.pkg-table td:nth-child(2),.pkg-table td:nth-child(3),.pkg-table td:nth-child(4){text-align:right;}
+.pkg-total-card{background:#c0392b;color:#fff;border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.pkg-total-card .label{font-size:0.85rem;opacity:0.85;}
+.pkg-total-card .value{font-size:2rem;font-weight:800;}
+.pkg-meta{display:flex;gap:12px;margin-bottom:16px;font-size:0.78rem;color:#888;}
+.pkg-meta span{background:#f5f5f5;padding:4px 10px;border-radius:20px;}
+
+/* ── LABELS PAGE ── */
+.labels-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.label-controls{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.label-controls .ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.label-controls label{font-size:0.72rem;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.04em;}
+.label-controls select,.label-controls input[type=date]{padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;color:#333;min-width:140px;}
+.gen-btn{background:#c0392b;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap;align-self:flex-end;}
+.gen-btn:hover{background:#a93226;}
+.label-preview{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.label-preview h3{font-size:0.85rem;color:#888;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.04em;}
+.label-card{border:1.5px solid #eee;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;}
+.label-card .lname{font-weight:700;font-size:0.9rem;color:#222;}
+.label-card .lsummary{font-size:0.78rem;color:#555;margin-top:2px;}
+.label-card .lnotes{font-size:0.72rem;color:#e67e22;margin-top:3px;}
+.label-card .lnum{font-size:0.65rem;color:#ccc;white-space:nowrap;margin-left:10px;padding-top:2px;}
+.download-btn{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;margin-top:14px;display:none;}
+.download-btn:hover{background:#1e8449;}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-wordmark">🍛 Svaadh</div>
+    <div class="login-sub">Kitchen Menu Admin</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pp(1)">1</button><button class="pin-key" onclick="pp(2)">2</button><button class="pin-key" onclick="pp(3)">3</button>
+      <button class="pin-key" onclick="pp(4)">4</button><button class="pin-key" onclick="pp(5)">5</button><button class="pin-key" onclick="pp(6)">6</button>
+      <button class="pin-key" onclick="pp(7)">7</button><button class="pin-key" onclick="pp(8)">8</button><button class="pin-key" onclick="pp(9)">9</button>
+      <button class="pin-key span2" onclick="pp(0)">0</button><button class="pin-key del" onclick="pd()">⌫</button>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ═══ APP SHELL ═══ -->
+<div class="shell" id="shell">
+  <div class="topbar">
+    <div class="topbar-brand">Svaadh Kitchen <span>ADMIN</span></div>
+    <div class="topbar-nav">
+      <button class="topbar-btn active" id="navMenu" onclick="switchPage('menu')">📅 Daily Menu</button>
+      <button class="topbar-btn" id="navManage" onclick="switchPage('manage')">⚙️ Manage Lists</button>
+      <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
+      <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
+      <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
+    </div>
+    <div class="topbar-right">
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="body-wrap">
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-section-label">Jump to date</div>
+      <div class="month-nav">
+        <button onclick="shiftMonth(-1)">‹</button>
+        <span id="sidebarMonth">—</span>
+        <button onclick="shiftMonth(1)">›</button>
+      </div>
+      <div class="day-strip" id="dayStrip"></div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- PAGE: DAILY MENU -->
+      <div class="page on" id="pageMenu">
+        <div class="date-hero" id="dateHero">
+          <div class="date-hero-left">
+            <h2 id="heroDateLabel">—</h2>
+            <div class="date-sub" id="heroDateSub"></div>
+          </div>
+          <div class="date-hero-badges" id="heroBadges">
+            <button class="save-hero-btn" id="saveHeroBtn" onclick="saveCurrentMenu()">
+              <span id="saveBtnIcon">💾</span> Save Menu
+            </button>
+          </div>
+        </div>
+
+        <!-- BREAKFAST -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">🌅</span>
+            <span class="meal-card-title">Breakfast</span>
+            <span class="meal-cutoff">Order cutoff: 7:00 AM</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px;">Check the items available today. Customers will only see checked items.</p>
+            <div class="bf-grid" id="bfGrid">
+              <div class="loader"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LUNCH -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">☀️</span>
+            <span class="meal-card-title">Lunch</span>
+            <span class="meal-cutoff">Order cutoff: 9:30 AM</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for lunch.</p>
+            <div class="sabji-columns">
+              <div>
+                <div class="sabji-col-label"><span class="dot dot-dry"></span> Dry Sabji</div>
+                <div class="sabji-list" id="lunchDryList"></div>
+              </div>
+              <div>
+                <div class="sabji-col-label"><span class="dot dot-curry"></span> Curry Sabji</div>
+                <div class="sabji-list" id="lunchCurryList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DINNER -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">🌙</span>
+            <span class="meal-card-title">Dinner</span>
+            <span class="meal-cutoff">Order cutoff: 5:00 PM</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for dinner.</p>
+            <div class="sabji-columns">
+              <div>
+                <div class="sabji-col-label"><span class="dot dot-dry"></span> Dry Sabji</div>
+                <div class="sabji-list" id="dinnerDryList"></div>
+              </div>
+              <div>
+                <div class="sabji-col-label"><span class="dot dot-curry"></span> Curry Sabji</div>
+                <div class="sabji-list" id="dinnerCurryList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUTOFF OVERRIDES -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">⏰</span>
+            <span class="meal-card-title">Extend Cutoff Times Today</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Leave blank to use defaults (Breakfast 7AM · Lunch 9:30AM · Dinner 5PM). Enter a new time below to extend for this date only.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌅 Breakfast until</label>
+                <select id="cutoffBf" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
+                  <option value="">Default (7:00 AM)</option>
+                  <option value="7.5">7:30 AM</option>
+                  <option value="8">8:00 AM</option>
+                  <option value="8.5">8:30 AM</option>
+                  <option value="9">9:00 AM</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">☀️ Lunch until</label>
+                <select id="cutoffL" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
+                  <option value="">Default (9:30 AM)</option>
+                  <option value="9.667">9:40 AM</option>
+                  <option value="9.75">9:45 AM</option>
+                  <option value="9.833">9:50 AM</option>
+                  <option value="10">10:00 AM</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌙 Dinner until</label>
+                <select id="cutoffD" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
+                  <option value="">Default (5:00 PM)</option>
+                  <option value="17.167">5:10 PM</option>
+                  <option value="17.25">5:15 PM</option>
+                  <option value="17.333">5:20 PM</option>
+                  <option value="17.5">5:30 PM</option>
+                </select>
+              </div>
+            </div>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">These are saved with the menu when you click <strong>Save Menu</strong> above. Customers will see the new cutoff time on the order page.</p>
+          </div>
+        </div>
+
+      </div><!-- /pageMenu -->
+
+      <!-- PAGE: MANAGE LISTS -->
+      <div class="page" id="pageManage">
+        <div class="page-header">
+          <div class="page-title">Manage Lists <small>Add, edit, or remove items from your master lists</small></div>
+        </div>
+
+        <div class="manage-tabs">
+          <button class="manage-tab active" onclick="switchManageTab('bf')">🌅 Breakfast Items</button>
+          <button class="manage-tab" onclick="switchManageTab('sabji')">🥗 Sabjis</button>
+        </div>
+
+        <!-- Breakfast table -->
+        <div id="bfManagePanel">
+          <div class="manage-table">
+            <div class="mt-head bf-cols">
+              <div>Item Name</div><div>Price</div><div>Default On</div><div>Edit</div><div>Delete</div>
+            </div>
+            <div id="bfMasterRows"></div>
+            <div class="add-row bf-cols" id="bfAddRow">
+              <input type="text" id="newBfName" placeholder="e.g. Sheera">
+              <input type="number" id="newBfPrice" placeholder="₹" min="0">
+              <select id="newBfDefault">
+                <option value="yes">Default ON</option>
+                <option value="no" selected>Default OFF</option>
+              </select>
+              <button class="add-btn" onclick="addBreakfastItem()">+ Add Item</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sabji table -->
+        <div id="sabjiManagePanel" style="display:none;">
+          <div class="manage-table">
+            <div class="mt-head sabji-cols">
+              <div>Sabji Name</div><div>Type</div><div>Edit</div><div>Delete</div>
+            </div>
+            <div id="sabjiMasterRows"></div>
+            <div class="add-row sabji-cols" id="sabjiAddRow">
+              <input type="text" id="newSabjiName" placeholder="e.g. Methi Matar">
+              <select id="newSabjiType">
+                <option value="Dry">Dry</option>
+                <option value="Curry">Curry</option>
+                <option value="Both">Both (Dry & Curry)</option>
+              </select>
+              <button class="add-btn" onclick="addSabjiItem()">+ Add Sabji</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /pageManage -->
+
+      <!-- PAGE: ORDERS -->
+      <div class="page" id="pageOrders">
+        <div class="orders-header">
+          <h2 style="margin:0;">📊 Order Summary</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span id="ordersRefreshBadge" style="font-size:0.72rem;color:#aaa;"></span>
+            <input type="date" id="orderDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <button class="save-hero-btn" onclick="loadOrderSummary(true)">🔍 Load</button>
+          </div>
+        </div>
+
+        <div id="orderSummaryContent">
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load to view orders</div>
+        </div>
+      </div><!-- /pageOrders -->
+
+      <!-- PAGE: PACKAGING EXPENSES -->
+      <div class="page" id="pagePackaging">
+        <div class="pkg-header">
+          <h2 style="margin:0;">📦 Packaging Expenses</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="date" id="pkgDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <button class="save-hero-btn" onclick="loadPackaging()">🔍 Load</button>
+          </div>
+        </div>
+        <div id="packagingContent">
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load</div>
+        </div>
+      </div><!-- /pagePackaging -->
+
+      <!-- PAGE: LABELS -->
+      <div class="page" id="pageLabels">
+        <div class="labels-header">
+          <h2 style="margin:0;">🏷️ Label Generator</h2>
+        </div>
+        <div class="label-controls">
+          <div class="ctrl-group">
+            <label>Date</label>
+            <input type="date" id="labelDate">
+          </div>
+          <div class="ctrl-group">
+            <label>Meal</label>
+            <select id="labelMeal">
+              <option value="Breakfast">🌅 Breakfast</option>
+              <option value="Lunch">☀️ Lunch</option>
+              <option value="Dinner">🌙 Dinner</option>
+            </select>
+          </div>
+          <div class="ctrl-group">
+            <label>Language</label>
+            <select id="labelLang">
+              <option value="English">English (EN)</option>
+              <option value="Devanagari">देवनागरी (MR)</option>
+            </select>
+          </div>
+          <button class="gen-btn" onclick="generateLabels()">⚡ Generate Labels</button>
+        </div>
+        <div class="label-preview" id="labelPreview">
+          <div style="text-align:center;padding:30px;color:#aaa;font-size:0.85rem;">Select date, meal and language — then Generate</div>
+        </div>
+        <button class="download-btn" id="downloadLabelBtn" onclick="downloadLabelPDF()">⬇️ Download PDF</button>
+      </div><!-- /pageLabels -->
+
+    </div><!-- /main -->
+  </div><!-- /body-wrap -->
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let S = {
+  pin:            "",
+  sessionPin:     "",
+  bfMaster:       [],   // [{id,name,price,default_on,_row}]
+  sabjiMaster:    [],   // [{id,name,type,_row}]
+  menuEntries:    [],   // [{date,breakfast,lunch_dry,...}]
+  selectedDate:   "",   // YYYY-MM-DD
+  sidebarYear:    0,
+  sidebarMonth:   0,
+  // Daily working state (current date)
+  checkedBf:      {},   // id → true/false
+  lunchDry:       "",
+  lunchCurry:     "",
+  dinnerDry:      "",
+  dinnerCurry:    "",
+  menuDirty:      false, // true when unsaved changes exist on the menu page
+};
+
+// ════════════════════════════════════════════════════════
+// PIN
+// ════════════════════════════════════════════════════════
+function pp(n) {
+  if (S.pin.length >= 4) return;
+  S.pin += String(n);
+  renderPinDots();
+  if (S.pin.length === 4) verifyPin();
+}
+function pd() {
+  S.pin = S.pin.slice(0,-1);
+  renderPinDots();
+  document.getElementById("loginErr").textContent = "";
+}
+function renderPinDots() {
+  for (let i=0;i<4;i++) document.getElementById("pd"+i).classList.toggle("filled", i < S.pin.length);
+}
+async function verifyPin() {
+  document.getElementById("loginErr").textContent = "";
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    S.sessionPin  = S.pin;
+    S.bfMaster    = data.breakfastMaster || [];
+    S.sabjiMaster = data.sabjiMaster     || [];
+    S.menuEntries = data.menuEntries     || [];
+    S.pin = ""; renderPinDots();
+    bootApp();
+  } catch(e) {
+    document.getElementById("loginErr").textContent = "Incorrect PIN — try again";
+    S.pin = ""; renderPinDots();
+  }
+}
+function logout() {
+  S.sessionPin = "";
+  document.getElementById("loginWrap").style.display = "flex";
+  document.getElementById("shell").classList.remove("on");
+}
+
+// ════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════
+function bootApp() {
+  document.getElementById("loginWrap").style.display = "none";
+  document.getElementById("shell").classList.add("on");
+  const ist   = getIST();
+  S.sidebarYear  = ist.getFullYear();
+  S.sidebarMonth = ist.getMonth();
+  renderSidebar();
+  selectDate(toISO(ist));
+  renderBfMasterTable();
+  renderSabjiMasterTable();
+}
+
+// ════════════════════════════════════════════════════════
+// SIDEBAR DATE STRIP
+// ════════════════════════════════════════════════════════
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function shiftMonth(d) {
+  S.sidebarMonth += d;
+  if (S.sidebarMonth < 0)  { S.sidebarMonth = 11; S.sidebarYear--; }
+  if (S.sidebarMonth > 11) { S.sidebarMonth = 0;  S.sidebarYear++; }
+  renderSidebar();
+}
+
+function renderSidebar() {
+  document.getElementById("sidebarMonth").textContent = MONTHS[S.sidebarMonth] + " " + S.sidebarYear;
+  const daysInMonth = new Date(S.sidebarYear, S.sidebarMonth+1, 0).getDate();
+  const ist         = getIST();
+  const todayISO    = toISO(ist);
+  const menuDates   = new Set(S.menuEntries.map(e => e.date));
+  let html          = "";
+
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateISO = `${S.sidebarYear}-${String(S.sidebarMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const dow     = new Date(dateISO+"T00:00:00").getDay();
+    const isSun   = dow === 0;
+    const isToday = dateISO === todayISO;
+    const isActive= dateISO === S.selectedDate;
+    const hasMenu = menuDates.has(dateISO);
+    let cls = "day-item";
+    if (isSun)   cls += " sunday";
+    if (isToday) cls += " today";
+    if (isActive)cls += " active";
+
+    html += `<div class="${cls}" ${!isSun ? `onclick="selectDate('${dateISO}')"` : ""}>
+      <div class="day-name">${DAYS[dow]}</div>
+      <div class="day-num">${d}</div>
+      <div class="day-month">${MONTHS[S.sidebarMonth].slice(0,3)}</div>
+      ${hasMenu ? '<div class="has-menu-dot" title="Menu set"></div>' : ""}
+    </div>`;
+  }
+  document.getElementById("dayStrip").innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════
+// SELECT DATE — load its menu into working state
+// ════════════════════════════════════════════════════════
+function selectDate(iso) {
+  S.selectedDate = iso;
+
+  // Update sidebar
+  renderSidebar();
+
+  // Find existing menu entry
+  const existing = S.menuEntries.find(e => e.date === iso);
+
+  // Reset working state (new date = fresh slate, no unsaved changes)
+  S.menuDirty    = false;
+  setMenuDirty(false);
+  S.checkedBf    = {};
+  S.lunchDry     = "";
+  S.lunchCurry   = "";
+  S.dinnerDry    = "";
+  S.dinnerCurry  = "";
+
+  if (existing) {
+    // Mark checked breakfast items
+    (existing.breakfast || []).forEach(item => {
+      const master = S.bfMaster.find(m => m.name === item.name);
+      if (master) S.checkedBf[master.id] = true;
+    });
+    S.lunchDry   = existing.lunch_dry;
+    S.lunchCurry = existing.lunch_curry;
+    S.dinnerDry  = existing.dinner_dry;
+    S.dinnerCurry= existing.dinner_curry;
+    // Load cutoff overrides into selects
+    const co = existing.cutoff_overrides || {};
+    document.getElementById("cutoffBf").value = co.Breakfast ? String(co.Breakfast) : "";
+    document.getElementById("cutoffL").value  = co.Lunch     ? String(co.Lunch)     : "";
+    document.getElementById("cutoffD").value  = co.Dinner    ? String(co.Dinner)    : "";
+  } else {
+    // Default-on items checked
+    S.bfMaster.filter(m => m.default_on).forEach(m => { S.checkedBf[m.id] = true; });
+    // Clear cutoff overrides
+    document.getElementById("cutoffBf").value = "";
+    document.getElementById("cutoffL").value  = "";
+    document.getElementById("cutoffD").value  = "";
+  }
+
+  // Update hero date
+  const d   = new Date(iso+"T00:00:00");
+  const ist = getIST(); ist.setHours(0,0,0,0);
+  const isToday = d.getTime() === ist.getTime();
+  document.getElementById("heroDateLabel").textContent =
+    `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById("heroDateSub").textContent = existing ? "Menu already saved — editing will overwrite" : "No menu set for this day yet";
+
+  const badges = document.getElementById("heroBadges");
+  const todayBadge  = isToday  ? `<span class="badge badge-today">Today</span>` : "";
+  const statusBadge = existing ? `<span class="badge badge-set">✓ Menu Set</span>` : `<span class="badge badge-notset">Not Set</span>`;
+  badges.innerHTML  = `${todayBadge}${statusBadge}
+    <button class="save-hero-btn" id="saveHeroBtn" onclick="saveCurrentMenu()">
+      <span id="saveBtnIcon">💾</span> Save Menu
+    </button>`;
+
+  renderBfGrid();
+  renderSabjiLists();
+}
+
+// ════════════════════════════════════════════════════════
+// BREAKFAST GRID
+// ════════════════════════════════════════════════════════
+function renderBfGrid() {
+  const grid = document.getElementById("bfGrid");
+  if (!S.bfMaster.length) {
+    grid.innerHTML = `<div class="empty-msg">No breakfast items in master list yet. Go to Manage Lists → Breakfast Items.</div>`;
+    return;
+  }
+  grid.innerHTML = S.bfMaster.map(item => `
+    <div class="bf-item ${S.checkedBf[item.id] ? 'on' : ''}" onclick="toggleBf('${item.id}')">
+      <div class="bf-check">${S.checkedBf[item.id] ? '✓' : ''}</div>
+      <div class="bf-item-info">
+        <div class="name">${item.name}</div>
+        <div class="price">₹${item.price}</div>
+      </div>
+    </div>`).join("");
+}
+
+function toggleBf(id) {
+  S.checkedBf[id] = !S.checkedBf[id];
+  setMenuDirty(true);
+  renderBfGrid();
+}
+
+// ════════════════════════════════════════════════════════
+// SABJI LISTS (radio-style)
+// ════════════════════════════════════════════════════════
+function renderSabjiLists() {
+  const drySabjis   = S.sabjiMaster.filter(s => s.type === "Dry"   || s.type === "Both");
+  const currySabjis = S.sabjiMaster.filter(s => s.type === "Curry" || s.type === "Both");
+
+  document.getElementById("lunchDryList").innerHTML   = sabjiOptionHTML(drySabjis,   S.lunchDry,    "lunchDry");
+  document.getElementById("lunchCurryList").innerHTML = sabjiOptionHTML(currySabjis, S.lunchCurry,  "lunchCurry");
+  document.getElementById("dinnerDryList").innerHTML  = sabjiOptionHTML(drySabjis,   S.dinnerDry,   "dinnerDry");
+  document.getElementById("dinnerCurryList").innerHTML= sabjiOptionHTML(currySabjis, S.dinnerCurry, "dinnerCurry");
+}
+
+function sabjiOptionHTML(items, selected, stateKey) {
+  if (!items.length) return `<div style="font-size:.8rem;color:var(--muted);padding:8px;">No items. Add sabjis in Manage Lists.</div>`;
+  return items.map(s => `
+    <div class="sabji-option ${selected===s.name?'on':''}" onclick="selectSabji('${stateKey}','${s.name.replace(/'/g,"\\'")}')">
+      <div class="sabji-radio"></div>
+      ${s.name}
+    </div>`).join("");
+}
+
+function selectSabji(key, name) {
+  S[key] = S[key] === name ? "" : name; // click again to deselect
+  setMenuDirty(true);
+  renderSabjiLists();
+}
+
+// ════════════════════════════════════════════════════════
+// SAVE DAILY MENU
+// ════════════════════════════════════════════════════════
+async function saveCurrentMenu() {
+  const btn  = document.getElementById("saveHeroBtn");
+  const icon = document.getElementById("saveBtnIcon");
+  btn.disabled = true; icon.textContent = "⏳";
+
+  // Build breakfast array from checked items
+  const breakfast = S.bfMaster
+    .filter(m => S.checkedBf[m.id])
+    .map(m => ({ name: m.name, price: m.price }));
+
+  const payload = {
+    _action:            "saveMenu",
+    pin:                S.sessionPin,
+    date:               S.selectedDate,
+    breakfast,
+    lunch_dry:          S.lunchDry,
+    lunch_curry:        S.lunchCurry,
+    dinner_dry:         S.dinnerDry,
+    dinner_curry:       S.dinnerCurry,
+    cutoff_breakfast:   document.getElementById("cutoffBf").value || null,
+    cutoff_lunch:       document.getElementById("cutoffL").value  || null,
+    cutoff_dinner:      document.getElementById("cutoffD").value  || null,
+  };
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: "POST", body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Save failed");
+
+    // Update local cache
+    const cutoffOverrides = {};
+    const cbf = document.getElementById("cutoffBf").value;
+    const cl  = document.getElementById("cutoffL").value;
+    const cd  = document.getElementById("cutoffD").value;
+    if (cbf) cutoffOverrides.Breakfast = Number(cbf);
+    if (cl)  cutoffOverrides.Lunch     = Number(cl);
+    if (cd)  cutoffOverrides.Dinner    = Number(cd);
+
+    const idx   = S.menuEntries.findIndex(e => e.date === S.selectedDate);
+    const entry = {
+      date:             S.selectedDate,
+      breakfast,
+      lunch_dry:        S.lunchDry,
+      lunch_curry:      S.lunchCurry,
+      dinner_dry:       S.dinnerDry,
+      dinner_curry:     S.dinnerCurry,
+      cutoff_overrides: cutoffOverrides,
+    };
+    if (idx >= 0) S.menuEntries[idx] = entry; else S.menuEntries.push(entry);
+
+    icon.textContent = "✅"; toast(`✅ Menu ${data.action || "saved"} for ${S.selectedDate}`);
+    setMenuDirty(false);
+    selectDate(S.selectedDate); // refresh badges
+    renderSidebar();
+
+    setTimeout(() => { icon.textContent = "💾"; btn.disabled = false; }, 1800);
+  } catch(e) {
+    icon.textContent = "❌"; toast("Error: " + e.message, 4000);
+    btn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// MANAGE TABS
+// ════════════════════════════════════════════════════════
+function switchManageTab(tab) {
+  document.querySelectorAll(".manage-tab").forEach((el,i) => el.classList.toggle("active", (i===0&&tab==="bf")||(i===1&&tab==="sabji")));
+  document.getElementById("bfManagePanel").style.display    = tab === "bf"    ? "block" : "none";
+  document.getElementById("sabjiManagePanel").style.display = tab === "sabji" ? "block" : "none";
+}
+
+// ════════════════════════════════════════════════════════
+// BREAKFAST MASTER TABLE
+// ════════════════════════════════════════════════════════
+function renderBfMasterTable() {
+  const wrap = document.getElementById("bfMasterRows");
+  if (!S.bfMaster.length) { wrap.innerHTML = `<div class="empty-msg">No breakfast items yet — add one below.</div>`; return; }
+  wrap.innerHTML = S.bfMaster.map(item => `
+    <div class="mt-row bf-cols" id="bfrow_${item.id}">
+      <div class="mt-name" id="bfname_${item.id}">${item.name}</div>
+      <div class="mt-price" id="bfprice_${item.id}">₹${item.price}</div>
+      <div>
+        <button class="toggle ${item.default_on?'on':''}" id="bftog_${item.id}"
+          onclick="toggleBfDefault('${item.id}',${!item.default_on})"
+          title="${item.default_on?'Default ON':'Default OFF'}"></button>
+      </div>
+      <div><button class="action-btn" onclick="editBfItem('${item.id}')">Edit</button></div>
+      <div><button class="action-btn del" onclick="deleteBfItem('${item.id}')">Delete</button></div>
+    </div>`).join("");
+}
+
+async function toggleBfDefault(id, newVal) {
+  const item = S.bfMaster.find(m => m.id===id); if(!item) return;
+  item.default_on = newVal;
+  document.getElementById("bftog_"+id).classList.toggle("on", newVal);
+  await apiBf({ ...item, default_on: newVal });
+}
+
+function editBfItem(id) {
+  const item = S.bfMaster.find(m => m.id===id); if(!item) return;
+  const nameEl  = document.getElementById("bfname_"+id);
+  const priceEl = document.getElementById("bfprice_"+id);
+  nameEl.innerHTML  = `<input class="edit-field" value="${item.name}" id="editBfName_${id}" style="max-width:140px;">`;
+  priceEl.innerHTML = `<input class="edit-field" type="number" value="${item.price}" id="editBfPrice_${id}" style="max-width:60px;">`;
+  // Replace edit button with save
+  document.querySelector(`#bfrow_${id} .action-btn`).onclick = () => saveBfEdit(id);
+  document.querySelector(`#bfrow_${id} .action-btn`).textContent = "Save";
+}
+
+async function saveBfEdit(id) {
+  const item  = S.bfMaster.find(m => m.id===id); if(!item) return;
+  const name  = document.getElementById("editBfName_"+id)?.value.trim();
+  const price = Number(document.getElementById("editBfPrice_"+id)?.value) || 0;
+  if (!name) { toast("Name cannot be empty"); return; }
+  item.name = name; item.price = price;
+  await apiBf(item);
+  renderBfMasterTable(); renderBfGrid();
+  toast("Updated: " + name);
+}
+
+async function addBreakfastItem() {
+  const name  = document.getElementById("newBfName").value.trim();
+  const price = Number(document.getElementById("newBfPrice").value) || 0;
+  const def   = document.getElementById("newBfDefault").value === "yes";
+  if (!name) { toast("Enter an item name"); return; }
+  const res  = await apiBf({ id: null, name, price, default_on: def });
+  if (res.id) {
+    S.bfMaster.push({ id: res.id, name, price, default_on: def });
+    document.getElementById("newBfName").value = "";
+    document.getElementById("newBfPrice").value = "";
+    renderBfMasterTable(); renderBfGrid();
+    toast("Added: " + name);
+  }
+}
+
+async function deleteBfItem(id) {
+  const item = S.bfMaster.find(m => m.id===id); if(!item) return;
+  if (!confirm(`Delete "${item.name}" from breakfast list?`)) return;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"deleteBreakfastItem",pin:S.sessionPin,id})});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    S.bfMaster = S.bfMaster.filter(m => m.id!==id);
+    renderBfMasterTable(); renderBfGrid();
+    toast("Deleted: " + item.name);
+  } catch(e) { toast("Error: "+e.message, 4000); }
+}
+
+async function apiBf(item) {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"saveBreakfastItem",pin:S.sessionPin,...item})});
+    return await res.json();
+  } catch(e) { toast("Error: "+e.message,4000); return {}; }
+}
+
+// ════════════════════════════════════════════════════════
+// SABJI MASTER TABLE
+// ════════════════════════════════════════════════════════
+function renderSabjiMasterTable() {
+  const wrap = document.getElementById("sabjiMasterRows");
+  if (!S.sabjiMaster.length) { wrap.innerHTML=`<div class="empty-msg">No sabjis yet — add one below.</div>`; return; }
+  wrap.innerHTML = S.sabjiMaster.map(s => {
+    const tagCls  = s.type.toLowerCase();
+    const tagLabel= s.type==="Both"?"Dry & Curry":s.type;
+    return `<div class="mt-row sabji-cols" id="sabjirow_${s.id}">
+      <div class="mt-name" id="sabjiname_${s.id}">${s.name}</div>
+      <div><span class="mt-tag ${tagCls}" id="sabjitype_${s.id}">${tagLabel}</span></div>
+      <div><button class="action-btn" onclick="editSabjiItem('${s.id}')">Edit</button></div>
+      <div><button class="action-btn del" onclick="deleteSabjiItem('${s.id}')">Delete</button></div>
+    </div>`;
+  }).join("");
+}
+
+function editSabjiItem(id) {
+  const item = S.sabjiMaster.find(m=>m.id===id); if(!item) return;
+  document.getElementById("sabjiname_"+id).innerHTML =
+    `<input class="edit-field" value="${item.name}" id="editSabjiName_${id}">`;
+  document.getElementById("sabjitype_"+id).outerHTML =
+    `<select class="edit-field" id="editSabjiType_${id}" style="max-width:140px;">
+       <option value="Dry"   ${item.type==="Dry"?"selected":""}>Dry</option>
+       <option value="Curry" ${item.type==="Curry"?"selected":""}>Curry</option>
+       <option value="Both"  ${item.type==="Both"?"selected":""}>Both</option>
+     </select>`;
+  const btns = document.querySelectorAll(`#sabjirow_${id} .action-btn`);
+  btns[0].textContent = "Save"; btns[0].onclick = () => saveSabjiEdit(id);
+}
+
+async function saveSabjiEdit(id) {
+  const item = S.sabjiMaster.find(m=>m.id===id); if(!item) return;
+  const name = document.getElementById("editSabjiName_"+id)?.value.trim();
+  const type = document.getElementById("editSabjiType_"+id)?.value;
+  if (!name) { toast("Name cannot be empty"); return; }
+  item.name = name; item.type = type;
+  await apiSabji(item);
+  renderSabjiMasterTable(); renderSabjiLists();
+  toast("Updated: " + name);
+}
+
+async function addSabjiItem() {
+  const name = document.getElementById("newSabjiName").value.trim();
+  const type = document.getElementById("newSabjiType").value;
+  if (!name) { toast("Enter a sabji name"); return; }
+  const res = await apiSabji({ id: null, name, type });
+  if (res.id) {
+    S.sabjiMaster.push({ id: res.id, name, type });
+    document.getElementById("newSabjiName").value = "";
+    renderSabjiMasterTable(); renderSabjiLists();
+    toast("Added: " + name);
+  }
+}
+
+async function deleteSabjiItem(id) {
+  const item = S.sabjiMaster.find(m=>m.id===id); if(!item) return;
+  if (!confirm(`Delete "${item.name}" from sabji list?`)) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"deleteSabjiItem",pin:S.sessionPin,id})});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    S.sabjiMaster = S.sabjiMaster.filter(m=>m.id!==id);
+    renderSabjiMasterTable(); renderSabjiLists();
+    toast("Deleted: " + item.name);
+  } catch(e) { toast("Error: "+e.message,4000); }
+}
+
+async function apiSabji(item) {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"saveSabjiItem",pin:S.sessionPin,...item})});
+    return await res.json();
+  } catch(e) { toast("Error: "+e.message,4000); return {}; }
+}
+
+// ════════════════════════════════════════════════════════
+// PAGE SWITCHING
+// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// ORDERS AUTO-REFRESH (5 min, today only)
+// ════════════════════════════════════════════════════════
+let _ordersTimer = null, _ordersNextAt = null, _ordersTick = null;
+
+function startOrdersAutoRefresh() {
+  stopOrdersAutoRefresh();
+  _ordersNextAt = Date.now() + 5 * 60 * 1000;
+  _ordersTimer  = setTimeout(async () => {
+    const date  = document.getElementById("orderDatePicker").value;
+    const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
+    if (date === today && document.getElementById("pageOrders").classList.contains("on")) {
+      await loadOrderSummary();
+    } else {
+      startOrdersAutoRefresh(); // keep timer going even if not reloading
+    }
+  }, 5 * 60 * 1000);
+
+  _ordersTick = setInterval(() => {
+    const badge = document.getElementById("ordersRefreshBadge");
+    if (!badge) return;
+    const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
+    if (document.getElementById("orderDatePicker").value !== today) {
+      badge.textContent = ""; return;
+    }
+    const secs = Math.max(0, Math.round((_ordersNextAt - Date.now()) / 1000));
+    badge.textContent = `↻ auto in ${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`;
+  }, 1000);
+}
+
+function stopOrdersAutoRefresh() {
+  if (_ordersTimer) { clearTimeout(_ordersTimer);  _ordersTimer = null; }
+  if (_ordersTick)  { clearInterval(_ordersTick);  _ordersTick  = null; }
+  const badge = document.getElementById("ordersRefreshBadge");
+  if (badge) badge.textContent = "";
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopOrdersAutoRefresh();
+  else if (document.getElementById("pageOrders")?.classList.contains("on") && S.sessionPin) {
+    startOrdersAutoRefresh();
+  }
+});
+
+// ════════════════════════════════════════════════════════
+// UNSAVED CHANGES INDICATOR
+// ════════════════════════════════════════════════════════
+function setMenuDirty(dirty) {
+  S.menuDirty = dirty;
+  const btn = document.getElementById("saveHeroBtn");
+  if (!btn) return;
+  btn.style.background = dirty ? "linear-gradient(135deg,#e07b00,#f0a500)" : "";
+  btn.title = dirty ? "⚠️ Unsaved changes" : "";
+  const icon = document.getElementById("saveBtnIcon");
+  if (icon) icon.textContent = dirty ? "⚠️" : "💾";
+}
+
+function switchPage(page) {
+  // Warn if navigating away from menu with unsaved changes
+  if (page !== "menu" && S.menuDirty) {
+    if (!confirm("You have unsaved menu changes for " + S.selectedDate + ".\nLeave without saving?")) return;
+    setMenuDirty(false);
+  }
+  document.querySelectorAll(".page").forEach(el=>el.classList.remove("on"));
+  document.getElementById("pageMenu").classList.toggle("on", page==="menu");
+  document.getElementById("pageManage").classList.toggle("on", page==="manage");
+  document.getElementById("pageOrders").classList.toggle("on", page==="orders");
+  document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
+  document.getElementById("pageLabels").classList.toggle("on", page==="labels");
+  document.getElementById("navMenu").classList.toggle("active", page==="menu");
+  document.getElementById("navManage").classList.toggle("active", page==="manage");
+  document.getElementById("navOrders").classList.toggle("active", page==="orders");
+  document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
+  document.getElementById("navLabels").classList.toggle("active", page==="labels");
+  // Stop orders timer when leaving orders tab
+  if (page !== "orders") stopOrdersAutoRefresh();
+  if (page === "orders") {
+    const picker = document.getElementById("orderDatePicker");
+    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+    loadOrderSummary();
+  }
+  if (page === "packaging") {
+    const picker = document.getElementById("pkgDatePicker");
+    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+    loadPackaging();
+  }
+  if (page === "labels") {
+    const picker = document.getElementById("labelDate");
+    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+  }
+  document.getElementById("sidebar").style.display = page==="menu" ? "flex" : "none";
+}
+
+// ════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════
+function getIST() {
+  const now = new Date();
+  return new Date(now.getTime() + 5.5*3600000);
+}
+function toISO(d) {
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function toast(msg, ms=2500) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), ms);
+}
+// ════════════════════════════════════════════════════════
+// PACKAGING EXPENSES PAGE
+// ════════════════════════════════════════════════════════
+async function loadPackaging() {
+  const date = document.getElementById("pkgDatePicker").value;
+  if (!date) { alert("Pick a date first"); return; }
+  const el = document.getElementById("packagingContent");
+  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getPackagingExpenses&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    el.innerHTML = renderPackaging(data);
+  } catch(e) {
+    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${e.message}</p>`;
+  }
+}
+
+function renderPackaging(data) {
+  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmt = v => `₹${Number(v).toFixed(2)}`;
+
+  if (!data.orderCount) {
+    return `<div style="text-align:center;padding:40px;color:#aaa;">😴 No orders for ${fmtDate(data.date)}</div>`;
+  }
+
+  const mealMeta = data.meals || {};
+  let html = `
+    <div class="pkg-meta">
+      <span>📅 ${fmtDate(data.date)}</span>
+      <span>📦 ${data.orderCount} orders total</span>
+      ${mealMeta.Breakfast ? `<span>🌅 Breakfast: ${mealMeta.Breakfast}</span>` : ""}
+      ${mealMeta.Lunch     ? `<span>☀️ Lunch: ${mealMeta.Lunch}</span>` : ""}
+      ${mealMeta.Dinner    ? `<span>🌙 Dinner: ${mealMeta.Dinner}</span>` : ""}
+    </div>
+    <table class="pkg-table">
+      <thead>
+        <tr>
+          <th>Packaging Item</th>
+          <th>Units Used</th>
+          <th>Unit Cost</th>
+          <th>Total Cost</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  data.items.forEach(item => {
+    html += `<tr>
+      <td>${item.name}</td>
+      <td style="text-align:right;">${item.qty}</td>
+      <td style="text-align:right;">${fmt(item.unitCost)}</td>
+      <td style="text-align:right;">${fmt(item.total)}</td>
+    </tr>`;
+  });
+
+  html += `<tr>
+    <td colspan="3" style="text-align:right;font-weight:700;">Grand Total</td>
+    <td style="text-align:right;font-weight:700;color:#c0392b;">${fmt(data.total)}</td>
+  </tr>`;
+  html += `</tbody></table>`;
+
+  html += `<div class="pkg-total-card">
+    <div><div class="label">📦 Total Packaging Cost</div><div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${fmtDate(data.date)} · ${data.orderCount} orders</div></div>
+    <div class="value">${fmt(data.total)}</div>
+  </div>`;
+
+  return html;
+}
+
+// ════════════════════════════════════════════════════════
+// LABELS PAGE
+// ════════════════════════════════════════════════════════
+// Abbreviation tables — mirrors label_generator.py
+const ABBREV_EN = {
+  "Chapati":"CH","Without_Oil_Chapati":"CH(O)","Phulka":"PH","Ghee_Phulka":"GPH",
+  "Jowar_Bhakri":"J","Bajra_Bhakri":"B",
+  "Dry_Sabji_Mini":"D100","Dry_Sabji_Full":"D250",
+  "Curry_Sabji_Mini":"C100","Curry_Sabji_Full":"C250",
+  "Dal":"DAL","Rice":"R","Salad":"S","Curd":"CU",
+  "Kanda Poha":"KP","Ghee Upma":"GU","Thalipeeth":"TP",
+  "Paneer Paratha":"PP","Methi Thepla":"MT","Sabudana Khichdi":"SK",
+};
+const ABBREV_MR = {
+  "Chapati":"च","Without_Oil_Chapati":"च बिनतेल","Phulka":"फु","Ghee_Phulka":"घी फु",
+  "Jowar_Bhakri":"जो","Bajra_Bhakri":"बाज",
+  "Dry_Sabji_Mini":"सु १००","Dry_Sabji_Full":"सु २५०",
+  "Curry_Sabji_Mini":"र १००","Curry_Sabji_Full":"र २५०",
+  "Dal":"दाल","Rice":"भात","Salad":"स","Curd":"दही",
+  "Kanda Poha":"कांपो","Ghee Upma":"घीऊ","Thalipeeth":"था",
+  "Paneer Paratha":"पनपरा","Methi Thepla":"मेथी","Sabudana Khichdi":"साबु",
+};
+
+let _labelData = []; // stored for PDF generation
+
+function abbr(key, dict) {
+  if (dict[key]) return dict[key];
+  for (const [k,v] of Object.entries(dict)) if (k.toLowerCase()===key.toLowerCase()) return v;
+  return key;
+}
+
+function buildSummary(order, meal, dict) {
+  const parts = [];
+  if (meal === "Breakfast") {
+    for (let n=1;n<=4;n++) {
+      const item = order[`BF_Item_${n}`]||""; const qty = Number(order[`BF_Qty_${n}`])||0;
+      if (item && qty > 0) parts.push(`${qty}×${abbr(item, dict)}`);
+    }
+    const curd = Number(order.Curd)||0;
+    if (curd > 0) parts.push(`${curd}×${abbr("Curd", dict)}`);
+  } else {
+    const cols = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka",
+                  "Jowar_Bhakri","Bajra_Bhakri","Dry_Sabji_Mini","Dry_Sabji_Full",
+                  "Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
+    cols.forEach(c => { const q=Number(order[c])||0; if(q>0) parts.push(`${q}×${abbr(c,dict)}`); });
+  }
+  // Fallback to Items_JSON
+  if (!parts.length && order.Items_JSON) {
+    try {
+      Object.entries(JSON.parse(order.Items_JSON)).forEach(([k,q]) => {
+        if (Number(q)>0) parts.push(`${q}×${abbr(k,dict)}`);
+      });
+    } catch(e){}
+  }
+  return parts.join(", ");
+}
+
+async function generateLabels() {
+  const date = document.getElementById("labelDate").value;
+  const meal = document.getElementById("labelMeal").value;
+  const lang = document.getElementById("labelLang").value;
+  if (!date) { alert("Pick a date first"); return; }
+
+  const el = document.getElementById("labelPreview");
+  el.innerHTML = `<div style="text-align:center;padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  document.getElementById("downloadLabelBtn").style.display = "none";
+
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getLabelOrders&date=${date}&meal=${meal}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    if (!data.orders || !data.orders.length) {
+      el.innerHTML = `<div style="text-align:center;padding:30px;color:#aaa;">No ${meal} orders on this date</div>`;
+      return;
+    }
+
+    const dict = lang === "Devanagari" ? ABBREV_MR : ABBREV_EN;
+    _labelData = [];
+
+    data.orders.forEach(order => {
+      if (!order.name || order.name.toLowerCase() === "nan") return;
+      const parts = [];
+
+      if (meal === "Breakfast") {
+        for (let n=1;n<=4;n++) {
+          const item = order[`BF_Item_${n}`]||"";
+          const qty  = Number(order[`BF_Qty_${n}`])||0;
+          if (item && qty > 0) parts.push(`${qty}×${abbr(item, dict)}`);
+        }
+        if (order.Curd > 0) parts.push(`${order.Curd}×${abbr("Curd", dict)}`);
+      } else {
+        const cols = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka",
+                      "Jowar_Bhakri","Bajra_Bhakri","Dry_Sabji_Mini","Dry_Sabji_Full",
+                      "Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
+        cols.forEach(c => { const q=Number(order[c])||0; if(q>0) parts.push(`${q}×${abbr(c,dict)}`); });
+      }
+
+      if (!parts.length) return;
+      _labelData.push({
+        name:    order.name,
+        summary: parts.join(", "),
+        notes:   (order.notes && order.notes.toLowerCase() !== "nan") ? order.notes : "",
+      });
+    });
+
+    if (!_labelData.length) {
+      el.innerHTML = `<div style="text-align:center;padding:30px;color:#aaa;">No valid labels found</div>`;
+      return;
+    }
+
+    const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+    let html = `<h3>${_labelData.length} Labels · ${meal} · ${fmtDate(date)}</h3>`;
+    _labelData.forEach((l,i) => {
+      html += `<div class="label-card">
+        <div>
+          <div class="lname">${l.name}</div>
+          <div class="lsummary">${l.summary}</div>
+          ${l.notes ? `<div class="lnotes">📝 ${l.notes}</div>` : ""}
+        </div>
+        <div class="lnum">#${i+1}</div>
+      </div>`;
+    });
+    el.innerHTML = html;
+    document.getElementById("downloadLabelBtn").style.display = "inline-block";
+    document.getElementById("downloadLabelBtn").dataset.date = date;
+    document.getElementById("downloadLabelBtn").dataset.meal = meal;
+    document.getElementById("downloadLabelBtn").dataset.lang = lang;
+
+  } catch(e) {
+    el.innerHTML = `<p style="color:#c0392b;padding:20px;">Error: ${e.message}</p>`;
+  }
+}
+
+async function downloadLabelPDF() {
+  const btn  = document.getElementById("downloadLabelBtn");
+  const date = btn.dataset.date;
+  const meal = btn.dataset.meal;
+  const lang = btn.dataset.lang;
+
+  if (!_labelData.length) { alert("Generate labels first"); return; }
+
+  btn.textContent = "⏳ Generating PDF…";
+  btn.disabled = true;
+
+  try {
+    // Call Claude API to generate PDF via label_generator logic
+    // Since we can't run Python in browser, send label data to Code.gs for PDF gen
+    // Instead: offer a formatted print view
+    const printWin = window.open("", "_blank");
+    const isMR = lang === "Devanagari";
+    printWin.document.write(`<!DOCTYPE html><html><head>
+      <meta charset="UTF-8">
+      <title>Labels - ${meal} - ${date}</title>
+      <style>
+        @page{size:50mm 25mm;margin:0;}
+        body{margin:0;font-family:'Segoe UI',sans-serif;}
+        .label{width:50mm;height:25mm;padding:2mm 2mm;box-sizing:border-box;border-bottom:0.5px dashed #999;page-break-after:always;overflow:hidden;}
+        .label:last-child{border-bottom:none;}
+        .lname{font-size:9pt;font-weight:bold;line-height:1.2;}
+        .lsummary{font-size:8pt;color:#333;margin-top:1mm;line-height:1.3;}
+        .lnotes{font-size:7pt;color:#c77;margin-top:1mm;}
+      </style>
+    </head><body>`);
+    _labelData.forEach(l => {
+      printWin.document.write(`<div class="label">
+        <div class="lname">${l.name}</div>
+        <div class="lsummary">${l.summary}</div>
+        ${l.notes ? `<div class="lnotes">📝 ${l.notes}</div>` : ""}
+      </div>`);
+    });
+    printWin.document.write("</body></html>");
+    printWin.document.close();
+    printWin.onload = () => printWin.print();
+  } catch(e) {
+    alert("Error: " + e.message);
+  }
+
+  btn.textContent = "⬇️ Download PDF";
+  btn.disabled = false;
+}
+
+
+async function loadOrderSummary(manual=false) {
+  const date = document.getElementById("orderDatePicker").value;
+  if (!date) { alert("Pick a date first"); return; }
+  const el = document.getElementById("orderSummaryContent");
+  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:#aaa;margin-top:12px;font-size:0.85rem;">Loading orders…</p></div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderSummary&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) { el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${data.error}</p>`; return; }
+    el.innerHTML = renderOrderSummary(data);
+    // Reset auto-refresh timer on every load (manual or auto)
+    const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
+    if (date === today) startOrdersAutoRefresh();
+    else stopOrdersAutoRefresh();
+  } catch(e) {
+    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+  }
+}
+
+function renderOrderSummary(data) {
+  const {date, meals, totals} = data;
+  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmtMoney = v => `₹${Number(v).toLocaleString("en-IN")}`;
+
+  // ── Day stat cards ──
+  let html = `<h3 style="margin:0 0 14px;font-size:1rem;color:#555;">📅 ${fmtDate(date)}</h3>`;
+
+  if (!totals.orders) {
+    return html + `<div class="no-orders-msg">😴 No orders found for this date.</div>`;
+  }
+
+  html += `<div class="stat-grid">
+    <div class="stat-card"><div class="sv">${totals.orders}</div><div class="sl">Total Orders</div></div>
+    <div class="stat-card"><div class="sv">${totals.customers}</div><div class="sl">Customers</div></div>
+    <div class="stat-card green"><div class="sv">${fmtMoney(totals.revenue)}</div><div class="sl">Total Revenue</div></div>
+    <div class="stat-card green"><div class="sv">${fmtMoney(totals.paid)}</div><div class="sl">Collected</div></div>
+    <div class="stat-card orange"><div class="sv">${fmtMoney(totals.pending)}</div><div class="sl">Pending</div></div>
+  </div>`;
+
+  // ── Per-meal sections ──
+  const MEAL_ICONS = {Breakfast:"🌅", Lunch:"☀️", Dinner:"🌙"};
+  ["Breakfast","Lunch","Dinner"].forEach(meal => {
+    const m = meals[meal];
+    if (!m) return;
+
+    const payBadge = s => {
+      if (s === "Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
+      if (s === "10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
+      return `<span class="pay-badge pending">⏳ Pending</span>`;
+    };
+
+    // Item totals chips
+    const itemChips = Object.entries(m.itemTotals)
+      .sort((a,b) => b[1]-a[1])
+      .map(([name,qty]) => `<div class="item-total-chip"><span class="iname">${name}</span><span class="iqty">${qty}</span></div>`)
+      .join("");
+
+    // Customer rows
+    const custRows = m.customers.map(c => {
+      const itemList = Object.entries(c.items).filter(([,q])=>q>0).map(([n,q])=>`${q}×${n}`).join(", ");
+      return `<tr>
+        <td><strong>${c.name}</strong><br><span style="color:#aaa;font-size:0.72rem;">${c.phone}</span></td>
+        <td>${itemList||"—"}</td>
+        <td><span class="area-chip">${c.area}</span><br><span style="font-size:0.7rem;color:#888;">${c.address}</span></td>
+        <td style="text-align:right;white-space:nowrap;">
+          <strong>${fmtMoney(c.total)}</strong><br>
+          ${payBadge(c.payStatus)}
+          ${c.notes ? `<br><span class="notes-badge">📝 ${c.notes}</span>` : ""}
+        </td>
+      </tr>`;
+    }).join("");
+
+    html += `<div class="meal-section">
+      <div class="meal-section-head" onclick="toggleMealSection('${meal}')">
+        <h3>${MEAL_ICONS[meal]} ${meal} <span style="font-weight:400;font-size:0.82rem;color:#888;">(${m.count} order${m.count>1?"s":""})</span></h3>
+        <div class="meal-stats">
+          <span>💰 ${fmtMoney(m.revenue)}</span>
+          <span style="color:#27ae60;">✓ ${fmtMoney(m.paid)}</span>
+          <span style="color:#e67e22;">⏳ ${fmtMoney(m.pending)}</span>
+          <span id="chevron_${meal}" style="transition:transform 0.2s;">▼</span>
+        </div>
+      </div>
+      <div class="meal-section-body" id="mealBody_${meal}">
+        <div style="font-size:0.75rem;font-weight:700;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Item Totals</div>
+        <div class="item-totals-grid">${itemChips}</div>
+        <div style="font-size:0.75rem;font-weight:700;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Customer Details</div>
+        <div style="overflow-x:auto;">
+          <table class="cust-table">
+            <thead><tr><th>Customer</th><th>Items</th><th>Address</th><th style="text-align:right;">Amount</th></tr></thead>
+            <tbody>${custRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  return html;
+}
+
+function toggleMealSection(meal) {
+  const body    = document.getElementById(`mealBody_${meal}`);
+  const chevron = document.getElementById(`chevron_${meal}`);
+  const isOpen  = body.style.display !== "none";
+  body.style.display    = isOpen ? "none" : "block";
+  chevron.style.transform = isOpen ? "rotate(-90deg)" : "rotate(0deg)";
+}
+
+</script>
+</body>
+</html>

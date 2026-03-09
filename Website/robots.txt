@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /Admin/
 
 # Sitemap
 Sitemap: https://www.svaadhkitchen.in/sitemap.xml

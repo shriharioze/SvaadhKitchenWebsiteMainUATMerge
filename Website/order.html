@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Order – Svaadh Kitchen</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TF5YJ0QP5K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TF5YJ0QP5K');
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Poppins',sans-serif;background:#fdf8f2;color:#2d2d2d;min-height:100vh;}
+
+/* HEADER */
+.page-header{background:linear-gradient(135deg,#c0392b,#e74c3c);color:white;padding:14px 20px;text-align:center;box-shadow:0 2px 10px rgba(192,57,43,0.3);position:relative;}
+.page-header h1{font-size:1.3rem;font-weight:700;}
+.beta-badge{display:inline-block;background:#fff3cd;color:#856404;font-size:0.5rem;font-weight:700;letter-spacing:0.08em;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:6px;border:1px solid #ffc107;}
+.page-header p{font-size:0.74rem;opacity:0.85;margin-top:2px;}
+.help-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.15);color:white;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* PROGRESS */
+.progress-wrap{background:#fff;border-bottom:1px solid #eee;padding:10px 20px;}
+.progress-steps{display:flex;gap:4px;max-width:480px;margin:0 auto;}
+.step-dot{flex:1;height:5px;border-radius:99px;background:#e0d5cc;transition:background 0.3s;}
+.step-dot.active{background:#e74c3c;}
+.step-dot.done{background:#27ae60;}
+.step-label{text-align:center;font-size:0.68rem;color:#888;margin-top:5px;}
+
+/* CONTAINER */
+.container{max-width:520px;margin:0 auto;padding:18px 14px 90px;}
+
+/* CARDS */
+.card{background:white;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.07);border:1px solid #f0ebe6;}
+.card h2{font-size:0.95rem;font-weight:600;color:#c0392b;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* FORM */
+label{display:block;font-size:0.78rem;font-weight:500;color:#555;margin-bottom:4px;}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-family:inherit;font-size:0.88rem;background:#fafafa;transition:border-color 0.2s,box-shadow 0.2s;color:#2d2d2d;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;background:white;box-shadow:0 0 0 3px rgba(231,76,60,0.1);}
+.form-group{margin-bottom:12px;}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.input-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.input-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* PHONE */
+.phone-wrap{position:relative;}
+.phone-wrap .prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.88rem;color:#888;pointer-events:none;}
+.phone-wrap input{padding-left:40px;font-size:1rem;letter-spacing:1px;}
+
+/* BUTTONS */
+.btn{display:block;width:100%;padding:13px;border:none;border-radius:12px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;transition:transform 0.1s,box-shadow 0.2s;text-align:center;}
+.btn:active{transform:scale(0.98);}
+.btn-primary{background:linear-gradient(135deg,#c0392b,#e74c3c);color:white;box-shadow:0 4px 14px rgba(231,76,60,0.4);}
+.btn-secondary{background:#f5f0eb;color:#c0392b;border:1.5px solid #e8ddd7;}
+.btn-green{background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;box-shadow:0 4px 14px rgba(46,204,113,0.4);}
+.btn-sm{padding:7px 14px;font-size:0.78rem;border-radius:8px;width:auto;display:inline-block;}
+
+/* SCREENS */
+.screen{display:none;animation:fadeIn 0.22s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* RETURNING BADGE */
+.customer-badge{background:linear-gradient(135deg,#f0faf4,#e8f8ef);border:1.5px solid #b7e4c7;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.customer-badge .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#27ae60,#2ecc71);display:flex;align-items:center;justify-content:center;font-size:1rem;color:white;font-weight:700;flex-shrink:0;}
+.customer-badge .cname{font-weight:600;font-size:0.9rem;}
+.customer-badge .csub{font-size:0.73rem;color:#555;margin-top:2px;}
+
+/* SAME ADDRESS TOGGLE */
+.same-addr-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;margin-bottom:14px;cursor:pointer;}
+.same-addr-row input[type=checkbox]{width:auto;accent-color:#27ae60;}
+.same-addr-row span{font-size:0.82rem;font-weight:500;color:#1a6b3c;}
+
+/* CALENDAR */
+.calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.calendar-header h3{font-size:0.9rem;font-weight:600;}
+.cal-nav{background:none;border:1.5px solid #ddd;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;color:#555;transition:background 0.2s;}
+.cal-nav:hover{background:#f5f0eb;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-name{text-align:center;font-size:0.65rem;font-weight:600;color:#888;padding:3px 0;}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:0.8rem;cursor:pointer;border:1.5px solid transparent;transition:all 0.15s;font-weight:500;}
+.cal-day.empty{cursor:default;}
+.cal-day.today{border-color:#e74c3c;color:#e74c3c;}
+.cal-day.selected{background:#e74c3c;color:white;border-color:#e74c3c;font-weight:700;}
+.cal-day.disabled{color:#ccc;cursor:not-allowed;}
+.cal-day:not(.disabled):not(.empty):hover:not(.selected){background:#fdf0ee;border-color:#f0a899;}
+.selected-dates-summary{margin-top:10px;font-size:0.78rem;color:#888;min-height:18px;}
+.date-chip{display:inline-block;background:#e74c3c;color:white;padding:2px 9px;border-radius:99px;font-size:0.72rem;margin:2px 3px 2px 0;font-weight:500;}
+
+/* MEAL ACCORDION */
+.meal-section{margin-bottom:10px;border-radius:12px;overflow:hidden;border:1.5px solid #eee;}
+.meal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;background:#fdf8f2;transition:background 0.2s;user-select:none;}
+.meal-header:hover{background:#f9f0e8;}
+.meal-header.open{background:#fff5f4;border-bottom:1px solid #ffddd9;}
+.meal-header-left{display:flex;align-items:center;gap:10px;}
+.meal-icon{font-size:1.1rem;}
+.meal-title{font-size:0.88rem;font-weight:600;}
+.meal-cutoff-txt{font-size:0.67rem;color:#888;margin-top:1px;}
+.meal-total-badge{background:#e74c3c;color:white;border-radius:99px;padding:2px 9px;font-size:0.74rem;font-weight:600;display:none;}
+.meal-toggle{color:#aaa;font-size:0.85rem;transition:transform 0.2s;}
+.meal-header.open .meal-toggle{transform:rotate(180deg);}
+.meal-body{display:none;padding:12px 14px;background:white;}
+.meal-body.open{display:block;}
+.meal-locked{padding:12px 14px;background:#fff8f5;font-size:0.8rem;color:#c0392b;display:flex;align-items:center;gap:8px;}
+
+/* ITEM ROWS */
+.section-label{font-size:0.68rem;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:0.5px;margin:10px 0 6px;}
+.item-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f0eb;}
+.item-row:last-child{border-bottom:none;}
+.item-name{font-size:0.84rem;font-weight:500;}
+.item-price{font-size:0.74rem;color:#888;margin-top:1px;}
+
+/* QTY CONTROL */
+.qty-control{display:flex;align-items:center;gap:5px;}
+.qty-btn{width:28px;height:28px;border-radius:7px;border:1.5px solid #e8ddd7;background:#faf5f0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem;color:#c0392b;font-weight:700;transition:background 0.15s;flex-shrink:0;}
+.qty-btn:hover{background:#f5e8e5;}
+.qty-input{width:42px;height:28px;border:1.5px solid #e8ddd7;border-radius:7px;text-align:center;font-family:inherit;font-size:0.85rem;font-weight:600;padding:0;background:#fafafa;}
+.qty-input:focus{outline:none;border-color:#e74c3c;background:white;}
+.qty-del{width:24px;height:24px;border-radius:6px;border:none;background:none;cursor:pointer;color:#ccc;font-size:0.75rem;display:flex;align-items:center;justify-content:center;transition:color 0.15s;padding:0;}
+.qty-del:hover{color:#e74c3c;}
+
+/* MEAL ADDRESS SECTION */
+.meal-addr-section{margin-top:12px;padding-top:12px;border-top:1px dashed #f0e8e5;}
+.meal-addr-section.hidden{display:none;}
+.meal-addr-label{font-size:0.74rem;color:#888;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+
+/* INFO / WARN */
+.info-box{background:#fff8f0;border:1px solid #fde8c9;border-radius:10px;padding:11px 13px;font-size:0.78rem;color:#666;margin:10px 0;line-height:1.5;}
+.info-box strong{color:#e07b00;}
+.warn-box{background:#fff5f4;border:1px solid #ffd5d0;border-radius:10px;padding:11px 13px;font-size:0.78rem;color:#c0392b;}
+
+/* BILL */
+.bill-date-block{margin-bottom:16px;}
+.bill-date-title{font-size:0.8rem;font-weight:700;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;}
+.bill-line{display:flex;justify-content:space-between;font-size:0.84rem;padding:4px 0;}
+.bill-line.indent{padding-left:12px;color:#777;font-size:0.79rem;}
+.bill-line.delivery-line{color:#666;font-size:0.79rem;padding-left:12px;}
+.bill-line.discount{color:#27ae60;font-weight:600;}
+.bill-line.date-total{font-weight:700;border-top:1px solid #f0ebe6;padding-top:6px;margin-top:4px;}
+.bill-divider{border:none;border-top:1px dashed #e8ddd7;margin:10px 0;}
+.grand-total-box{background:linear-gradient(135deg,#c0392b,#e74c3c);border-radius:14px;padding:16px 18px;color:white;display:flex;justify-content:space-between;align-items:center;margin:14px 0;}
+.grand-total-box .label{font-size:0.82rem;opacity:0.9;}
+.grand-total-box .amount{font-size:1.5rem;font-weight:700;}
+
+/* PAYMENT */
+.upi-section{text-align:center;}
+#qrcode{margin:0 auto;display:inline-block;}
+#qrcode img,#qrcode canvas{border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+.upi-amount{font-size:1.35rem;font-weight:700;color:#c0392b;margin:12px 0 4px;}
+.upi-id{font-size:0.75rem;color:#888;margin-bottom:14px;}
+.upi-or{display:flex;align-items:center;gap:10px;margin:14px 0;color:#aaa;font-size:0.78rem;}
+.upi-or::before,.upi-or::after{content:'';flex:1;height:1px;background:#eee;}
+
+/* 10-DAY HISSAB */
+.hissab-card{background:linear-gradient(135deg,#1a5c36,#27ae60);border-radius:14px;padding:18px 20px;color:white;margin-bottom:14px;}
+.hissab-card .hissab-label{font-size:0.8rem;opacity:0.85;margin-bottom:4px;}
+.hissab-card .hissab-amount{font-size:1.9rem;font-weight:700;}
+.hissab-card .hissab-period{font-size:0.72rem;opacity:0.7;margin-top:4px;}
+.hissab-msg{background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:12px 14px;font-size:0.83rem;color:#1a5c36;line-height:1.6;margin-bottom:14px;}
+.hissab-msg .hi{font-size:1rem;}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;padding:10px 14px 14px;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:100;}
+.bottom-nav-inner{max-width:520px;margin:0 auto;display:flex;gap:10px;}
+
+/* LOADER / TOAST */
+.loader{text-align:center;padding:28px;}
+.spinner{width:30px;height:30px;border:3px solid #f0e8e5;border-top-color:#e74c3c;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#2d2d2d;color:white;padding:9px 18px;border-radius:99px;font-size:0.8rem;font-weight:500;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* SUCCESS */
+.success-screen{text-align:center;padding:28px 0;}
+.success-screen .big-icon{font-size:3.5rem;margin-bottom:10px;}
+.success-screen h2{color:#27ae60;font-size:1rem;margin-bottom:8px;}
+.success-screen p{font-size:0.82rem;color:#666;line-height:1.6;}
+.order-ref{background:#f5f0eb;border-radius:10px;padding:10px 14px;margin:14px 0;font-size:0.8rem;color:#888;word-break:break-all;}
+.order-ref strong{color:#c0392b;}
+
+/* MANAGE ORDERS */
+.order-manage-row{padding:12px 0;border-bottom:1px solid #f5f0eb;}
+.order-manage-row:last-child{border-bottom:none;}
+.omr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.omr-info .omr-title{font-size:0.85rem;font-weight:600;}
+.omr-info .omr-sub{font-size:0.74rem;color:#888;margin-top:2px;}
+.omr-info .omr-locked{font-size:0.7rem;color:#c0392b;margin-top:3px;}
+.omr-actions{display:flex;gap:6px;flex-shrink:0;}
+.omr-edit-btn{padding:5px 10px;border-radius:7px;border:1.5px solid #ddd;background:white;color:#555;font-size:0.73rem;cursor:pointer;font-family:inherit;}
+.omr-edit-btn:hover{border-color:#e74c3c;color:#c0392b;}
+.omr-del-btn{padding:5px 10px;border-radius:7px;border:1.5px solid #fcc;background:#fff5f4;color:#c0392b;font-size:0.73rem;cursor:pointer;font-family:inherit;}
+.omr-del-btn:hover{background:#fde8e5;}
+.omr-del-btn:disabled,.omr-edit-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.omr-inline-edit{margin-top:12px;background:#fdf8f2;border-radius:10px;padding:12px;display:none;}
+.omr-inline-edit.open{display:block;}
+.omr-item-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0ebe6;font-size:0.83rem;}
+.omr-item-row:last-child{border-bottom:none;}
+
+/* HOW IT WORKS — FULL SCREEN */
+.how-screen{position:fixed;inset:0;background:white;z-index:400;overflow-y:auto;animation:fadeIn 0.3s ease;}
+.how-screen.hidden{display:none;}
+.how-hero{background:linear-gradient(135deg,#c0392b,#e74c3c);padding:32px 24px 28px;color:white;text-align:center;}
+.how-hero .logo{font-size:2.5rem;margin-bottom:8px;}
+.how-hero h1{font-size:1.2rem;font-weight:700;}
+.how-hero p{font-size:0.82rem;opacity:0.88;margin-top:6px;}
+.how-body{padding:20px 20px 100px;max-width:520px;margin:0 auto;}
+.how-step-row{display:flex;gap:14px;margin-bottom:20px;}
+.how-num{width:32px;height:32px;border-radius:50%;background:#e74c3c;color:white;font-size:0.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.how-step-text h4{font-size:0.9rem;font-weight:600;margin-bottom:4px;}
+.how-step-text h4 span{font-size:0.78rem;font-weight:400;color:#aaa;margin-left:6px;}
+.how-step-text p{font-size:0.8rem;color:#555;line-height:1.6;}
+.how-step-text .mr{font-size:0.78rem;color:#888;font-style:italic;margin-top:3px;line-height:1.5;}
+.how-divider{border:none;border-top:1px dashed #eee;margin:18px 0;}
+.how-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.how-info-box{background:#fdf8f2;border-radius:10px;padding:12px;border:1px solid #f0ebe6;}
+.how-info-box .hi-label{font-size:0.68rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;}
+.how-info-box .hi-val{font-size:0.8rem;color:#2d2d2d;line-height:1.6;}
+.how-footer{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;padding:12px 16px 18px;}
+.how-footer-inner{max-width:520px;margin:0 auto;}
+
+/* FAQ */
+.faq-section{margin-top:8px;}
+.faq-item{border-bottom:1px solid #f0ebe6;}
+.faq-q{padding:12px 0;font-size:0.84rem;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:#2d2d2d;user-select:none;}
+.faq-q .arr{color:#aaa;font-size:0.8rem;transition:transform 0.2s;}
+.faq-item.open .faq-q .arr{transform:rotate(180deg);}
+.faq-a{display:none;padding-bottom:12px;font-size:0.8rem;color:#666;line-height:1.6;}
+.faq-item.open .faq-a{display:block;}
+
+@media(max-width:360px){.cal-day{font-size:0.72rem;}}
+</style>
+</head>
+<body>
+
+<!-- HOW IT WORKS — FULL SCREEN (shown for new users only) -->
+<div class="how-screen hidden" id="howScreen">
+  <div class="how-hero">
+    <div class="logo">🍛</div>
+    <h1>Welcome to Svaadh Kitchen</h1>
+    <p>Fresh home-cooked food, delivered to your door<br><em>ताज्या घरच्या जेवणाची चव, थेट तुमच्या दारापर्यंत</em></p>
+  </div>
+  <div class="how-body">
+    <div style="font-size:0.78rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">How to order / ऑर्डर कसा द्यायचा</div>
+
+    <div class="how-step-row">
+      <div class="how-num">1</div>
+      <div class="how-step-text">
+        <h4>Enter your phone number</h4>
+        <p>Your number is your identity — no login needed. Your address and preferences are saved automatically for next time.</p>
+        <div class="mr">तुमचा मोबाईल नंबर म्हणजेच तुमची ओळख — वेगळा login नाही. पुढच्या वेळी पत्ता आणि माहिती आपोआप येईल.</div>
+      </div>
+    </div>
+
+    <div class="how-step-row">
+      <div class="how-num">2</div>
+      <div class="how-step-text">
+        <h4>Enter your delivery address</h4>
+        <p>Wing, flat number, society, and area. Each meal can go to a <strong>different address</strong> — breakfast at home, lunch at the office, dinner back home.</p>
+        <div class="mr">नाश्ता, जेवण आणि रात्रीच्या जेवणासाठी वेगवेगळा पत्ता देता येतो — सकाळी घरी, दुपारी ऑफिसला, रात्री परत घरी. सोपं आहे!</div>
+      </div>
+    </div>
+
+    <div class="how-step-row">
+      <div class="how-num">3</div>
+      <div class="how-step-text">
+        <h4>Select your dates</h4>
+        <p>Tap one or multiple dates on the calendar. Order for the whole week in one go. We are closed on Sundays.</p>
+        <div class="mr">एक किंवा एकापेक्षा जास्त तारखा निवडा — आठवड्याचे सगळे जेवण एकाच वेळी बुक करा. रविवारी सुट्टी असते.</div>
+      </div>
+    </div>
+
+    <div class="how-step-row">
+      <div class="how-num">4</div>
+      <div class="how-step-text">
+        <h4>Choose your meals</h4>
+        <p>Pick items for Breakfast, Lunch, and Dinner. Today's fresh sabji is displayed for each meal. Type a quantity or tap + / −.</p>
+        <div class="mr">नाश्ता, दुपारचं जेवण, रात्रीचं जेवण — आजची ताजी भाजी दिसेल. किती हवं ते टाइप करा किंवा + / − दाबा.</div>
+      </div>
+    </div>
+
+    <div class="how-step-row">
+      <div class="how-num">5</div>
+      <div class="how-step-text">
+        <h4>Review your bill &amp; pay</h4>
+        <p>See your full itemized bill with discounts applied automatically. Pay via UPI QR code, UPI app, or Cash on Delivery.</p>
+        <div class="mr">संपूर्ण bill तपासा — सूट आपोआप लागलेली असेल. UPI QR स्कॅन करा, UPI app वापरा, किंवा रोख द्या — जे सोईचं असेल ते.</div>
+      </div>
+    </div>
+
+    <div class="how-divider"></div>
+    <div class="how-info-grid">
+      <div class="how-info-box">
+        <div class="hi-label">⏰ Order cutoffs</div>
+        <div class="hi-val">🌅 Breakfast: 7:00 AM<br>☀️ Lunch: 9:30 AM<br>🌙 Dinner: 5:00 PM</div>
+      </div>
+      <div class="how-info-box">
+        <div class="hi-label">💰 Discounts</div>
+        <div class="hi-val">5% off ≥ ₹300/day<br>7.5% off ≥ ₹450/day</div>
+      </div>
+      <div class="how-info-box">
+        <div class="hi-label">🚚 Delivery</div>
+        <div class="hi-val">Free in Bhosale Garden<br>₹10/meal elsewhere if order &lt; ₹100</div>
+      </div>
+      <div class="how-info-box">
+        <div class="hi-label">❓ Help</div>
+        <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="how-footer">
+    <div class="how-footer-inner">
+      <button class="btn btn-primary" onclick="dismissHowScreen()">समजलं, सुरू करूया! →</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="page-header">
+  <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
+  <p>Ghar jaisa khana, aapke liye</p>
+  <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-steps" id="progressSteps">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+    <div class="step-dot" id="dot4"></div>
+  </div>
+  <div class="step-label" id="stepLabel">Step 1 of 5 — Phone</div>
+</div>
+
+<div class="container">
+
+<!-- STEP 1: PHONE -->
+<div class="screen active" id="screen0">
+  <div class="card">
+    <h2>📱 Enter your phone number</h2>
+    <div class="form-group">
+      <label>Mobile Number</label>
+      <div class="phone-wrap">
+        <span class="prefix">+91</span>
+        <input type="tel" id="phoneInput" maxlength="10" placeholder="9876543210" inputmode="numeric">
+      </div>
+    </div>
+    <p class="text-sm" style="margin-top:8px;">We'll load your saved details if you've ordered before.</p>
+    <div style="margin-top:14px;">
+      <button class="btn btn-secondary" style="font-size:0.82rem;" onclick="showManageOrders()">📋 View / Edit existing orders</button>
+    </div>
+  </div>
+  <!-- FAQ for returning users -->
+  <div class="card" id="faqCard">
+    <h2 style="cursor:pointer;" onclick="toggleFAQ()">❓ Frequently Asked Questions <span id="faqArrow" style="margin-left:auto;color:#aaa;font-size:0.85rem;font-weight:400;">▾</span></h2>
+    <div id="faqBody" style="display:none;">
+      <div class="faq-section" id="faqList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2: PROFILE + ADDRESSES -->
+<div class="screen" id="screen1">
+
+  <!-- Name + payment -->
+  <div class="card">
+    <h2>👤 Your Details</h2>
+    <div id="returningBadge"></div>
+    <div class="input-row2">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>First Name *</label>
+        <input type="text" id="firstNameInput" placeholder="Priya" autocomplete="given-name">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Last Name *</label>
+        <input type="text" id="lastNameInput" placeholder="Sharma" autocomplete="family-name">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Payment Preference <span style="font-size:0.7rem;color:#aaa;">(can change anytime)</span></label>
+      <select id="payFreqSelect">
+        <option value="Daily bill Payment">Daily Payment</option>
+        <option value="Post paid bill payment for every 10 days">10-Day Cycle (Post-paid)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Address card -->
+  <div class="card">
+    <h2>📍 Delivery Address</h2>
+
+    <!-- Same for all toggle -->
+    <label class="same-addr-row" id="sameAddrToggleRow" style="margin-bottom:16px;">
+      <input type="checkbox" id="sameAddrCheck" checked onchange="toggleAddressMode()">
+      <span>Same address for all meals (Breakfast, Lunch &amp; Dinner)</span>
+    </label>
+
+    <!-- SINGLE ADDRESS (shown when sameAddr=true) -->
+    <div id="singleAddrBlock">
+      <div class="form-group">
+        <label>Delivery Area *</label>
+        <select id="areaSelect" onchange="syncSingleAddr()">
+          <option value="">— Select area —</option>
+          <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+          <option value="Magarpatta">🏙️ Magarpatta</option>
+          <option value="Amanora">🏢 Amanora Township</option>
+          <option value="DP Road">🛣️ DP Road</option>
+        </select>
+      </div>
+      <div class="input-row3" style="margin-bottom:10px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Wing / Block</label>
+          <input type="text" id="wingInput" placeholder="A / B1" oninput="syncSingleAddr()">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Flat No. *</label>
+          <input type="text" id="flatInput" placeholder="301" oninput="syncSingleAddr()">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Floor</label>
+          <input type="text" id="floorInput" placeholder="3rd" oninput="syncSingleAddr()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Society / Building *</label>
+        <input type="text" id="societyInput" placeholder="e.g. Amanora Park Town" oninput="syncSingleAddr()">
+      </div>
+      <div class="form-group">
+        <label>📍 Google Maps Pin Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label>
+        <input type="url" id="mapsInput" placeholder="Paste your Google Maps link here…" oninput="syncSingleAddr()">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>🏷️ Landmark / Directions <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label>
+        <input type="text" id="landmarkInput" placeholder="e.g. Opposite Reliance Fresh, Gate no. 2" oninput="syncSingleAddr()">
+      </div>
+    </div>
+
+    <!-- PER-MEAL ADDRESSES (shown when sameAddr=false) -->
+    <div id="perMealAddrBlock" style="display:none;">
+      <div class="info-box" style="margin-bottom:14px;">
+        <strong>Tip:</strong> Fill in each meal's delivery address separately. Leave a section blank if you won't be ordering that meal.
+      </div>
+      <!-- Breakfast address -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1rem;">🌅</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Breakfast Delivery Address</span>
+        </div>
+        <div class="form-group">
+          <label>Area</label>
+          <select id="bf_areaSelect">
+            <option value="">— Select area —</option>
+            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+            <option value="Magarpatta">🏙️ Magarpatta</option>
+            <option value="Amanora">🏢 Amanora Township</option>
+            <option value="DP Road">🛣️ DP Road</option>
+          </select>
+        </div>
+        <div class="input-row3" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
+        </div>
+        <div class="form-group"><label>Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
+
+      <!-- Lunch address -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1rem;">☀️</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Lunch Delivery Address</span>
+        </div>
+        <div class="form-group">
+          <label>Area</label>
+          <select id="l_areaSelect">
+            <option value="">— Select area —</option>
+            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+            <option value="Magarpatta">🏙️ Magarpatta</option>
+            <option value="Amanora">🏢 Amanora Township</option>
+            <option value="DP Road">🛣️ DP Road</option>
+          </select>
+        </div>
+        <div class="input-row3" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
+        </div>
+        <div class="form-group"><label>Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
+
+      <!-- Dinner address -->
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1rem;">🌙</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Dinner Delivery Address</span>
+        </div>
+        <div class="form-group">
+          <label>Area</label>
+          <select id="d_areaSelect">
+            <option value="">— Select area —</option>
+            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+            <option value="Magarpatta">🏙️ Magarpatta</option>
+            <option value="Amanora">🏢 Amanora Township</option>
+            <option value="DP Road">🛣️ DP Road</option>
+          </select>
+        </div>
+        <div class="input-row3" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
+        </div>
+        <div class="form-group"><label>Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: DATES -->
+<div class="screen" id="screen2">
+  <div class="card">
+    <h2>📅 Select Date(s)</h2>
+    <div class="info-box" id="cutoffInfoBox">
+      <strong>Order cutoff times:</strong><br>
+      🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:30 AM &nbsp;|&nbsp; 🌙 Dinner: before 5:00 PM<br>
+      <span style="font-size:0.74rem;color:#888;">Sundays closed. Select multiple dates to order in advance!</span>
+    </div>
+    <div class="calendar-header">
+      <button class="cal-nav" id="calPrev">‹</button>
+      <h3 id="calMonthTitle"></h3>
+      <button class="cal-nav" id="calNext">›</button>
+    </div>
+    <div class="cal-grid" id="calDayNames"></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="selected-dates-summary" id="selectedDatesSummary">Tap dates to select</div>
+  </div>
+</div>
+
+<!-- STEP 4: MEALS -->
+<div class="screen" id="screen3">
+  <div class="card" style="padding-bottom:12px;">
+    <h2>🍽️ Select Meals</h2>
+    <p class="text-sm" style="color:#888;">Expand each meal to select items. Switch dates using the tabs below.</p>
+  </div>
+  <div id="dateTabsWrap" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
+  <div id="mealSelectionContent"></div>
+</div>
+
+<!-- STEP 5: BILL + PAYMENT -->
+<div class="screen" id="screen4">
+  <div class="card">
+    <h2>🧾 Order Summary</h2>
+    <div id="billSummaryContent"></div>
+  </div>
+
+  <!-- UPI (daily customers) -->
+  <div class="card" id="paymentCard">
+    <h2>💳 Payment</h2>
+    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:0.78rem;color:#92400e;line-height:1.5;">
+      ⚠️ <strong>कृपया payment पूर्ण झाल्यावरच ✅ confirm करा.</strong><br>
+      <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before completing payment.</span>
+    </div>
+    <div class="upi-section">
+      <p class="text-sm">Scan QR or tap to pay via UPI</p>
+      <div id="qrcode" style="margin:14px auto 0;"></div>
+      <div class="upi-amount" id="upiAmountDisplay">₹0</div>
+      <div class="upi-id">UPI: shriharioze07-1@okhdfcbank</div>
+      <div style="background:#f0f4ff;border-radius:8px;padding:8px 10px;margin:10px 0;font-size:0.73rem;color:#444;text-align:left;">
+        📝 <strong>Payment note:</strong> <span id="upiNoteDisplay" style="color:#1a3c8f;"></span>
+      </div>
+      <a id="upiDeepLink" href="#" class="btn btn-primary" style="text-decoration:none;margin-top:6px;">📲 Pay via UPI App</a>
+      <div class="upi-or">or</div>
+      <button class="btn btn-secondary" id="codBtn">🏠 Cash on Delivery</button>
+      <div style="margin-top:14px;">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;">
+          <span style="font-size:0.82rem;">✅ Payment पूर्ण झाली — I confirm payment has been made (or I've chosen COD)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="tenDayCard" style="display:none;">
+    <h2>📒 Your Hissab</h2>
+
+    <!-- Previous period due (shown when unpaid dues exist) -->
+    <div id="prevDueSection" style="display:none;margin-bottom:12px;">
+      <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="font-size:0.75rem;font-weight:700;color:#856404;margin-bottom:4px;">⚠️ मागील period चे देणे बाकी आहे / Previous period due</div>
+        <div style="font-size:1.3rem;font-weight:700;color:#856404;" id="prevDueAmount">₹0</div>
+        <div style="font-size:0.7rem;color:#856404;margin-top:2px;" id="prevDueLabel"></div>
+      </div>
+      <!-- QR payment section - shown on due dates (10th, 20th, last day) -->
+      <div id="qrPaySection" style="display:none;background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
+        <div style="font-size:0.82rem;font-weight:700;color:#1a5c36;margin-bottom:8px;">💳 आज payment करा / Pay now</div>
+        <div style="font-size:0.75rem;color:#1a5c36;margin-bottom:10px;" id="qrAmountLabel"></div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=shriharioze07-1@okhdfcbank%26pn=Svaadh%20Kitchen%26am=" id="qrImage"
+          style="width:160px;height:160px;border-radius:8px;border:1px solid #ddd;" alt="UPI QR">
+        <div style="font-size:0.7rem;color:#888;margin-top:6px;">UPI ID: shriharioze07-1@okhdfcbank</div>
+        <div style="font-size:0.72rem;color:#555;margin-top:8px;">Payment केल्यावर screenshot WhatsApp करा:<br>
+          <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
+      </div>
+    </div>
+
+    <!-- Current period running total -->
+    <div class="hissab-card">
+      <div class="hissab-label">या period मधील एकूण देणे / Total owed this period</div>
+      <div class="hissab-amount" id="hissabAmount">₹0</div>
+      <div class="hissab-period" id="hissabPeriod"></div>
+    </div>
+    <div class="hissab-msg">
+      <span class="hi">✅</span> हे order तुमच्या hissab मध्ये नोंदवलं गेलं आहे. आत्ता पैसे देण्याची गरज नाही — period संपल्यावर एकत्र द्यायचे.<br>
+      <span style="color:#777;font-size:0.78rem;margin-top:4px;display:block;">This order is recorded in your account. No payment needed now — settle once at period end.</span>
+    </div>
+    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;">
+      ⚠️ <strong>Period संपल्यावर payment करा.</strong> प्रत्येक transaction manually verify केली जाते — payment पूर्ण झाल्यावरच confirm करा.<br>
+      <span style="color:#78350f;font-size:0.72rem;">Each transaction is verified manually. Please pay only after period ends.</span>
+    </div>
+    <div style="margin-top:4px;">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="tenDayConfirm" style="margin-top:2px;width:auto;accent-color:#27ae60;">
+        <span style="font-size:0.82rem;">मान्य आहे — period संपेपर्यंत payment करेन<br><span style="font-size:0.75rem;color:#888;">I agree to pay at the end of this billing period</span></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card" id="successCard" style="display:none;">
+    <div class="success-screen">
+      <div class="big-icon">🎉</div>
+      <h2>Order Placed!</h2>
+      <p>तुमचा order मिळाला! आम्ही सगळं ताजं बनवून वेळेत पोहोचवू.<br>
+      <span style="font-size:0.78rem;color:#aaa;">Your order is confirmed. Fresh food, on time, every time.</span></p>
+      <div class="order-ref">Order ID: <strong id="orderIdDisplay">—</strong></div>
+      <p class="text-sm" style="margin-top:8px;">काही विचारायचं असेल तर WhatsApp करा: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></p>
+      <button class="btn btn-secondary mt-12" onclick="location.reload()">आणखी एक order द्यायचाय →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE ORDERS PANEL -->
+<div id="manageOrdersPanel" style="display:none;">
+  <div class="card">
+    <h2>📋 Your Upcoming Orders</h2>
+    <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
+    <button class="btn btn-secondary mt-12" onclick="hideManageOrders()">← Back</button>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner">
+    <button class="btn btn-secondary" id="btnBack" onclick="goBack()" style="flex:0.4;display:none;">← Back</button>
+    <button class="btn btn-primary" id="btnNext" onclick="goNext()">Continue →</button>
+  </div>
+</div>
+
+<!-- MODAL (FAQ/How-it-works for returning users from ? button) -->
+<div id="howModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:none;align-items:flex-end;justify-content:center;">
+  <div style="background:white;border-radius:20px 20px 0 0;padding:24px 20px 32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease;">
+    <div style="width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 18px;"></div>
+    <div style="font-size:0.95rem;font-weight:700;color:#c0392b;margin-bottom:16px;">🍛 How it works</div>
+    <div id="howModalContent"></div>
+    <button onclick="document.getElementById('howModal').style.display='none';" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f5f0eb;color:#c0392b;font-family:inherit;font-size:0.88rem;font-weight:600;cursor:pointer;margin-top:8px;">Close</button>
+  </div>
+</div>
+<style>@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}</style>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+const UPI_VPA          = "shriharioze07-1@okhdfcbank";
+const UPI_NAME         = "Svaadh Kitchen";
+const FREE_AREA        = "Bhosale Garden";
+const DELIVERY_CHARGE  = 10;
+const FREE_THRESHOLD   = 100;
+const DISC_T1          = { min:300, rate:0.05 };
+const DISC_T2          = { min:450, rate:0.075 };
+let   CUTOFFS          = { Breakfast:7, Lunch:9.5, Dinner:17 };
+
+// ═══════════════════════════════════════════════════════════
+// FIXED MENU
+// ═══════════════════════════════════════════════════════════
+const FIXED_MEAL_ITEMS = {
+  Lunch:[
+    {group:"Roti / Bhakri",items:[
+      {name:"Chapati",price:9,colKey:"L_CHAPATI"},
+      {name:"Without Oil Chapati",price:8,colKey:"L_WO_CHAPATI"},
+      {name:"Phulka",price:7,colKey:"L_PHULKA"},
+      {name:"Ghee Phulka",price:10,colKey:"L_GHEE_PHULKA"},
+      {name:"Jowar Bhakri",price:20,colKey:"L_JOWAR"},
+      {name:"Bajra Bhakri",price:20,colKey:"L_BAJRA"},
+    ]},
+    {group:"Today's Sabji (Dry)",dynamic:"dry",items:[
+      {name:"100ml portion",price:22,colKey:"L_DRY_MINI"},
+      {name:"250ml portion",price:45,colKey:"L_DRY_FULL"},
+    ]},
+    {group:"Today's Sabji (Curry)",dynamic:"curry",items:[
+      {name:"100ml portion",price:22,colKey:"L_CURRY_MINI"},
+      {name:"250ml portion",price:45,colKey:"L_CURRY_FULL"},
+    ]},
+    {group:"Dal / Rice / Extras",items:[
+      {name:"Dal (200ml)",price:22,colKey:"L_DAL"},
+      {name:"Rice (100g)",price:12,colKey:"L_RICE"},
+      {name:"Salad (40g)",price:6,colKey:"L_SALAD"},
+      {name:"Curd (50g)",price:12,colKey:"L_CURD"},
+    ]},
+  ],
+  Dinner:[
+    {group:"Roti / Bhakri",items:[
+      {name:"Chapati",price:9,colKey:"D_CHAPATI"},
+      {name:"Without Oil Chapati",price:8,colKey:"D_WO_CHAPATI"},
+      {name:"Phulka",price:7,colKey:"D_PHULKA"},
+      {name:"Ghee Phulka",price:10,colKey:"D_GHEE_PHULKA"},
+      {name:"Jowar Bhakri",price:20,colKey:"D_JOWAR"},
+      {name:"Bajra Bhakri",price:20,colKey:"D_BAJRA"},
+    ]},
+    {group:"Today's Sabji (Dry)",dynamic:"dry",items:[
+      {name:"100ml portion",price:22,colKey:"D_DRY_MINI"},
+      {name:"250ml portion",price:45,colKey:"D_DRY_FULL"},
+    ]},
+    {group:"Today's Sabji (Curry)",dynamic:"curry",items:[
+      {name:"100ml portion",price:22,colKey:"D_CURRY_MINI"},
+      {name:"250ml portion",price:45,colKey:"D_CURRY_FULL"},
+    ]},
+    {group:"Dal / Rice / Extras",items:[
+      {name:"Dal (200ml)",price:22,colKey:"D_DAL"},
+      {name:"Rice (100g)",price:12,colKey:"D_RICE"},
+      {name:"Salad (40g)",price:6,colKey:"D_SALAD"},
+      {name:"Curd (50g)",price:12,colKey:"D_CURD"},
+    ]},
+  ],
+};
+const BREAKFAST_COL_MAP = {
+  "Kanda Poha":"B_POHA","Paneer Paratha":"B_PANEER",
+  "Aloo Paratha":"B_ALOO","Curd (Breakfast)":"B_CURD",
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let S = {
+  step:0, phone:"", isFirstTime:true, is10Day:false, sameAddr:true,
+  profile:{name:"",first_name:"",last_name:"",area:"",wing:"",flat:"",floor:"",society:"",maps:"",landmark:"",
+           payment_preference:"Daily bill Payment"},
+  selectedDates:[], menuCache:{}, orders:{},
+  calYear:0, calMonth:0,
+  grandTotal:0, codMode:false, runningTotal:0,
+};
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const toISO = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+const getIST = () => new Date(Date.now()+5.5*3600000);
+const todayISO = () => { const t=getIST(); return toISO(t.getFullYear(),t.getMonth(),t.getDate()); };
+const formatDate = ds => new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
+function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
+
+function getMealAvailability(dateStr){
+  const today=todayISO();
+  if(dateStr>today) return {Breakfast:true,Lunch:true,Dinner:true};
+  if(dateStr<today) return {Breakfast:false,Lunch:false,Dinner:false};
+  const ov=S.menuCache[dateStr]?.cutoff_overrides||{};
+  const cur={Breakfast:ov.Breakfast??CUTOFFS.Breakfast,Lunch:ov.Lunch??CUTOFFS.Lunch,Dinner:ov.Dinner??CUTOFFS.Dinner};
+  const ist=getIST(),h=ist.getHours()+ist.getMinutes()/60;
+  return {Breakfast:h<cur.Breakfast,Lunch:h<cur.Lunch,Dinner:h<cur.Dinner};
+}
+function fmtHour(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60),ampm=hh<12?"AM":"PM",hr=hh>12?hh-12:(hh||12);return `${hr}:${String(mm).padStart(2,"0")} ${ampm}`;}
+function getPeriodLabel(){const d=getIST().getDate();if(d<=10)return"1st – 10th";if(d<=20)return"11th – 20th";const last=new Date(getIST().getFullYear(),getIST().getMonth()+1,0).getDate();return`21st – ${last}th`;}
+function buildAddr(wing,flat,floor,society,area){return [wing&&`Wing ${wing}`,flat&&`Flat ${flat}`,floor&&`${floor} Floor`,society,area].filter(Boolean).join(", ");}
+
+// ═══════════════════════════════════════════════════════════
+// HOW IT WORKS
+// ═══════════════════════════════════════════════════════════
+function showHowScreen(){$("howScreen").classList.remove("hidden");}
+function dismissHowScreen(){$("howScreen").classList.add("hidden");localStorage.setItem("sk_seen_how","1");}
+
+function showHowModal(){
+  // Populate modal with same content (compact version)
+  $("howModalContent").innerHTML = `
+    <div style="font-size:0.82rem;color:#555;line-height:1.8;">
+      <strong>⏰ Cutoff times:</strong> Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
+      <strong>💰 Discounts:</strong> 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
+      <strong>🚚 Delivery:</strong> Free in Bhosale Garden · ₹10/meal elsewhere if &lt;₹100<br>
+      <strong>📍 Address:</strong> Each meal can go to a different location<br>
+      <strong>✏️ Edit orders:</strong> Use "View/Edit existing orders" on home screen before cutoff<br>
+      <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
+      <strong>❓ Need help?</strong><br>
+      WhatsApp: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a>
+    </div>`;
+  $("howModal").style.display="flex";
+}
+
+// ═══════════════════════════════════════════════════════════
+// FAQ
+// ═══════════════════════════════════════════════════════════
+const FAQ_ITEMS = [
+  {q:"What are the order cutoff times?", a:"Breakfast: before 7:00 AM · Lunch: before 9:30 AM · Dinner: before 5:00 PM. On some days Svaadh may extend these — the order page will show updated times."},
+  {q:"Can I order for multiple days at once?", a:"Yes! On the date selection screen, tap as many dates as you want. You'll set meals for each date individually."},
+  {q:"Can breakfast go to a different address than dinner?", a:"Yes. In the meal selection step, uncheck 'Same delivery address for all meals' and each meal will have its own address fields."},
+  {q:"How do discounts work?", a:"If your total for a single day is ₹300 or more, you get 5% off. ₹450 or more, you get 7.5% off. Applied automatically on the bill screen."},
+  {q:"What is the delivery charge?", a:"Delivery is free if your area is Bhosale Garden. For other areas, ₹10 is added per meal if that meal's subtotal is below ₹100."},
+  {q:"What is the 10-day billing cycle?", a:"Instead of paying per order, your amount accumulates over 10 days (1st–10th, 11th–20th, 21st–end of month). You settle once at the end of the period. Select this under Payment Preference."},
+  {q:"Can I edit or cancel an order?", a:"Yes, before the cutoff time. Tap 'View / Edit existing orders' on the home screen, enter your phone number, and you can delete or modify upcoming orders."},
+  {q:"How do I add my Google Maps location?", a:"Open Google Maps on your phone, navigate to your delivery location, tap Share, and copy the link. Paste it in the 'Google Maps Pin Link' field — your delivery person can tap it for navigation."},
+];
+
+function buildFAQ(){
+  $("faqList").innerHTML = FAQ_ITEMS.map((f,i)=>`
+    <div class="faq-item" id="faq${i}">
+      <div class="faq-q" onclick="toggleFaqItem(${i})">${f.q}<span class="arr">▾</span></div>
+      <div class="faq-a">${f.a}</div>
+    </div>`).join("");
+}
+function toggleFAQ(){
+  const b=$("faqBody"),a=$("faqArrow");
+  const open=b.style.display==="block";
+  b.style.display=open?"none":"block";
+  a.textContent=open?"▾":"▴";
+}
+function toggleFaqItem(i){$(`faq${i}`).classList.toggle("open");}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+const STEPS=["Phone","Your Details","Select Dates","Choose Meals","Review & Pay"];
+function updateNav(){
+  const s=S.step;
+  document.querySelectorAll(".screen").forEach((el,i)=>el.classList.toggle("active",i===s));
+  document.querySelectorAll(".step-dot").forEach((d,i)=>{d.classList.remove("active","done");if(i===s)d.classList.add("active");else if(i<s)d.classList.add("done");});
+  $("stepLabel").textContent=`Step ${s+1} of 5 — ${STEPS[s]}`;
+  $("btnBack").style.display=s>0?"block":"none";
+  $("btnNext").style.display="block";
+  const labels=["Continue →","Continue →","Continue →","Review Order →","Place Order 🎉"];
+  $("btnNext").textContent=labels[s];
+}
+function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
+async function goNext(){
+  if(!validate(S.step)) return;
+  if(S.step===0){await lookupCustomer();return;}
+  if(S.step===2){if(!S.selectedDates.length){toast("Select at least one date");return;}await loadMealScreen();}
+  if(S.step===3){if(!hasAnyOrder()){toast("Select at least one item");return;}buildBillScreen();}
+  if(S.step===4){await placeOrder();return;}
+  S.step++;updateNav();window.scrollTo(0,0);
+}
+function validate(step){
+  if(step===0){const p=$("phoneInput").value.trim().replace(/\D/g,"");if(p.length!==10){toast("Enter a valid 10-digit number");return false;}if(!/^[6-9]/.test(p)){toast("Enter a valid Indian mobile number (must start with 6–9)");return false;}S.phone=p;}
+  if(step===1){
+    const firstName=$("firstNameInput").value.trim();
+    const lastName=$("lastNameInput").value.trim();
+    if(!firstName){toast("Enter your first name");return false;}
+    if(!lastName){toast("Enter your last name");return false;}
+    const name = `${firstName} ${lastName}`;
+    if(S.sameAddr){
+      const flat=$("flatInput").value.trim(),society=$("societyInput").value.trim(),area=$("areaSelect").value;
+      if(!flat){toast("Enter your flat number");return false;}
+      if(!society){toast("Enter your society / building name");return false;}
+      if(!area){toast("Select your delivery area");return false;}
+      S.profile={name,first_name:firstName,last_name:lastName,area,wing:$("wingInput").value.trim(),flat,floor:$("floorInput").value.trim(),
+        society,maps:$("mapsInput").value.trim(),landmark:$("landmarkInput").value.trim(),
+        payment_preference:$("payFreqSelect").value};
+    } else {
+      const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
+      if(!bf.flat&&!l.flat&&!d.flat){toast("Enter a flat number for at least one meal address");return false;}
+      const primary=l.flat?l:(bf.flat?bf:d);
+      S.profile={name,first_name:firstName,last_name:lastName,area:primary.area,wing:primary.wing,flat:primary.flat,floor:primary.floor,
+        society:primary.society,maps:primary.maps,landmark:primary.landmark,
+        payment_preference:$("payFreqSelect").value};
+      S.mealAddrs={Breakfast:bf,Lunch:l,Dinner:d};
+    }
+    S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CUSTOMER LOOKUP
+// ═══════════════════════════════════════════════════════════
+async function lookupCustomer(){
+  $("btnNext").textContent="Checking…";$("btnNext").disabled=true;
+  const _lCtrl=new AbortController();const _lTid=setTimeout(()=>_lCtrl.abort(),15000);
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`,{signal:_lCtrl.signal});
+    clearTimeout(_lTid);
+    const data=await res.json();
+    if(data.found){
+      S.isFirstTime=false;
+      const parts=(data.name||"").trim().split(" ");
+      const fn=parts[0]||"";
+      const ln=parts.slice(1).join(" ")||"";
+      S.profile={...S.profile,name:data.name||"",first_name:fn,last_name:ln,
+        area:data.area||"",wing:data.wing||"",
+        flat:data.flat||"",floor:data.floor||"",society:data.society||"",
+        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily bill Payment"};
+      S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
+      $("returningBadge").innerHTML=`<div class="customer-badge">
+        <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
+        <div><div class="cname">👋 Welcome back, ${fn}!</div>
+        <div class="csub">Details pre-filled — update anything that's changed.</div></div></div>`;
+    } else {
+      S.isFirstTime=true;
+      $("returningBadge").innerHTML="";
+      if(!localStorage.getItem("sk_seen_how")) showHowScreen();
+    }
+    // Pre-fill form
+    $("firstNameInput").value=$("firstNameInput").value||S.profile.first_name;
+    $("lastNameInput").value=$("lastNameInput").value||S.profile.last_name;
+    $("areaSelect").value=S.profile.area;
+    $("wingInput").value=S.profile.wing;
+    $("flatInput").value=S.profile.flat;
+    $("floorInput").value=S.profile.floor;
+    $("societyInput").value=S.profile.society;
+    $("mapsInput").value=S.profile.maps||"";
+    $("landmarkInput").value=S.profile.landmark||"";
+    $("payFreqSelect").value=S.profile.payment_preference;
+    // Default to sameAddr=true for returning customers (they already have a saved address)
+    S.sameAddr=true;
+    $("sameAddrCheck").checked=true;
+    $("singleAddrBlock").style.display="block";
+    $("perMealAddrBlock").style.display="none";
+    // Init mealAddrs from profile
+    if(!S.mealAddrs){
+      const def={area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps||"",landmark:S.profile.landmark||""};
+      S.mealAddrs={Breakfast:{...def},Lunch:{...def},Dinner:{...def}};
+    }
+    S.step++;updateNav();window.scrollTo(0,0);
+  }catch(err){
+    clearTimeout(_lTid);
+    if(err.name==="AbortError"){toast("Server is taking too long — please try again.",4000);$("btnNext").textContent="Continue →";$("btnNext").disabled=false;return;}
+    S.isFirstTime=true;$("returningBadge").innerHTML="";
+    S.step++;updateNav();window.scrollTo(0,0);
+    $("btnNext").textContent="Continue →";$("btnNext").disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADDRESS MODE — Step 2 per-meal vs single
+// ═══════════════════════════════════════════════════════════
+function toggleAddressMode(){
+  S.sameAddr=$("sameAddrCheck").checked;
+  $("singleAddrBlock").style.display=S.sameAddr?"block":"none";
+  $("perMealAddrBlock").style.display=S.sameAddr?"none":"block";
+  if(!S.sameAddr){
+    // Pre-fill per-meal blocks with whatever is in the single block
+    const p=S.profile;
+    ["bf","l","d"].forEach(pfx=>{
+      const a=$(pfx+"_areaSelect"),w=$(pfx+"_wingInput"),f=$(pfx+"_flatInput"),
+            fl=$(pfx+"_floorInput"),s=$(pfx+"_societyInput"),
+            m=$(pfx+"_mapsInput"),lm=$(pfx+"_landmarkInput");
+      if(a&&!a.value) a.value=p.area||"";
+      if(w&&!w.value) w.value=p.wing||"";
+      if(f&&!f.value) f.value=p.flat||"";
+      if(fl&&!fl.value) fl.value=p.floor||"";
+      if(s&&!s.value) s.value=p.society||"";
+      if(m&&!m.value) m.value=p.maps||"";
+      if(lm&&!lm.value) lm.value=p.landmark||"";
+    });
+  }
+}
+
+function syncSingleAddr(){
+  // Keep S.profile in sync as user types in single-address mode
+  S.profile.area    = $("areaSelect").value;
+  S.profile.wing    = $("wingInput").value.trim();
+  S.profile.flat    = $("flatInput").value.trim();
+  S.profile.floor   = $("floorInput").value.trim();
+  S.profile.society = $("societyInput").value.trim();
+  S.profile.maps    = $("mapsInput").value.trim();
+  S.profile.landmark= $("landmarkInput").value.trim();
+}
+
+function readPerMealAddr(pfx){
+  return {
+    area:    $(pfx+"_areaSelect")?.value||"",
+    wing:    $(pfx+"_wingInput")?.value.trim()||"",
+    flat:    $(pfx+"_flatInput")?.value.trim()||"",
+    floor:   $(pfx+"_floorInput")?.value.trim()||"",
+    society: $(pfx+"_societyInput")?.value.trim()||"",
+    maps:    $(pfx+"_mapsInput")?.value.trim()||"",
+    landmark:$(pfx+"_landmarkInput")?.value.trim()||"",
+  };
+}
+
+// Returns the address object to use for a given meal type
+function getMealAddr(mealType){
+  if(S.sameAddr) return {area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,
+    floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps,landmark:S.profile.landmark};
+  const pfxMap={Breakfast:"bf",Lunch:"l",Dinner:"d"};
+  return readPerMealAddr(pfxMap[mealType]||"bf");
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════════
+function initCalendar(){
+  const ist=getIST();S.calYear=ist.getFullYear();S.calMonth=ist.getMonth();
+  renderCalendar();
+  $("calPrev").onclick=()=>{S.calMonth--;if(S.calMonth<0){S.calMonth=11;S.calYear--;}renderCalendar();};
+  $("calNext").onclick=()=>{S.calMonth++;if(S.calMonth>11){S.calMonth=0;S.calYear++;}renderCalendar();};
+}
+function renderCalendar(){
+  const{calYear:y,calMonth:m}=S;
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  $("calMonthTitle").textContent=`${MONTHS[m]} ${y}`;
+  $("calDayNames").innerHTML=["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>`<div class="cal-day-name">${d}</div>`).join("");
+  const ist=getIST(),today=toISO(ist.getFullYear(),ist.getMonth(),ist.getDate());
+  const fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate();
+  let html="";
+  for(let i=0;i<fd;i++)html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=toISO(y,m,d),isSun=new Date(ds+"T12:00:00").getDay()===0,past=ds<today,sel=S.selectedDates.includes(ds);
+    // Issue 3: disable today if all meal cutoffs have already passed
+    const avail=getMealAvailability(ds);
+    const allCutoffPassed=ds===today&&!avail.Breakfast&&!avail.Lunch&&!avail.Dinner;
+    const disabled=isSun||past||allCutoffPassed;
+    let cls="cal-day";
+    if(disabled)cls+=" disabled";else if(sel)cls+=" selected";
+    if(ds===today&&!sel&&!disabled)cls+=" today";
+    if(allCutoffPassed&&!sel)cls+=" disabled";
+    html+=`<div class="${cls}" ${!disabled?`onclick="toggleDate('${ds}')"`:""} title="${allCutoffPassed?"No more meals available today":""}">${d}</div>`;
+  }
+  $("calGrid").innerHTML=html;
+  updateDateSummary();
+}
+function toggleDate(ds){
+  const idx=S.selectedDates.indexOf(ds);
+  if(idx>=0){S.selectedDates.splice(idx,1);delete S.orders[ds];}
+  else{S.selectedDates.push(ds);S.selectedDates.sort();}
+  renderCalendar();
+}
+function updateDateSummary(){
+  const el=$("selectedDatesSummary");
+  if(!S.selectedDates.length){el.textContent="Tap dates to select (multiple OK)";return;}
+  el.innerHTML=S.selectedDates.map(d=>`<span class="date-chip">${formatDate(d)}</span>`).join("");
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 4: MEALS
+// ═══════════════════════════════════════════════════════════
+async function loadMealScreen(){
+  $("mealSelectionContent").innerHTML=`<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">Fetching today's menu…</p></div>`;
+  await Promise.all(S.selectedDates.map(async date=>{
+    if(!S.menuCache[date]){
+      try{const res=await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`);S.menuCache[date]=await res.json();}
+      catch{S.menuCache[date]={breakfast:[],lunch_dry:"",lunch_curry:"",dinner_dry:"",dinner_curry:"",cutoff_overrides:{}};}
+    }
+    if(!S.orders[date]){
+      const def={area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps,landmark:S.profile.landmark};
+      S.orders[date]={
+        Breakfast:{items:{},notes:"",subtotal:0,bfItems:[],...def},
+        Lunch:    {items:{},notes:"",subtotal:0,...def},
+        Dinner:   {items:{},notes:"",subtotal:0,...def},
+      };
+    }
+  }));
+  buildDateTabs();
+  renderMealContent(S.selectedDates[0]);
+}
+function buildDateTabs(){
+  $("dateTabsWrap").innerHTML=S.selectedDates.map((date,i)=>`
+    <button id="tab_${date}" onclick="switchTab('${date}')"
+      style="flex-shrink:0;padding:6px 14px;border-radius:99px;font-size:0.77rem;font-weight:600;
+             border:1.5px solid ${i===0?"#e74c3c":"#ddd"};background:${i===0?"#e74c3c":"white"};
+             color:${i===0?"white":"#555"};cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;">
+      ${formatDate(date)}</button>`).join("");
+}
+function switchTab(date){
+  document.querySelectorAll("[id^='tab_']").forEach(b=>{b.style.background="white";b.style.color="#555";b.style.borderColor="#ddd";});
+  const ab=$(`tab_${date}`);ab.style.background="#e74c3c";ab.style.color="white";ab.style.borderColor="#e74c3c";
+  renderMealContent(date);
+}
+let activeDate="";
+function renderMealContent(date){
+  activeDate=date;
+  const menu=S.menuCache[date]||{};
+  const avail=getMealAvailability(date);
+  const MEALS=["Breakfast","Lunch","Dinner"];
+  const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
+  const ov=menu.cutoff_overrides||{};
+  const cutoffTxt={
+    Breakfast:ov.Breakfast?`Extended to ${fmtHour(ov.Breakfast)}`:"Cutoff 7:00 AM",
+    Lunch:    ov.Lunch    ?`Extended to ${fmtHour(ov.Lunch)}`    :"Cutoff 9:30 AM",
+    Dinner:   ov.Dinner   ?`Extended to ${fmtHour(ov.Dinner)}`   :"Cutoff 5:00 PM",
+  };
+  $("mealSelectionContent").innerHTML=MEALS.map(meal=>{
+    const isAvail=avail[meal],sub=S.orders[date]?.[meal]?.subtotal||0;
+    return `<div class="meal-section">
+      <div class="meal-header ${sub>0?"open":""}" id="mh_${date}_${meal}" onclick="toggleMeal('${date}','${meal}')">
+        <div class="meal-header-left">
+          <span class="meal-icon">${ICONS[meal]}</span>
+          <div>
+            <div class="meal-title">${meal}</div>
+            <div class="meal-cutoff-txt">${isAvail?cutoffTxt[meal]:"⏰ Cutoff passed for today"}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="meal-total-badge" id="mtb_${date}_${meal}" style="${sub>0?"display:block;":""}">₹${sub}</div>
+          <span class="meal-toggle">▾</span>
+        </div>
+      </div>
+      ${isAvail
+        ?`<div class="meal-body ${sub>0?"open":""}" id="mb_${date}_${meal}">${buildMealBody(date,meal,menu)}</div>`
+        :`<div class="meal-locked">⏰ Order cutoff has passed for ${meal} today.</div>`}
+    </div>`;
+  }).join("");
+  refreshAllQtys(date);
+}
+function toggleMeal(date,meal){
+  const h=$(`mh_${date}_${meal}`),b=$(`mb_${date}_${meal}`);
+  if(!h||!b)return;
+  const open=h.classList.contains("open");
+  h.classList.toggle("open",!open);b.classList.toggle("open",!open);
+}
+function buildMealBody(date,meal,menu){
+  let html="";
+  if(meal==="Breakfast"){
+    const items=menu.breakfast||[];
+    if(!items.length) return `<div class="info-box">Today's breakfast menu hasn't been set yet. Check our WhatsApp for updates!</div>`;
+    S.orders[date].Breakfast.bfItems=items;
+    html+=`<div class="section-label">Today's Breakfast</div>`;
+    html+=items.map(item=>itemRow(date,"Breakfast",item.name,item.price,item.name)).join("");
+    html+=`<div class="section-label" style="margin-top:10px;">Extras</div>`;
+    html+=itemRow(date,"Breakfast","Curd (50g)",12,"B_CURD");
+  } else {
+    const groups=FIXED_MEAL_ITEMS[meal];
+    const dryName=meal==="Lunch"?menu.lunch_dry:menu.dinner_dry;
+    const curryName=meal==="Lunch"?menu.lunch_curry:menu.dinner_curry;
+    groups.forEach(g=>{
+      let label=g.group;
+      if(g.dynamic==="dry")   label=dryName   ? `${dryName} — Dry`   : "Dry Sabji";
+      if(g.dynamic==="curry") label=curryName ? `${curryName} — Curry`: "Curry Sabji";
+      html+=`<div class="section-label">${label}</div>`;
+      html+=g.items.map(item=>itemRow(date,meal,item.name,item.price,item.colKey)).join("");
+    });
+  }
+  html+=`<div class="form-group" style="margin-top:10px;">
+    <label>Special instructions (optional)</label>
+    <textarea rows="1" placeholder="Jain, less spicy, no onion…" style="font-size:0.78rem;"
+      oninput="S.orders['${date}']['${meal}'].notes=this.value">${S.orders[date]?.[meal]?.notes||""}</textarea>
+  </div>`;
+  return html;
+}
+function itemRow(date,meal,name,price,colKey){
+  const qty=S.orders[date]?.[meal]?.items?.[colKey]||0;
+  const eid=`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g,"_");
+  return `<div class="item-row">
+    <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
+    <div class="qty-control">
+      <button class="qty-btn" onclick="changeQty('${date}','${meal}','${colKey}',${price},-1)">−</button>
+      <input class="qty-input" type="number" id="${eid}" min="0" value="${qty}"
+        oninput="setQty('${date}','${meal}','${colKey}',${price},this.value)">
+      <button class="qty-btn" onclick="changeQty('${date}','${meal}','${colKey}',${price},+1)">+</button>
+      <button class="qty-del" title="Clear" onclick="setQty('${date}','${meal}','${colKey}',${price},0)">🗑</button>
+    </div>
+  </div>`;
+}
+
+// QTY
+function changeQty(date,meal,colKey,price,delta){
+  if(!S.orders[date]?.[meal])return;
+  const cur=S.orders[date][meal].items[colKey]||0;
+  const nxt=Math.max(0,cur+delta);
+  S.orders[date][meal].items[colKey]=nxt;
+  const el=$(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g,"_"));
+  if(el)el.value=nxt;
+  recalcSubtotal(date,meal);refreshBadge(date,meal);
+}
+function setQty(date,meal,colKey,price,rawVal){
+  if(!S.orders[date]?.[meal])return;
+  let v=parseInt(rawVal)||0;v=Math.max(0,v);
+  S.orders[date][meal].items[colKey]=v;
+  const el=$(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g,"_"));
+  if(el&&el.value!=String(v))el.value=v;
+  recalcSubtotal(date,meal);refreshBadge(date,meal);
+}
+function refreshAllQtys(date){
+  ["Breakfast","Lunch","Dinner"].forEach(meal=>{
+    const items=S.orders[date]?.[meal]?.items||{};
+    for(const[colKey,qty]of Object.entries(items)){
+      const el=$(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g,"_"));if(el)el.value=qty;
+    }
+    refreshBadge(date,meal);
+  });
+}
+function recalcSubtotal(date,meal){
+  const mObj=S.orders[date]?.[meal];if(!mObj)return;
+  let sub=0;
+  for(const[colKey,qty]of Object.entries(mObj.items)){if(qty<=0)continue;sub+=getPrice(colKey,meal,date)*qty;}
+  mObj.subtotal=sub;
+}
+function getPrice(colKey,meal,date){
+  if(meal==="Breakfast"){
+    if(colKey==="B_CURD")return 12;
+    const bfItems=S.menuCache[date]?.breakfast||[];
+    for(const[n,ck]of Object.entries(BREAKFAST_COL_MAP)){if(ck===colKey){const f=bfItems.find(x=>x.name===n);return f?f.price:0;}}
+    const f=bfItems.find(x=>x.name===colKey);return f?f.price:0;
+  }
+  for(const g of FIXED_MEAL_ITEMS[meal]||[]){const f=g.items.find(i=>i.colKey===colKey);if(f)return f.price;}
+  return 0;
+}
+function getItemName(colKey,meal,date){
+  if(meal==="Breakfast"){if(colKey==="B_CURD")return"Curd (50g)";for(const[n,ck]of Object.entries(BREAKFAST_COL_MAP)){if(ck===colKey)return n;}return colKey;}
+  for(const g of FIXED_MEAL_ITEMS[meal]||[]){const f=g.items.find(i=>i.colKey===colKey);if(f)return f.name;}return colKey;
+}
+function refreshBadge(date,meal){
+  const sub=S.orders[date]?.[meal]?.subtotal||0;
+  const badge=$(`mtb_${date}_${meal}`);if(!badge)return;
+  badge.style.display=sub>0?"block":"none";badge.textContent=`₹${sub}`;
+}
+function hasAnyOrder(){
+  for(const date of S.selectedDates)for(const meal of["Breakfast","Lunch","Dinner"])if((S.orders[date]?.[meal]?.subtotal||0)>0)return true;
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STEP 5: BILL
+// ═══════════════════════════════════════════════════════════
+function buildBillScreen(){
+  let html="",grandTotal=0;
+  for(const date of S.selectedDates){
+    const dayOrders=S.orders[date]||{};
+    let dayFoodTotal=0;
+    ["Breakfast","Lunch","Dinner"].forEach(m=>{dayFoodTotal+=dayOrders[m]?.subtotal||0;});
+    if(dayFoodTotal===0)continue;
+    let discRate=0,discLabel="";
+    if(dayFoodTotal>=DISC_T2.min){discRate=DISC_T2.rate;discLabel=`7.5% off (≥ ₹${DISC_T2.min})`;}
+    else if(dayFoodTotal>=DISC_T1.min){discRate=DISC_T1.rate;discLabel=`5% off (≥ ₹${DISC_T1.min})`;}
+    const discAmt=Math.round(dayFoodTotal*discRate);
+    html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
+    let totalDelivery=0;
+    ["Breakfast","Lunch","Dinner"].forEach(meal=>{
+      const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
+      const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
+      html+=`<div class="bill-line" style="font-weight:600;margin-top:8px;color:#444;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
+      for(const[colKey,qty]of Object.entries(mObj.items||{})){
+        if(qty<=0)continue;
+        const p=getPrice(colKey,meal,date),n=getItemName(colKey,meal,date);
+        html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
+      }
+      const mAddr=getMealAddr(meal);
+      if(mAddr.area!==FREE_AREA&&sub>0&&sub<FREE_THRESHOLD){
+        html+=`<div class="bill-line delivery-line"><span>🚚 Delivery (${meal})</span><span>₹${DELIVERY_CHARGE}</span></div>`;
+        totalDelivery+=DELIVERY_CHARGE;
+      }
+    });
+    if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
+    const dayTotal=dayFoodTotal-discAmt+totalDelivery;grandTotal+=dayTotal;
+    html+=`<div class="bill-line date-total"><span>Day Total</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
+  }
+  S.grandTotal=grandTotal;
+  // Reset payment confirmation state
+  S.codMode=false;
+  const paidCb=$("paidConfirm");if(paidCb)paidCb.checked=false;
+  const tenCb=$("tenDayConfirm");if(tenCb)tenCb.checked=false;
+  const codBtnEl=$("codBtn");
+  if(codBtnEl){codBtnEl.textContent="🏠 Cash on Delivery";codBtnEl.style.background="";}
+  $("billSummaryContent").innerHTML=html+
+    `<div class="grand-total-box"><div><div class="label">Grand Total</div><div style="font-size:0.68rem;opacity:0.7;">All dates</div></div><div class="amount">₹${grandTotal}</div></div>`;
+  if(S.is10Day){
+    $("paymentCard").style.display="none";
+    $("tenDayCard").style.display="block";
+    // Show loading while fetching hissab
+    $("hissabAmount").textContent="…";
+    $("hissabPeriod").textContent="Loading your account…";
+    fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${S.phone}`)
+      .then(r=>r.json()).then(d=>{
+        // Current period (already includes this order since it's saved to sheet)
+        const curTotal = d.running || 0;
+        $("hissabAmount").textContent = `₹${curTotal}`;
+        $("hissabPeriod").textContent = `Period: ${d.period||getPeriodLabel()} · Includes this order (₹${grandTotal})`;
+
+        // Previous period unpaid dues
+        const prevDue = d.prevDue || 0;
+        if (prevDue > 0) {
+          $("prevDueSection").style.display = "block";
+          $("prevDueAmount").textContent = `₹${prevDue}`;
+          $("prevDueLabel").textContent = `${d.prevLabel} · अजून payment झाली नाही`;
+
+          // Show QR on due dates OR if previous period has unpaid dues
+          if (d.isDueDate || prevDue > 0) {
+            $("qrPaySection").style.display = "block";
+            $("qrAmountLabel").textContent = `${d.prevLabel} साठी ₹${prevDue} भरायचे आहेत`;
+            // Smart note for 10-day payment
+            const name10 = (S.profile?.name||"Customer").trim();
+            const note10 = `Svaadh: ${name10} - ${d.prevLabel}`.slice(0,50);
+            const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${prevDue}&cu=INR&tn=${encodeURIComponent(note10)}`;
+            $("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiData)}`;
+          }
+        } else {
+          $("prevDueSection").style.display = "none";
+        }
+        S.runningTotal = curTotal;
+      }).catch(()=>{
+        S.runningTotal = grandTotal;
+        $("hissabAmount").textContent = `₹${grandTotal}`;
+        $("hissabPeriod").textContent = `This order: ₹${grandTotal} · Period: ${getPeriodLabel()}`;
+      });
+  } else {
+    $("paymentCard").style.display="block";
+    $("tenDayCard").style.display="none";
+    setupUPI(grandTotal);
+  }
+  $("btnNext").textContent="Place Order 🎉";
+}
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
+
+function setupUPI(amount){
+  $("upiAmountDisplay").textContent=`₹${amount}`;
+
+  // Build smart UPI note: name + dates
+  const name = (S.profile?.name||"Customer").trim();
+  let note = "";
+  if(S.selectedDates.length === 1){
+    note = `Svaadh: ${name} - ${formatDate(S.selectedDates[0])}`;
+  } else if(S.selectedDates.length > 1){
+    const first = formatDate(S.selectedDates[0]);
+    const last  = formatDate(S.selectedDates[S.selectedDates.length-1]);
+    note = `Svaadh: ${name} - ${first} to ${last}`;
+  } else {
+    note = `Svaadh: ${name} - ${S.phone.slice(-4)}`;
+  }
+  if(note.length > 50) note = note.slice(0,50);
+
+  $("upiNoteDisplay").textContent = note;
+
+  const upiStr=`upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR`;
+  $("qrcode").innerHTML="";
+  new QRCode($("qrcode"),{text:upiStr,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});
+
+  // iOS: upi:// deep link doesn't work — show copy button instead
+  const deepLinkBtn=$("upiDeepLink");
+  if(isIOS()){
+    deepLinkBtn.removeAttribute("href");
+    deepLinkBtn.textContent=`📋 Copy UPI ID`;
+    deepLinkBtn.onclick=(e)=>{
+      e.preventDefault();
+      navigator.clipboard?.writeText(UPI_VPA).then(()=>toast("UPI ID copied! Open GPay / PhonePe / Paytm to pay ₹"+amount,3500))
+        .catch(()=>{
+          // Fallback for older iOS
+          const el=document.createElement("input");el.value=UPI_VPA;document.body.appendChild(el);
+          el.select();document.execCommand("copy");document.body.removeChild(el);
+          toast("UPI ID copied! Open GPay / PhonePe / Paytm to pay ₹"+amount,3500);
+        });
+    };
+    // Show iOS-specific instructions below the QR
+    const upiIdEl=$("upiDeepLink").closest(".upi-section")?.querySelector(".upi-id");
+    if(upiIdEl) upiIdEl.insertAdjacentHTML("afterend",
+      `<div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:8px;padding:8px 10px;font-size:0.75rem;color:#78350f;margin:8px 0;text-align:left;">
+        📱 <strong>iPhone users:</strong> Scan the QR above with your camera, or copy the UPI ID and open GPay / PhonePe / Paytm to pay ₹${amount}.
+      </div>`);
+  } else {
+    deepLinkBtn.href=upiStr;
+    deepLinkBtn.onclick=null;
+    deepLinkBtn.textContent=`📲 Pay ₹${amount} via UPI App`;
+  }
+
+  $("codBtn").onclick=()=>{
+    S.codMode=!S.codMode;
+    $("codBtn").textContent=S.codMode?"✅ COD Selected — tap to switch to UPI":"🏠 Cash on Delivery";
+    $("codBtn").style.background=S.codMode?"#f0faf4":"";
+    $("paidConfirm").checked=S.codMode;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLACE ORDER
+// ═══════════════════════════════════════════════════════════
+async function placeOrder(){
+  const confirmEl=S.is10Day?$("tenDayConfirm"):$("paidConfirm");
+  if(!confirmEl?.checked){toast(S.is10Day?"Please confirm your order":"Please confirm payment or select COD");return;}
+  $("btnNext").disabled=true;$("btnNext").textContent="Placing order…";
+  const orders=[];
+  for(const date of S.selectedDates){
+    const meals=[];
+    ["Breakfast","Lunch","Dinner"].forEach(meal=>{
+      const mObj=S.orders[date]?.[meal];if(!mObj||mObj.subtotal<=0)return;
+      const items=Object.entries(mObj.items).filter(([,q])=>q>0)
+        .map(([colKey,qty])=>({colKey,qty}));
+      const mAddr=getMealAddr(meal);
+      meals.push({type:meal,items,notes:mObj.notes||"",subtotal:mObj.subtotal,
+        address:buildAddr(mAddr.wing,mAddr.flat,mAddr.floor,mAddr.society,mAddr.area),
+        area:mAddr.area,maps:mAddr.maps||"",landmark:mAddr.landmark||""});
+    });
+    if(meals.length)orders.push({date,meals});
+  }
+  const payload={
+    profile:{name:S.profile.name,phone:S.phone,
+      address:buildAddr(S.profile.wing,S.profile.flat,S.profile.floor,S.profile.society,S.profile.area),
+      wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,
+      area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
+      payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
+    orders,payment_method:S.codMode?"COD":"UPI",payment_status:S.is10Day?"10-Day Pending":"Pending",
+  };
+  const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload),signal:_pCtrl.signal});
+    clearTimeout(_pTid);
+    const data=await res.json();
+    if(data.success)showSuccess(data.submissionId);
+    else throw new Error(data.error||"Unknown error");
+  }catch(err){
+    clearTimeout(_pTid);
+    if(err.name==="AbortError"){toast("Server timed out — check WhatsApp to confirm if your order was placed.",6000);}
+    else{toast(`Error: ${err.message}. WhatsApp us if this persists!`,5000);}
+    $("btnNext").disabled=false;$("btnNext").textContent="Place Order 🎉";
+  }
+}
+function showSuccess(id){
+  $("paymentCard").style.display="none";$("tenDayCard").style.display="none";
+  $("successCard").style.display="block";
+  $("orderIdDisplay").textContent=id.toUpperCase();
+  $("bottomNav").style.display="none";window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MANAGE ORDERS — inline edit + delete
+// ═══════════════════════════════════════════════════════════
+function showManageOrders(){
+  const phone=$("phoneInput").value.trim().replace(/\D/g,"");
+  if(phone.length!==10){toast("Enter your phone number first");return;}
+  S.phone=phone;
+  document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
+  $("manageOrdersPanel").style.display="block";
+  $("bottomNav").style.display="none";
+  loadExistingOrders(phone);
+}
+function hideManageOrders(){
+  $("manageOrdersPanel").style.display="none";
+  $("bottomNav").style.display="block";
+  $("screen0").classList.add("active");
+}
+async function loadExistingOrders(phone){
+  $("manageOrdersList").innerHTML=`<div class="loader"><div class="spinner"></div></div>`;
+  try{
+    const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
+    const data=await res.json();
+    const orders=(data.orders||[]);
+    const today=todayISO();
+    const upcoming=orders.filter(o=>o.date>=today);
+    if(!upcoming.length){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;return;}
+    // Cache per-order data for edit/resubmit use
+    upcoming.forEach(o=>{
+      orderDataCache[o.rowId]={
+        area:o.area||"",wing:o.wing||"",flat:o.flat||"",floor:o.floor||"",
+        society:o.society||"",maps:o.maps||"",landmark:o.landmark||"",
+        items_json:o.items_json||"{}",notes:o.notes||"",
+        payment_preference:o.payment_preference||"Daily bill Payment",
+        customer_name:o.customer_name||"",
+      };
+    });
+    $("manageOrdersList").innerHTML=upcoming.map(o=>{
+      const mealAvail=o.date>today||getMealAvailability(o.date)[o.meal];
+      return `<div class="order-manage-row" id="omr_${o.rowId}">
+        <div class="omr-top">
+          <div class="omr-info">
+            <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
+            <div class="omr-sub">${o.summary||"(items)"} · ₹${o.total}</div>
+            ${!mealAvail?`<div class="omr-locked">⏰ Cutoff passed — cannot edit</div>`:""}
+          </div>
+          <div class="omr-actions">
+            <button class="omr-edit-btn" ${!mealAvail?"disabled":""} onclick="toggleInlineEdit('${o.rowId}','${o.date}','${o.meal}')">✏️ Edit</button>
+            <button class="omr-del-btn"  ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑</button>
+          </div>
+        </div>
+        <div class="omr-inline-edit" id="ied_${o.rowId}">
+          <div id="ied_items_${o.rowId}"><div class="spinner" style="width:20px;height:20px;margin:8px auto;"></div></div>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="resubmitOrder('${o.rowId}','${o.date}','${o.meal}')">✅ Save Changes</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleInlineEdit('${o.rowId}')">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }catch(err){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#c0392b;text-align:center;">Error: ${err.message}</p>`;}
+}
+
+// Per-order inline edit state
+const editState = {};  // rowId → { colKey → qty }
+
+// Per-order cached data (address, items, etc.) populated by loadExistingOrders
+const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, maps, landmark, items_json, notes, payment_preference, customer_name }
+
+// Reverse maps: canonical Items_JSON key → frontend colKey (per meal)
+const CANONICAL_TO_LUNCH = {
+  "Chapati":"L_CHAPATI","Without_Oil_Chapati":"L_WO_CHAPATI","Phulka":"L_PHULKA",
+  "Ghee_Phulka":"L_GHEE_PHULKA","Jowar_Bhakri":"L_JOWAR","Bajra_Bhakri":"L_BAJRA",
+  "Dry_Sabji_Mini":"L_DRY_MINI","Dry_Sabji_Full":"L_DRY_FULL",
+  "Curry_Sabji_Mini":"L_CURRY_MINI","Curry_Sabji_Full":"L_CURRY_FULL",
+  "Dal":"L_DAL","Rice":"L_RICE","Salad":"L_SALAD","Curd":"L_CURD",
+};
+const CANONICAL_TO_DINNER = {
+  "Chapati":"D_CHAPATI","Without_Oil_Chapati":"D_WO_CHAPATI","Phulka":"D_PHULKA",
+  "Ghee_Phulka":"D_GHEE_PHULKA","Jowar_Bhakri":"D_JOWAR","Bajra_Bhakri":"D_BAJRA",
+  "Dry_Sabji_Mini":"D_DRY_MINI","Dry_Sabji_Full":"D_DRY_FULL",
+  "Curry_Sabji_Mini":"D_CURRY_MINI","Curry_Sabji_Full":"D_CURRY_FULL",
+  "Dal":"D_DAL","Rice":"D_RICE","Salad":"D_SALAD","Curd":"D_CURD",
+};
+
+async function toggleInlineEdit(rowId, date, meal){
+  const panel=$(`ied_${rowId}`);
+  if(panel.classList.contains("open")){panel.classList.remove("open");return;}
+  panel.classList.add("open");
+  // Load menu for that date if needed
+  if(!S.menuCache[date]){
+    try{const res=await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`);S.menuCache[date]=await res.json();}
+    catch{S.menuCache[date]={breakfast:[],lunch_dry:"",lunch_curry:"",dinner_dry:"",dinner_curry:"",cutoff_overrides:{}};}
+  }
+  // Pre-populate editState from cached order items (first open only)
+  if(!editState[rowId]){
+    editState[rowId]={};
+    const cached=orderDataCache[rowId];
+    if(cached){
+      try{
+        const itemsJson=JSON.parse(cached.items_json||"{}");
+        if(meal==="Breakfast"){
+          // Breakfast: canonical name = colKey (item name), except Curd → B_CURD
+          Object.entries(itemsJson).forEach(([key,qty])=>{
+            if(qty>0) editState[rowId][key==="Curd"?"B_CURD":key]=qty;
+          });
+        } else {
+          const revMap=meal==="Lunch"?CANONICAL_TO_LUNCH:CANONICAL_TO_DINNER;
+          Object.entries(itemsJson).forEach(([key,qty])=>{
+            const colKey=revMap[key]||key;
+            if(qty>0) editState[rowId][colKey]=qty;
+          });
+        }
+      }catch(e){}
+    }
+  }
+  renderInlineItems(rowId, date, meal);
+}
+
+function renderInlineItems(rowId, date, meal){
+  const menu=S.menuCache[date]||{};
+  let items=[];
+  if(meal==="Breakfast"){
+    items=(menu.breakfast||[]).map(it=>({name:it.name,price:it.price,colKey:it.name}));
+    items.push({name:"Curd (50g)",price:12,colKey:"B_CURD"});
+  } else {
+    (FIXED_MEAL_ITEMS[meal]||[]).forEach(g=>g.items.forEach(it=>items.push(it)));
+  }
+  const state=editState[rowId];
+  const html=items.map(it=>{
+    const qty=state[it.colKey]||0;
+    const eid=`ied_qty_${rowId}_${it.colKey}`.replace(/[^a-zA-Z0-9_]/g,"_");
+    return `<div class="omr-item-row">
+      <span>${it.name} <span style="color:#aaa;font-size:0.72rem;">₹${it.price}</span></span>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="iedChange('${rowId}','${it.colKey}',${it.price},-1,'${eid}')">−</button>
+        <input class="qty-input" id="${eid}" type="number" min="0" value="${qty}"
+          oninput="iedSet('${rowId}','${it.colKey}',this.value)">
+        <button class="qty-btn" onclick="iedChange('${rowId}','${it.colKey}',${it.price},+1,'${eid}')">+</button>
+      </div>
+    </div>`;
+  }).join("");
+  $(`ied_items_${rowId}`).innerHTML=html||`<p style="font-size:0.78rem;color:#888;">No items available for this meal.</p>`;
+}
+function iedChange(rowId,colKey,price,delta,eid){
+  const cur=editState[rowId][colKey]||0;
+  const nxt=Math.max(0,cur+delta);
+  editState[rowId][colKey]=nxt;
+  const el=$(eid);if(el)el.value=nxt;
+}
+function iedSet(rowId,colKey,val){
+  editState[rowId][colKey]=Math.max(0,parseInt(val)||0);
+}
+
+async function resubmitOrder(rowId, date, meal){
+  const items=Object.entries(editState[rowId]||{}).filter(([,q])=>q>0);
+  if(!items.length){toast("Add at least one item");return;}
+  // First delete the old row
+  try{
+    const del=await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
+    const dd=await del.json();if(!dd.success)throw new Error(dd.error||"Delete failed");
+  }catch(e){toast("Error: "+e.message,4000);return;}
+  // Calculate subtotal for this meal
+  const menu=S.menuCache[date]||{};
+  let sub=0;
+  items.forEach(([colKey,qty])=>{
+    if(meal==="Breakfast"){
+      if(colKey==="B_CURD"){sub+=12*qty;return;}
+      const bfItems=menu.breakfast||[];
+      for(const[n,ck]of Object.entries(BREAKFAST_COL_MAP)){if(ck===colKey){const f=bfItems.find(x=>x.name===n);if(f)sub+=f.price*qty;return;}}
+      const f=bfItems.find(x=>x.name===colKey);if(f)sub+=f.price*qty;
+    } else {
+      for(const g of FIXED_MEAL_ITEMS[meal]||[]){const f=g.items.find(i=>i.colKey===colKey);if(f){sub+=f.price*qty;break;}}
+    }
+  });
+  const mappedItems=items.map(([colKey,qty])=>({colKey,qty}));
+  // Use original order's address; fall back to S.profile if not cached
+  const cached=orderDataCache[rowId]||{};
+  const addr={
+    wing:    cached.wing    ||S.profile.wing    ||"",
+    flat:    cached.flat    ||S.profile.flat    ||"",
+    floor:   cached.floor   ||S.profile.floor   ||"",
+    society: cached.society ||S.profile.society ||"",
+    area:    cached.area    ||S.profile.area    ||"",
+    maps:    cached.maps    ||S.profile.maps    ||"",
+    landmark:cached.landmark||S.profile.landmark||"",
+  };
+  const customerName=cached.customer_name||S.profile.name||"Customer";
+  const payPref=cached.payment_preference||S.profile.payment_preference||"Daily bill Payment";
+  const payload={
+    profile:{name:customerName,phone:S.phone,
+      address:buildAddr(addr.wing,addr.flat,addr.floor,addr.society,addr.area),
+      wing:addr.wing,flat:addr.flat,floor:addr.floor,
+      society:addr.society,area:addr.area,maps:addr.maps,
+      landmark:addr.landmark,payment_preference:payPref,
+      isFirstTime:false},
+    orders:[{date,meals:[{type:meal,items:mappedItems,notes:cached.notes||"",subtotal:sub,
+      address:buildAddr(addr.wing,addr.flat,addr.floor,addr.society,addr.area),
+      area:addr.area,maps:addr.maps,landmark:addr.landmark}]}],
+    payment_method:"UPI",payment_status:"Pending",
+  };
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(data.success){toast("✅ Order updated!");loadExistingOrders(S.phone);}
+    else throw new Error(data.error||"Unknown");
+  }catch(e){toast("Error: "+e.message,4000);}
+}
+
+async function deleteOrder(rowId,date,meal){
+  if(!confirm(`Delete your ${meal} order for ${formatDate(date)}?`))return;
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",
+      body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
+    const data=await res.json();
+    if(data.success){toast("Order deleted");loadExistingOrders(S.phone);}
+    else throw new Error(data.error);
+  }catch(err){toast("Error: "+err.message,4000);}
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded",()=>{
+  updateNav();
+  initCalendar();
+  buildFAQ();
+  $("phoneInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,10);});
+  $("phoneInput").addEventListener("keydown",e=>{if(e.key==="Enter")goNext();});
+  // Close how modal on backdrop click
+  $("howModal").addEventListener("click",e=>{if(e.target===$("howModal"))$("howModal").style.display="none";});
+});
+</script>
+</body>
+</html>
