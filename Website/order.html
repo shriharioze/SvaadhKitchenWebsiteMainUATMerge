@@ -236,7 +236,76 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .faq-item.open .faq-a{display:block;}
 
 @media(max-width:360px){.cal-day{font-size:0.72rem;}}
+
+/* DARK THEME */
+[data-theme="dark"] body{background:#181818;color:#e0e0e0;}
+[data-theme="dark"] .card{background:#242424;border-color:#333;}
+[data-theme="dark"] .card h2{color:#e97060;}
+[data-theme="dark"] .progress-wrap{background:#1e1e1e;border-color:#333;}
+[data-theme="dark"] .step-dot{background:#3a3a3a;}
+[data-theme="dark"] .step-label{color:#888;}
+[data-theme="dark"] label{color:#aaa;}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#2a2a2a;border-color:#444;color:#e0e0e0;}
+[data-theme="dark"] input:focus,[data-theme="dark"] select:focus,[data-theme="dark"] textarea:focus{background:#2a2a2a;border-color:#e74c3c;}
+[data-theme="dark"] .btn-secondary{background:#2a2a2a;border-color:#444;color:#e97060;}
+[data-theme="dark"] .meal-header{background:#242424;}
+[data-theme="dark"] .meal-header:hover{background:#2a2a2a;}
+[data-theme="dark"] .meal-header.open{background:#2a1a1a;border-color:#4a2a2a;}
+[data-theme="dark"] .meal-section{border-color:#333;}
+[data-theme="dark"] .meal-body{background:#242424;}
+[data-theme="dark"] .item-row{border-color:#333;}
+[data-theme="dark"] .item-name{color:#e0e0e0;}
+[data-theme="dark"] .qty-btn{background:#2a2a2a;border-color:#444;color:#e97060;}
+[data-theme="dark"] .qty-btn:hover{background:#333;}
+[data-theme="dark"] .qty-input{background:#2a2a2a;border-color:#444;color:#e0e0e0;}
+[data-theme="dark"] .info-box{background:#2a2010;border-color:#4a3820;color:#d4b88a;}
+[data-theme="dark"] .info-box strong{color:#f0a830;}
+[data-theme="dark"] .warn-box{background:#2a1010;border-color:#4a2020;}
+[data-theme="dark"] .bottom-nav{background:#1e1e1e;border-color:#333;}
+[data-theme="dark"] .cal-nav{border-color:#444;color:#aaa;}
+[data-theme="dark"] .cal-nav:hover{background:#333;}
+[data-theme="dark"] .calendar-header h3{color:#e0e0e0;}
+[data-theme="dark"] .cal-day{color:#ccc;}
+[data-theme="dark"] .cal-day.disabled{color:#555;}
+[data-theme="dark"] .cal-day:not(.disabled):not(.empty):hover:not(.selected){background:#2a2020;border-color:#6a3030;}
+[data-theme="dark"] .cal-day-name{color:#888;}
+[data-theme="dark"] .same-addr-row{background:#1a2820;border-color:#2a4830;}
+[data-theme="dark"] .same-addr-row span{color:#6abf8a;}
+[data-theme="dark"] .customer-badge{background:#1a2820;border-color:#2a4830;}
+[data-theme="dark"] .customer-badge .csub{color:#aaa;}
+[data-theme="dark"] .bill-line.indent,[data-theme="dark"] .bill-line.delivery-line{color:#aaa;}
+[data-theme="dark"] .bill-date-title{color:#888;}
+[data-theme="dark"] .bill-divider{border-color:#333;}
+[data-theme="dark"] .order-ref{background:#2a2a2a;color:#aaa;}
+[data-theme="dark"] .upi-or::before,[data-theme="dark"] .upi-or::after{background:#333;}
+[data-theme="dark"] .faq-q{color:#e0e0e0;}
+[data-theme="dark"] .faq-a{color:#aaa;}
+[data-theme="dark"] .faq-item{border-color:#333;}
+[data-theme="dark"] .meal-addr-section{border-color:#333;}
+[data-theme="dark"] .omr-edit-btn{background:#2a2a2a;border-color:#444;color:#aaa;}
+[data-theme="dark"] .omr-del-btn{background:#2a1010;border-color:#4a2020;}
+[data-theme="dark"] .omr-inline-edit{background:#1e1e1e;}
+[data-theme="dark"] .omr-item-row{border-color:#333;}
+[data-theme="dark"] .how-screen{background:#181818;}
+[data-theme="dark"] .how-body{background:#181818;}
+[data-theme="dark"] .how-divider{border-color:#333;}
+[data-theme="dark"] .how-info-box{background:#242424;border-color:#333;}
+[data-theme="dark"] .how-info-box .hi-val{color:#e0e0e0;}
+[data-theme="dark"] .how-footer{background:#1e1e1e;border-color:#333;}
+[data-theme="dark"] .how-step-text p{color:#aaa;}
+[data-theme="dark"] .section-label{color:#666;}
+[data-theme="dark"] .selected-dates-summary{color:#888;}
+[data-theme="dark"] .meal-cutoff-txt{color:#888;}
+[data-theme="dark"] .upi-id{color:#888;}
+[data-theme="dark"] .hissab-msg{background:#162216;border-color:#2a4830;color:#6abf8a;}
 </style>
+<script>
+  // Apply saved theme immediately to prevent flash
+  (function(){
+    var t=localStorage.getItem('sk-theme')||'light';
+    document.documentElement.setAttribute('data-theme',t);
+  })();
+</script>
 </head>
 <body>
 
@@ -326,6 +395,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="page-header">
   <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
   <p>Ghar jaisa khana, aapke liye</p>
+  <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
 </div>
 
@@ -394,6 +464,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         <option value="Daily bill Payment">Daily Payment</option>
         <option value="Post paid bill payment for every 10 days">10-Day Cycle (Post-paid)</option>
       </select>
+      <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars</p>
     </div>
   </div>
 
@@ -562,6 +633,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   <div class="card" style="padding-bottom:12px;">
     <h2>🍽️ Select Meals</h2>
     <p class="text-sm" style="color:#888;">Expand each meal to select items. Switch dates using the tabs below.</p>
+    <div class="info-box" style="margin-top:10px;margin-bottom:0;font-size:0.74rem;line-height:1.6;">
+      🚚 <strong>Free delivery</strong> if meal total ≥ ₹100 (or Bhosale Garden) &nbsp;·&nbsp; 🎉 <strong>5% off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
+    </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
     <div id="dateTabsWrap" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:1;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
@@ -1715,6 +1789,20 @@ async function deleteOrder(rowId,date,meal){
 }
 
 // ═══════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleTheme(){
+  const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('sk-theme',next);
+  $('themeBtn').textContent=next==='dark'?'☀️':'🌙';
+}
+function applyThemeIcon(){
+  const btn=$('themeBtn');if(!btn)return;
+  btn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙';
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 async function loadAreas() {
@@ -1733,6 +1821,7 @@ async function loadAreas() {
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
+  applyThemeIcon();
   loadAreas();
   updateNav();
   initCalendar();

@@ -215,7 +215,30 @@
     #imgLightbox .lb-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:1.4rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
     #imgLightbox .lb-close:hover{background:rgba(255,255,255,0.3);}
     .menu-card img{cursor:zoom-in;}
+
+    /* DARK THEME */
+    [data-theme="dark"] body{background:#181818;color:#e0e0e0;}
+    [data-theme="dark"] header,[data-theme="dark"] footer{background:#1a0f0f;}
+    [data-theme="dark"] section{background:#181818;}
+    [data-theme="dark"] section:nth-child(even){background:#1e1e1e;}
+    [data-theme="dark"] .menu-card,[data-theme="dark"] .icons div{background:#2a2010;color:#e0e0e0;}
+    [data-theme="dark"] .faq-item{background:#242424;border-color:#333;}
+    [data-theme="dark"] .faq-question{background:#242424;color:#e0e0e0;}
+    [data-theme="dark"] .faq-answer{background:#1e1e1e;color:#ccc;}
+    [data-theme="dark"] .review-card{background:#242424;border-color:#333;color:#e0e0e0;}
+    [data-theme="dark"] h2,h3{color:#e0e0e0;}
+    [data-theme="dark"] p{color:#ccc;}
+    [data-theme="dark"] a:not(.btn-white):not(.contact-btn):not(.order-btn){color:#f0a070;}
+    [data-theme="dark"] .gallery-images img{opacity:0.85;}
+    #themeToggleIndex{background:rgba(255,255,255,0.15);border:none;color:white;font-size:1rem;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    #themeToggleIndex:hover{background:rgba(255,255,255,0.3);}
   </style>
+  <script>
+    (function(){
+      var t=localStorage.getItem('sk-theme')||'light';
+      document.documentElement.setAttribute('data-theme',t);
+    })();
+  </script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-TF5YJ0QP5K"></script>
@@ -249,6 +272,7 @@
       <a href="#faq">FAQ</a>
       <a href="#contact">Contact</a>
       <a href="order.html" class="btn-white pulse">Order Now</a>
+      <button id="themeToggleIndex" onclick="toggleThemeIndex()" title="Toggle dark mode">🌙</button>
     </nav>
   </header>
 
@@ -629,9 +653,18 @@
     </a>
   </footer>
 
-  <!-- Auto-update copyright year -->
+  <!-- Auto-update copyright year + dark theme -->
   <script>
     document.getElementById('current-year').textContent = new Date().getFullYear();
+    function toggleThemeIndex(){
+      const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+      document.documentElement.setAttribute('data-theme',next);
+      localStorage.setItem('sk-theme',next);
+      document.getElementById('themeToggleIndex').textContent=next==='dark'?'☀️':'🌙';
+    }
+    // Set initial icon
+    document.getElementById('themeToggleIndex').textContent=
+      document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙';
   </script>
 
   <!-- Image Lightbox -->
