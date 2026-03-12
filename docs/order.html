@@ -13,7 +13,8 @@
   gtag('js', new Date());
   gtag('config', 'G-TF5YJ0QP5K');
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="i18n.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -298,6 +299,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .meal-cutoff-txt{color:#888;}
 [data-theme="dark"] .upi-id{color:#888;}
 [data-theme="dark"] .hissab-msg{background:#162216;border-color:#2a4830;color:#6abf8a;}
+
+/* Hind font for any Marathi/Devanagari inline text */
+[data-i18n], [data-i18n-html], [data-i18n-placeholder] {
+  font-family: 'Hind', 'Poppins', sans-serif;
+}
+.mr-note{font-family:'Hind','Poppins',sans-serif;font-size:0.82em;color:#888;margin-top:5px;line-height:1.6;}
+.mr-note strong{color:#777;}
+[data-theme="dark"] .mr-note{color:#999;}
+[data-theme="dark"] .mr-note strong{color:#bbb;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -313,80 +323,78 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="how-screen hidden" id="howScreen">
   <div class="how-hero">
     <div class="logo">🍛</div>
-    <h1>Welcome to Svaadh Kitchen</h1>
-    <p>Fresh home-cooked food, delivered to your door<br><em>ताज्या घरच्या जेवणाची चव, थेट तुमच्या दारापर्यंत</em></p>
+    <h1 data-i18n="how_welcome">Welcome to Svaadh Kitchen</h1>
+    <p data-i18n="how_tagline">Fresh home-cooked food, delivered to your door</p>
   </div>
   <div class="how-body">
-    <div style="font-size:0.78rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">How to order / ऑर्डर कसा द्यायचा</div>
+    <div style="font-size:0.78rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;" data-i18n="how_title">How to order</div>
 
     <div class="how-step-row">
       <div class="how-num">1</div>
       <div class="how-step-text">
-        <h4>Enter your phone number</h4>
-        <p>Your number is your identity — no login needed. Your address and preferences are saved automatically for next time.</p>
-        <div class="mr">तुमचा मोबाईल नंबर म्हणजेच तुमची ओळख — वेगळा login नाही. पुढच्या वेळी पत्ता आणि माहिती आपोआप येईल.</div>
+        <h4 data-i18n="how_step1_title">Enter your phone number</h4>
+        <p data-i18n="how_step1_desc">Your number is your identity — no login needed. Your address and preferences are saved automatically for next time.</p>
       </div>
     </div>
 
     <div class="how-step-row">
       <div class="how-num">2</div>
       <div class="how-step-text">
-        <h4>Enter your delivery address</h4>
-        <p>Wing, flat number, society, and area. Each meal can go to a <strong>different address</strong> — breakfast at home, lunch at the office, dinner back home.</p>
-        <div class="mr">नाश्ता, जेवण आणि रात्रीच्या जेवणासाठी वेगवेगळा पत्ता देता येतो — सकाळी घरी, दुपारी ऑफिसला, रात्री परत घरी. सोपं आहे!</div>
+        <h4 data-i18n="how_step2_title">Enter your delivery address</h4>
+        <p data-i18n-html="how_step2_desc">Wing, flat number, society, and area. Each meal can go to a <strong>different address</strong> — breakfast at home, lunch at the office, dinner back home.</p>
       </div>
     </div>
 
     <div class="how-step-row">
       <div class="how-num">3</div>
       <div class="how-step-text">
-        <h4>Select your dates</h4>
-        <p>Tap one or multiple dates on the calendar. Order for the whole week in one go. We are closed on Sundays.</p>
-        <div class="mr">एक किंवा एकापेक्षा जास्त तारखा निवडा — आठवड्याचे सगळे जेवण एकाच वेळी बुक करा. रविवारी सुट्टी असते.</div>
+        <h4 data-i18n="how_step3_title">Select your dates</h4>
+        <p data-i18n="how_step3_desc">Tap one or multiple dates on the calendar. Order for the whole week in one go. We are closed on Sundays.</p>
       </div>
     </div>
 
     <div class="how-step-row">
       <div class="how-num">4</div>
       <div class="how-step-text">
-        <h4>Choose your meals</h4>
-        <p>Pick items for Breakfast, Lunch, and Dinner. Today's fresh sabji is displayed for each meal. Type a quantity or tap + / −.</p>
-        <div class="mr">नाश्ता, दुपारचं जेवण, रात्रीचं जेवण — आजची ताजी भाजी दिसेल. किती हवं ते टाइप करा किंवा + / − दाबा.</div>
+        <h4 data-i18n="how_step4_title">Choose your meals</h4>
+        <p data-i18n="how_step4_desc">Pick items for Breakfast, Lunch, and Dinner. Today's fresh sabji is displayed for each meal. Type a quantity or tap + / −.</p>
       </div>
     </div>
 
     <div class="how-step-row">
       <div class="how-num">5</div>
       <div class="how-step-text">
-        <h4>Review your bill &amp; pay</h4>
-        <p>See your full itemized bill with discounts applied automatically. Pay via UPI QR code, UPI app, or Cash on Delivery.</p>
-        <div class="mr">संपूर्ण bill तपासा — सूट आपोआप लागलेली असेल. UPI QR स्कॅन करा, UPI app वापरा, किंवा रोख द्या — जे सोईचं असेल ते.</div>
+        <h4 data-i18n="how_step5_title">Review your bill &amp; pay</h4>
+        <p data-i18n="how_step5_desc">See your full itemized bill with discounts applied automatically. Pay via UPI QR code, UPI app, or Cash on Delivery.</p>
       </div>
     </div>
 
     <div class="how-divider"></div>
     <div class="how-info-grid">
       <div class="how-info-box">
-        <div class="hi-label">⏰ Order cutoffs</div>
+        <div class="hi-label" data-i18n="how_cutoffs_label">⏰ Order cutoffs</div>
         <div class="hi-val">🌅 Breakfast: 7:00 AM<br>☀️ Lunch: 9:30 AM<br>🌙 Dinner: 5:00 PM</div>
+        <p class="mr-note">नाश्ता: सकाळी ७:०० पूर्वी · दुपारचे जेवण: ९:३० पूर्वी · रात्रीचे जेवण: सायं ५:०० पूर्वी</p>
       </div>
       <div class="how-info-box">
-        <div class="hi-label">💰 Discounts</div>
+        <div class="hi-label" data-i18n="how_discounts_label">💰 Discounts</div>
         <div class="hi-val">5% off ≥ ₹300/day<br>7.5% off ≥ ₹450/day</div>
+        <p class="mr-note">₹३०० पेक्षा जास्त — ५% सूट · ₹४५० पेक्षा जास्त — ७.५% सूट</p>
       </div>
       <div class="how-info-box">
-        <div class="hi-label">🚚 Delivery</div>
+        <div class="hi-label" data-i18n="how_delivery_label">🚚 Delivery</div>
         <div class="hi-val">Free in Bhosale Garden<br>₹10/meal elsewhere if order &lt; ₹100</div>
+        <p class="mr-note">भोसले गार्डन — मोफत डिलिव्हरी · इतर ठिकाणी ₹१०/जेवण (जर ऑर्डर ₹१०० पेक्षा कमी असेल)</p>
       </div>
       <div class="how-info-box">
-        <div class="hi-label">❓ Help</div>
+        <div class="hi-label" data-i18n="how_help_label">❓ Help</div>
         <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
       </div>
     </div>
   </div>
   <div class="how-footer">
     <div class="how-footer-inner">
-      <button class="btn btn-primary" onclick="dismissHowScreen()">समजलं, सुरू करूया! →</button>
+      <button class="btn btn-primary" onclick="dismissHowScreen()" data-i18n="how_cta">Got it, let's start! →</button>
     </div>
   </div>
 </div>
@@ -394,7 +402,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- HEADER -->
 <div class="page-header">
   <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
-  <p>Ghar jaisa khana, aapke liye</p>
+  <p data-i18n="header_tagline">Home-cooked food, made for you</p>
   <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
 </div>
@@ -416,25 +424,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- STEP 1: PHONE -->
 <div class="screen active" id="screen0">
   <div style="text-align:center;margin-bottom:10px;">
-    <a href="https://www.svaadhkitchen.in" style="font-size:0.82rem;color:#c0392b;text-decoration:none;font-weight:600;">← Back to main website</a>
+    <a href="https://www.svaadhkitchen.in" style="font-size:0.82rem;color:#c0392b;text-decoration:none;font-weight:600;" data-i18n="back_to_main">← Back to main website</a>
   </div>
   <div class="card">
-    <h2>📱 Enter your phone number</h2>
+    <h2 data-i18n="step1_title">📱 Enter your phone number</h2>
     <div class="form-group">
-      <label>Mobile Number</label>
+      <label data-i18n="phone_label">Mobile Number</label>
       <div class="phone-wrap">
         <span class="prefix">+91</span>
         <input type="tel" id="phoneInput" maxlength="10" placeholder="9876543210" inputmode="numeric">
       </div>
     </div>
-    <p class="text-sm" style="margin-top:8px;">We'll load your saved details if you've ordered before.</p>
+    <p class="text-sm" style="margin-top:8px;" data-i18n="phone_hint">We'll load your saved details if you've ordered before.</p>
     <div style="margin-top:14px;">
-      <button class="btn btn-secondary" style="font-size:0.82rem;" onclick="showManageOrders()">📋 View / Edit existing orders</button>
+      <button class="btn btn-secondary" style="font-size:0.82rem;" onclick="showManageOrders()" data-i18n="btn_view_orders">📋 View / Edit existing orders</button>
     </div>
   </div>
   <!-- FAQ for returning users -->
   <div class="card" id="faqCard">
-    <h2 style="cursor:pointer;" onclick="toggleFAQ()">❓ Frequently Asked Questions <span id="faqArrow" style="margin-left:auto;color:#aaa;font-size:0.85rem;font-weight:400;">▾</span></h2>
+    <h2 style="cursor:pointer;" onclick="toggleFAQ()"><span data-i18n="faq_title">❓ Frequently Asked Questions</span> <span id="faqArrow" style="margin-left:auto;color:#aaa;font-size:0.85rem;font-weight:400;">▾</span></h2>
     <div id="faqBody" style="display:none;">
       <div class="faq-section" id="faqList"></div>
     </div>
@@ -446,44 +454,44 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
   <!-- Name + payment -->
   <div class="card">
-    <h2>👤 Your Details</h2>
+    <h2 data-i18n="step2_details_title">👤 Your Details</h2>
     <div id="returningBadge"></div>
     <div class="input-row2">
       <div class="form-group" style="margin-bottom:0;">
-        <label>First Name *</label>
+        <label data-i18n="label_first_name">First Name *</label>
         <input type="text" id="firstNameInput" placeholder="Priya" autocomplete="given-name">
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <label>Last Name *</label>
+        <label data-i18n="label_last_name">Last Name *</label>
         <input type="text" id="lastNameInput" placeholder="Sharma" autocomplete="family-name">
       </div>
     </div>
     <div class="form-group">
-      <label>Payment Preference <span style="font-size:0.7rem;color:#aaa;">(can change anytime)</span></label>
+      <label><span data-i18n="label_payment_pref">Payment Preference</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="payment_pref_can_change">(can change anytime)</span></label>
       <select id="payFreqSelect">
-        <option value="Daily bill Payment">Daily Payment</option>
-        <option value="Post paid bill payment for every 10 days">10-Day Cycle (Post-paid)</option>
+        <option value="Daily bill Payment" data-i18n="payment_daily_opt">Daily Payment</option>
+        <option value="Post paid bill payment for every 10 days" data-i18n="payment_10day_opt">10-Day Cycle (Post-paid)</option>
       </select>
-      <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars</p>
+      <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;" data-i18n-html="payment_helper">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars</p>
     </div>
   </div>
 
   <!-- Address card -->
   <div class="card">
-    <h2>📍 Delivery Address</h2>
+    <h2 data-i18n="step2_addr_title">📍 Delivery Address</h2>
 
     <!-- Same for all toggle -->
     <label class="same-addr-row" id="sameAddrToggleRow" style="margin-bottom:16px;">
       <input type="checkbox" id="sameAddrCheck" checked onchange="toggleAddressMode()">
-      <span>Same address for all meals (Breakfast, Lunch &amp; Dinner)</span>
+      <span data-i18n="same_addr_label">Same address for all meals (Breakfast, Lunch &amp; Dinner)</span>
     </label>
 
     <!-- SINGLE ADDRESS (shown when sameAddr=true) -->
     <div id="singleAddrBlock">
       <div class="form-group">
-        <label>Delivery Area *</label>
+        <label data-i18n="label_area">Delivery Area *</label>
         <select id="areaSelect" onchange="syncSingleAddr()">
-          <option value="">— Select area —</option>
+          <option value="" data-i18n="select_area_ph">— Select area —</option>
           <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
           <option value="Magarpatta">🏙️ Magarpatta</option>
           <option value="Amanora">🏢 Amanora Township</option>
@@ -492,47 +500,47 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       </div>
       <div class="input-row3" style="margin-bottom:10px;">
         <div class="form-group" style="margin-bottom:0;">
-          <label>Wing / Block</label>
+          <label data-i18n="label_wing">Wing / Block</label>
           <input type="text" id="wingInput" placeholder="A / B1" oninput="syncSingleAddr()">
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label>Flat No. *</label>
+          <label data-i18n="label_flat">Flat No. *</label>
           <input type="text" id="flatInput" placeholder="301" oninput="syncSingleAddr()">
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label>Floor</label>
+          <label data-i18n="label_floor">Floor</label>
           <input type="text" id="floorInput" placeholder="3rd" oninput="syncSingleAddr()">
         </div>
       </div>
       <div class="form-group">
-        <label>Society / Building *</label>
+        <label data-i18n="label_society">Society / Building *</label>
         <input type="text" id="societyInput" placeholder="e.g. Amanora Park Town" oninput="syncSingleAddr()">
       </div>
       <div class="form-group">
-        <label>📍 Google Maps Pin Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label>
+        <label><span data-i18n="label_maps">📍 Google Maps Pin Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
         <input type="url" id="mapsInput" placeholder="Paste your Google Maps link here…" oninput="syncSingleAddr()">
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <label>🏷️ Landmark / Directions <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label>
+        <label><span data-i18n="label_landmark">🏷️ Landmark / Directions</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
         <input type="text" id="landmarkInput" placeholder="e.g. Opposite Reliance Fresh, Gate no. 2" oninput="syncSingleAddr()">
       </div>
     </div>
 
     <!-- PER-MEAL ADDRESSES (shown when sameAddr=false) -->
     <div id="perMealAddrBlock" style="display:none;">
-      <div class="info-box" style="margin-bottom:14px;">
+      <div class="info-box" style="margin-bottom:14px;" data-i18n-html="per_meal_tip">
         <strong>Tip:</strong> Fill in each meal's delivery address separately. Leave a section blank if you won't be ordering that meal.
       </div>
       <!-- Breakfast address -->
       <div style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">🌅</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Breakfast Delivery Address</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="bf_addr_title">Breakfast Delivery Address</span>
         </div>
         <div class="form-group">
-          <label>Area</label>
+          <label data-i18n="label_area_simple">Area</label>
           <select id="bf_areaSelect">
-            <option value="">— Select area —</option>
+            <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
@@ -540,13 +548,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </select>
         </div>
         <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
         </div>
-        <div class="form-group"><label>Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
+        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
       </div>
 
       <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
@@ -555,12 +563,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">☀️</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Lunch Delivery Address</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="l_addr_title">Lunch Delivery Address</span>
         </div>
         <div class="form-group">
-          <label>Area</label>
+          <label data-i18n="label_area_simple">Area</label>
           <select id="l_areaSelect">
-            <option value="">— Select area —</option>
+            <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
@@ -568,13 +576,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </select>
         </div>
         <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
         </div>
-        <div class="form-group"><label>Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
+        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
       </div>
 
       <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
@@ -583,12 +591,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">🌙</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;">Dinner Delivery Address</span>
+          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="d_addr_title">Dinner Delivery Address</span>
         </div>
         <div class="form-group">
-          <label>Area</label>
+          <label data-i18n="label_area_simple">Area</label>
           <select id="d_areaSelect">
-            <option value="">— Select area —</option>
+            <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
@@ -596,13 +604,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </select>
         </div>
         <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label>Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
+          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
         </div>
-        <div class="form-group"><label>Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label>📍 Maps Link <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label>🏷️ Landmark <span style="font-size:0.7rem;color:#aaa;">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
+        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
+        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
+        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
       </div>
     </div>
   </div>
@@ -611,11 +619,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- STEP 3: DATES -->
 <div class="screen" id="screen2">
   <div class="card">
-    <h2>📅 Select Date(s)</h2>
+    <h2 data-i18n="step3_title">🗓️ Select Delivery Dates</h2>
     <div class="info-box" id="cutoffInfoBox">
       <strong>Order cutoff times:</strong><br>
       🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:30 AM &nbsp;|&nbsp; 🌙 Dinner: before 5:00 PM<br>
       <span style="font-size:0.74rem;color:#888;">Sundays closed. Select multiple dates to order in advance!</span>
+      <p class="mr-note">⏰ <strong>ऑर्डरची शेवटची वेळ:</strong> नाश्ता – सकाळी ७:०० · दुपारचे जेवण – ९:३० · रात्रीचे जेवण – सायं ५:०० · रविवार बंद</p>
     </div>
     <div class="calendar-header">
       <button class="cal-nav" id="calPrev">‹</button>
@@ -624,18 +633,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     </div>
     <div class="cal-grid" id="calDayNames"></div>
     <div class="cal-grid" id="calGrid"></div>
-    <div class="selected-dates-summary" id="selectedDatesSummary">Tap dates to select</div>
+    <div class="selected-dates-summary" id="selectedDatesSummary" data-i18n="tap_dates_hint">Tap dates to select (multiple OK)</div>
   </div>
 </div>
 
 <!-- STEP 4: MEALS -->
 <div class="screen" id="screen3">
   <div class="card" style="padding-bottom:12px;">
-    <h2>🍽️ Select Meals</h2>
-    <p class="text-sm" style="color:#888;">Expand each meal to select items. Switch dates using the tabs below.</p>
-    <div class="info-box" style="margin-top:10px;margin-bottom:0;font-size:0.74rem;line-height:1.6;">
+    <h2 data-i18n="step4_title">🍱 Choose Your Meals</h2>
+    <div class="info-box" style="margin-top:4px;font-size:0.74rem;line-height:1.6;" data-i18n-html="step3_tip">
       🚚 <strong>Free delivery</strong> if meal total ≥ ₹100 (or Bhosale Garden) &nbsp;·&nbsp; 🎉 <strong>5% off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
     </div>
+    <p class="mr-note" style="margin-bottom:0;">🚚 जेवणाची रक्कम ₹१०० पेक्षा जास्त असेल तर <strong>मोफत डिलिव्हरी</strong> · 🎉 ₹३०० पेक्षा जास्त — <strong>५% सूट</strong> · ₹४५० पेक्षा जास्त — <strong>७.५% सूट</strong></p>
   </div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
     <div id="dateTabsWrap" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:1;scrollbar-width:none;-webkit-overflow-scrolling:touch;"></div>
@@ -647,78 +656,79 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- STEP 5: BILL + PAYMENT -->
 <div class="screen" id="screen4">
   <div class="card">
-    <h2>🧾 Order Summary</h2>
+    <h2 data-i18n="step5_summary_title">🧾 Order Summary</h2>
     <div id="billSummaryContent"></div>
   </div>
 
   <!-- UPI (daily customers) -->
   <div class="card" id="paymentCard">
-    <h2>💳 Payment</h2>
-    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:0.78rem;color:#92400e;line-height:1.5;">
-      ⚠️ <strong>कृपया payment पूर्ण झाल्यावरच ✅ confirm करा.</strong><br>
+    <h2 data-i18n="step5_payment_title">💳 Payment</h2>
+    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:0.78rem;color:#92400e;line-height:1.5;" data-i18n-html="payment_warning_html">
+      ⚠️ <strong>Please confirm only after payment is complete.</strong><br>
       <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before completing payment.</span>
     </div>
+    <p class="mr-note" style="color:#a05c00;margin-bottom:14px;">⚠️ पेमेंट पूर्ण केल्यानंतरच खाली टिक करा. प्रत्येक व्यवहार तपासला जातो — आधी टिक करू नका.</p>
     <div class="upi-section">
-      <p class="text-sm">Scan QR code <strong>or</strong> tap the button below to pay</p>
+      <p class="text-sm" data-i18n-html="upi_scan_hint">Scan QR code <strong>or</strong> tap the button below to pay</p>
       <div id="qrcode" style="margin:14px auto 0;"></div>
       <div class="upi-amount" id="upiAmountDisplay">₹0</div>
       <div class="upi-id">UPI: shriharioze07-1@okhdfcbank</div>
       <div style="background:#f0f4ff;border-radius:8px;padding:8px 10px;margin:10px 0;font-size:0.73rem;color:#444;text-align:left;">
-        📝 <strong>Payment note:</strong> <span id="upiNoteDisplay" style="color:#1a3c8f;"></span>
+        <span data-i18n-html="payment_note_label">📝 <strong>Payment note:</strong></span> <span id="upiNoteDisplay" style="color:#1a3c8f;"></span>
       </div>
       <a id="upiDeepLink" href="#" class="btn btn-primary" style="text-decoration:none;margin-top:6px;font-size:1rem;">👆 Tap here to pay via UPI</a>
-      <div class="upi-or">or</div>
-      <button class="btn btn-secondary" id="codBtn">🏠 Cash on Delivery</button>
+      <div class="upi-or" data-i18n="upi_or">or</div>
+      <button class="btn btn-secondary" id="codBtn" data-i18n="btn_cod_text">🏠 Cash on Delivery</button>
       <div style="margin-top:14px;">
         <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
           <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;">
-          <span style="font-size:0.82rem;">✅ Payment पूर्ण झाली — I confirm payment has been made (or I've chosen COD)</span>
+          <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has been made (or I've chosen COD)</span>
+          <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे (किंवा मी COD निवडले आहे)</span>
         </label>
       </div>
     </div>
   </div>
 
   <div class="card" id="tenDayCard" style="display:none;">
-    <h2>📒 Your Hissab</h2>
+    <h2 data-i18n="step5_hissab_title">📒 Your Account</h2>
 
     <!-- Previous period due (shown when unpaid dues exist) -->
     <div id="prevDueSection" style="display:none;margin-bottom:12px;">
       <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
-        <div style="font-size:0.75rem;font-weight:700;color:#856404;margin-bottom:4px;">⚠️ मागील period चे देणे बाकी आहे / Previous period due</div>
+        <div style="font-size:0.75rem;font-weight:700;color:#856404;margin-bottom:4px;" data-i18n="prev_due_heading">⚠️ Previous period due</div>
         <div style="font-size:1.3rem;font-weight:700;color:#856404;" id="prevDueAmount">₹0</div>
         <div style="font-size:0.7rem;color:#856404;margin-top:2px;" id="prevDueLabel"></div>
-        <div style="font-size:0.68rem;color:#a07800;margin-top:6px;font-style:italic;">✅ Already paid? Ignore this — we'll update your account within 1–2 days.</div>
+        <div style="font-size:0.68rem;color:#a07800;margin-top:6px;font-style:italic;" data-i18n="prev_due_paid_note">✅ Already paid? Ignore this — we'll update your account within 1–2 days.</div>
       </div>
       <!-- QR payment section - shown on due dates (10th, 20th, last day) -->
       <div id="qrPaySection" style="display:none;background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
-        <div style="font-size:0.82rem;font-weight:700;color:#1a5c36;margin-bottom:8px;">💳 आज payment करा / Pay now</div>
+        <div style="font-size:0.82rem;font-weight:700;color:#1a5c36;margin-bottom:8px;" data-i18n="pay_now_heading">💳 Pay now</div>
         <div style="font-size:0.75rem;color:#1a5c36;margin-bottom:10px;" id="qrAmountLabel"></div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=shriharioze07-1@okhdfcbank%26pn=Svaadh%20Kitchen%26am=" id="qrImage"
           style="width:160px;height:160px;border-radius:8px;border:1px solid #ddd;" alt="UPI QR">
         <div style="font-size:0.7rem;color:#888;margin-top:6px;">UPI ID: shriharioze07-1@okhdfcbank</div>
-        <div style="font-size:0.72rem;color:#555;margin-top:8px;">Payment केल्यावर screenshot WhatsApp करा:<br>
+        <div style="font-size:0.72rem;color:#555;margin-top:8px;"><span data-i18n="screenshot_whatsapp">After payment, send screenshot on WhatsApp:</span><br>
           <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
       </div>
     </div>
 
     <!-- Current period running total -->
     <div class="hissab-card">
-      <div class="hissab-label">या period मधील एकूण देणे / Total owed this period</div>
+      <div class="hissab-label" data-i18n="hissab_card_label">Total owed this period</div>
       <div class="hissab-amount" id="hissabAmount">₹0</div>
       <div class="hissab-period" id="hissabPeriod"></div>
     </div>
-    <div class="hissab-msg">
-      <span class="hi">✅</span> हे order तुमच्या hissab मध्ये नोंदवलं गेलं आहे. आत्ता पैसे देण्याची गरज नाही — period संपल्यावर एकत्र द्यायचे.<br>
-      <span style="color:#777;font-size:0.78rem;margin-top:4px;display:block;">This order is recorded in your account. No payment needed now — settle once at period end.</span>
+    <div class="hissab-msg" data-i18n-html="hissab_msg_html">
+      ✅ This order is recorded in your account. No payment needed now — settle once at period end.
     </div>
-    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;">
-      ⚠️ <strong>Period संपल्यावर payment करा.</strong> प्रत्येक transaction manually verify केली जाते — payment पूर्ण झाल्यावरच confirm करा.<br>
-      <span style="color:#78350f;font-size:0.72rem;">Each transaction is verified manually. Please pay only after period ends.</span>
+    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;" data-i18n-html="tenday_warning_html">
+      ⚠️ <strong>Pay at period end.</strong> Each transaction is verified manually. Please pay only after the period ends.
     </div>
     <div style="margin-top:4px;">
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
         <input type="checkbox" id="tenDayConfirm" style="margin-top:2px;width:auto;accent-color:#27ae60;">
-        <span style="font-size:0.82rem;">मान्य आहे — period संपेपर्यंत payment करेन<br><span style="font-size:0.75rem;color:#888;">I agree to pay at the end of this billing period</span></span>
+        <span style="font-size:0.82rem;" data-i18n="tenday_confirm_label">I agree to pay at the end of this billing period</span>
+        <span class="mr-note" style="margin-top:2px;">मी या बिलिंग कालावधीच्या शेवटी पैसे देण्यास सहमत आहे</span>
       </label>
     </div>
   </div>
@@ -726,13 +736,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   <div class="card" id="successCard" style="display:none;">
     <div class="success-screen">
       <div class="big-icon">🎉</div>
-      <h2>Order Placed!</h2>
-      <p>तुमचा order मिळाला! आम्ही सगळं ताजं बनवून वेळेत पोहोचवू.<br>
-      <span style="font-size:0.78rem;color:#aaa;">Your order is confirmed. Fresh food, on time, every time.</span></p>
-      <div class="order-ref">Order ID: <strong id="orderIdDisplay">—</strong></div>
-      <p class="text-sm" style="margin-top:8px;">काही विचारायचं असेल तर WhatsApp करा: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></p>
-      <button class="btn btn-secondary mt-12" onclick="location.reload()">आणखी एक order द्यायचाय →</button>
-      <a href="https://www.svaadhkitchen.in" class="btn btn-secondary" style="text-decoration:none;display:block;text-align:center;margin-top:10px;">🏠 Back to main website</a>
+      <h2 data-i18n="success_title">Order Placed!</h2>
+      <p data-i18n="success_msg">Your order is confirmed. Fresh food, on time, every time.</p>
+      <div class="order-ref"><span data-i18n="order_id_label">Order ID:</span> <strong id="orderIdDisplay">—</strong></div>
+      <p class="text-sm" style="margin-top:8px;"><span data-i18n="success_whatsapp_hint">Questions? WhatsApp us:</span> <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></p>
+      <button class="btn btn-secondary mt-12" onclick="location.reload()" data-i18n="btn_another_order">Place another order →</button>
+      <a href="https://www.svaadhkitchen.in" class="btn btn-secondary" style="text-decoration:none;display:block;text-align:center;margin-top:10px;" data-i18n="btn_back_website">🏠 Back to main website</a>
     </div>
   </div>
 </div>
@@ -740,9 +749,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- MANAGE ORDERS PANEL -->
 <div id="manageOrdersPanel" style="display:none;">
   <div class="card">
-    <h2>📋 Your Upcoming Orders</h2>
+    <h2 data-i18n="manage_title">📋 Your Upcoming Orders</h2>
     <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
-    <button class="btn btn-secondary mt-12" onclick="hideManageOrders()">← Back</button>
+    <button class="btn btn-secondary mt-12" onclick="hideManageOrders()" data-i18n="btn_back_manage">← Back</button>
   </div>
 </div>
 
@@ -751,8 +760,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <div class="bottom-nav-inner">
-    <button class="btn btn-secondary" id="btnBack" onclick="goBack()" style="flex:0.4;display:none;">← Back</button>
-    <button class="btn btn-primary" id="btnNext" onclick="goNext()">Continue →</button>
+    <button class="btn btn-secondary" id="btnBack" onclick="goBack()" style="flex:0.4;display:none;" data-i18n="btn_back_nav">← Back</button>
+    <button class="btn btn-primary" id="btnNext" onclick="goNext()" data-i18n="btn_continue">Continue →</button>
   </div>
 </div>
 
@@ -760,9 +769,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div id="howModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:none;align-items:flex-end;justify-content:center;">
   <div style="background:white;border-radius:20px 20px 0 0;padding:24px 20px 32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease;">
     <div style="width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 18px;"></div>
-    <div style="font-size:0.95rem;font-weight:700;color:#c0392b;margin-bottom:16px;">🍛 How it works</div>
+    <div style="font-size:0.95rem;font-weight:700;color:#c0392b;margin-bottom:16px;" data-i18n="how_modal_title">🍛 How it works</div>
     <div id="howModalContent"></div>
-    <button onclick="document.getElementById('howModal').style.display='none';" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f5f0eb;color:#c0392b;font-family:inherit;font-size:0.88rem;font-weight:600;cursor:pointer;margin-top:8px;">Close</button>
+    <button onclick="document.getElementById('howModal').style.display='none';" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f5f0eb;color:#c0392b;font-family:inherit;font-size:0.88rem;font-weight:600;cursor:pointer;margin-top:8px;" data-i18n="how_modal_close">Close</button>
   </div>
 </div>
 <style>@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}</style>
@@ -883,16 +892,15 @@ function showHowScreen(){$("howScreen").classList.remove("hidden");}
 function dismissHowScreen(){$("howScreen").classList.add("hidden");localStorage.setItem("sk_seen_how","1");}
 
 function showHowModal(){
-  // Populate modal with same content (compact version)
   $("howModalContent").innerHTML = `
     <div style="font-size:0.82rem;color:#555;line-height:1.8;">
-      <strong>⏰ Cutoff times:</strong> Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
-      <strong>💰 Discounts:</strong> 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
-      <strong>🚚 Delivery:</strong> Free in Bhosale Garden · ₹10/meal elsewhere if &lt;₹100<br>
+      <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ','')}</strong>: Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
+      <strong>💰 ${t('how_discounts_label').replace('💰 ','')}</strong>: 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
+      <strong>🚚 ${t('how_delivery_label').replace('🚚 ','')}</strong>: Free in Bhosale Garden · ₹10/meal elsewhere if &lt;₹100<br>
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
-      <strong>✏️ Edit orders:</strong> Use "View/Edit existing orders" on home screen before cutoff<br>
+      <strong>✏️ Edit orders:</strong> Use "${t('btn_view_orders').replace('📋 ','')}" on home screen before cutoff<br>
       <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
-      <strong>❓ Need help?</strong><br>
+      <strong>${t('how_help_label')}</strong><br>
       WhatsApp: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a>
     </div>`;
   $("howModal").style.display="flex";
@@ -931,16 +939,17 @@ function toggleFaqItem(i){$(`faq${i}`).classList.toggle("open");}
 // ═══════════════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════
-const STEPS=["Phone","Your Details","Select Dates","Choose Meals","Review & Pay"];
 function updateNav(){
   const s=S.step;
+  const STEPS=t('steps');
   document.querySelectorAll(".screen").forEach((el,i)=>el.classList.toggle("active",i===s));
   document.querySelectorAll(".step-dot").forEach((d,i)=>{d.classList.remove("active","done");if(i===s)d.classList.add("active");else if(i<s)d.classList.add("done");});
   $("stepLabel").textContent=`Step ${s+1} of 5 — ${STEPS[s]}`;
   $("btnBack").style.display=s>0?"block":"none";
+  if(s>0)$("btnBack").textContent=t('btn_back_nav');
   $("btnNext").style.display="block";
   $("btnNext").disabled=false;$("btnNext").style.opacity="1";
-  const labels=["Continue →","Continue →","Continue →","Review Order →","Place Order 🎉"];
+  const labels=[t('btn_continue'),t('btn_continue'),t('btn_continue'),t('btn_review'),t('btn_place')];
   $("btnNext").textContent=labels[s];
   // On meal screen, disable if nothing ordered yet
   if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
@@ -956,45 +965,45 @@ async function goNext(){
   if(!validate(S.step)) return;
   if(S.step===0){await lookupCustomer();return;}
   if(S.step===2){
-    if(!S.selectedDates.length){toast("Select at least one date");return;}
-    $("btnNext").disabled=true;$("btnNext").textContent="Loading…";$("btnNext").style.opacity="0.6";
+    if(!S.selectedDates.length){toast(t('toast_select_date'));return;}
+    $("btnNext").disabled=true;$("btnNext").textContent=t('loading_loading');$("btnNext").style.opacity="0.6";
     await loadMealScreen();
   }
   if(S.step===3){
-    if(!hasAnyOrder()){toast("Select at least one item");return;}
+    if(!hasAnyOrder()){toast(t('toast_select_item'));return;}
     // Warn if some selected dates have no meals at all
     if(S.selectedDates.length>1){
       const emptyDates=S.selectedDates.filter(d=>!["Breakfast","Lunch","Dinner"].some(m=>(S.orders[d]?.[m]?.subtotal||0)>0));
       if(emptyDates.length>0){
         const names=emptyDates.map(d=>formatDate(d)).join(", ");
-        if(!confirm(`⚠️ ${emptyDates.length} date(s) have no meals selected:\n${names}\n\nContinue anyway?`))return;
+        if(!confirm(t('empty_dates_warn',{n:emptyDates.length,dates:names})))return;
       }
     }
-    $("btnNext").disabled=true;$("btnNext").textContent="Building summary…";$("btnNext").style.opacity="0.6";
+    $("btnNext").disabled=true;$("btnNext").textContent=t('loading_building');$("btnNext").style.opacity="0.6";
     buildBillScreen();
   }
   if(S.step===4){await placeOrder();return;}
   S.step++;updateNav();window.scrollTo(0,0);
 }
 function validate(step){
-  if(step===0){const p=$("phoneInput").value.trim().replace(/\D/g,"");if(p.length!==10){toast("Enter a valid 10-digit number");return false;}if(!/^[6-9]/.test(p)){toast("Enter a valid Indian mobile number (must start with 6–9)");return false;}S.phone=p;}
+  if(step===0){const p=$("phoneInput").value.trim().replace(/\D/g,"");if(p.length!==10){toast(t('toast_valid_phone'));return false;}if(!/^[6-9]/.test(p)){toast(t('toast_indian_phone'));return false;}S.phone=p;}
   if(step===1){
     const firstName=$("firstNameInput").value.trim();
     const lastName=$("lastNameInput").value.trim();
-    if(!firstName){toast("Enter your first name");return false;}
-    if(!lastName){toast("Enter your last name");return false;}
+    if(!firstName){toast(t('toast_first_name'));return false;}
+    if(!lastName){toast(t('toast_last_name'));return false;}
     const name = `${firstName} ${lastName}`;
     if(S.sameAddr){
       const flat=$("flatInput").value.trim(),society=$("societyInput").value.trim(),area=$("areaSelect").value;
-      if(!flat){toast("Enter your flat number");return false;}
-      if(!society){toast("Enter your society / building name");return false;}
-      if(!area){toast("Select your delivery area");return false;}
+      if(!flat){toast(t('toast_flat'));return false;}
+      if(!society){toast(t('toast_society'));return false;}
+      if(!area){toast(t('toast_area'));return false;}
       S.profile={name,first_name:firstName,last_name:lastName,area,wing:$("wingInput").value.trim(),flat,floor:$("floorInput").value.trim(),
         society,maps:$("mapsInput").value.trim(),landmark:$("landmarkInput").value.trim(),
         payment_preference:$("payFreqSelect").value};
     } else {
       const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
-      if(!bf.flat&&!l.flat&&!d.flat){toast("Enter a flat number for at least one meal address");return false;}
+      if(!bf.flat&&!l.flat&&!d.flat){toast(t('toast_at_least_one_addr'));return false;}
       const primary=l.flat?l:(bf.flat?bf:d);
       S.profile={name,first_name:firstName,last_name:lastName,area:primary.area,wing:primary.wing,flat:primary.flat,floor:primary.floor,
         society:primary.society,maps:primary.maps,landmark:primary.landmark,
@@ -1010,7 +1019,7 @@ function validate(step){
 // CUSTOMER LOOKUP
 // ═══════════════════════════════════════════════════════════
 async function lookupCustomer(){
-  $("btnNext").textContent="Checking…";$("btnNext").disabled=true;
+  $("btnNext").textContent=t('loading_checking');$("btnNext").disabled=true;
   const _lCtrl=new AbortController();const _lTid=setTimeout(()=>_lCtrl.abort(),15000);
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`,{signal:_lCtrl.signal});
@@ -1028,10 +1037,10 @@ async function lookupCustomer(){
       S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
       $("returningBadge").innerHTML=`<div class="customer-badge">
         <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
-        <div><div class="cname">👋 Welcome back, ${fn}!</div>
-        <div class="csub">Details pre-filled — tap <strong>Continue →</strong> if nothing has changed.</div></div></div>
+        <div><div class="cname">${t('welcome_back',{name:fn})}</div>
+        <div class="csub">${t('welcome_back_hint')}</div></div></div>
       <div style="background:#f0faf4;border:1px solid #6fcf97;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.78rem;color:#1a6640;">
-        ✅ No changes needed? Just scroll down and tap <strong>Continue →</strong>
+        ${t('no_changes_hint')}
       </div>`;
     } else {
       S.isFirstTime=true;
@@ -1059,13 +1068,13 @@ async function lookupCustomer(){
       const def={area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps||"",landmark:S.profile.landmark||""};
       S.mealAddrs={Breakfast:{...def},Lunch:{...def},Dinner:{...def}};
     }
-    $("btnNext").textContent="Continue →";$("btnNext").disabled=false;
+    $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
     S.step++;updateNav();window.scrollTo(0,0);
   }catch(err){
     clearTimeout(_lTid);
-    if(err.name==="AbortError"){toast("Server is taking too long — please try again.",4000);$("btnNext").textContent="Continue →";$("btnNext").disabled=false;return;}
+    if(err.name==="AbortError"){toast(t('toast_server_slow'),4000);$("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;return;}
     S.isFirstTime=true;$("returningBadge").innerHTML="";
-    $("btnNext").textContent="Continue →";$("btnNext").disabled=false;
+    $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
     S.step++;updateNav();window.scrollTo(0,0);
   }
 }
@@ -1154,7 +1163,7 @@ function renderCalendar(){
     if(disabled)cls+=" disabled";else if(sel)cls+=" selected";
     if(ds===today&&!sel&&!disabled)cls+=" today";
     if(allCutoffPassed&&!sel)cls+=" disabled";
-    html+=`<div class="${cls}" ${!disabled?`onclick="toggleDate('${ds}')"`:""} title="${allCutoffPassed?"No more meals available today":""}">${d}</div>`;
+    html+=`<div class="${cls}" ${!disabled?`onclick="toggleDate('${ds}')"`:""} title="${allCutoffPassed?t('all_cutoffs_passed_title'):""}">${d}</div>`;
   }
   $("calGrid").innerHTML=html;
   updateDateSummary();
@@ -1167,7 +1176,7 @@ function toggleDate(ds){
 }
 function updateDateSummary(){
   const el=$("selectedDatesSummary");
-  if(!S.selectedDates.length){el.textContent="Tap dates to select (multiple OK)";return;}
+  if(!S.selectedDates.length){el.textContent=t('tap_dates_hint');return;}
   el.innerHTML=S.selectedDates.map(d=>`<span class="date-chip">${formatDate(d)}</span>`).join("");
 }
 
@@ -1175,7 +1184,7 @@ function updateDateSummary(){
 // STEP 4: MEALS
 // ═══════════════════════════════════════════════════════════
 async function loadMealScreen(){
-  $("mealSelectionContent").innerHTML=`<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">Fetching today's menu…</p></div>`;
+  $("mealSelectionContent").innerHTML=`<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">${t('loading_menu')}</p></div>`;
   await Promise.all(S.selectedDates.map(async date=>{
     if(!S.menuCache[date]){
       try{const res=await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`);S.menuCache[date]=await res.json();}
@@ -1206,17 +1215,17 @@ function copyMealsToAllDates(){
   if(!activeDate||S.selectedDates.length<2){return;}
   const src=S.orders[activeDate];
   if(!src||!["Breakfast","Lunch","Dinner"].some(m=>(src[m]?.subtotal||0)>0)){
-    toast("No meals selected on this date to copy",2500);return;
+    toast(t('toast_no_meals_to_copy'),2500);return;
   }
   const others=S.selectedDates.filter(d=>d!==activeDate);
-  if(!confirm(`Copy meals from ${formatDate(activeDate)} to ${others.length} other date(s)?`))return;
+  if(!confirm(t('copy_confirm',{date:formatDate(activeDate),n:others.length})))return;
   others.forEach(d=>{
     S.orders[d]={};
     ["Breakfast","Lunch","Dinner"].forEach(m=>{
       if(src[m])S.orders[d][m]=JSON.parse(JSON.stringify(src[m]));
     });
   });
-  toast(`Copied to ${others.length} date(s) ✅`,2000);
+  toast(t('toast_copied',{n:others.length}),2000);
   renderMealContent(activeDate); // refresh current view to show updated state
 }
 function switchTab(date){
@@ -1233,9 +1242,9 @@ function renderMealContent(date){
   const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
   const ov=menu.cutoff_overrides||{};
   const cutoffTxt={
-    Breakfast:ov.Breakfast?`Extended to ${fmtHour(ov.Breakfast)}`:"Cutoff 7:00 AM",
-    Lunch:    ov.Lunch    ?`Extended to ${fmtHour(ov.Lunch)}`    :"Cutoff 9:30 AM",
-    Dinner:   ov.Dinner   ?`Extended to ${fmtHour(ov.Dinner)}`   :"Cutoff 5:00 PM",
+    Breakfast:ov.Breakfast?t('cutoff_extended',{time:fmtHour(ov.Breakfast)}):t('cutoff_default',{time:'7:00 AM'}),
+    Lunch:    ov.Lunch    ?t('cutoff_extended',{time:fmtHour(ov.Lunch)}    ):t('cutoff_default',{time:'9:30 AM'}),
+    Dinner:   ov.Dinner   ?t('cutoff_extended',{time:fmtHour(ov.Dinner)}   ):t('cutoff_default',{time:'5:00 PM'}),
   };
   $("mealSelectionContent").innerHTML=MEALS.map(meal=>{
     const isAvail=avail[meal],sub=S.orders[date]?.[meal]?.subtotal||0;
@@ -1245,7 +1254,7 @@ function renderMealContent(date){
           <span class="meal-icon">${ICONS[meal]}</span>
           <div>
             <div class="meal-title">${meal}</div>
-            <div class="meal-cutoff-txt">${isAvail?cutoffTxt[meal]:"⏰ Cutoff passed for today"}</div>
+            <div class="meal-cutoff-txt">${isAvail?cutoffTxt[meal]:t('cutoff_passed_meal',{meal})}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -1255,7 +1264,7 @@ function renderMealContent(date){
       </div>
       ${isAvail
         ?`<div class="meal-body ${sub>0?"open":""}" id="mb_${date}_${meal}">${buildMealBody(date,meal,menu)}</div>`
-        :`<div class="meal-locked">⏰ Order cutoff has passed for ${meal} today.</div>`}
+        :`<div class="meal-locked">${t('cutoff_passed_meal',{meal})}</div>`}
     </div>`;
   }).join("");
   refreshAllQtys(date);
@@ -1270,11 +1279,11 @@ function buildMealBody(date,meal,menu){
   let html="";
   if(meal==="Breakfast"){
     const items=menu.breakfast||[];
-    if(!items.length) return `<div class="info-box">Today's breakfast menu hasn't been set yet. Check our WhatsApp for updates!</div>`;
+    if(!items.length) return `<div class="info-box">${t('bf_menu_not_set')}</div>`;
     S.orders[date].Breakfast.bfItems=items;
-    html+=`<div class="section-label">Today's Breakfast</div>`;
+    html+=`<div class="section-label">${t('today_breakfast_label')}</div>`;
     html+=items.map(item=>itemRow(date,"Breakfast",item.name,item.price,item.name)).join("");
-    html+=`<div class="section-label" style="margin-top:10px;">Extras</div>`;
+    html+=`<div class="section-label" style="margin-top:10px;">${t('extras_label')}</div>`;
     html+=itemRow(date,"Breakfast","Curd (50g)",12,"B_CURD");
   } else {
     const groups=FIXED_MEAL_ITEMS[meal];
@@ -1289,8 +1298,8 @@ function buildMealBody(date,meal,menu){
     });
   }
   html+=`<div class="form-group" style="margin-top:10px;">
-    <label>Special instructions (optional)</label>
-    <textarea rows="1" placeholder="Jain, less spicy, no onion…" style="font-size:0.78rem;"
+    <label>${t('special_instructions_label')}</label>
+    <textarea rows="1" placeholder="${t('special_instructions_ph')}" style="font-size:0.78rem;"
       oninput="S.orders['${date}']['${meal}'].notes=this.value">${S.orders[date]?.[meal]?.notes||""}</textarea>
   </div>`;
   return html;
@@ -1401,7 +1410,7 @@ function buildBillScreen(){
     });
     if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
     const dayTotal=dayFoodTotal-discAmt+totalDelivery;grandTotal+=dayTotal;
-    html+=`<div class="bill-line date-total"><span>Day Total</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
+    html+=`<div class="bill-line date-total"><span>${t('day_total')}</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
   }
   S.grandTotal=grandTotal;
   // Reset payment confirmation state
@@ -1411,31 +1420,31 @@ function buildBillScreen(){
   const codBtnEl=$("codBtn");
   if(codBtnEl){codBtnEl.textContent="🏠 Cash on Delivery";codBtnEl.style.background="";}
   $("billSummaryContent").innerHTML=html+
-    `<div class="grand-total-box"><div><div class="label">Grand Total</div><div style="font-size:0.68rem;opacity:0.7;">All dates</div></div><div class="amount">₹${grandTotal}</div></div>`;
+    `<div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   if(S.is10Day){
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
     // Show loading while fetching hissab
     $("hissabAmount").textContent="…";
-    $("hissabPeriod").textContent="Loading your account…";
+    $("hissabPeriod").textContent=t('loading_account');
     fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${S.phone}`)
       .then(r=>r.json()).then(d=>{
         // Running total from sheet + this order (not yet placed)
         const curTotal = (d.running || 0) + grandTotal;
         $("hissabAmount").textContent = `₹${curTotal}`;
-        $("hissabPeriod").textContent = `Period: ${d.period||getPeriodLabel()} · Includes this order (₹${grandTotal})`;
+        $("hissabPeriod").textContent = t('period_label',{p:d.period||getPeriodLabel(),amt:grandTotal});
 
         // Previous period unpaid dues
         const prevDue = d.prevDue || 0;
         if (prevDue > 0) {
           $("prevDueSection").style.display = "block";
           $("prevDueAmount").textContent = `₹${prevDue}`;
-          $("prevDueLabel").textContent = `${d.prevLabel} · अजून payment झाली नाही`;
+          $("prevDueLabel").textContent = t('prev_period_label',{label:d.prevLabel});
 
           // Show QR on due dates OR if previous period has unpaid dues
           if (d.isDueDate || prevDue > 0) {
             $("qrPaySection").style.display = "block";
-            $("qrAmountLabel").textContent = `${d.prevLabel} साठी ₹${prevDue} भरायचे आहेत`;
+            $("qrAmountLabel").textContent = t('qr_amount_label',{label:d.prevLabel,amt:prevDue});
             // Smart note for 10-day payment
             const name10 = (S.profile?.name||"Customer").trim();
             const note10 = `Svaadh: ${name10} - ${d.prevLabel}`.slice(0,50);
@@ -1449,14 +1458,14 @@ function buildBillScreen(){
       }).catch(()=>{
         S.runningTotal = grandTotal;
         $("hissabAmount").textContent = `₹${grandTotal}`;
-        $("hissabPeriod").textContent = `This order: ₹${grandTotal} · Period: ${getPeriodLabel()}`;
+        $("hissabPeriod").textContent = t('period_this_order',{amt:grandTotal,p:getPeriodLabel()});
       });
   } else {
     $("paymentCard").style.display="block";
     $("tenDayCard").style.display="none";
     setupUPI(grandTotal);
   }
-  $("btnNext").textContent="Place Order 🎉";
+  $("btnNext").textContent=t('btn_place');
 }
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
 
@@ -1487,32 +1496,32 @@ function setupUPI(amount){
   const deepLinkBtn=$("upiDeepLink");
   if(isIOS()){
     deepLinkBtn.removeAttribute("href");
-    deepLinkBtn.textContent=`📋 Copy UPI ID`;
+    deepLinkBtn.textContent=t('upi_copy_label');
     deepLinkBtn.onclick=(e)=>{
       e.preventDefault();
-      navigator.clipboard?.writeText(UPI_VPA).then(()=>toast("UPI ID copied! Open GPay / PhonePe / Paytm to pay ₹"+amount,3500))
+      navigator.clipboard?.writeText(UPI_VPA).then(()=>toast(t('upi_copied_toast',{amt:amount}),3500))
         .catch(()=>{
           // Fallback for older iOS
           const el=document.createElement("input");el.value=UPI_VPA;document.body.appendChild(el);
           el.select();document.execCommand("copy");document.body.removeChild(el);
-          toast("UPI ID copied! Open GPay / PhonePe / Paytm to pay ₹"+amount,3500);
+          toast(t('upi_copied_toast',{amt:amount}),3500);
         });
     };
     // Show iOS-specific instructions below the QR
     const upiIdEl=$("upiDeepLink").closest(".upi-section")?.querySelector(".upi-id");
     if(upiIdEl) upiIdEl.insertAdjacentHTML("afterend",
       `<div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:8px;padding:8px 10px;font-size:0.75rem;color:#78350f;margin:8px 0;text-align:left;">
-        📱 <strong>iPhone users:</strong> Scan the QR above with your camera, or copy the UPI ID and open GPay / PhonePe / Paytm to pay ₹${amount}.
+        ${t('ios_hint',{amt:amount})}
       </div>`);
   } else {
     deepLinkBtn.href=upiStr;
     deepLinkBtn.onclick=null;
-    deepLinkBtn.textContent=`👆 Click here to pay ₹${amount} via any UPI app`;
+    deepLinkBtn.textContent=t('upi_pay_btn',{amt:amount});
   }
 
   $("codBtn").onclick=()=>{
     S.codMode=!S.codMode;
-    $("codBtn").textContent=S.codMode?"✅ COD Selected — tap to switch to UPI":"🏠 Cash on Delivery";
+    $("codBtn").textContent=S.codMode?t('cod_selected'):t('btn_cod_text');
     $("codBtn").style.background=S.codMode?"#f0faf4":"";
     $("paidConfirm").checked=S.codMode;
   };
@@ -1523,8 +1532,8 @@ function setupUPI(amount){
 // ═══════════════════════════════════════════════════════════
 async function placeOrder(){
   const confirmEl=S.is10Day?$("tenDayConfirm"):$("paidConfirm");
-  if(!confirmEl?.checked){toast(S.is10Day?"Please confirm your order":"Please confirm payment or select COD");return;}
-  $("btnNext").disabled=true;$("btnNext").textContent="Placing order…";
+  if(!confirmEl?.checked){toast(S.is10Day?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
+  $("btnNext").disabled=true;$("btnNext").textContent=t('loading_placing');
   const orders=[];
   for(const date of S.selectedDates){
     const meals=[];
@@ -1556,9 +1565,9 @@ async function placeOrder(){
     else throw new Error(data.error||"Unknown error");
   }catch(err){
     clearTimeout(_pTid);
-    if(err.name==="AbortError"){toast("Server timed out — check WhatsApp to confirm if your order was placed.",6000);}
+    if(err.name==="AbortError"){toast(t('toast_server_timeout'),6000);}
     else{toast(`Error: ${err.message}. WhatsApp us if this persists!`,5000);}
-    $("btnNext").disabled=false;$("btnNext").textContent="Place Order 🎉";
+    $("btnNext").disabled=false;$("btnNext").textContent=t('btn_place');
   }
 }
 function showSuccess(id){
@@ -1573,7 +1582,7 @@ function showSuccess(id){
 // ═══════════════════════════════════════════════════════════
 function showManageOrders(){
   const phone=$("phoneInput").value.trim().replace(/\D/g,"");
-  if(phone.length!==10){toast("Enter your phone number first");return;}
+  if(phone.length!==10){toast(t('toast_enter_phone_first'));return;}
   S.phone=phone;
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
   $("manageOrdersPanel").style.display="block";
@@ -1593,7 +1602,7 @@ async function loadExistingOrders(phone){
     const orders=(data.orders||[]);
     const today=todayISO();
     const upcoming=orders.filter(o=>o.date>=today);
-    if(!upcoming.length){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;return;}
+    if(!upcoming.length){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">${t('no_upcoming_orders')}</p>`;return;}
     // Cache per-order data for edit/resubmit use
     upcoming.forEach(o=>{
       orderDataCache[o.rowId]={
@@ -1611,7 +1620,7 @@ async function loadExistingOrders(phone){
           <div class="omr-info">
             <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
             <div class="omr-sub">${o.summary||"(items)"} · ₹${o.total}</div>
-            ${!mealAvail?`<div class="omr-locked">⏰ Cutoff passed — cannot edit</div>`:""}
+            ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
           </div>
           <div class="omr-actions">
             <button class="omr-edit-btn" ${!mealAvail?"disabled":""} onclick="toggleInlineEdit('${o.rowId}','${o.date}','${o.meal}')">✏️ Edit</button>
@@ -1709,7 +1718,7 @@ function renderInlineItems(rowId, date, meal){
       </div>
     </div>`;
   }).join("");
-  $(`ied_items_${rowId}`).innerHTML=html||`<p style="font-size:0.78rem;color:#888;">No items available for this meal.</p>`;
+  $(`ied_items_${rowId}`).innerHTML=html||`<p style="font-size:0.78rem;color:#888;">${t('manage_no_items')}</p>`;
 }
 function iedChange(rowId,colKey,price,delta,eid){
   const cur=editState[rowId][colKey]||0;
@@ -1723,7 +1732,7 @@ function iedSet(rowId,colKey,val){
 
 async function resubmitOrder(rowId, date, meal){
   const items=Object.entries(editState[rowId]||{}).filter(([,q])=>q>0);
-  if(!items.length){toast("Add at least one item");return;}
+  if(!items.length){toast(t('toast_add_item'));return;}
   // First delete the old row
   try{
     const del=await fetch(APPS_SCRIPT_URL,{method:"POST",
@@ -1772,18 +1781,18 @@ async function resubmitOrder(rowId, date, meal){
   try{
     const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload)});
     const data=await res.json();
-    if(data.success){toast("✅ Order updated!");loadExistingOrders(S.phone);}
+    if(data.success){toast(t('toast_order_updated'));loadExistingOrders(S.phone);}
     else throw new Error(data.error||"Unknown");
   }catch(e){toast("Error: "+e.message,4000);}
 }
 
 async function deleteOrder(rowId,date,meal){
-  if(!confirm(`Delete your ${meal} order for ${formatDate(date)}?`))return;
+  if(!confirm(t('delete_confirm',{meal,date:formatDate(date)})))return;
   try{
     const res=await fetch(APPS_SCRIPT_URL,{method:"POST",
       body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
     const data=await res.json();
-    if(data.success){toast("Order deleted");loadExistingOrders(S.phone);}
+    if(data.success){toast(t('toast_order_deleted'));loadExistingOrders(S.phone);}
     else throw new Error(data.error);
   }catch(err){toast("Error: "+err.message,4000);}
 }
@@ -1811,7 +1820,7 @@ async function loadAreas() {
     const areas = await res.json();
     if (!Array.isArray(areas) || areas.length === 0) return;
     FREE_AREAS = areas.filter(a => a.free).map(a => a.name);
-    const opts = '<option value="">— Select area —</option>'
+    const opts = `<option value="">${t('select_area_ph')}</option>`
       + areas.map(a => `<option value="${a.name}">${a.label}</option>`).join("");
     ["areaSelect","bf_areaSelect","l_areaSelect","d_areaSelect"].forEach(id => {
       const el = document.getElementById(id);

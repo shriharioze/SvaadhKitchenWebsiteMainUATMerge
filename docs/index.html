@@ -64,7 +64,8 @@
   </script>
 
   <link rel="stylesheet" href="chat.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="i18n.js"></script>
   <style>
     /* Additional CSS for the website sections */
     body {
@@ -232,6 +233,44 @@
     [data-theme="dark"] .gallery-images img{opacity:0.85;}
     #themeToggleIndex{background:rgba(255,255,255,0.15);border:none;color:white;font-size:1rem;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
     #themeToggleIndex:hover{background:rgba(255,255,255,0.3);}
+
+    /* BILINGUAL (Marathi) notes — used for key instructions */
+    .mr-note{font-family:'Hind','Roboto',sans-serif;font-size:0.88em;color:#666;margin-top:6px;line-height:1.6;}
+    .mr-note strong{color:#555;}
+    [data-theme="dark"] .mr-note{color:#aaa;}
+    [data-theme="dark"] .mr-note strong{color:#ccc;}
+
+    /* ── REVIEWS WIDGET ─────────────────────────────────── */
+    .reviews-header-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;max-width:860px;margin:0 auto 28px;background:white;border:1px solid #e0e0e0;border-radius:16px;padding:20px 28px;box-shadow:0 2px 10px rgba(0,0,0,0.07);}
+    [data-theme="dark"] .reviews-header-bar{background:#242424;border-color:#333;}
+    .reviews-rating-block{display:flex;align-items:center;gap:16px;}
+    .reviews-big-num{font-size:3rem;font-weight:700;color:#202124;line-height:1;}
+    [data-theme="dark"] .reviews-big-num{color:#e0e0e0;}
+    .reviews-meta{display:flex;flex-direction:column;gap:4px;}
+    .reviews-stars-row{color:#fbbc04;font-size:1.5rem;letter-spacing:3px;line-height:1;}
+    .reviews-count-row{display:flex;align-items:center;gap:7px;font-size:0.85rem;color:#5f6368;}
+    [data-theme="dark"] .reviews-count-row{color:#aaa;}
+    .rv-g-inline{display:inline-flex;align-items:center;gap:1px;font-size:0.82rem;font-weight:700;line-height:1;}
+    .rv-g-inline .g1{color:#4285F4}.rv-g-inline .g2{color:#EA4335}.rv-g-inline .g3{color:#FBBC05}.rv-g-inline .g4{color:#4285F4}.rv-g-inline .g5{color:#34A853}.rv-g-inline .g6{color:#EA4335}
+    .review-us-btn{background:#4285f4;color:white!important;padding:10px 22px;border-radius:24px;font-weight:600;font-size:0.9rem;text-decoration:none;transition:background 0.2s;white-space:nowrap;flex-shrink:0;}
+    .review-us-btn:hover{background:#3367d6;color:white!important;}
+    .reviews-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px;max-width:1200px;margin:0 auto;}
+    .review-card{background:white;border:1px solid #e0e0e0;border-radius:14px;padding:18px;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;flex-direction:column;}
+    [data-theme="dark"] .review-card{background:#242424;border-color:#333;}
+    .rv-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .rv-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:white;flex-shrink:0;font-family:'Roboto',sans-serif;}
+    .rv-info{flex:1;min-width:0;}
+    .rv-name{font-weight:600;font-size:0.92rem;color:#202124;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    [data-theme="dark"] .rv-name{color:#e0e0e0;}
+    .rv-verified{color:#4285f4;font-size:0.72rem;margin-left:4px;vertical-align:middle;}
+    .rv-date{font-size:0.78rem;color:#80868b;margin-top:2px;}
+    .rv-g-badge{margin-left:auto;display:flex;align-items:center;gap:0.5px;font-size:0.75rem;font-weight:700;line-height:1;flex-shrink:0;}
+    .rv-g-b{color:#4285F4}.rv-g-o{color:#EA4335}.rv-g-g{color:#FBBC05}.rv-g-g2{color:#4285F4}.rv-g-l{color:#34A853}.rv-g-e{color:#EA4335}
+    .rv-stars{color:#fbbc04;font-size:1rem;letter-spacing:1px;margin-bottom:8px;}
+    .rv-text{font-size:0.87rem;color:#3c4043;line-height:1.55;flex:1;}
+    [data-theme="dark"] .rv-text{color:#ccc;}
+    .rv-more-btn{background:none;border:none;color:#4285f4;font-size:0.82rem;cursor:pointer;padding:0;margin-top:6px;text-align:left;font-family:inherit;}
+    .rv-more-btn:hover{text-decoration:underline;}
   </style>
   <script>
     (function(){
@@ -279,16 +318,15 @@
   <!-- Hero -->
   <section id="hero">
     <h2>Fresh, Healthy, Homemade Vegetarian Meals in Hadapsar, Pune</h2>
-    <p>Order delicious homemade breakfast, lunch, and dinner delivered to your doorstep. Authentic taste, quality
-      ingredients, and quick service.</p>
-    <a href="order.html" class="btn-orange">Order Now &raquo;</a>
+    <p>Order delicious homemade breakfast, lunch, and dinner delivered to your doorstep. Authentic taste, quality ingredients, and quick service.</p>
+    <p class="mr-note">ताज्या घरगुती जेवणाची ऑर्डर द्या — नाश्ता, दुपारचे व रात्रीचे जेवण घरपोच.</p>
+    <a href="order.html" class="btn-orange">Order Now »</a>
   </section>
 
   <!-- What We Serve -->
   <section id="menu" class="menu-section">
     <h2>Our Menu - Fresh Homemade Vegetarian Meals</h2>
-    <p>Choose from our daily selection of breakfast, lunch, and dinner options. All meals are prepared fresh with
-      authentic homemade recipes.</p>
+    <p>Choose from our daily selection of breakfast, lunch, and dinner options. All meals are prepared fresh with authentic homemade recipes.</p>
     <div class="menu-items">
       <div class="menu-card">
         <img src="images/breakfast.png" alt="Fresh homemade breakfast options at Svaadh Kitchen">
@@ -306,9 +344,7 @@
   <!-- About Us -->
   <section id="about">
     <h2>About Svaadh Kitchen - Hadapsar's Trusted Homemade Food Service</h2>
-    <p>Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade
-      meals for over 2.5 years. Our passion is to make healthy vegetarian food easily accessible and delicious for
-      everyone in the community.</p>
+    <p>Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals for over 2.5 years. Our passion is to make healthy vegetarian food easily accessible and delicious for everyone in the community.</p>
     <div class="about-highlights">
       <div class="highlight-item">
         <h3>🍛 Fresh Daily</h3>
@@ -336,11 +372,28 @@
     </div>
   </section>
 
-  <!-- Google Reviews -->
+  <!-- Customer Reviews -->
   <section id="reviews">
-    <h2></h2>
-    <script src="https://elfsightcdn.com/platform.js" async></script>
-    <div class="elfsight-app-29b50ffa-11cc-48ad-b364-53bc05795c02" data-elfsight-app-lazy></div>
+    <h2>What Our Customers Say</h2>
+
+    <!-- Summary bar -->
+    <div class="reviews-header-bar">
+      <div class="reviews-rating-block">
+        <div id="reviewsBigNum" class="reviews-big-num">5.0</div>
+        <div class="reviews-meta">
+          <div id="reviewsSummaryStars" class="reviews-stars-row">★★★★★</div>
+          <div class="reviews-count-row">
+            <span class="rv-g-inline"><span class="g1">G</span><span class="g2">o</span><span class="g3">o</span><span class="g4">g</span><span class="g5">l</span><span class="g6">e</span></span>
+            <span id="reviewsTotalCount">84 reviews on Google</span>
+          </div>
+        </div>
+      </div>
+      <a id="reviewUsBtn" href="https://www.google.com/maps/search/Svaadh+Kitchen+Bhosale+Garden+Hadapsar+Pune/"
+         target="_blank" rel="noopener" class="review-us-btn">Review us on Google</a>
+    </div>
+
+    <!-- Cards rendered by reviews.js -->
+    <div class="reviews-grid" id="reviewsGrid"></div>
   </section>
 
   <!-- FAQ Section -->
@@ -350,19 +403,20 @@
       <!-- Ordering & Delivery -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          How much in advance should I place my order?
+          <span>How much in advance should I place my order?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
           To ensure we prepare your meal with the freshest ingredients, please place your orders before these cutoff
           times: <strong>Breakfast before 7:00 AM</strong>, <strong>Lunch before 9:30 AM</strong>, and <strong>Dinner
             before 5:00 PM</strong>. This helps us maintain quality and ensure timely delivery.
+          <p class="mr-note">📌 ऑर्डरची शेवटची वेळ: <strong>नाश्ता – सकाळी ७:०० पूर्वी</strong> · <strong>दुपारचे जेवण – सकाळी ९:३० पूर्वी</strong> · <strong>रात्रीचे जेवण – दुपारी ५:०० पूर्वी</strong></p>
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Which areas do you deliver to?
+          <span>Which areas do you deliver to?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -374,7 +428,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          What are your delivery charges?
+          <span>What are your delivery charges?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -386,7 +440,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Can I order for the entire week?
+          <span>Can I order for the entire week?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -398,7 +452,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you provide bulk orders for offices and events?
+          <span>Do you provide bulk orders for offices and events?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -410,7 +464,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          What is your cancellation policy?
+          <span>What is your cancellation policy?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -422,7 +476,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Can I modify my order after placing it?
+          <span>Can I modify my order after placing it?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -434,7 +488,7 @@
       <!-- Menu & Food -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          What's included in your meals?
+          <span>What's included in your meals?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -447,7 +501,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you offer Jain food options?
+          <span>Do you offer Jain food options?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -459,7 +513,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Is your food really homemade?
+          <span>Is your food really homemade?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -471,7 +525,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you use fresh ingredients daily?
+          <span>Do you use fresh ingredients daily?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -483,7 +537,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Can I customize my meal?
+          <span>Can I customize my meal?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -495,7 +549,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you have gluten-free options?
+          <span>Do you have gluten-free options?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -507,7 +561,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          How spicy is your food?
+          <span>How spicy is your food?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -520,7 +574,7 @@
       <!-- Payment & Pricing -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          What payment methods do you accept?
+          <span>What payment methods do you accept?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -532,7 +586,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you offer any discounts?
+          <span>Do you offer any discounts?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -543,7 +597,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Is there a minimum order amount?
+          <span>Is there a minimum order amount?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -555,7 +609,7 @@
       <!-- Quality & Service -->
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          How do you ensure food quality and safety?
+          <span>How do you ensure food quality and safety?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -567,7 +621,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Can I provide feedback on the food?
+          <span>Can I provide feedback on the food?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -579,7 +633,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          How long have you been in business?
+          <span>How long have you been in business?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -591,7 +645,7 @@
 
       <div class="faq-item">
         <button class="faq-question" onclick="toggleFAQ(this)">
-          Do you have proper food licenses and certifications?
+          <span>Do you have proper food licenses and certifications?</span>
           <span>+</span>
         </button>
         <div class="faq-answer">
@@ -638,19 +692,16 @@
     </div>
   </section>
 
-  <!-- Chat Widget -->
+  <!-- Reviews & Chat -->
+  <script src="reviews.js"></script>
   <div id="chat-widget"></div>
   <script src="chat.js"></script>
 
   <!-- Footer -->
   <footer>
     <p>© <span id="current-year"></span> Svaadh Kitchen | Hadapsar, Pune</p>
-    <a href="tel:+919930748908" class="contact-btn call-btn">
-      📞 Call Us
-    </a>
-    <a href="mailto:svaadh.kitchen@gmail.com" class="contact-btn email-btn">
-      ✉️ Email Us
-    </a>
+    <a href="tel:+919930748908" class="contact-btn call-btn">📞 Call Us</a>
+    <a href="mailto:svaadh.kitchen@gmail.com" class="contact-btn email-btn">✉️ Email Us</a>
   </footer>
 
   <!-- Auto-update copyright year + dark theme -->
