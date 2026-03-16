@@ -270,6 +270,7 @@
   background: #fff9f3;
   margin: 40px 0;
 }
+[data-theme="dark"] #faq{background:#181818;}
 
 .faq-list {
   max-width: 800px;
@@ -331,6 +332,7 @@
   background: #fff9f3;
   margin: 40px 0;
 }
+[data-theme="dark"] .contact-section{background:#181818;}
 
 .contact-container {
   max-width: 1200px;
@@ -531,6 +533,15 @@
   color: #2d2d2d;
   align-self: flex-start;
 }
+
+[data-theme="dark"] .chat-box{background:#1e1e1e;color:#e0e0e0;}
+[data-theme="dark"] .chat-messages{background:#1e1e1e;}
+[data-theme="dark"] .bot{background:#2a2a2a;border-color:#555;color:#e0e0e0;}
+[data-theme="dark"] .user{background:#3d2010;color:#e0e0e0;}
+[data-theme="dark"] .quick-replies{background:#1a1a1a;}
+[data-theme="dark"] .chat-input{background:#1a1a1a;}
+[data-theme="dark"] .chat-input textarea{background:#2a2a2a;border-color:#555;color:#e0e0e0;}
+[data-theme="dark"] .chat-input textarea::placeholder{color:#888;}
 
 .chat-input {
   display: flex;
