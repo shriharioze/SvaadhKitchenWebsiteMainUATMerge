@@ -1299,7 +1299,7 @@ function buildMealBody(date,meal,menu){
   }
   html+=`<div class="form-group" style="margin-top:10px;">
     <label>${t('special_instructions_label')}</label>
-    <textarea rows="1" placeholder="${t('special_instructions_ph')}" style="font-size:0.78rem;"
+    <textarea rows="1" placeholder="" style="font-size:0.78rem;"
       oninput="S.orders['${date}']['${meal}'].notes=this.value">${S.orders[date]?.[meal]?.notes||""}</textarea>
   </div>`;
   return html;
@@ -1819,7 +1819,8 @@ async function loadAreas() {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAreas`);
     const areas = await res.json();
     if (!Array.isArray(areas) || areas.length === 0) return;
-    FREE_AREAS = areas.filter(a => a.free).map(a => a.name);
+    const apiFree = areas.filter(a => a.free).map(a => a.name);
+    if (apiFree.length > 0) FREE_AREAS = [...new Set([...FREE_AREAS, ...apiFree])];
     const opts = `<option value="">${t('select_area_ph')}</option>`
       + areas.map(a => `<option value="${a.name}">${a.label}</option>`).join("");
     ["areaSelect","bf_areaSelect","l_areaSelect","d_areaSelect"].forEach(id => {

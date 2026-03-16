@@ -225,12 +225,12 @@ document.addEventListener("DOMContentLoaded", () => {
       answer.style.display = "none";
       answer.style.maxHeight = "0";
       answer.style.padding = "0 20px";
-      button.querySelector("span").textContent = "+";
+      button.querySelector("span:last-child").textContent = "+";
     } else {
       answer.style.display = "block";
       answer.style.maxHeight = "500px";
       answer.style.padding = "20px";
-      button.querySelector("span").textContent = "-";
+      button.querySelector("span:last-child").textContent = "-";
     }
   }
   window.toggleFAQ = toggleFAQ;
