@@ -759,7 +759,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="label-preview" id="labelPreview">
           <div style="text-align:center;padding:30px;color:#aaa;font-size:0.85rem;">Select date, meal and language — then Generate</div>
         </div>
-        <button class="download-btn" id="downloadLabelBtn" onclick="downloadLabelPDF()">⬇️ Download PDF</button>
+        <button class="download-btn" id="downloadLabelBtn" onclick="saveLabelsToDrive()">💾 Save to Drive</button>
       </div><!-- /pageLabels -->
 
       <!-- PAGE: RECONCILE -->
@@ -1632,7 +1632,7 @@ async function generateLabels() {
   }
 }
 
-async function downloadLabelPDF() {
+async function saveLabelsToDrive() {
   const btn  = document.getElementById("downloadLabelBtn");
   const date = btn.dataset.date;
   const meal = btn.dataset.meal;
@@ -1640,44 +1640,53 @@ async function downloadLabelPDF() {
 
   if (!_labelData.length) { alert("Generate labels first"); return; }
 
-  btn.textContent = "⏳ Generating PDF…";
+  btn.textContent = "⏳ Saving to Drive…";
   btn.disabled = true;
 
-  try {
-    // Call Claude API to generate PDF via label_generator logic
-    // Since we can't run Python in browser, send label data to Code.gs for PDF gen
-    // Instead: offer a formatted print view
-    const printWin = window.open("", "_blank");
-    const isMR = lang === "Devanagari";
-    printWin.document.write(`<!DOCTYPE html><html><head>
-      <meta charset="UTF-8">
-      <title>Labels - ${meal} - ${date}</title>
-      <style>
-        @page{size:50mm 25mm;margin:0;}
-        body{margin:0;font-family:'Segoe UI',sans-serif;}
-        .label{width:50mm;height:25mm;padding:2mm 2mm;box-sizing:border-box;border-bottom:0.5px dashed #999;page-break-after:always;overflow:hidden;}
-        .label:last-child{border-bottom:none;}
-        .lname{font-size:9pt;font-weight:bold;line-height:1.2;}
-        .lsummary{font-size:8pt;color:#333;margin-top:1mm;line-height:1.3;}
-        .lnotes{font-size:7pt;color:#c77;margin-top:1mm;}
-      </style>
-    </head><body>`);
-    _labelData.forEach(l => {
-      printWin.document.write(`<div class="label">
-        <div class="lname">${l.name}</div>
-        <div class="lsummary">${l.summary}</div>
-        ${l.notes ? `<div class="lnotes">📝 ${l.notes}</div>` : ""}
-      </div>`);
-    });
-    printWin.document.write("</body></html>");
-    printWin.document.close();
-    printWin.onload = () => printWin.print();
-  } catch(e) {
-    alert("Error: " + e.message);
-  }
+  // Build print-ready HTML
+  const isMR = lang === "Devanagari";
+  const fontFace = isMR ? `@import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;600&display=swap');` : "";
+  const fontFamily = isMR ? "'Hind','Segoe UI',sans-serif" : "'Segoe UI',sans-serif";
+  let html = `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Labels - ${meal} - ${date}</title>
+    <style>
+      ${fontFace}
+      @page{size:50mm 25mm;margin:0;}
+      body{margin:0;font-family:${fontFamily};}
+      .label{width:50mm;height:25mm;padding:2mm 2.5mm;box-sizing:border-box;border-bottom:0.5px dashed #bbb;page-break-after:always;overflow:hidden;}
+      .label:last-child{border-bottom:none;}
+      .lname{font-size:9pt;font-weight:600;line-height:1.2;}
+      .lsummary{font-size:7.5pt;color:#333;margin-top:1mm;line-height:1.35;}
+      .lnotes{font-size:7pt;color:#c77;margin-top:0.5mm;}
+    </style>
+  </head><body>`;
+  _labelData.forEach(l => {
+    html += `<div class="label">
+      <div class="lname">${l.name}</div>
+      <div class="lsummary">${l.summary}</div>
+      ${l.notes ? `<div class="lnotes">📝 ${l.notes}</div>` : ""}
+    </div>`;
+  });
+  html += "</body></html>";
 
-  btn.textContent = "⬇️ Download PDF";
-  btn.disabled = false;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({_action:"saveLabels", pin:S.sessionPin, date, meal, lang, html})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    toast(`Labels saved to Drive ✅ — ${data.name}`, 4000);
+    btn.textContent = "✅ Saved — Open & Print";
+    btn.disabled = false;
+    btn.onclick = () => { window.open(data.url, "_blank"); btn.textContent = "💾 Save to Drive"; btn.onclick = saveLabelsToDrive; };
+  } catch(e) {
+    alert("Error saving to Drive: " + e.message);
+    btn.textContent = "💾 Save to Drive";
+    btn.disabled = false;
+  }
 }
 
 

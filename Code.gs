@@ -234,6 +234,10 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveSabjiItem(body));
     }
+    if (action === "saveLabels") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(saveLabels(body));
+    }
     if (action === "chat")            return jsonRes(handleChat(body));
     if (action === "saveArea") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
@@ -1291,6 +1295,37 @@ function getPackagingExpenses(date) {
   Object.keys(mealCounts).forEach(function(m) { if (mealCounts[m] > 0) mealsOut[m] = mealCounts[m]; });
 
   return {date: date, orderCount: dayRows.length, meals: mealsOut, items: items, total: total};
+}
+
+// ── LABEL DRIVE SAVE ─────────────────────────────────────────
+function saveLabels(body) {
+  var date  = body.date;   // "2026-03-18"
+  var meal  = body.meal;   // "Lunch"
+  var html  = body.html;   // full print-ready HTML string
+
+  // Folder: Processed_Orders / Labels / YYYY-MM / DD-MM-YYYY
+  var yearMonth = date.substring(0, 7);
+  var parts = date.split("-");
+  var dayLabel = parts[2] + "-" + parts[1] + "-" + parts[0]; // "18-03-2026"
+  var folder = getOrCreateFolderPath(["Processed_Orders", "Labels", yearMonth, dayLabel]);
+
+  var filename = meal + "_Labels.html";
+
+  // Replace existing file to avoid duplicates
+  var existing = folder.getFilesByName(filename);
+  while (existing.hasNext()) existing.next().setTrashed(true);
+
+  var file = folder.createFile(filename, html, "text/html");
+  return {url: file.getUrl(), name: dayLabel + " · " + meal};
+}
+
+function getOrCreateFolderPath(pathParts) {
+  var folder = DriveApp.getRootFolder();
+  pathParts.forEach(function(name) {
+    var iter = folder.getFoldersByName(name);
+    folder = iter.hasNext() ? iter.next() : folder.createFolder(name);
+  });
+  return folder;
 }
 
 // ── CHATBOT ──────────────────────────────────────────────────
