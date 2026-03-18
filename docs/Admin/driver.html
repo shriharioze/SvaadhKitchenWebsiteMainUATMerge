@@ -6,7 +6,7 @@
 <title>Svaadh Delivery</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:'Segoe UI',sans-serif;background:#f5f5f5;color:#222;min-height:100vh;}
+  body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;min-height:100vh;}
 
   /* ── LOGIN ── */
   #loginWrap{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:100;}
@@ -25,51 +25,65 @@
   .login-err{color:#c0392b;font-size:0.78rem;margin-top:14px;min-height:18px;}
 
   /* ── SHELL ── */
-  #shell{display:none;padding-bottom:80px;}
+  #shell{display:none;padding-bottom:100px;}
   #shell.on{display:block;}
 
   /* ── TOP BAR ── */
   .topbar{background:#c0392b;color:#fff;padding:12px 16px;position:sticky;top:0;z-index:10;}
+  .topbar-row1{display:flex;align-items:center;justify-content:space-between;}
   .topbar-title{font-size:1rem;font-weight:700;letter-spacing:0.03em;}
-  .topbar-date{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .sync-badge{font-size:0.65rem;color:rgba(255,255,255,0.65);background:rgba(0,0,0,0.15);padding:2px 8px;border-radius:99px;}
+  .topbar-date{display:flex;align-items:center;gap:8px;margin-top:8px;}
   .topbar-date input[type=date]{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 10px;border-radius:8px;font-size:0.8rem;flex:1;}
   .topbar-date input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
   .load-btn{background:#fff;color:#c0392b;border:none;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap;}
 
   /* ── TABS ── */
-  .tabs{display:flex;background:#fff;border-bottom:2px solid #eee;position:sticky;top:68px;z-index:9;}
+  .tabs{display:flex;background:#fff;border-bottom:2px solid #eee;position:sticky;top:90px;z-index:9;}
   .tab{flex:1;padding:12px 4px;text-align:center;font-size:0.8rem;font-weight:600;color:#aaa;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.15s;}
   .tab.active{color:#c0392b;border-bottom-color:#c0392b;}
   .tab-count{display:inline-block;background:#f0f0f0;color:#888;font-size:0.65rem;padding:1px 6px;border-radius:10px;margin-left:4px;}
   .tab.active .tab-count{background:#fde8e8;color:#c0392b;}
+
+  /* ── ROUTE BAR ── */
+  .route-bar{background:#fff;border-bottom:1px solid #eee;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .route-btn{background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .route-btn:active{background:#1558b0;}
+  .route-btn.green{background:#27ae60;}
+  .route-info{font-size:0.75rem;color:#555;flex:1;}
+  .route-maps-link{font-size:0.78rem;font-weight:700;color:#1a73e8;text-decoration:none;padding:7px 12px;border:1.5px solid #1a73e8;border-radius:8px;white-space:nowrap;}
 
   /* ── CONTENT ── */
   .meal-panel{display:none;padding:12px 14px;}
   .meal-panel.active{display:block;}
 
   /* ── ORDER CARD ── */
-  .order-card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);}
-  .order-num{font-size:0.65rem;font-weight:700;color:#c0392b;letter-spacing:0.05em;margin-bottom:6px;}
+  .order-card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);border-left:4px solid transparent;transition:border-color 0.2s;}
+  .order-card.delivered{border-left-color:#27ae60;opacity:0.72;}
+  .order-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .order-num{font-size:0.65rem;font-weight:700;color:#c0392b;letter-spacing:0.05em;}
+  .delivered-time{font-size:0.68rem;font-weight:700;color:#27ae60;background:#eafaf1;padding:2px 8px;border-radius:99px;}
   .cust-name{font-size:1.05rem;font-weight:700;color:#111;margin-bottom:2px;}
   .cust-phone{font-size:0.85rem;color:#666;margin-bottom:10px;}
   .address-box{background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:0.82rem;color:#444;line-height:1.5;}
   .landmark{font-size:0.78rem;color:#888;margin-top:4px;}
   .landmark span{color:#e67e22;font-weight:600;}
   .notes-box{background:#fff8e1;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:0.78rem;color:#856404;}
-  .card-actions{display:flex;gap:8px;}
+  .card-actions{display:flex;gap:8px;margin-bottom:10px;}
   .btn-call{flex:1;background:#27ae60;color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;display:block;}
   .btn-maps{flex:1;background:#1a73e8;color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;display:block;}
   .btn-maps.disabled{background:#ccc;pointer-events:none;}
+
+  /* ── DELIVERED BUTTON ── */
+  .btn-delivered{width:100%;padding:12px;border-radius:10px;border:2px dashed #ccc;background:#fafafa;color:#888;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-delivered:active{background:#f0f0f0;}
+  .btn-delivered.done{border:2px solid #27ae60;background:#eafaf1;color:#27ae60;cursor:default;}
 
   /* ── EMPTY / LOADING ── */
   .empty{text-align:center;padding:48px 20px;color:#aaa;}
   .empty-icon{font-size:2.5rem;margin-bottom:8px;}
   .spinner{width:28px;height:28px;border:3px solid #eee;border-top-color:#c0392b;border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto;}
   @keyframes spin{to{transform:rotate(360deg);}}
-
-  /* ── SUMMARY BAR ── */
-  .summary-bar{background:#fff;padding:10px 16px;margin-bottom:0;border-bottom:1px solid #eee;display:flex;gap:16px;font-size:0.75rem;color:#888;}
-  .summary-bar strong{color:#222;}
 </style>
 </head>
 <body>
@@ -81,10 +95,8 @@
     <h1>Svaadh Delivery</h1>
     <p>PIN टाका</p>
     <div class="pin-dots">
-      <div class="pin-dot" id="dd0"></div>
-      <div class="pin-dot" id="dd1"></div>
-      <div class="pin-dot" id="dd2"></div>
-      <div class="pin-dot" id="dd3"></div>
+      <div class="pin-dot" id="dd0"></div><div class="pin-dot" id="dd1"></div>
+      <div class="pin-dot" id="dd2"></div><div class="pin-dot" id="dd3"></div>
     </div>
     <div class="pin-grid">
       <button class="pk" onclick="dp(1)">1</button><button class="pk" onclick="dp(2)">2</button><button class="pk" onclick="dp(3)">3</button>
@@ -99,7 +111,10 @@
 <!-- SHELL -->
 <div id="shell">
   <div class="topbar">
-    <div class="topbar-title">🛵 Svaadh Delivery</div>
+    <div class="topbar-row1">
+      <div class="topbar-title">🛵 Svaadh Delivery</div>
+      <span class="sync-badge" id="syncBadge">—</span>
+    </div>
     <div class="topbar-date">
       <input type="date" id="datePicker" onchange="loadOrders()">
       <button class="load-btn" onclick="loadOrders()">↻ Refresh</button>
@@ -121,20 +136,23 @@
 
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-let D = { pin: "", sessionPin: "" };
 
-// ── PIN ──
+// ── KITCHEN LOCATION — update to your actual kitchen lat/lng ──────────────────
+// Current: approx Bhosale Garden, Hadapsar, Pune
+const KITCHEN = { lat: 18.5122, lng: 73.9318 };
+
+let D = { pin: "", sessionPin: "" };
+let _ordersData = { Breakfast: [], Lunch: [], Dinner: [] };
+let _pollTimer  = null;
+
+// ── PIN ────────────────────────────────────────────────────────────────────────
 function dp(n) {
   if (D.pin.length >= 4) return;
   D.pin += String(n);
   renderDots();
   if (D.pin.length === 4) verifyPin();
 }
-function dx() {
-  D.pin = D.pin.slice(0,-1);
-  renderDots();
-  document.getElementById("dErr").textContent = "";
-}
+function dx() { D.pin = D.pin.slice(0,-1); renderDots(); document.getElementById("dErr").textContent = ""; }
 function renderDots() {
   for (let i=0;i<4;i++) document.getElementById("dd"+i).classList.toggle("filled", i < D.pin.length);
 }
@@ -143,20 +161,19 @@ async function verifyPin() {
   document.getElementById("dErr").textContent = "जाँच करत आहे…";
   try {
     const today = todayIST();
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${D.pin}&_t=${Date.now()}`);
-    const data = await res.json();
+    const res   = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${D.pin}&_t=${Date.now()}`);
+    const data  = await res.json();
     if (data.error) {
       document.getElementById("dErr").textContent = "चुकीचा PIN — पुन्हा प्रयत्न करा";
       D.pin = ""; renderDots(); return;
     }
-    D.sessionPin = D.pin;
-    D.pin = ""; renderDots();
+    D.sessionPin = D.pin; D.pin = ""; renderDots();
     document.getElementById("loginWrap").style.display = "none";
     document.getElementById("shell").classList.add("on");
     document.getElementById("datePicker").value = today;
     renderAll(data);
-    // Auto-switch to current meal
     autoSwitchMeal();
+    startPoll();
   } catch(e) {
     document.getElementById("dErr").textContent = "Error: " + e.message;
     D.pin = ""; renderDots();
@@ -164,10 +181,8 @@ async function verifyPin() {
 }
 
 function todayIST() {
-  const ist = new Date(new Date().getTime() + 5.5*3600000);
-  return ist.toISOString().slice(0,10);
+  return new Date(new Date().getTime() + 5.5*3600000).toISOString().slice(0,10);
 }
-
 function autoSwitchMeal() {
   const h = new Date(new Date().getTime() + 5.5*3600000).getUTCHours();
   if (h < 10) switchTab("Breakfast");
@@ -175,7 +190,7 @@ function autoSwitchMeal() {
   else switchTab("Dinner");
 }
 
-// ── LOAD ──
+// ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadOrders() {
   const date = document.getElementById("datePicker").value;
   if (!date) return;
@@ -187,6 +202,7 @@ async function loadOrders() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     renderAll(data);
+    setSyncBadge();
   } catch(e) {
     ["Breakfast","Lunch","Dinner"].forEach(m => {
       document.getElementById("panel_"+m).innerHTML =
@@ -195,47 +211,226 @@ async function loadOrders() {
   }
 }
 
-// ── RENDER ──
+// ── AUTO-POLL (delivery status sync every 45s) ────────────────────────────────
+function startPoll()  { stopPoll(); _pollTimer = setInterval(silentPoll, 45000); }
+function stopPoll()   { if (_pollTimer) clearInterval(_pollTimer); }
+
+async function silentPoll() {
+  const date = document.getElementById("datePicker").value;
+  if (!date || !D.sessionPin) return;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) return;
+    // Only update delivery badges — don't re-render cards
+    ["Breakfast","Lunch","Dinner"].forEach(meal => {
+      (data.meals[meal] || []).forEach(o => {
+        if (!o.submissionId) return;
+        const btn  = document.getElementById("dbtn_"+o.submissionId);
+        const card = document.getElementById("dcard_"+o.submissionId);
+        if (o.deliveredAt && btn && !btn.classList.contains("done")) {
+          btn.className = "btn-delivered done";
+          btn.innerHTML = `✅ Delivered at ${fmtTime(o.deliveredAt)}`;
+          if (card) card.classList.add("delivered");
+          const tBadge = document.getElementById("dtag_"+o.submissionId);
+          if (tBadge) tBadge.textContent = fmtTime(o.deliveredAt);
+        }
+      });
+    });
+    setSyncBadge();
+  } catch(e) {}
+}
+
+function setSyncBadge() {
+  const now = new Date(new Date().getTime() + 5.5*3600000);
+  document.getElementById("syncBadge").textContent =
+    `Synced ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2,"0")}`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll(data) {
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
     const orders = (data.meals || {})[meal] || [];
+    _ordersData[meal] = orders;
     document.getElementById("cnt_"+meal).textContent = orders.length;
-    document.getElementById("panel_"+meal).innerHTML = renderMeal(orders, meal);
+    document.getElementById("panel_"+meal).innerHTML = renderMealPanel(orders, meal);
   });
 }
 
-function renderMeal(orders, meal) {
+function renderMealPanel(orders, meal) {
   if (!orders.length) {
     const labels = {Breakfast:"न्याहारी", Lunch:"दुपारचे जेवण", Dinner:"रात्रीचे जेवण"};
     return `<div class="empty"><div class="empty-icon">😴</div>${labels[meal]} साठी कोणतेही delivery नाही</div>`;
   }
 
-  return orders.map((o, i) => {
-    const hasMap  = o.maps && o.maps.startsWith("http");
-    const hasPhone = o.phone && o.phone.length >= 10;
-    return `<div class="order-card">
-      <div class="order-num">DELIVERY #${i+1}</div>
-      <div class="cust-name">${o.name || "—"}</div>
-      <div class="cust-phone">${o.phone ? "📞 "+o.phone : ""}</div>
-      <div class="address-box">
-        📍 ${o.address || "Address not available"}
-        ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
-        ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
-      </div>
-      ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
-      <div class="card-actions">
-        ${hasPhone
-          ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`
-          : `<span class="btn-call" style="background:#ccc;pointer-events:none;">No number</span>`}
-        ${hasMap
-          ? `<a class="btn-maps" href="${o.maps}" target="_blank">🗺 Maps</a>`
-          : `<span class="btn-maps disabled">No map</span>`}
-      </div>
-    </div>`;
-  }).join("");
+  // Count geocodable orders for route button
+  const canOptimize = orders.some(o => extractCoords(o.maps));
+
+  const routeBar = `<div class="route-bar" id="routeBar_${meal}">
+    ${canOptimize
+      ? `<button class="route-btn" onclick="optimizeRoute('${meal}')">🗺 Optimise Route</button>`
+      : `<span style="font-size:0.75rem;color:#aaa;">Add Maps links to enable route optimisation</span>`}
+    <span class="route-info" id="routeInfo_${meal}"></span>
+    <a id="routeLink_${meal}" class="route-maps-link" style="display:none;" target="_blank">📍 Open in Maps</a>
+  </div>`;
+
+  return routeBar + orders.map((o, i) => renderCard(o, i, meal)).join("");
 }
 
-// ── TABS ──
+function renderCard(o, i, meal) {
+  const hasMap   = o.maps && o.maps.startsWith("http");
+  const hasPhone = o.phone && o.phone.length >= 10;
+  const isDelivered = !!o.deliveredAt;
+
+  return `<div class="order-card${isDelivered?" delivered":""}" id="dcard_${o.submissionId}">
+    <div class="order-header">
+      <div class="order-num">DELIVERY #${i+1}</div>
+      ${isDelivered
+        ? `<div class="delivered-time" id="dtag_${o.submissionId}">✅ ${fmtTime(o.deliveredAt)}</div>`
+        : `<div class="delivered-time" id="dtag_${o.submissionId}" style="display:none;"></div>`}
+    </div>
+    <div class="cust-name">${o.name || "—"}</div>
+    <div class="cust-phone">${hasPhone ? "📞 "+o.phone : ""}</div>
+    <div class="address-box">
+      📍 ${o.address || "Address not available"}
+      ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
+      ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
+    </div>
+    ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
+    <div class="card-actions">
+      ${hasPhone
+        ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`
+        : `<span class="btn-call" style="background:#ccc;pointer-events:none;">No number</span>`}
+      ${hasMap
+        ? `<a class="btn-maps" href="${o.maps}" target="_blank">🗺 Maps</a>`
+        : `<span class="btn-maps disabled">No map</span>`}
+    </div>
+    <button class="btn-delivered${isDelivered?" done":""}" id="dbtn_${o.submissionId}"
+      onclick="markDelivered('${o.submissionId}','${meal}',this)"
+      ${isDelivered?"disabled":""}>
+      ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : "⬜ Mark as Delivered"}
+    </button>
+  </div>`;
+}
+
+// ── MARK DELIVERED ────────────────────────────────────────────────────────────
+async function markDelivered(submissionId, meal, btn) {
+  if (!submissionId || btn.classList.contains("done")) return;
+  btn.innerHTML = "⏳ Marking…"; btn.disabled = true;
+  const deliveredAt = new Date(new Date().getTime() + 5.5*3600000).toISOString();
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body: JSON.stringify({_action:"markDelivered", pin:D.sessionPin, submissionId, deliveredAt})});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    btn.className  = "btn-delivered done";
+    btn.innerHTML  = `✅ Delivered at ${fmtTime(deliveredAt)}`;
+    const card = document.getElementById("dcard_"+submissionId);
+    if (card) card.classList.add("delivered");
+    const tag  = document.getElementById("dtag_"+submissionId);
+    if (tag) { tag.style.display=""; tag.textContent = `✅ ${fmtTime(deliveredAt)}`; }
+    // Update local data
+    const order = (_ordersData[meal]||[]).find(o=>o.submissionId===submissionId);
+    if (order) order.deliveredAt = deliveredAt;
+  } catch(e) {
+    btn.innerHTML = "⬜ Mark as Delivered"; btn.disabled = false;
+    alert("Error: " + e.message);
+  }
+}
+
+function fmtTime(isoStr) {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    const ist = new Date(d.getTime() + (isoStr.endsWith("Z") ? 5.5*3600000 : 0));
+    const h = ist.getUTCHours(), m = ist.getUTCMinutes();
+    return `${h}:${String(m).padStart(2,"0")}`;
+  } catch(e) { return isoStr.slice(11,16); }
+}
+
+// ── ROUTE OPTIMISATION ────────────────────────────────────────────────────────
+function extractCoords(url) {
+  if (!url) return null;
+  // @lat,lng (Google Maps place URLs)
+  let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  // ?q=lat,lng or &q=lat,lng
+  m = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  // /maps?q=lat,lng
+  m = url.match(/maps\?q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  return null;
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function nearestNeighbor(orders) {
+  const withC = orders.map(o => ({...o, _c: extractCoords(o.maps)}));
+  const geo   = withC.filter(o => o._c);
+  const noGeo = withC.filter(o => !o._c);
+  if (!geo.length) return { route: orders, dist: null };
+
+  const result = [], remaining = [...geo];
+  let cur = KITCHEN;
+  while (remaining.length) {
+    let minD = Infinity, minI = 0;
+    remaining.forEach((o,i) => {
+      const d = haversine(cur.lat, cur.lng, o._c.lat, o._c.lng);
+      if (d < minD) { minD = d; minI = i; }
+    });
+    result.push(remaining[minI]);
+    cur = remaining[minI]._c;
+    remaining.splice(minI, 1);
+  }
+
+  // Total round-trip distance
+  let dist = 0, prev = KITCHEN;
+  result.forEach(o => { dist += haversine(prev.lat, prev.lng, o._c.lat, o._c.lng); prev = o._c; });
+  dist += haversine(prev.lat, prev.lng, KITCHEN.lat, KITCHEN.lng);
+
+  return { route: [...result, ...noGeo], dist: Math.round(dist*10)/10 };
+}
+
+function buildMapsUrl(orders) {
+  const stops = orders.filter(o=>o._c).map(o=>`${o._c.lat},${o._c.lng}`).join("/");
+  if (!stops) return null;
+  const K = `${KITCHEN.lat},${KITCHEN.lng}`;
+  return `https://www.google.com/maps/dir/${K}/${stops}/${K}`;
+}
+
+function optimizeRoute(meal) {
+  const orders = _ordersData[meal];
+  if (!orders || !orders.length) return;
+
+  const { route, dist } = nearestNeighbor(orders);
+  _ordersData[meal] = route;
+
+  // Re-number and re-render cards only (keep route bar)
+  const cardsHtml = route.map((o,i) => renderCard(o, i, meal)).join("");
+  // Replace cards after the route-bar div
+  const panel = document.getElementById("panel_"+meal);
+  const routeBar = document.getElementById("routeBar_"+meal);
+  // Remove all children except routeBar
+  [...panel.children].forEach(el => { if (el !== routeBar) el.remove(); });
+  panel.insertAdjacentHTML("beforeend", cardsHtml);
+
+  // Update route info
+  const infoEl = document.getElementById("routeInfo_"+meal);
+  if (infoEl) infoEl.innerHTML = `<span style="color:#27ae60;font-weight:600;">✅ Optimised${dist ? " · ~"+dist+" km" : ""}</span>`;
+
+  // Show Maps link
+  const mapsUrl = buildMapsUrl(route);
+  const linkEl  = document.getElementById("routeLink_"+meal);
+  if (linkEl && mapsUrl) { linkEl.href = mapsUrl; linkEl.style.display = "block"; }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
 function switchTab(meal) {
   ["Breakfast","Lunch","Dinner"].forEach(m => {
     document.getElementById("tab_"+m).classList.toggle("active", m===meal);
@@ -243,7 +438,6 @@ function switchTab(meal) {
   });
 }
 
-// Set today on page load
 document.getElementById("datePicker").value = todayIST();
 </script>
 </body>

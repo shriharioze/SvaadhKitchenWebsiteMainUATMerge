@@ -287,6 +287,10 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(adminCancelOrder(body));
     }
+    if (action === "markDelivered") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markDelivered(body));
+    }
     if (body.pin === ADMIN_PIN)       return jsonRes(saveMenu(body));
     // Regular order submission
     return jsonRes(submitOrder(body));
@@ -1122,28 +1126,42 @@ function getKitchenSummary(date) {
 
 // ── DRIVER ORDERS ─────────────────────────────────────────────
 function getDriverOrders(date) {
-  var ss = getSpreadsheet();
-  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, []);
   var rows = getAllRows(ws);
   var meals = {Breakfast: [], Lunch: [], Dinner: []};
+
+  // Load delivery status from SK_Deliveries tab
+  var delMap = {};
+  var delWs  = ss.getSheetByName("SK_Deliveries");
+  if (delWs) {
+    getAllRows(delWs).forEach(function(r) {
+      var sid = String(r.Submission_ID || "").trim();
+      if (sid) delMap[sid] = String(r.Delivered_At || "");
+    });
+  }
 
   rows.forEach(function(r) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
     if (d !== date) return;
+    if (String(r.Payment_Status) === "Cancelled") return;
     var area = String(r.Area || "").trim();
     if (area.toLowerCase() === "pickup") return;
     var meal = String(r.Meal_Type || "");
     if (!meals[meal]) return;
+    var sid = String(r.Submission_ID || "");
     meals[meal].push({
-      name:     String(r.Customer_Name || ""),
-      phone:    String(r.Phone || ""),
-      area:     area,
-      address:  String(r.Full_Address || ""),
-      landmark: String(r.Landmark || ""),
-      maps:     String(r.Maps_Link || ""),
-      notes:    String(r.Special_Notes || "")
+      submissionId: sid,
+      name:         String(r.Customer_Name || ""),
+      phone:        String(r.Phone || ""),
+      area:         area,
+      address:      String(r.Full_Address || ""),
+      landmark:     String(r.Landmark || ""),
+      maps:         String(r.Maps_Link || ""),
+      notes:        String(r.Special_Notes || ""),
+      deliveredAt:  delMap[sid] || ""
     });
   });
 
@@ -1815,4 +1833,27 @@ function get10DayBilling(p) {
   var gTotal=customers.reduce(function(s,c){return s+c.total;},0);
   var gPaid=customers.reduce(function(s,c){return s+c.paid;},0);
   return {success:true,period:{from:dateFrom,to:dateTo},customers:customers,grandTotal:gTotal,grandPaid:gPaid,grandPending:gTotal-gPaid};
+}
+
+// ── MARK DELIVERED ────────────────────────────────────────────────────────────
+function markDelivered(body) {
+  var sid         = body.submissionId;
+  var deliveredAt = body.deliveredAt;
+  if (!sid) return {success:false, error:"submissionId required"};
+
+  var ss  = getSpreadsheet();
+  var ws  = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At"]);
+  var rows = getAllRows(ws);
+  var hIdx = headerIndex(ws);
+
+  var existing = null;
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i].Submission_ID) === sid) { existing = rows[i]; break; }
+  }
+  if (existing) {
+    ws.getRange(existing._row, hIdx["Delivered_At"]).setValue(deliveredAt);
+  } else {
+    ws.appendRow([sid, deliveredAt]);
+  }
+  return {success:true, submissionId:sid, deliveredAt:deliveredAt};
 }
