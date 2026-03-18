@@ -960,7 +960,7 @@ function getAreas() {
     return DEFAULT_AREAS.map(function(r) { return {name:r[0], label:r[1], free:true}; });
   }
   return rows.map(function(r) {
-    return {name: r.Area_Name, label: r.Area_Label, free: String(r.Free_Delivery) === "TRUE"};
+    return {name: r.Area_Name, label: r.Area_Label, free: r.Free_Delivery === true || String(r.Free_Delivery).toUpperCase() === "TRUE"};
   });
 }
 
