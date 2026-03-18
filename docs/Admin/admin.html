@@ -2217,9 +2217,9 @@ async function generateLabels() {
   btn.style.display = "none";
 
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?_action=getLabelOrders&pin=${S.sessionPin}&date=${date}&meal=${meal}`);
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getLabelOrders&pin=${S.sessionPin}&date=${date}&meal=${meal}&_t=${Date.now()}`);
     const data = await res.json();
-    if (data.error) { showToast(data.error); preview.innerHTML = ''; return; }
+    if (data.error) { preview.innerHTML = `<p style="color:#c0392b;padding:20px;">Error: ${data.error}</p>`; return; }
 
     labelOrders = data.orders || [];
     if (!labelOrders.length) {
