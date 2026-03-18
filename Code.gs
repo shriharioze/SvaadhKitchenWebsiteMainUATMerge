@@ -187,6 +187,14 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getUnpaidCustomers(p));
     }
+    if (action === "getKitchenSummary") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getKitchenSummary(p.date));
+    }
+    if (action === "getDriverOrders") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getDriverOrders(p.date));
+    }
     if (action === "getOrderSummary") {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getOrderSummary(p.date));
@@ -1010,6 +1018,96 @@ function deleteArea(body) {
     }
   }
   return {success: false, error: "Area not found"};
+}
+
+// ── KITCHEN SUMMARY ──────────────────────────────────────────
+function getKitchenSummary(date) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+
+  var dayRows = rows.filter(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    return d === date;
+  });
+
+  var meals = {};
+  var ROTI_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+
+  dayRows.forEach(function(r) {
+    var meal = String(r.Meal_Type || "");
+    if (!meal) return;
+    if (!meals[meal]) meals[meal] = {count: 0};
+    var m = meals[meal];
+    m.count++;
+
+    if (meal === "Breakfast") {
+      if (!m.items) m.items = {};
+      for (var n = 1; n <= 4; n++) {
+        var item = String(r["BF_Item_"+n] || "").trim();
+        var qty  = Number(r["BF_Qty_"+n]) || 0;
+        if (item && qty > 0) m.items[item] = (m.items[item] || 0) + qty;
+      }
+      var curdBf = Number(r.Curd) || 0;
+      if (curdBf > 0) m.items["Curd"] = (m.items["Curd"] || 0) + curdBf;
+    } else {
+      if (!m.rotis) m.rotis = {};
+      ROTI_COLS.forEach(function(c) {
+        var q = Number(r[c]) || 0;
+        if (q > 0) m.rotis[c] = (m.rotis[c] || 0) + q;
+      });
+      if (!m.sabji) m.sabji = {dry_kg: 0, curry_kg: 0};
+      m.sabji.dry_kg   += (Number(r.Dry_Sabji_Mini)||0)*0.1  + (Number(r.Dry_Sabji_Full)||0)*0.25;
+      m.sabji.curry_kg += (Number(r.Curry_Sabji_Mini)||0)*0.1 + (Number(r.Curry_Sabji_Full)||0)*0.25;
+      if (!m.other) m.other = {Dal:{kg:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
+      m.other.Dal.kg      += (Number(r.Dal)   || 0) * 0.2;
+      m.other.Rice.count  += (Number(r.Rice)  || 0);
+      m.other.Salad.count += (Number(r.Salad) || 0);
+      m.other.Curd.count  += (Number(r.Curd)  || 0);
+    }
+  });
+
+  ["Lunch","Dinner"].forEach(function(meal) {
+    if (!meals[meal]) return;
+    var m = meals[meal];
+    m.sabji.dry_kg   = Math.round(m.sabji.dry_kg   * 100) / 100;
+    m.sabji.curry_kg = Math.round(m.sabji.curry_kg * 100) / 100;
+    m.other.Dal.kg   = Math.round(m.other.Dal.kg   * 100) / 100;
+  });
+
+  return {date: date, meals: meals};
+}
+
+// ── DRIVER ORDERS ─────────────────────────────────────────────
+function getDriverOrders(date) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+  var meals = {Breakfast: [], Lunch: [], Dinner: []};
+
+  rows.forEach(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    if (d !== date) return;
+    var area = String(r.Area || "").trim();
+    if (area.toLowerCase() === "pickup") return;
+    var meal = String(r.Meal_Type || "");
+    if (!meals[meal]) return;
+    meals[meal].push({
+      name:     String(r.Customer_Name || ""),
+      phone:    String(r.Phone || ""),
+      area:     area,
+      address:  String(r.Full_Address || ""),
+      landmark: String(r.Landmark || ""),
+      maps:     String(r.Maps_Link || ""),
+      notes:    String(r.Special_Notes || "")
+    });
+  });
+
+  return {date: date, meals: meals};
 }
 
 // ── ORDER SUMMARY ────────────────────────────────────────────
