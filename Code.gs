@@ -1153,15 +1153,17 @@ function getDriverOrders(date) {
     if (!meals[meal]) return;
     var sid = String(r.Submission_ID || "");
     meals[meal].push({
-      submissionId: sid,
-      name:         String(r.Customer_Name || ""),
-      phone:        String(r.Phone || ""),
-      area:         area,
-      address:      String(r.Full_Address || ""),
-      landmark:     String(r.Landmark || ""),
-      maps:         String(r.Maps_Link || ""),
-      notes:        String(r.Special_Notes || ""),
-      deliveredAt:  delMap[sid] || ""
+      submissionId:  sid,
+      name:          String(r.Customer_Name || ""),
+      phone:         String(r.Phone || ""),
+      area:          area,
+      address:       String(r.Full_Address || ""),
+      landmark:      String(r.Landmark || ""),
+      maps:          String(r.Maps_Link || ""),
+      notes:         String(r.Special_Notes || ""),
+      deliveredAt:   delMap[sid] || "",
+      amount:        Number(r.Subtotal || 0),
+      paymentStatus: String(r.Payment_Status || "")
     });
   });
 

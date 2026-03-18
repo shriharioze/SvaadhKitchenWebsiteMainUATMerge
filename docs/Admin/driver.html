@@ -51,6 +51,30 @@
   .progress-bar-fill{height:100%;background:#27ae60;border-radius:99px;transition:width 0.4s ease;}
   .progress-text{font-size:0.72rem;font-weight:700;color:#555;white-space:nowrap;}
   .progress-text.done{color:#27ae60;}
+  .cash-badge{font-size:0.72rem;font-weight:700;color:#e67e22;background:#fff8e1;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+  .cash-badge.full{color:#27ae60;background:#eafaf1;}
+
+  /* ── AMOUNT BADGE ── */
+  .amount-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .amount-badge{font-size:0.82rem;font-weight:700;padding:5px 12px;border-radius:8px;}
+  .amount-badge.collect{background:#fff3cd;color:#856404;}
+  .amount-badge.prepaid{background:#eafaf1;color:#27ae60;}
+
+  /* ── CARD ACTIONS (3 buttons) ── */
+  .btn-whatsapp{flex:1;background:#25d366;color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;display:block;}
+
+  /* ── ALL DONE OVERLAY ── */
+  .all-done-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:200;}
+  .done-box{background:#fff;border-radius:20px;padding:32px 24px;text-align:center;width:88%;max-width:340px;animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes popIn{from{transform:scale(0.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .done-emoji{font-size:3.5rem;margin-bottom:8px;}
+  .done-title{font-size:1.3rem;font-weight:800;color:#27ae60;margin-bottom:4px;}
+  .done-sub{font-size:0.82rem;color:#888;margin-bottom:20px;}
+  .done-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
+  .done-stat{background:#f8f8f8;border-radius:12px;padding:12px 8px;}
+  .done-stat-val{font-size:1.3rem;font-weight:800;color:#222;}
+  .done-stat-lbl{font-size:0.68rem;color:#999;margin-top:2px;}
+  .done-close{width:100%;padding:13px;background:#c0392b;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;}
 
   /* ── ROUTE BAR ── */
   .route-bar{background:#fff;border-bottom:1px solid #eee;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -139,6 +163,18 @@
   <div class="progress-strip" id="progressStrip" style="display:none;">
     <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
     <div class="progress-text" id="progressText">0 / 0</div>
+    <div class="cash-badge" id="cashBadge" style="display:none;"></div>
+  </div>
+
+  <!-- ALL DONE OVERLAY -->
+  <div class="all-done-overlay" id="allDoneOverlay" style="display:none;">
+    <div class="done-box">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">सर्व Deliveries झाल्या!</div>
+      <div class="done-sub" id="doneSub">Great work today!</div>
+      <div class="done-stats" id="doneStats"></div>
+      <button class="done-close" onclick="document.getElementById('allDoneOverlay').style.display='none'">✓ Close</button>
+    </div>
   </div>
 
   <!-- PANELS -->
@@ -157,6 +193,7 @@ const KITCHEN = { lat: 18.5036109, lng: 73.9310764 };
 let D = { pin: "", sessionPin: "" };
 let _ordersData = { Breakfast: [], Lunch: [], Dinner: [] };
 let _pollTimer  = null;
+let _routeDists = { Breakfast: null, Lunch: null, Dinner: null };
 
 // ── PIN ────────────────────────────────────────────────────────────────────────
 function dp(n) {
@@ -298,9 +335,40 @@ function updateProgress(meal) {
   fill.style.width  = pct + "%";
   text.textContent  = `${done} / ${total} delivered`;
   text.className    = "progress-text" + (done===total ? " done" : "");
-  // Also update tab count to show pending only
+  // Tab count shows remaining
   const remaining = total - done;
   document.getElementById("cnt_"+meal).textContent = remaining > 0 ? remaining : "✓";
+  // Cash badge — total to collect vs collected so far
+  const cashBadge = document.getElementById("cashBadge");
+  const totalCash = orders.reduce((s,o) => s + (o.paymentStatus !== "Paid" ? (o.amount||0) : 0), 0);
+  if (totalCash > 0) {
+    const collected = orders.filter(o=>o.deliveredAt && o.paymentStatus!=="Paid").reduce((s,o)=>s+(o.amount||0),0);
+    cashBadge.textContent = `💰 ₹${collected} / ₹${totalCash}`;
+    cashBadge.className   = "cash-badge" + (collected===totalCash ? " full" : "");
+    cashBadge.style.display = "";
+  } else {
+    cashBadge.style.display = "none";
+  }
+  // Check if all done
+  if (done === total && total > 0) checkAllDone(meal);
+}
+
+function checkAllDone(meal) {
+  const orders   = _ordersData[meal] || [];
+  const total    = orders.length;
+  const totalCash = orders.reduce((s,o) => s + (o.paymentStatus!=="Paid"?(o.amount||0):0), 0);
+  const collected = orders.filter(o=>o.deliveredAt && o.paymentStatus!=="Paid").reduce((s,o)=>s+(o.amount||0),0);
+  const km        = _routeDists[meal];
+  const mealLabel = {Breakfast:"न्याहारी",Lunch:"दुपार",Dinner:"रात्र"}[meal] || meal;
+
+  document.getElementById("doneSub").textContent = `${mealLabel} route complete!`;
+  document.getElementById("doneStats").innerHTML = `
+    <div class="done-stat"><div class="done-stat-val">${total}</div><div class="done-stat-lbl">Deliveries</div></div>
+    <div class="done-stat"><div class="done-stat-val" style="color:#27ae60;">₹${collected}</div><div class="done-stat-lbl">Cash Collected</div></div>
+    ${km ? `<div class="done-stat"><div class="done-stat-val">~${km} km</div><div class="done-stat-lbl">Estimated Route</div></div>` : ""}
+    <div class="done-stat"><div class="done-stat-val">${fmtTime(new Date().toISOString())}</div><div class="done-stat-lbl">Finished At</div></div>
+  `;
+  document.getElementById("allDoneOverlay").style.display = "flex";
 }
 
 function renderMealPanel(orders, meal) {
@@ -324,9 +392,12 @@ function renderMealPanel(orders, meal) {
 }
 
 function renderCard(o, i, meal) {
-  const hasMap   = o.maps && o.maps.startsWith("http");
-  const hasPhone = o.phone && o.phone.length >= 10;
+  const hasMap      = o.maps && o.maps.startsWith("http");
+  const hasPhone    = o.phone && o.phone.length >= 10;
   const isDelivered = !!o.deliveredAt;
+  const needsCash   = o.amount > 0 && o.paymentStatus !== "Paid";
+  const waText      = encodeURIComponent(`✅ नमस्कार ${o.name}! आपली Svaadh ${meal === "Breakfast" ? "न्याहारी" : meal === "Lunch" ? "दुपारचे जेवण" : "रात्रीचे जेवण"} deliver झाली आहे. 🙏`);
+  const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
   return `<div class="order-card${isDelivered?" delivered":""}" id="dcard_${o.submissionId}">
     <div class="order-header">
@@ -343,6 +414,12 @@ function renderCard(o, i, meal) {
       ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
     </div>
     ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
+    ${o.amount > 0 ? `
+    <div class="amount-row">
+      <span class="amount-badge ${needsCash?"collect":"prepaid"}">
+        ${needsCash ? `💰 ₹${o.amount} collect करा` : `✅ Prepaid (₹${o.amount})`}
+      </span>
+    </div>` : ""}
     <div class="card-actions">
       ${hasPhone
         ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`
@@ -350,6 +427,9 @@ function renderCard(o, i, meal) {
       ${hasMap
         ? `<a class="btn-maps" href="${o.maps}" target="_blank">🗺 Maps</a>`
         : `<span class="btn-maps disabled">No map</span>`}
+      ${hasPhone
+        ? `<a class="btn-whatsapp" href="https://wa.me/${waNum}?text=${waText}" target="_blank">💬</a>`
+        : ""}
     </div>
     <button class="btn-delivered${isDelivered?" done":""}" id="dbtn_${o.submissionId}"
       onclick="markDelivered('${o.submissionId}','${meal}',this)"
@@ -472,6 +552,7 @@ function optimizeRoute(meal) {
 
   const { route, dist } = nearestNeighbor(orders);
   _ordersData[meal] = route;
+  if (dist) _routeDists[meal] = dist; // save for end-of-day summary
 
   // Re-number and re-render cards only (keep route bar)
   const cardsHtml = route.map((o,i) => renderCard(o, i, meal)).join("");
