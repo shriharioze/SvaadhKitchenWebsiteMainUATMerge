@@ -394,7 +394,7 @@ function renderCard(o, i, meal) {
   const hasPhone    = o.phone && o.phone.length >= 10;
   const isDelivered = !!o.deliveredAt;
   const needsCash   = o.amount > 0 && o.paymentStatus !== "Paid";
-  const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your Svaadh ${meal} has been delivered. Thank you! 🙏`);
+  const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your ${meal} has been delivered. Thank you! 🙏`);
   const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
   return `<div class="order-card${isDelivered?" delivered":""}" id="dcard_${o.submissionId}">
