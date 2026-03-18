@@ -1165,7 +1165,47 @@ function getDriverOrders(date) {
     });
   });
 
+  // ── Resolve shortened Maps URLs server-side (goo.gl, maps.app.goo.gl) ────────
+  // Collect orders whose URL has no extractable coords
+  var allOrders = [].concat(meals.Breakfast, meals.Lunch, meals.Dinner);
+  var toResolve = [];
+  allOrders.forEach(function(o) {
+    if (o.maps && !_extractCoordsGS(o.maps) &&
+        (o.maps.indexOf('goo.gl') > -1 || o.maps.indexOf('maps.app') > -1)) {
+      toResolve.push(o);
+    }
+  });
+  if (toResolve.length > 0) {
+    try {
+      var reqs = toResolve.map(function(o) {
+        return { url: o.maps, followRedirects: false, muteHttpExceptions: true };
+      });
+      var resps = UrlFetchApp.fetchAll(reqs);
+      resps.forEach(function(resp, i) {
+        var code = resp.getResponseCode();
+        if (code >= 300 && code < 400) {
+          var hdrs = resp.getHeaders();
+          var loc  = hdrs['Location'] || hdrs['location'] || '';
+          if (loc) {
+            var c = _extractCoordsGS(loc);
+            if (c) { toResolve[i].lat = c.lat; toResolve[i].lng = c.lng; }
+          }
+        }
+      });
+    } catch(e) { /* silently fail — route optimisation just skips those stops */ }
+  }
+
   return {date: date, meals: meals};
+}
+
+// Shared coord extractor for Apps Script (mirrors client-side regex)
+function _extractCoordsGS(url) {
+  if (!url) return null;
+  var m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  m = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  return null;
 }
 
 // ── ORDER SUMMARY ────────────────────────────────────────────

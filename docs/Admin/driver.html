@@ -264,7 +264,7 @@ function renderMealPanel(orders, meal) {
   }
 
   // Count geocodable orders for route button
-  const canOptimize = orders.some(o => extractCoords(o.maps));
+  const canOptimize = orders.some(o => extractCoords(o));
 
   const routeBar = `<div class="route-bar" id="routeBar_${meal}">
     ${canOptimize
@@ -349,15 +349,19 @@ function fmtTime(isoStr) {
 }
 
 // ── ROUTE OPTIMISATION ────────────────────────────────────────────────────────
-function extractCoords(url) {
+// Accepts an order object — checks server-resolved lat/lng first,
+// then falls back to regex on the Maps URL (works for non-shortened links).
+function extractCoords(o) {
+  if (!o) return null;
+  // Pre-resolved by server (short URLs like goo.gl / maps.app.goo.gl)
+  if (o.lat && o.lng) return { lat: +o.lat, lng: +o.lng };
+  // Regex fallback for full URLs
+  const url = o.maps || "";
   if (!url) return null;
-  // @lat,lng (Google Maps place URLs)
   let m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (m) return { lat: +m[1], lng: +m[2] };
-  // ?q=lat,lng or &q=lat,lng
   m = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (m) return { lat: +m[1], lng: +m[2] };
-  // /maps?q=lat,lng
   m = url.match(/maps\?q=(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (m) return { lat: +m[1], lng: +m[2] };
   return null;
@@ -371,7 +375,7 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 function nearestNeighbor(orders) {
-  const withC = orders.map(o => ({...o, _c: extractCoords(o.maps)}));
+  const withC = orders.map(o => ({...o, _c: extractCoords(o)}));
   const geo   = withC.filter(o => o._c);
   const noGeo = withC.filter(o => !o._c);
   if (!geo.length) return { route: orders, dist: null };
@@ -398,7 +402,7 @@ function nearestNeighbor(orders) {
 }
 
 function buildMapsUrl(orders) {
-  const stops = orders.filter(o=>o._c).map(o=>`${o._c.lat},${o._c.lng}`).join("/");
+  const stops = orders.filter(o => o._c).map(o => `${o._c.lat},${o._c.lng}`).join("/");
   if (!stops) return null;
   const K = `${KITCHEN.lat},${KITCHEN.lng}`;
   return `https://www.google.com/maps/dir/${K}/${stops}/${K}`;
