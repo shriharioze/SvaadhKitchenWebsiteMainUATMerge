@@ -45,6 +45,13 @@
   .tab-count{display:inline-block;background:#f0f0f0;color:#888;font-size:0.65rem;padding:1px 6px;border-radius:10px;margin-left:4px;}
   .tab.active .tab-count{background:#fde8e8;color:#c0392b;}
 
+  /* ── PROGRESS STRIP ── */
+  .progress-strip{background:#fff;border-bottom:1px solid #f0f0f0;padding:8px 14px;display:flex;align-items:center;gap:10px;}
+  .progress-bar-wrap{flex:1;height:6px;background:#eee;border-radius:99px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:#27ae60;border-radius:99px;transition:width 0.4s ease;}
+  .progress-text{font-size:0.72rem;font-weight:700;color:#555;white-space:nowrap;}
+  .progress-text.done{color:#27ae60;}
+
   /* ── ROUTE BAR ── */
   .route-bar{background:#fff;border-bottom:1px solid #eee;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .route-btn{background:#1a73e8;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
@@ -126,6 +133,12 @@
     <button class="tab active" id="tab_Breakfast" onclick="switchTab('Breakfast')">🌅 न्याहारी<span class="tab-count" id="cnt_Breakfast">0</span></button>
     <button class="tab" id="tab_Lunch" onclick="switchTab('Lunch')">☀️ दुपार<span class="tab-count" id="cnt_Lunch">0</span></button>
     <button class="tab" id="tab_Dinner" onclick="switchTab('Dinner')">🌙 रात्र<span class="tab-count" id="cnt_Dinner">0</span></button>
+  </div>
+
+  <!-- PROGRESS STRIP -->
+  <div class="progress-strip" id="progressStrip" style="display:none;">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-text" id="progressText">0 / 0</div>
   </div>
 
   <!-- PANELS -->
@@ -223,6 +236,7 @@ async function silentPoll() {
     const data = await res.json();
     if (data.error) return;
     // Only update delivery badges — don't re-render cards
+    let anyUpdate = false;
     ["Breakfast","Lunch","Dinner"].forEach(meal => {
       (data.meals[meal] || []).forEach(o => {
         if (!o.submissionId) return;
@@ -231,11 +245,19 @@ async function silentPoll() {
         if (o.deliveredAt && btn && !btn.classList.contains("done")) {
           btn.className = "btn-delivered done";
           btn.innerHTML = `✅ Delivered at ${fmtTime(o.deliveredAt)}`;
-          if (card) card.classList.add("delivered");
+          if (card) { card.classList.add("delivered"); }
           const tBadge = document.getElementById("dtag_"+o.submissionId);
-          if (tBadge) tBadge.textContent = fmtTime(o.deliveredAt);
+          if (tBadge) { tBadge.style.display=""; tBadge.textContent = `✅ ${fmtTime(o.deliveredAt)}`; }
+          // Update local data + push to bottom
+          const local = (_ordersData[meal]||[]).find(lo=>lo.submissionId===o.submissionId);
+          if (local && !local.deliveredAt) {
+            local.deliveredAt = o.deliveredAt;
+            setTimeout(()=>{ const panel=document.getElementById("panel_"+meal); if(card&&panel)panel.appendChild(card); }, 300);
+            anyUpdate = true;
+          }
         }
       });
+      if (anyUpdate) updateProgress(meal);
     });
     setSyncBadge();
   } catch(e) {}
@@ -250,11 +272,35 @@ function setSyncBadge() {
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll(data) {
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
-    const orders = (data.meals || {})[meal] || [];
+    const raw    = (data.meals || {})[meal] || [];
+    // Undelivered first, delivered at bottom
+    const orders = [...raw.filter(o=>!o.deliveredAt), ...raw.filter(o=>o.deliveredAt)];
     _ordersData[meal] = orders;
     document.getElementById("cnt_"+meal).textContent = orders.length;
     document.getElementById("panel_"+meal).innerHTML = renderMealPanel(orders, meal);
   });
+  // Show progress for the currently active tab
+  const activeMeal = ["Breakfast","Lunch","Dinner"].find(m =>
+    document.getElementById("tab_"+m).classList.contains("active")) || "Breakfast";
+  updateProgress(activeMeal);
+}
+
+function updateProgress(meal) {
+  const orders = _ordersData[meal] || [];
+  const total  = orders.length;
+  const done   = orders.filter(o => o.deliveredAt).length;
+  const strip  = document.getElementById("progressStrip");
+  const fill   = document.getElementById("progressFill");
+  const text   = document.getElementById("progressText");
+  if (!total) { strip.style.display = "none"; return; }
+  strip.style.display = "flex";
+  const pct = Math.round(done/total*100);
+  fill.style.width  = pct + "%";
+  text.textContent  = `${done} / ${total} delivered`;
+  text.className    = "progress-text" + (done===total ? " done" : "");
+  // Also update tab count to show pending only
+  const remaining = total - done;
+  document.getElementById("cnt_"+meal).textContent = remaining > 0 ? remaining : "✓";
 }
 
 function renderMealPanel(orders, meal) {
@@ -317,21 +363,33 @@ function renderCard(o, i, meal) {
 async function markDelivered(submissionId, meal, btn) {
   if (!submissionId || btn.classList.contains("done")) return;
   btn.innerHTML = "⏳ Marking…"; btn.disabled = true;
-  const deliveredAt = new Date(new Date().getTime() + 5.5*3600000).toISOString();
+  const deliveredAt = new Date().toISOString(); // proper UTC — fmtTime adds +5:30 for display
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"markDelivered", pin:D.sessionPin, submissionId, deliveredAt})});
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Failed");
-    btn.className  = "btn-delivered done";
-    btn.innerHTML  = `✅ Delivered at ${fmtTime(deliveredAt)}`;
+
+    // Update button + badge
+    btn.className = "btn-delivered done";
+    btn.innerHTML = `✅ Delivered at ${fmtTime(deliveredAt)}`;
     const card = document.getElementById("dcard_"+submissionId);
     if (card) card.classList.add("delivered");
-    const tag  = document.getElementById("dtag_"+submissionId);
+    const tag = document.getElementById("dtag_"+submissionId);
     if (tag) { tag.style.display=""; tag.textContent = `✅ ${fmtTime(deliveredAt)}`; }
+
     // Update local data
     const order = (_ordersData[meal]||[]).find(o=>o.submissionId===submissionId);
     if (order) order.deliveredAt = deliveredAt;
+
+    // Push card to bottom of panel after a short pause so user sees the green flash
+    setTimeout(() => {
+      const panel = document.getElementById("panel_"+meal);
+      if (card && panel) panel.appendChild(card);
+    }, 500);
+
+    // Refresh progress strip
+    updateProgress(meal);
   } catch(e) {
     btn.innerHTML = "⬜ Mark as Delivered"; btn.disabled = false;
     alert("Error: " + e.message);
@@ -341,8 +399,8 @@ async function markDelivered(submissionId, meal, btn) {
 function fmtTime(isoStr) {
   if (!isoStr) return "";
   try {
-    const d = new Date(isoStr);
-    const ist = new Date(d.getTime() + (isoStr.endsWith("Z") ? 5.5*3600000 : 0));
+    // Always treat stored value as UTC and convert to IST (+5:30)
+    const ist = new Date(new Date(isoStr).getTime() + 5.5*3600000);
     const h = ist.getUTCHours(), m = ist.getUTCMinutes();
     return `${h}:${String(m).padStart(2,"0")}`;
   } catch(e) { return isoStr.slice(11,16); }
@@ -440,6 +498,7 @@ function switchTab(meal) {
     document.getElementById("tab_"+m).classList.toggle("active", m===meal);
     document.getElementById("panel_"+m).classList.toggle("active", m===meal);
   });
+  updateProgress(meal);
 }
 
 document.getElementById("datePicker").value = todayIST();
