@@ -482,6 +482,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .hist-table th{background:var(--bg2);padding:9px 12px;text-align:left;font-size:.71rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;}
 .hist-table td{padding:9px 12px;border-top:1px solid var(--border);vertical-align:middle;}
 .hist-table tr:hover td{background:var(--bg);}
+.hist-table th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+.hist-table th.sortable:hover{color:var(--ink);background:var(--border);}
+.hist-table th .sort-arrow{display:inline-block;margin-left:4px;font-size:.7rem;opacity:.4;}
+.hist-table th.sort-asc .sort-arrow,.hist-table th.sort-desc .sort-arrow{opacity:1;color:var(--red);}
 .meal-chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700;}
 .meal-chip.bf{background:var(--gold-soft);color:var(--gold);}
 .meal-chip.ln{background:var(--blue-soft);color:var(--blue);}
@@ -1013,7 +1017,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <button class="chip" onclick="histSetPeriod('11-20')">11–20</button>
           <button class="chip" onclick="histSetPeriod('21-end')">21–end</button>
         </div>
-        <div id="histContent"></div>
+        <div id="histStats"></div>
+        <div id="histTableControls" style="display:none;margin-bottom:12px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Status:</span>
+            <button class="chip sel" id="hf-all"     onclick="setHistFilter('all')">All</button>
+            <button class="chip"     id="hf-paid"    onclick="setHistFilter('Paid')">✓ Paid</button>
+            <button class="chip"     id="hf-pending" onclick="setHistFilter('Pending')">⏳ Pending</button>
+            <button class="chip"     id="hf-tenday"  onclick="setHistFilter('10-Day Pending')">📒 10-Day</button>
+            <span id="histRowCount" style="margin-left:auto;font-size:.78rem;color:var(--muted);"></span>
+          </div>
+        </div>
+        <div id="histTableWrap"></div>
       </div><!-- /pageHistory -->
 
       <!-- ════ PAGE: CUSTOMERS ════ -->
@@ -1021,9 +1036,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="page-header">
           <div class="page-title">Customers <small>All customers, sorted by most recent order</small></div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
           <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="filterCustomers()">
           <button class="btn-primary" onclick="loadCustomers()">↺ Refresh</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+          <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Payment:</span>
+          <button class="chip sel" id="cpf-all"     onclick="setCustPayFilter('all')">All</button>
+          <button class="chip"     id="cpf-pending"  onclick="setCustPayFilter('pending')">⏳ Has Pending</button>
+          <button class="chip"     id="cpf-paid"     onclick="setCustPayFilter('paid')">✓ Fully Paid</button>
+          <span style="margin-left:8px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Sort:</span>
+          <button class="chip sel" id="csort-recent" onclick="setCustSort('recent')">Recent</button>
+          <button class="chip"     id="csort-name"   onclick="setCustSort('name')">Name</button>
+          <button class="chip"     id="csort-spent"  onclick="setCustSort('spent')">Highest Spend</button>
+          <button class="chip"     id="csort-pending" onclick="setCustSort('pending')">Most Pending</button>
         </div>
         <div id="custDetailWrap"></div>
         <div id="custGridWrap">
@@ -3074,42 +3100,98 @@ function histSetPeriod(period) {
   document.getElementById("histTo").value   = toISO(to);
   loadHistory();
 }
+let _histAllOrders = [];
+let _histSort = {col:'date', dir:'asc'};
+let _histFilter = 'all';
+
 async function loadHistory() {
   const from = document.getElementById("histFrom").value;
   const to   = document.getElementById("histTo").value;
-  const meal = document.getElementById("histMeal").value;
   if (!from || !to) { toast("Pick a date range first"); return; }
-  const el = document.getElementById("histContent");
-  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:#aaa;margin-top:10px;font-size:.82rem;">Loading…</p></div>`;
+  const statsEl = document.getElementById("histStats");
+  const ctrlEl  = document.getElementById("histTableControls");
+  const tableEl = document.getElementById("histTableWrap");
+  statsEl.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  ctrlEl.style.display = "none";
+  tableEl.innerHTML = "";
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderHistory&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    el.innerHTML = renderHistory(data, meal);
+    // Pre-apply meal filter from dropdown (still reduces dataset)
+    const meal = document.getElementById("histMeal").value;
+    _histAllOrders = meal ? data.orders.filter(o=>o.meal===meal) : data.orders;
+    _histFilter = "all";
+    _histSort   = {col:"date", dir:"asc"};
+    // Reset status chips
+    ["all","paid","pending","tenday"].forEach(id => document.getElementById("hf-"+id)?.classList.remove("sel"));
+    document.getElementById("hf-all")?.classList.add("sel");
+    // Render stats (based on all loaded orders)
+    const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+    const s = data.summary;
+    statsEl.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="sv">${s.orderCount}</div><div class="sl">Orders</div></div>
+      <div class="stat-card"><div class="sv">${s.uniqueCustomers}</div><div class="sl">Customers</div></div>
+      <div class="stat-card green"><div class="sv">${fmtM(s.totalRevenue)}</div><div class="sl">Revenue</div></div>
+      <div class="stat-card green"><div class="sv">${fmtM(s.totalPaid)}</div><div class="sl">Paid</div></div>
+      <div class="stat-card orange"><div class="sv">${fmtM(s.totalPending)}</div><div class="sl">Pending</div></div>
+    </div>`;
+    ctrlEl.style.display = "block";
+    renderHistTable();
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    statsEl.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
-function renderHistory(data, mealFilter) {
-  const { summary, orders } = data;
+
+function setHistFilter(f) {
+  _histFilter = f;
+  ["all","paid","pending","tenday"].forEach(id => document.getElementById("hf-"+id)?.classList.remove("sel"));
+  const map = {all:"hf-all", Paid:"hf-paid", Pending:"hf-pending", "10-Day Pending":"hf-tenday"};
+  document.getElementById(map[f] || "hf-all")?.classList.add("sel");
+  renderHistTable();
+}
+
+function histSortBy(col) {
+  if (_histSort.col === col) _histSort.dir = _histSort.dir==="asc" ? "desc" : "asc";
+  else { _histSort.col = col; _histSort.dir = "asc"; }
+  renderHistTable();
+}
+
+function renderHistTable() {
+  const el = document.getElementById("histTableWrap");
+  // Apply status filter
+  let list = _histFilter==="all" ? [..._histAllOrders]
+    : _histAllOrders.filter(o => o.status === _histFilter);
+  // Apply sort
+  const {col, dir} = _histSort;
+  const mul = dir==="asc" ? 1 : -1;
+  list.sort((a,b) => {
+    if (col==="date")   return mul * a.date.localeCompare(b.date);
+    if (col==="meal")   return mul * a.meal.localeCompare(b.meal);
+    if (col==="name")   return mul * a.name.localeCompare(b.name);
+    if (col==="area")   return mul * a.area.localeCompare(b.area);
+    if (col==="amount") return mul * (a.total - b.total);
+    if (col==="status") return mul * a.status.localeCompare(b.status);
+    return 0;
+  });
+  document.getElementById("histRowCount").textContent = `${list.length} row${list.length!==1?"s":""}`;
+  if (!list.length) { el.innerHTML=`<div class="no-orders-msg">No orders match the current filters.</div>`; return; }
+
   const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
-  let html = `<div class="stat-grid" style="margin-bottom:20px;">
-    <div class="stat-card"><div class="sv">${summary.orderCount}</div><div class="sl">Orders</div></div>
-    <div class="stat-card"><div class="sv">${summary.uniqueCustomers}</div><div class="sl">Customers</div></div>
-    <div class="stat-card green"><div class="sv">${fmtM(summary.totalRevenue)}</div><div class="sl">Revenue</div></div>
-    <div class="stat-card green"><div class="sv">${fmtM(summary.totalPaid)}</div><div class="sl">Paid</div></div>
-    <div class="stat-card orange"><div class="sv">${fmtM(summary.totalPending)}</div><div class="sl">Pending</div></div>
-  </div>`;
-  const filtered = mealFilter ? orders.filter(o=>o.meal===mealFilter) : orders;
-  if (!filtered.length) return html + `<div class="no-orders-msg">No orders for this range/filter.</div>`;
   const mChip = m => { const c=m==="Breakfast"?"bf":m==="Lunch"?"ln":"dn"; return `<span class="meal-chip ${c}">${m}</span>`; };
   const pBadge = s => {
     if (s==="Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
     if (s==="10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
     return `<span class="pay-badge pending">⏳ Pending</span>`;
   };
-  const rows = filtered.map(o => `<tr>
+  const th = (label, colKey, align="") => {
+    const active = _histSort.col === colKey;
+    const arrow  = active ? (_histSort.dir==="asc" ? "↑" : "↓") : "↕";
+    const cls    = `sortable${active ? " sort-"+_histSort.dir : ""}`;
+    return `<th class="${cls}" style="${align}" onclick="histSortBy('${colKey}')">${label} <span class="sort-arrow">${arrow}</span></th>`;
+  };
+  const rows = list.map(o => `<tr>
     <td style="white-space:nowrap;">${fmtD(o.date)}</td>
     <td>${mChip(o.meal)}</td>
     <td><strong>${o.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${o.phone}</span></td>
@@ -3117,37 +3199,69 @@ function renderHistory(data, mealFilter) {
     <td style="text-align:right;font-weight:700;white-space:nowrap;">${fmtM(o.total)}</td>
     <td>${pBadge(o.status)}</td>
   </tr>`).join("");
-  html += `<div class="hist-table-wrap">
-    <table class="hist-table">
-      <thead><tr><th>Date</th><th>Meal</th><th>Customer</th><th>Area</th><th style="text-align:right;">Amount</th><th>Status</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
-  return html;
+  el.innerHTML = `<div class="hist-table-wrap"><table class="hist-table">
+    <thead><tr>
+      ${th("Date","date")}${th("Meal","meal")}${th("Customer","name")}${th("Area","area")}
+      ${th("Amount","amount","text-align:right;")}${th("Status","status")}
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
 // ════════════════════════════════════════════════════════
 // CUSTOMERS PAGE
 // ════════════════════════════════════════════════════════
 let _custData = [];
+let _custPayFilter = "all";
+let _custSortKey   = "recent";
+
 async function loadCustomers() {
   const el = document.getElementById("custGridWrap");
   el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
   document.getElementById("custDetailWrap").innerHTML = "";
   document.getElementById("custSearch").value = "";
+  _custPayFilter = "all";
+  _custSortKey   = "recent";
+  ["cpf-all","cpf-pending","cpf-paid"].forEach(id=>document.getElementById(id)?.classList.remove("sel"));
+  document.getElementById("cpf-all")?.classList.add("sel");
+  ["csort-recent","csort-name","csort-spent","csort-pending"].forEach(id=>document.getElementById(id)?.classList.remove("sel"));
+  document.getElementById("csort-recent")?.classList.add("sel");
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerList&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     _custData = data.customers;
-    renderCustomerGrid(_custData);
+    applyCustomerFilters();
   } catch(e) {
     el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
-function filterCustomers() {
+function setCustPayFilter(f) {
+  _custPayFilter = f;
+  ["cpf-all","cpf-pending","cpf-paid"].forEach(id=>document.getElementById(id)?.classList.remove("sel"));
+  document.getElementById(`cpf-${f}`)?.classList.add("sel");
+  applyCustomerFilters();
+}
+function setCustSort(key) {
+  _custSortKey = key;
+  ["csort-recent","csort-name","csort-spent","csort-pending"].forEach(id=>document.getElementById(id)?.classList.remove("sel"));
+  document.getElementById(`csort-${key}`)?.classList.add("sel");
+  applyCustomerFilters();
+}
+function filterCustomers() { applyCustomerFilters(); }
+function applyCustomerFilters() {
   const q = (document.getElementById("custSearch").value||"").toLowerCase().trim();
-  const list = q ? _custData.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q)) : _custData;
+  let list = [..._custData];
+  // Search
+  if (q) list = list.filter(c=>c.name.toLowerCase().includes(q)||c.phone.includes(q));
+  // Payment filter
+  if (_custPayFilter==="pending") list = list.filter(c=>c.pendingAmt>0);
+  else if (_custPayFilter==="paid") list = list.filter(c=>c.pendingAmt===0);
+  // Sort
+  if      (_custSortKey==="recent")  list.sort((a,b)=>b.lastDate.localeCompare(a.lastDate));
+  else if (_custSortKey==="name")    list.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (_custSortKey==="spent")   list.sort((a,b)=>b.totalSpent-a.totalSpent);
+  else if (_custSortKey==="pending") list.sort((a,b)=>b.pendingAmt-a.pendingAmt);
   renderCustomerGrid(list);
 }
 function renderCustomerGrid(list) {
