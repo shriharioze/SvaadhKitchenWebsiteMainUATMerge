@@ -2201,6 +2201,230 @@ function reconRenderResults(matched, review, noMatch, noCustomer, totalTx) {
   document.getElementById("reconResultsSection").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
+// ── LABELS ────────────────────────────────────────────────────────────────────
+let labelOrders = [];
+
+async function generateLabels() {
+  const date    = document.getElementById("labelDate").value;
+  const meal    = document.getElementById("labelMeal").value;
+  const lang    = document.getElementById("labelLang").value;
+  const preview = document.getElementById("labelPreview");
+  const btn     = document.getElementById("downloadLabelBtn");
+
+  if (!date) { showToast("Select a date first"); return; }
+
+  preview.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa;">Loading…</div>';
+  btn.style.display = "none";
+
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?_action=getLabelOrders&pin=${S.sessionPin}&date=${date}&meal=${meal}`);
+    const data = await res.json();
+    if (data.error) { showToast(data.error); preview.innerHTML = ''; return; }
+
+    labelOrders = data.orders || [];
+    if (!labelOrders.length) {
+      preview.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa;">No orders found for this date/meal</div>';
+      return;
+    }
+    renderLabelPreview(labelOrders, meal, lang, date);
+    btn.style.display  = "block";
+    btn.disabled       = false;
+    btn.textContent    = "💾 Save to Drive";
+  } catch(e) {
+    showToast("Network error: " + e.message);
+    preview.innerHTML = '';
+  }
+}
+
+const LABEL_EN = {
+  Chapati:"CH", Without_Oil_Chapati:"CH(O)", Phulka:"PH", Ghee_Phulka:"GPH",
+  Jowar_Bhakri:"J", Bajra_Bhakri:"B",
+  Dry_Sabji_Mini:"D100", Dry_Sabji_Full:"D250",
+  Curry_Sabji_Mini:"C100", Curry_Sabji_Full:"C250",
+  Dal:"DAL", Rice:"R", Salad:"S", Curd:"CU",
+  "Kanda Poha":"KP", "Ghee Upma":"GU", "Thalipeeth":"TP",
+  "Paneer Paratha":"PP", "Methi Thepla":"MT", "Sabudana Khichdi":"SK",
+};
+const LABEL_MR = {
+  Chapati:"च", Without_Oil_Chapati:"च बिनतेल", Phulka:"फु", Ghee_Phulka:"घी फु",
+  Jowar_Bhakri:"जो", Bajra_Bhakri:"बाज",
+  Dry_Sabji_Mini:"सु १००", Dry_Sabji_Full:"सु २५०",
+  Curry_Sabji_Mini:"र १००", Curry_Sabji_Full:"र २५०",
+  Dal:"दाल", Rice:"भात", Salad:"स", Curd:"दही",
+  "Kanda Poha":"कांपो", "Ghee Upma":"घीऊ", "Thalipeeth":"था",
+  "Paneer Paratha":"पनपरा", "Methi Thepla":"मेथी", "Sabudana Khichdi":"साबु",
+};
+const LD_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
+                 "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
+
+function getItemSummary(order, meal, lang) {
+  const lbl = lang === "Devanagari" ? LABEL_MR : LABEL_EN;
+  const parts = [];
+  if (meal === "Breakfast") {
+    for (let n = 1; n <= 4; n++) {
+      const item = order["BF_Item_"+n], qty = Number(order["BF_Qty_"+n]) || 0;
+      if (item && qty > 0) {
+        // look up by name or name-with-underscores
+        const a = lbl[item] || lbl[item.replace(/ /g,"_")] || item;
+        parts.push(qty + "x" + a);
+      }
+    }
+    const curdQty = Number(order.Curd) || 0;
+    if (curdQty > 0) parts.push(curdQty + "x" + lbl.Curd);
+  } else {
+    LD_COLS.forEach(col => {
+      const q = Number(order[col]) || 0;
+      if (q > 0) parts.push(q + "x" + (lbl[col] || col));
+    });
+  }
+  return parts.join(", ");
+}
+
+function renderLabelPreview(orders, meal, lang, date) {
+  const preview  = document.getElementById("labelPreview");
+  const d        = new Date(date + "T00:00:00");
+  const disp     = d.getDate().toString().padStart(2,"0") + "/" +
+                   (d.getMonth()+1).toString().padStart(2,"0") + "/" + d.getFullYear();
+  let html = `<h3 style="font-size:.85rem;color:#888;margin-bottom:14px;text-transform:uppercase;letter-spacing:.04em;">${orders.length} Labels · ${meal} · ${disp}</h3>`;
+  orders.forEach((o, i) => {
+    const summary = getItemSummary(o, meal, lang);
+    html += `<div class="label-card">
+      <div>
+        <div class="lname">Name: ${o.name}</div>
+        <div class="lsummary">${summary}</div>
+        ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
+      </div>
+      <div class="lnum">#${i+1} · ${o.area}</div>
+    </div>`;
+  });
+  preview.innerHTML = html;
+}
+
+function wrapTextCanvas(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(" ");
+  let line = "";
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + " ";
+    if (ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), x, y);
+      line = words[i] + " ";
+      y += lineH;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
+}
+
+async function saveLabelsToDrive() {
+  const date = document.getElementById("labelDate").value;
+  const meal = document.getElementById("labelMeal").value;
+  const lang = document.getElementById("labelLang").value;
+  const btn  = document.getElementById("downloadLabelBtn");
+
+  if (!labelOrders.length) { showToast("Generate labels first"); return; }
+
+  btn.disabled    = true;
+  btn.textContent = "⏳ Generating PDF…";
+
+  // Load jsPDF if not already loaded
+  if (!window.jspdf) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const W = 50, H = 25;   // mm — matches Colab 50×25mm
+    const SCALE = 10;        // px per mm ≈ 254 dpi
+    const PW = W * SCALE, PH = H * SCALE;
+    const mm = v => Math.round(v * SCALE);
+    const isMR = lang === "Devanagari";
+    const font = isMR ? "'Hind','Noto Sans Devanagari',sans-serif" : "'Segoe UI',Arial,sans-serif";
+    const maxW = mm(46);
+
+    const doc = new jsPDF({ unit:"mm", format:[W, H] });
+
+    labelOrders.forEach((order, idx) => {
+      if (idx > 0) doc.addPage([W, H]);
+
+      const canvas = document.createElement("canvas");
+      canvas.width  = PW;
+      canvas.height = PH;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, PW, PH);
+
+      // ── Name (bold, with "Name: " prefix) ──
+      ctx.fillStyle = "#000";
+      ctx.font = `bold ${mm(3.2)}px ${font}`;
+      const nameText = "Name: " + order.name;
+      // wrap if too wide
+      let nameBottomY = mm(6.5);
+      if (ctx.measureText(nameText).width > maxW) {
+        const words = nameText.split(" ");
+        const mid = Math.ceil(words.length / 2);
+        ctx.fillText(words.slice(0, mid).join(" "), mm(2), mm(5));
+        ctx.fillText(words.slice(mid).join(" "), mm(2), mm(9.5));
+        nameBottomY = mm(12);
+      } else {
+        ctx.fillText(nameText, mm(2), mm(6.5));
+      }
+
+      // ── Summary (abbreviated, qty×abbr, wrapped by token) ──
+      ctx.fillStyle = "#222";
+      ctx.font = `${mm(2.7)}px ${font}`;
+      const summary = getItemSummary(order, meal, lang);
+      const lineH = mm(3.8);
+      const tokens = summary.split(", ");
+      let line = "", y = nameBottomY + mm(4);
+      for (const tok of tokens) {
+        const test = line ? line + ", " + tok : tok;
+        if (ctx.measureText(test).width > maxW && line) {
+          ctx.fillText(line, mm(2), y); y += lineH; line = tok;
+        } else { line = test; }
+      }
+      if (line) { ctx.fillText(line, mm(2), y); y += lineH; }
+
+      // ── Notes ──
+      if (order.notes) {
+        ctx.fillStyle = "#b86000";
+        ctx.font = `${mm(2.2)}px ${font}`;
+        ctx.fillText("★ " + order.notes, mm(2), Math.min(y, PH - mm(2)));
+      }
+
+      doc.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, W, H);
+    });
+
+    btn.textContent = "⏳ Saving to Drive…";
+
+    const pdfB64 = doc.output("datauristring").split(",")[1];
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action:"saveLabels", pin:S.sessionPin, date, meal, lang, pdf:pdfB64 })
+    });
+    const data = await res.json();
+
+    if (data.url) {
+      btn.innerHTML = `<a href="${data.url}" target="_blank" style="color:#fff;text-decoration:none;">✅ Saved — Open in Drive (${data.name})</a>`;
+      btn.disabled = false;
+    } else {
+      showToast("Error: " + (data.error || "Unknown error"));
+      btn.textContent = "💾 Save to Drive";
+      btn.disabled = false;
+    }
+  } catch(e) {
+    showToast("PDF error: " + e.message);
+    btn.textContent = "💾 Save to Drive";
+    btn.disabled = false;
+  }
+}
+
 function reconUpdateApplyBtn() {
   const checkedCount = document.querySelectorAll(".recon-chk:checked").length;
   const btn = document.getElementById("reconApplyBtn");
