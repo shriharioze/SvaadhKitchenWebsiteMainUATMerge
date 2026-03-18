@@ -2341,10 +2341,11 @@ async function saveLabelsToDrive() {
     const { jsPDF } = window.jspdf;
     const W = 50, H = 25;          // mm
     const isMR = lang === "Devanagari";
-    const doc = new jsPDF({ unit:"mm", format:[W, H] });
+    // format:[W,H] with orientation:'landscape' ensures 50mm wide × 25mm tall
+    const doc = new jsPDF({ unit:"mm", format:[W, H], orientation:"landscape" });
 
     labelOrders.forEach((order, idx) => {
-      if (idx > 0) doc.addPage([W, H]);
+      if (idx > 0) doc.addPage([W, H], "landscape");
       const summary = getItemSummary(order, meal, lang);
 
       if (!isMR) {
