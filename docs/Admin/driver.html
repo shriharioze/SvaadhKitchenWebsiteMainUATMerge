@@ -359,9 +359,7 @@ function checkAllDone(meal) {
   const totalCash = orders.reduce((s,o) => s + (o.paymentStatus!=="Paid"?(o.amount||0):0), 0);
   const collected = orders.filter(o=>o.deliveredAt && o.paymentStatus!=="Paid").reduce((s,o)=>s+(o.amount||0),0);
   const km        = _routeDists[meal];
-  const mealLabel = {Breakfast:"न्याहारी",Lunch:"दुपार",Dinner:"रात्र"}[meal] || meal;
-
-  document.getElementById("doneSub").textContent = `${mealLabel} route complete!`;
+  document.getElementById("doneSub").textContent = `${meal} route complete!`;
   document.getElementById("doneStats").innerHTML = `
     <div class="done-stat"><div class="done-stat-val">${total}</div><div class="done-stat-lbl">Deliveries</div></div>
     <div class="done-stat"><div class="done-stat-val" style="color:#27ae60;">₹${collected}</div><div class="done-stat-lbl">Cash Collected</div></div>
@@ -396,7 +394,7 @@ function renderCard(o, i, meal) {
   const hasPhone    = o.phone && o.phone.length >= 10;
   const isDelivered = !!o.deliveredAt;
   const needsCash   = o.amount > 0 && o.paymentStatus !== "Paid";
-  const waText      = encodeURIComponent(`✅ नमस्कार ${o.name}! आपली Svaadh ${meal === "Breakfast" ? "न्याहारी" : meal === "Lunch" ? "दुपारचे जेवण" : "रात्रीचे जेवण"} deliver झाली आहे. 🙏`);
+  const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your Svaadh ${meal} has been delivered. Thank you! 🙏`);
   const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
   return `<div class="order-card${isDelivered?" delivered":""}" id="dcard_${o.submissionId}">
