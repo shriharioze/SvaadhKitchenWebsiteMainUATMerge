@@ -1299,23 +1299,23 @@ function getPackagingExpenses(date) {
 
 // ── LABEL DRIVE SAVE ─────────────────────────────────────────
 function saveLabels(body) {
-  var date  = body.date;   // "2026-03-18"
-  var meal  = body.meal;   // "Lunch"
-  var html  = body.html;   // full print-ready HTML string
+  var date   = body.date;  // "2026-03-18"
+  var meal   = body.meal;  // "Lunch"
+  var pdfB64 = body.pdf;   // base64-encoded PDF bytes
 
-  // Folder: Processed_Orders / Labels / YYYY-MM / DD-MM-YYYY
-  var yearMonth = date.substring(0, 7);
-  var parts = date.split("-");
-  var dayLabel = parts[2] + "-" + parts[1] + "-" + parts[0]; // "18-03-2026"
+  var parts     = date.split("-");
+  var yearMonth = date.substring(0, 7);                        // "2026-03"
+  var dayLabel  = parts[2] + "-" + parts[1] + "-" + parts[0]; // "18-03-2026"
+  var filename  = meal + "_Labels.pdf";
+
   var folder = getOrCreateFolderPath(["Processed_Orders", "Labels", yearMonth, dayLabel]);
-
-  var filename = meal + "_Labels.html";
 
   // Replace existing file to avoid duplicates
   var existing = folder.getFilesByName(filename);
   while (existing.hasNext()) existing.next().setTrashed(true);
 
-  var file = folder.createFile(filename, html, "text/html");
+  var pdfBlob = Utilities.newBlob(Utilities.base64Decode(pdfB64), "application/pdf", filename);
+  var file = folder.createFile(pdfBlob);
   return {url: file.getUrl(), name: dayLabel + " · " + meal};
 }
 
