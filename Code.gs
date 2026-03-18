@@ -734,7 +734,7 @@ function getAdminData() {
 
   const breakfastMaster = bfRows.map(r => ({
     id: String(r.ID), name: String(r.Name), price: Number(r.Price),
-    active: String(r.Active).toLowerCase() !== "false"
+    default_on: r.Active === true || String(r.Active).toUpperCase() === "TRUE"
   }));
 
   const sabjiMaster = sabjiRows.map(r => ({
