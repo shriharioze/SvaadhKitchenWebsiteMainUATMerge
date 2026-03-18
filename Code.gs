@@ -187,6 +187,18 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getUnpaidCustomers(p));
     }
+    if (action === "getOrderSummary") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getOrderSummary(p.date));
+    }
+    if (action === "getPackagingExpenses") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getPackagingExpenses(p.date));
+    }
+    if (action === "getLabelOrders") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getLabelOrders(p.date, p.meal));
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -998,6 +1010,189 @@ function deleteArea(body) {
     }
   }
   return {success: false, error: "Area not found"};
+}
+
+// ── ORDER SUMMARY ────────────────────────────────────────────
+function getOrderSummary(date) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+
+  var dayRows = rows.filter(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    return d === date;
+  });
+
+  var meals = {};
+  var totals = {orders: 0, customers: 0, revenue: 0, paid: 0, pending: 0};
+  var customerSet = {};
+  var LUNCH_DINNER_COLS = [
+    "Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
+    "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full",
+    "Dal","Rice","Salad","Curd"
+  ];
+
+  dayRows.forEach(function(r) {
+    var meal = String(r.Meal_Type || "");
+    if (!meal) return;
+    if (!meals[meal]) meals[meal] = {count:0, revenue:0, paid:0, pending:0, itemTotals:{}, customers:[]};
+    var m = meals[meal];
+    var net = Number(r.Net_Total) || 0;
+    var payStatus = String(r.Payment_Status || "Pending");
+
+    var items = {};
+    if (meal === "Breakfast") {
+      for (var n = 1; n <= 4; n++) {
+        var item = String(r["BF_Item_"+n] || "").trim();
+        var qty  = Number(r["BF_Qty_"+n]) || 0;
+        if (item && qty > 0) {
+          items[item] = (items[item] || 0) + qty;
+          m.itemTotals[item] = (m.itemTotals[item] || 0) + qty;
+        }
+      }
+      var curdBf = Number(r.Curd) || 0;
+      if (curdBf > 0) { items["Curd"] = (items["Curd"] || 0) + curdBf; m.itemTotals["Curd"] = (m.itemTotals["Curd"] || 0) + curdBf; }
+    } else {
+      LUNCH_DINNER_COLS.forEach(function(col) {
+        var q = Number(r[col]) || 0;
+        if (q > 0) { items[col] = (items[col]||0)+q; m.itemTotals[col] = (m.itemTotals[col]||0)+q; }
+      });
+    }
+
+    m.count++;
+    m.revenue += net;
+    if (payStatus === "Paid") m.paid += net; else m.pending += net;
+    m.customers.push({
+      name:      String(r.Customer_Name || ""),
+      phone:     String(r.Phone || ""),
+      items:     items,
+      area:      String(r.Area || ""),
+      address:   String(r.Full_Address || r.Flat || ""),
+      total:     net,
+      payStatus: payStatus,
+      notes:     String(r.Special_Notes || "")
+    });
+
+    totals.orders++;
+    totals.revenue += net;
+    if (payStatus === "Paid") totals.paid += net; else totals.pending += net;
+    if (!customerSet[String(r.Phone)]) { customerSet[String(r.Phone)] = true; totals.customers++; }
+  });
+
+  return {date: date, meals: meals, totals: totals};
+}
+
+// ── LABEL ORDERS ──────────────────────────────────────────────
+function getLabelOrders(date, meal) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+  var COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
+              "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad"];
+
+  var orders = rows
+    .filter(function(r) {
+      var d = r.Order_Date instanceof Date
+        ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+        : String(r.Order_Date).trim();
+      return d === date && String(r.Meal_Type) === meal;
+    })
+    .map(function(r) {
+      var obj = {
+        name:  String(r.Customer_Name || ""),
+        area:  String(r.Area || ""),
+        notes: String(r.Special_Notes || ""),
+        Curd:  Number(r.Curd) || 0
+      };
+      if (meal === "Breakfast") {
+        for (var n = 1; n <= 4; n++) {
+          obj["BF_Item_"+n] = String(r["BF_Item_"+n] || "");
+          obj["BF_Qty_"+n]  = Number(r["BF_Qty_"+n])  || 0;
+        }
+      } else {
+        COLS.forEach(function(col) { obj[col] = Number(r[col]) || 0; });
+      }
+      return obj;
+    });
+
+  return {orders: orders};
+}
+
+// ── PACKAGING EXPENSES ────────────────────────────────────────
+// Edit unit costs below to match your actual supplier prices
+var PKG_UNIT_COSTS = {
+  "Breakfast Box":           3.00,
+  "Delivery Bag":            2.00,
+  "Label / Sticker":         0.50,
+  "Bread Packet":            1.50,
+  "Sabji Container (Mini)":  2.00,
+  "Sabji Container (Full)":  2.50,
+  "Dal Container":           2.00,
+  "Rice Container":          1.50,
+  "Salad Container":         1.00,
+  "Curd Container":          1.00
+};
+
+function getPackagingExpenses(date) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+
+  var dayRows = rows.filter(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    return d === date;
+  });
+
+  if (dayRows.length === 0) return {date: date, orderCount: 0, meals: {}, items: [], total: 0};
+
+  var counts = {};
+  var mealCounts = {Breakfast:0, Lunch:0, Dinner:0};
+  function add(key, qty) { if (qty > 0) counts[key] = (counts[key]||0) + qty; }
+
+  dayRows.forEach(function(r) {
+    var meal = String(r.Meal_Type || "");
+    if (mealCounts[meal] !== undefined) mealCounts[meal]++;
+
+    add("Label / Sticker", 1);
+    if (meal === "Breakfast") {
+      add("Breakfast Box", 1);
+      add("Curd Container", Number(r.Curd) || 0);
+    } else {
+      add("Delivery Bag", 1);
+      var breadCols = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+      var hasBread = breadCols.some(function(c) { return (Number(r[c])||0) > 0; });
+      if (hasBread) add("Bread Packet", 1);
+      add("Sabji Container (Mini)", (Number(r.Dry_Sabji_Mini)||0) + (Number(r.Curry_Sabji_Mini)||0));
+      add("Sabji Container (Full)", (Number(r.Dry_Sabji_Full)||0) + (Number(r.Curry_Sabji_Full)||0));
+      add("Dal Container",          Number(r.Dal)   || 0);
+      add("Rice Container",         Number(r.Rice)  || 0);
+      add("Salad Container",        Number(r.Salad) || 0);
+      add("Curd Container",         Number(r.Curd)  || 0);
+    }
+  });
+
+  var itemOrder = ["Breakfast Box","Delivery Bag","Label / Sticker","Bread Packet",
+                   "Sabji Container (Mini)","Sabji Container (Full)",
+                   "Dal Container","Rice Container","Salad Container","Curd Container"];
+  var items = [];
+  var total = 0;
+  itemOrder.forEach(function(key) {
+    var qty = counts[key] || 0;
+    if (!qty) return;
+    var unitCost = PKG_UNIT_COSTS[key] || 0;
+    var t = qty * unitCost;
+    items.push({name: key, qty: qty, unitCost: unitCost, total: t});
+    total += t;
+  });
+
+  var mealsOut = {};
+  Object.keys(mealCounts).forEach(function(m) { if (mealCounts[m] > 0) mealsOut[m] = mealCounts[m]; });
+
+  return {date: date, orderCount: dayRows.length, meals: mealsOut, items: items, total: total};
 }
 
 // ── CHATBOT ──────────────────────────────────────────────────
