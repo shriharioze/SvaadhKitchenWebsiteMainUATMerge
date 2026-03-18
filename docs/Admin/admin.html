@@ -2339,25 +2339,31 @@ async function saveLabelsToDrive() {
 
   try {
     const { jsPDF } = window.jspdf;
-    const W = 50, H = 25;          // mm
-    const isMR = lang === "Devanagari";
-    // format:[W,H] with orientation:'landscape' ensures 50mm wide × 25mm tall
-    const doc = new jsPDF({ unit:"mm", format:[W, H], orientation:"landscape" });
+    const W   = 50;            // label width mm
+    const LH  = 25;            // label height mm
+    const GAP = 2.8;           // gap between labels mm (matches Colab)
+    const BLOCK = LH + GAP;    // 27.8mm per label block
+    const n   = labelOrders.length;
+    const totalH = n * BLOCK;  // single tall page — all labels stacked
+    const isMR   = lang === "Devanagari";
+    const TW = W - 4, LM = 2;  // 46mm text width, 2mm left margin
 
-    labelOrders.forEach((order, idx) => {
-      if (idx > 0) doc.addPage([W, H], "landscape");
-      const summary = getItemSummary(order, meal, lang);
+    // Single page, portrait for tall stacks (height > width when n ≥ 2)
+    const orient = totalH >= W ? "portrait" : "landscape";
+    const doc = new jsPDF({ unit:"mm", format:[W, totalH], orientation: orient });
 
-      if (!isMR) {
-        // ── English: use jsPDF native text — guaranteed no cut-off ──
-        const TW = 46, LM = 2;       // text width 46mm, left margin 2mm
+    if (!isMR) {
+      // ── English: jsPDF native text per label block ──
+      labelOrders.forEach((order, idx) => {
+        const BY = idx * BLOCK;   // block top y
+        const summary = getItemSummary(order, meal, lang);
 
         // Name (bold)
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        const nameLines = doc.splitTextToSize("Name: " + order.name, TW);
-        let y = 7;
         doc.setTextColor(0, 0, 0);
+        const nameLines = doc.splitTextToSize("Name: " + order.name, TW);
+        let y = BY + 7;
         doc.text(nameLines, LM, y);
         y += nameLines.length * 5 + 1.5;
 
@@ -2372,57 +2378,81 @@ async function saveLabelsToDrive() {
         if (order.notes) {
           doc.setFontSize(8);
           doc.setTextColor(184, 96, 0);
-          doc.text("* " + order.notes, LM, Math.min(y, H - 2));
+          doc.text("* " + order.notes, LM, Math.min(y, BY + LH - 2));
           doc.setTextColor(0, 0, 0);
         }
 
-      } else {
-        // ── Devanagari: canvas (browser handles Unicode font) ──
-        const SCALE = 10, PW = W * SCALE, PH = H * SCALE;
-        const mm = v => Math.round(v * SCALE);
-        const maxW = mm(46);
-        const devFont = "'Hind','Noto Sans Devanagari',sans-serif";
+        // Separator line in the gap (not after last label)
+        if (idx < n - 1) {
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.2);
+          doc.line(1, BY + LH + GAP / 2, W - 1, BY + LH + GAP / 2);
+        }
+      });
 
-        const cv = document.createElement("canvas");
-        cv.width = PW; cv.height = PH;
-        const ctx = cv.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, PW, PH);
+    } else {
+      // ── Devanagari: single tall canvas, all labels drawn into it ──
+      const SCALE = 10;
+      const PW = Math.round(W * SCALE);
+      const PH = Math.round(totalH * SCALE);
+      const mm = v => Math.round(v * SCALE);
+      const maxW = mm(TW);
+      const devFont = "'Hind','Noto Sans Devanagari',sans-serif";
+
+      const cv = document.createElement("canvas");
+      cv.width = PW; cv.height = PH;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, PW, PH);
+
+      function cvWrap(text, bold, fSize, x, startY, lH) {
+        ctx.font = (bold ? "bold " : "") + `${fSize}px ${devFont}`;
+        const words = text.split(" ");
+        let line = "", cy = startY;
+        for (const w of words) {
+          const test = line ? line + " " + w : w;
+          if (ctx.measureText(test).width > maxW && line) {
+            ctx.fillText(line, x, cy); cy += lH; line = w;
+          } else line = test;
+        }
+        if (line) { ctx.fillText(line, x, cy); cy += lH; }
+        return cy;
+      }
+
+      labelOrders.forEach((order, idx) => {
+        const BY = mm(idx * BLOCK);
+        const summary = getItemSummary(order, meal, lang);
 
         // Name
         ctx.fillStyle = "#000";
-        ctx.font = `bold ${mm(3.0)}px ${devFont}`;
-        const nameText = "Name: " + order.name;
-        function cvWrap(text, fSize, x, startY, lH) {
-          ctx.font = (fSize === mm(3.0) ? "bold " : "") + `${fSize}px ${devFont}`;
-          const words = text.split(" ");
-          let line = "", cy = startY;
-          for (const w of words) {
-            const test = line ? line + " " + w : w;
-            if (ctx.measureText(test).width > maxW && line) {
-              ctx.fillText(line, x, cy); cy += lH; line = w;
-            } else line = test;
-          }
-          if (line) { ctx.fillText(line, x, cy); cy += lH; }
-          return cy;
-        }
-        let y = cvWrap(nameText, mm(3.0), mm(2), mm(5.5), mm(4.2));
+        let y = cvWrap("Name: " + order.name, true, mm(3.0), mm(LM), BY + mm(5.5), mm(4.2));
         y += mm(1);
 
         // Summary
         ctx.fillStyle = "#222";
-        y = cvWrap(summary, mm(2.6), mm(2), y, mm(3.6));
+        y = cvWrap(summary, false, mm(2.6), mm(LM), y, mm(3.6));
 
         // Notes
         if (order.notes) {
           ctx.fillStyle = "#b86000";
           ctx.font = `${mm(2.2)}px ${devFont}`;
-          ctx.fillText("* " + order.notes, mm(2), Math.min(y, PH - mm(2)));
+          ctx.fillText("* " + order.notes, mm(LM), Math.min(y, BY + mm(LH - 2)));
         }
 
-        doc.addImage(cv.toDataURL("image/png"), "PNG", 0, 0, W, H);
-      }
-    });
+        // Separator line
+        if (idx < n - 1) {
+          const lineY = BY + mm(LH) + mm(GAP / 2);
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(mm(1), lineY);
+          ctx.lineTo(PW - mm(1), lineY);
+          ctx.stroke();
+        }
+      });
+
+      doc.addImage(cv.toDataURL("image/png"), "PNG", 0, 0, W, totalH);
+    }
 
     btn.textContent = "⏳ Saving to Drive…";
 
