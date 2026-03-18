@@ -1059,10 +1059,10 @@ function getKitchenSummary(date) {
         if (q > 0) m.rotis[c] = (m.rotis[c] || 0) + q;
       });
       if (!m.sabji) m.sabji = {dry_kg: 0, curry_kg: 0};
-      m.sabji.dry_kg   += (Number(r.Dry_Sabji_Mini)||0)*0.1  + (Number(r.Dry_Sabji_Full)||0)*0.25;
-      m.sabji.curry_kg += (Number(r.Curry_Sabji_Mini)||0)*0.1 + (Number(r.Curry_Sabji_Full)||0)*0.25;
+      m.sabji.dry_kg   += (Number(r.Dry_Sabji_Mini)||0)*0.6  + (Number(r.Dry_Sabji_Full)||0)*1.4;
+      m.sabji.curry_kg += (Number(r.Curry_Sabji_Mini)||0)*0.6 + (Number(r.Curry_Sabji_Full)||0)*1.4;
       if (!m.other) m.other = {Dal:{kg:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
-      m.other.Dal.kg      += (Number(r.Dal)   || 0) * 0.2;
+      m.other.Dal.kg      += (Number(r.Dal)   || 0) * 1.3;
       m.other.Rice.count  += (Number(r.Rice)  || 0);
       m.other.Salad.count += (Number(r.Salad) || 0);
       m.other.Curd.count  += (Number(r.Curd)  || 0);
