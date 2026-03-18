@@ -223,6 +223,18 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getDatePayments(p.date));
     }
+    if (action === "getAnalytics") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getAnalytics(p));
+    }
+    if (action === "getChurnReport") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getChurnReport(p.sinceDate));
+    }
+    if (action === "get10DayBilling") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(get10DayBilling(p));
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -270,6 +282,10 @@ function doPost(e) {
     if (action === "markOrdersStatus") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markOrdersStatus(body));
+    }
+    if (action === "adminCancelOrder") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(adminCancelOrder(body));
     }
     if (body.pin === ADMIN_PIN)       return jsonRes(saveMenu(body));
     // Regular order submission
@@ -1144,7 +1160,7 @@ function getOrderSummary(date) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
-    return d === date;
+    return d === date && String(r.Payment_Status) !== "Cancelled";
   });
 
   var meals = {};
@@ -1187,6 +1203,7 @@ function getOrderSummary(date) {
     m.revenue += net;
     if (payStatus === "Paid") m.paid += net; else m.pending += net;
     m.customers.push({
+      id:        String(r.Submission_ID || ""),
       name:      String(r.Customer_Name || ""),
       phone:     String(r.Phone || ""),
       items:     items,
@@ -1690,4 +1707,112 @@ function markOrdersStatus(body) {
     }
   });
   return {success:true, updatedRows:updated};
+}
+
+// ── ADMIN CANCEL ORDER ────────────────────────────────────────────────────────
+function adminCancelOrder(body) {
+  var date  = body.date;
+  var phone = body.phone;
+  var meal  = body.meal;
+  if (!date || !phone || !meal) return {success:false, error:"date, phone and meal required"};
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = getAllRows(ws);
+  var updated = 0;
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+  rows.forEach(function(r) {
+    if (fmtDate(r.Order_Date)===date && String(r.Phone||"").trim()===phone && String(r.Meal_Type)===meal) {
+      ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Cancelled");
+      updated++;
+    }
+  });
+  return {success:true, updatedRows:updated};
+}
+
+// ── ANALYTICS ─────────────────────────────────────────────────────────────────
+function getAnalytics(p) {
+  var dateFrom = p.dateFrom, dateTo = p.dateTo;
+  if (!dateFrom || !dateTo) return {success:false, error:"dateFrom and dateTo required"};
+  var ss  = getSpreadsheet();
+  var ws  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+  var rows = getAllRows(ws).filter(function(r) {
+    var d = fmtDate(r.Order_Date);
+    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
+  });
+  var LUNCH_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
+    "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
+  var COL_DISP = {"Chapati":"Chapati","Without_Oil_Chapati":"WO Chapati","Phulka":"Phulka","Ghee_Phulka":"Ghee Phulka",
+    "Jowar_Bhakri":"Jowar Bhakri","Bajra_Bhakri":"Bajra Bhakri","Dry_Sabji_Mini":"Dry Sabji Mini",
+    "Dry_Sabji_Full":"Dry Sabji Full","Curry_Sabji_Mini":"Curry Sabji Mini","Curry_Sabji_Full":"Curry Sabji Full",
+    "Dal":"Dal","Rice":"Rice","Salad":"Salad","Curd":"Curd"};
+  var totalRev=0, totalPaid=0, custSet={}, dayMap={};
+  var mealStats={Breakfast:{count:0,revenue:0},Lunch:{count:0,revenue:0},Dinner:{count:0,revenue:0}};
+  var itemCounts={};
+  rows.forEach(function(r) {
+    var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
+    totalRev+=net; if(String(r.Payment_Status)==="Paid") totalPaid+=net;
+    var ph=String(r.Phone||"").trim(); if(ph) custSet[ph]=true;
+    var meal=String(r.Meal_Type||"");
+    if(mealStats[meal]){mealStats[meal].count++;mealStats[meal].revenue+=net;}
+    if(!dayMap[d])dayMap[d]={orders:0,revenue:0};
+    dayMap[d].orders++;dayMap[d].revenue+=net;
+    if(meal==="Breakfast"){
+      for(var n=1;n<=4;n++){var bi=String(r["BF_Item_"+n]||"").trim(),bq=Number(r["BF_Qty_"+n])||0;if(bi&&bq>0)itemCounts[bi]=(itemCounts[bi]||0)+bq;}
+      var cu=Number(r.Curd)||0; if(cu>0)itemCounts["Curd"]=(itemCounts["Curd"]||0)+cu;
+    } else {
+      LUNCH_COLS.forEach(function(col){var q=Number(r[col])||0;if(q>0){var dn=COL_DISP[col]||col;itemCounts[dn]=(itemCounts[dn]||0)+q;}});
+    }
+  });
+  var days=Object.keys(dayMap).sort().map(function(d){return{date:d,orders:dayMap[d].orders,revenue:Math.round(dayMap[d].revenue)};});
+  var topItems=Object.keys(itemCounts).map(function(k){return{name:k,count:Math.round(itemCounts[k])};}).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  Object.keys(mealStats).forEach(function(m){mealStats[m].revenue=Math.round(mealStats[m].revenue);});
+  return {success:true,
+    summary:{orders:rows.length,customers:Object.keys(custSet).length,revenue:Math.round(totalRev),
+      paid:Math.round(totalPaid),pending:Math.round(totalRev-totalPaid),
+      avgPerDay:days.length>0?Math.round(totalRev/days.length):0},
+    meals:mealStats,days:days,topItems:topItems};
+}
+
+// ── CHURN REPORT ──────────────────────────────────────────────────────────────
+function getChurnReport(sinceDate) {
+  if (!sinceDate) return {success:false, error:"sinceDate required"};
+  var ss=getSpreadsheet(), ws=getOrCreateTab(ss,TAB_ORDERS,ORDERS_HEADERS);
+  var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
+  var map={};
+  getAllRows(ws).forEach(function(r){
+    if(String(r.Payment_Status)==="Cancelled")return;
+    var phone=String(r.Phone||"").trim(); if(!phone)return;
+    var d=fmtDate(r.Order_Date);
+    if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),lastDate:"",orderCount:0};
+    map[phone].orderCount++;
+    if(d>map[phone].lastDate){map[phone].lastDate=d;map[phone].name=String(r.Customer_Name||map[phone].name).trim();}
+  });
+  var churned=Object.values(map).filter(function(c){return c.lastDate<sinceDate;}).sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
+  return {success:true,sinceDate:sinceDate,customers:churned,count:churned.length};
+}
+
+// ── 10-DAY BILLING ────────────────────────────────────────────────────────────
+function get10DayBilling(p) {
+  var dateFrom=p.dateFrom, dateTo=p.dateTo;
+  if(!dateFrom||!dateTo)return{success:false,error:"dateFrom and dateTo required"};
+  var ss=getSpreadsheet(), ws=getOrCreateTab(ss,TAB_ORDERS,ORDERS_HEADERS);
+  var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
+  var rows=getAllRows(ws).filter(function(r){var d=fmtDate(r.Order_Date);return d>=dateFrom&&d<=dateTo&&String(r.Payment_Status)!=="Cancelled";});
+  var map={};
+  rows.forEach(function(r){
+    var phone=String(r.Phone||"").trim(); if(!phone)return;
+    if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),payFreq:String(r.Payment_Freq||"").trim(),orders:0,total:0,paid:0};
+    map[phone].orders++; map[phone].total+=Number(r.Net_Total)||0;
+    if(String(r.Payment_Status)==="Paid")map[phone].paid+=Number(r.Net_Total)||0;
+  });
+  var customers=Object.values(map).map(function(c){return Object.assign({},c,{total:Math.round(c.total),paid:Math.round(c.paid),pending:Math.round(c.total-c.paid),status:Math.round(c.total-c.paid)===0?"Paid":"Pending"});}).sort(function(a,b){return b.pending-a.pending;});
+  var gTotal=customers.reduce(function(s,c){return s+c.total;},0);
+  var gPaid=customers.reduce(function(s,c){return s+c.paid;},0);
+  return {success:true,period:{from:dateFrom,to:dateTo},customers:customers,grandTotal:gTotal,grandPaid:gPaid,grandPending:gTotal-gPaid};
 }

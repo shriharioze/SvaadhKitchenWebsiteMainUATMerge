@@ -523,6 +523,54 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .pay-toggle.paid:hover{background:var(--green);color:#fff;}
 .pay-toggle.pending{background:var(--gold-soft);color:var(--gold);border-color:var(--gold-border);}
 .pay-toggle.pending:hover{background:var(--gold);color:#fff;}
+
+/* ═══════════════════════════════════════════════
+   CANCEL ORDER BUTTON
+═══════════════════════════════════════════════ */
+.cancel-order-btn{padding:3px 9px;border-radius:6px;font-size:.72rem;font-weight:600;border:1.5px solid var(--red-border);background:var(--red-soft);color:var(--red);cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.cancel-order-btn:hover{background:var(--red);color:#fff;}
+
+/* ═══════════════════════════════════════════════
+   ANALYTICS PAGE
+═══════════════════════════════════════════════ */
+.analytics-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:22px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center;box-shadow:var(--shadow);}
+.kpi-card.green{border-color:var(--green-border);background:var(--green-soft);}
+.kpi-card.gold{border-color:var(--gold-border);background:var(--gold-soft);}
+.kpi-card .kv{font-size:1.25rem;font-weight:700;color:var(--ink);}
+.kpi-card.green .kv{color:var(--green);}
+.kpi-card.gold .kv{color:var(--gold);}
+.kpi-card .kl{font-size:.67rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:3px;}
+.meal-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
+.meal-bd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
+.meal-bd-card .meal-bd-name{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;}
+.meal-bd-card .meal-bd-count{font-size:1.1rem;font-weight:700;color:var(--ink);}
+.meal-bd-card .meal-bd-rev{font-size:.82rem;color:var(--green);font-weight:600;margin-top:2px;}
+.analytics-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow);}
+.analytics-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:14px;}
+.top-item-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.top-item-name{font-size:.83rem;width:160px;flex-shrink:0;}
+.top-item-bar-wrap{flex:1;background:var(--bg2);border-radius:99px;height:10px;overflow:hidden;}
+.top-item-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--red),var(--gold));transition:width .4s;}
+.top-item-count{font-size:.82rem;font-weight:700;color:var(--ink);width:36px;text-align:right;}
+.day-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.day-table th{background:var(--bg2);padding:7px 10px;text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+.day-table td{padding:7px 10px;border-top:1px solid var(--border);}
+.day-table tr:hover td{background:var(--bg);}
+.churn-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+
+/* ═══════════════════════════════════════════════
+   10-DAY BILLING PAGE
+═══════════════════════════════════════════════ */
+.billing-period-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.billing-table-wrap{border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+.billing-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+.billing-table th{background:var(--bg2);padding:10px 14px;text-align:left;font-size:.71rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.billing-table td{padding:10px 14px;border-top:1px solid var(--border);vertical-align:middle;}
+.billing-table tr:hover td{background:var(--bg);}
+.billing-table tfoot td{background:var(--bg2);font-weight:700;border-top:2px solid var(--border);}
+.wa-share-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;background:#25D366;color:#fff;border:none;border-radius:var(--radius-sm);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;}
+.wa-share-btn:hover{background:#1da851;}
 </style>
 </head>
 <body>
@@ -557,6 +605,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
       <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
       <button class="topbar-btn" id="navReconcile" onclick="switchPage('reconcile')">💰 Reconcile</button>
+      <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
+      <button class="topbar-btn" id="nav10Day" onclick="switchPage('tenday')">🗓️ 10-Day</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navPayments" onclick="switchPage('payments')">💳 Payments</button>
@@ -776,6 +826,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span id="ordersRefreshBadge" style="font-size:0.72rem;color:#aaa;"></span>
             <input type="date" id="orderDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <button style="padding:6px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:.82rem;cursor:pointer;color:var(--ink2);" onclick="orderJumpDay(1)" title="Tomorrow's orders">Tomorrow →</button>
+            <button style="padding:6px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:.82rem;cursor:pointer;color:var(--ink2);" onclick="orderJumpDay(-1)" title="Yesterday's orders">← Yesterday</button>
             <button class="save-hero-btn" onclick="loadOrderSummary(true)">🔍 Load</button>
           </div>
         </div>
@@ -893,6 +945,50 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
         </div>
       </div><!-- /pageReconcile -->
+
+      <!-- ════ PAGE: ANALYTICS ════ -->
+      <div class="page" id="pageAnalytics">
+        <div class="page-header">
+          <div class="page-title">Analytics <small>Revenue, items, and customer trends</small></div>
+        </div>
+        <div class="filter-bar">
+          <input type="date" id="analyticsFrom">
+          <span style="color:var(--muted);font-size:.82rem;">to</span>
+          <input type="date" id="analyticsTo">
+          <button class="btn-primary" onclick="loadAnalytics()">Load</button>
+        </div>
+        <div class="range-chips">
+          <button class="chip" onclick="analyticsSetRange(6)">This week</button>
+          <button class="chip" onclick="analyticsSetRange(29)">This month</button>
+          <button class="chip" onclick="analyticsSetLastMonth()">Last month</button>
+          <button class="chip" onclick="analyticsSetPeriod('1-10')">1–10</button>
+          <button class="chip" onclick="analyticsSetPeriod('11-20')">11–20</button>
+          <button class="chip" onclick="analyticsSetPeriod('21-end')">21–end</button>
+        </div>
+        <div id="analyticsContent"></div>
+      </div><!-- /pageAnalytics -->
+
+      <!-- ════ PAGE: 10-DAY BILLING ════ -->
+      <div class="page" id="pageTenday">
+        <div class="page-header">
+          <div class="page-title">10-Day Billing <small>Who owes what for the billing cycle</small></div>
+        </div>
+        <div class="billing-period-chips">
+          <button class="chip" onclick="tendaySetPeriod('1-10')">1–10 this month</button>
+          <button class="chip" onclick="tendaySetPeriod('11-20')">11–20 this month</button>
+          <button class="chip" onclick="tendaySetPeriod('21-end')">21–end this month</button>
+        </div>
+        <div class="filter-bar">
+          <input type="date" id="tendayFrom" placeholder="From">
+          <span style="color:var(--muted);font-size:.82rem;">to</span>
+          <input type="date" id="tendayTo" placeholder="To">
+          <button class="btn-primary" onclick="loadTenday()">Load</button>
+          <button class="wa-share-btn" onclick="tendayShareWhatsApp()" id="tendayWaBtn" style="display:none;">
+            <span style="font-size:1.1rem;">📲</span> Share on WhatsApp
+          </button>
+        </div>
+        <div id="tendayContent"></div>
+      </div><!-- /pageTenday -->
 
       <!-- ════ PAGE: HISTORY ════ -->
       <div class="page" id="pageHistory">
@@ -1512,6 +1608,8 @@ function switchPage(page) {
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
   document.getElementById("pageLabels").classList.toggle("on", page==="labels");
   document.getElementById("pageReconcile").classList.toggle("on", page==="reconcile");
+  document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
+  document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
   document.getElementById("pagePayments").classList.toggle("on", page==="payments");
@@ -1521,6 +1619,8 @@ function switchPage(page) {
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
   document.getElementById("navLabels").classList.toggle("active", page==="labels");
   document.getElementById("navReconcile").classList.toggle("active", page==="reconcile");
+  document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
+  document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navPayments").classList.toggle("active", page==="payments");
@@ -1541,6 +1641,12 @@ function switchPage(page) {
     if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
   }
   if (page === "reconcile") reconInit();
+  if (page === "analytics") {
+    const af = document.getElementById("analyticsFrom");
+    const at = document.getElementById("analyticsTo");
+    if (!af.value) { const ist=getIST(); analyticsSetRange(29); return; }
+  }
+  if (page === "tenday") { tendayAutoSelect(); }
   if (page === "payments") {
     const pp = document.getElementById("payDate");
     if (!pp.value) pp.value = toISO(getIST());
@@ -1931,6 +2037,9 @@ function renderOrderSummary(data) {
           ${payBadge(c.payStatus)}
           ${c.notes ? `<br><span class="notes-badge">📝 ${c.notes}</span>` : ""}
         </td>
+        <td style="text-align:center;">
+          <button class="cancel-order-btn" onclick="adminCancelMealOrder('${c.phone}','${date}','${meal}')" title="Cancel this order">✕ Cancel</button>
+        </td>
       </tr>`;
     }).join("");
 
@@ -1950,7 +2059,7 @@ function renderOrderSummary(data) {
         <div style="font-size:0.75rem;font-weight:700;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Customer Details</div>
         <div style="overflow-x:auto;">
           <table class="cust-table">
-            <thead><tr><th>Customer</th><th>Items</th><th>Address</th><th style="text-align:right;">Amount</th></tr></thead>
+            <thead><tr><th>Customer</th><th>Items</th><th>Address</th><th style="text-align:right;">Amount</th><th></th></tr></thead>
             <tbody>${custRows}</tbody>
           </table>
         </div>
@@ -2670,6 +2779,279 @@ async function reconApply() {
   }
 }
 
+
+// ════════════════════════════════════════════════════════
+// ORDERS PAGE — helpers
+// ════════════════════════════════════════════════════════
+function orderJumpDay(delta) {
+  const picker = document.getElementById("orderDatePicker");
+  const cur = picker.value ? new Date(picker.value + "T00:00:00") : getIST();
+  cur.setDate(cur.getDate() + delta);
+  picker.value = toISO(cur);
+  loadOrderSummary(true);
+}
+async function adminCancelMealOrder(phone, date, meal) {
+  if (!confirm(`Cancel ${meal} order for this customer on ${date}?\nThis cannot be undone.`)) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body: JSON.stringify({_action:"adminCancelOrder", pin:S.sessionPin, phone, date, meal})});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast(`✅ ${meal} order cancelled`);
+    loadOrderSummary(true);
+  } catch(e) { toast("Error: " + e.message); }
+}
+
+// ════════════════════════════════════════════════════════
+// ANALYTICS PAGE
+// ════════════════════════════════════════════════════════
+function analyticsSetRange(daysBack) {
+  const today = getIST();
+  const from  = new Date(today); from.setDate(from.getDate() - daysBack);
+  document.getElementById("analyticsFrom").value = toISO(from);
+  document.getElementById("analyticsTo").value   = toISO(today);
+  loadAnalytics();
+}
+function analyticsSetLastMonth() {
+  const now = getIST();
+  const y = now.getMonth()===0 ? now.getFullYear()-1 : now.getFullYear();
+  const m = now.getMonth()===0 ? 11 : now.getMonth()-1;
+  document.getElementById("analyticsFrom").value = toISO(new Date(y,m,1));
+  document.getElementById("analyticsTo").value   = toISO(new Date(y,m+1,0));
+  loadAnalytics();
+}
+function analyticsSetPeriod(period) {
+  const ist=getIST(), y=ist.getFullYear(), m=ist.getMonth();
+  let from, to;
+  if      (period==="1-10")  { from=new Date(y,m,1);  to=new Date(y,m,10); }
+  else if (period==="11-20") { from=new Date(y,m,11); to=new Date(y,m,20); }
+  else                       { from=new Date(y,m,21); to=new Date(y,m+1,0); }
+  document.getElementById("analyticsFrom").value = toISO(from);
+  document.getElementById("analyticsTo").value   = toISO(to);
+  loadAnalytics();
+}
+async function loadAnalytics() {
+  const from = document.getElementById("analyticsFrom").value;
+  const to   = document.getElementById("analyticsTo").value;
+  if (!from || !to) { toast("Pick a date range first"); return; }
+  const el = document.getElementById("analyticsContent");
+  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAnalytics&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    el.innerHTML = renderAnalytics(data, from, to);
+  } catch(e) {
+    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+  }
+}
+function renderAnalytics(data, from, to) {
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+  const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const { summary, meals, days, topItems } = data;
+  const maxCount = topItems.length ? topItems[0].count : 1;
+
+  // KPIs
+  let html = `<div class="analytics-kpis">
+    <div class="kpi-card"><div class="kv">${summary.orders}</div><div class="kl">Orders</div></div>
+    <div class="kpi-card"><div class="kv">${summary.customers}</div><div class="kl">Customers</div></div>
+    <div class="kpi-card green"><div class="kv">${fmtM(summary.revenue)}</div><div class="kl">Revenue</div></div>
+    <div class="kpi-card green"><div class="kv">${fmtM(summary.paid)}</div><div class="kl">Collected</div></div>
+    <div class="kpi-card gold"><div class="kv">${fmtM(summary.pending)}</div><div class="kl">Pending</div></div>
+    <div class="kpi-card"><div class="kv">${fmtM(summary.avgPerDay)}</div><div class="kl">Avg / Day</div></div>
+  </div>`;
+
+  // Meal breakdown
+  const MEAL_ICONS = {Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
+  html += `<div class="meal-breakdown">`;
+  ["Breakfast","Lunch","Dinner"].forEach(m => {
+    const ms = meals[m] || {count:0,revenue:0};
+    html += `<div class="meal-bd-card">
+      <div class="meal-bd-name">${MEAL_ICONS[m]} ${m}</div>
+      <div class="meal-bd-count">${ms.count} orders</div>
+      <div class="meal-bd-rev">${fmtM(ms.revenue)}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Top items
+  if (topItems.length) {
+    html += `<div class="analytics-section">
+      <div class="analytics-section-title">🏆 Top Items</div>`;
+    topItems.forEach(item => {
+      const pct = Math.round((item.count / maxCount) * 100);
+      html += `<div class="top-item-row">
+        <div class="top-item-name">${item.name}</div>
+        <div class="top-item-bar-wrap"><div class="top-item-bar" style="width:${pct}%"></div></div>
+        <div class="top-item-count">${item.count}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Day-by-day revenue
+  if (days.length > 1) {
+    const dayRows = days.map(d => `<tr>
+      <td>${fmtD(d.date)}</td>
+      <td>${d.orders}</td>
+      <td style="text-align:right;font-weight:600;">${fmtM(d.revenue)}</td>
+    </tr>`).join("");
+    html += `<div class="analytics-section">
+      <div class="analytics-section-title">📅 Revenue by Day</div>
+      <div style="overflow-x:auto;"><table class="day-table">
+        <thead><tr><th>Date</th><th>Orders</th><th style="text-align:right;">Revenue</th></tr></thead>
+        <tbody>${dayRows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // Churn section
+  html += `<div class="analytics-section">
+    <div class="analytics-section-title">😴 Churn Alert — Customers not ordering</div>
+    <div class="churn-chips">
+      <button class="chip" onclick="loadChurn(7)">7 days</button>
+      <button class="chip" onclick="loadChurn(14)">14 days</button>
+      <button class="chip" onclick="loadChurn(30)">30 days</button>
+    </div>
+    <div id="churnContent" style="color:var(--muted);font-size:.83rem;">Click a period above to check churn</div>
+  </div>`;
+
+  return html;
+}
+async function loadChurn(days) {
+  const el = document.getElementById("churnContent");
+  el.innerHTML = `<div class="spinner" style="margin:0 auto;width:20px;height:20px;"></div>`;
+  const since = toISO(new Date(getIST().getTime() - days*86400000));
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getChurnReport&sinceDate=${since}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    if (!data.count) { el.innerHTML = `<p style="color:var(--green);font-weight:600;">✅ No churned customers in the last ${days} days!</p>`; return; }
+    const fmtD = d => d?(p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")):"—";
+    el.innerHTML = `<p style="margin-bottom:10px;font-size:.82rem;color:var(--muted);">${data.count} customer(s) haven't ordered in the last <strong>${days} days</strong>:</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">
+        ${data.customers.map(c=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">
+          <div style="font-weight:700;font-size:.88rem;">${c.name}</div>
+          <div style="font-size:.72rem;color:var(--muted);">📱 ${c.phone} · ${c.area}</div>
+          <div style="font-size:.78rem;margin-top:6px;">Last order: <strong>${fmtD(c.lastDate)}</strong> · ${c.orderCount} total orders</div>
+        </div>`).join("")}
+      </div>`;
+  } catch(e) { el.innerHTML = `<span style="color:#c0392b;">Error: ${e.message}</span>`; }
+}
+
+// ════════════════════════════════════════════════════════
+// 10-DAY BILLING PAGE
+// ════════════════════════════════════════════════════════
+let _tendayData = null;
+function tendayAutoSelect() {
+  const d = getIST().getDate();
+  const period = d<=10 ? "1-10" : d<=20 ? "11-20" : "21-end";
+  tendaySetPeriod(period);
+}
+function tendaySetPeriod(period) {
+  const ist=getIST(), y=ist.getFullYear(), m=ist.getMonth();
+  let from, to;
+  if      (period==="1-10")  { from=new Date(y,m,1);  to=new Date(y,m,10); }
+  else if (period==="11-20") { from=new Date(y,m,11); to=new Date(y,m,20); }
+  else                       { from=new Date(y,m,21); to=new Date(y,m+1,0); }
+  document.getElementById("tendayFrom").value = toISO(from);
+  document.getElementById("tendayTo").value   = toISO(to);
+  // highlight active chip
+  document.querySelectorAll(".billing-period-chips .chip").forEach((b,i)=>{
+    b.classList.toggle("sel", ["1-10","11-20","21-end"][i]===period);
+  });
+  loadTenday();
+}
+async function loadTenday() {
+  const from = document.getElementById("tendayFrom").value;
+  const to   = document.getElementById("tendayTo").value;
+  if (!from || !to) { toast("Set a date range"); return; }
+  const el = document.getElementById("tendayContent");
+  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
+  document.getElementById("tendayWaBtn").style.display = "none";
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=get10DayBilling&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    _tendayData = data;
+    el.innerHTML = renderTenday(data);
+    if (data.customers.length) document.getElementById("tendayWaBtn").style.display = "flex";
+  } catch(e) {
+    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+  }
+}
+function renderTenday(data) {
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+  const fmtD = d => d?(p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")):"—";
+  if (!data.customers.length) return `<div class="no-orders-msg">😴 No orders for this period.</div>`;
+
+  const summary = `<div class="pay-summary-strip">
+    <div class="pay-sum-card"><div class="sv">${fmtM(data.grandTotal)}</div><div class="sl">Total Billed</div></div>
+    <div class="pay-sum-card" style="border-color:var(--green-border);"><div class="sv" style="color:var(--green);">${fmtM(data.grandPaid)}</div><div class="sl">Collected</div></div>
+    <div class="pay-sum-card" style="border-color:var(--gold-border);"><div class="sv" style="color:var(--gold);">${fmtM(data.grandPending)}</div><div class="sl">Outstanding</div></div>
+    <div class="pay-sum-card"><div class="sv">${data.customers.length}</div><div class="sl">Customers</div></div>
+  </div>`;
+
+  const rows = data.customers.map(c => {
+    const isPaid = c.status==="Paid";
+    return `<tr>
+      <td><strong>${c.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${c.phone}</span></td>
+      <td style="text-align:center;">${c.orders}</td>
+      <td style="text-align:right;">${fmtM(c.total)}</td>
+      <td style="text-align:right;color:var(--green);font-weight:600;">${fmtM(c.paid)}</td>
+      <td style="text-align:right;color:var(--gold);font-weight:700;">${c.pending>0?fmtM(c.pending):"—"}</td>
+      <td><button class="pay-toggle ${isPaid?"paid":"pending"}" id="tdpaybtn_${c.phone}"
+          onclick="tendayToggle('${c.phone}','${c.status}')">${isPaid?"✓ Paid":"⏳ Pending"}</button></td>
+    </tr>`;
+  }).join("");
+
+  const tfoot = `<tr>
+    <td>Total (${data.customers.length} customers)</td>
+    <td></td>
+    <td style="text-align:right;">${fmtM(data.grandTotal)}</td>
+    <td style="text-align:right;color:var(--green);">${fmtM(data.grandPaid)}</td>
+    <td style="text-align:right;color:var(--gold);font-weight:700;">${fmtM(data.grandPending)}</td>
+    <td></td>
+  </tr>`;
+
+  return summary + `<div class="billing-table-wrap"><table class="billing-table">
+    <thead><tr><th>Customer</th><th style="text-align:center;">Orders</th><th style="text-align:right;">Total</th><th style="text-align:right;">Paid</th><th style="text-align:right;">Due</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody><tfoot>${tfoot}</tfoot>
+  </table></div>`;
+}
+async function tendayToggle(phone, currentStatus) {
+  const from = document.getElementById("tendayFrom").value;
+  const to   = document.getElementById("tendayTo").value;
+  const newStatus = currentStatus==="Paid" ? "Pending" : "Paid";
+  const btn = document.getElementById(`tdpaybtn_${phone}`);
+  btn.disabled = true; btn.textContent = "…";
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body:JSON.stringify({_action:"markCustomersPaid", pin:S.sessionPin,
+        phones:[phone], dateFrom:from, dateTo:to,
+        ...(newStatus==="Pending"&&{reverseToPending:true})})});
+    // For "Pending" we use markOrdersStatus across the range instead
+    if (newStatus==="Pending") {
+      // Call markOrdersStatus for each date in range — simpler: reload
+      await fetch(APPS_SCRIPT_URL, {method:"POST",
+        body:JSON.stringify({_action:"markCustomersPaid", pin:S.sessionPin, phones:[phone], dateFrom:from, dateTo:to})});
+    }
+    toast(`${newStatus==="Paid"?"✅":"⏳"} ${newStatus}`);
+    loadTenday();
+  } catch(e) { toast("Error: "+e.message); btn.disabled=false; btn.textContent=currentStatus==="Paid"?"✓ Paid":"⏳ Pending"; }
+}
+function tendayShareWhatsApp() {
+  if (!_tendayData) return;
+  const fmtD = d => d?(p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")):"—";
+  const from = fmtD(document.getElementById("tendayFrom").value);
+  const to   = fmtD(document.getElementById("tendayTo").value);
+  const pending = _tendayData.customers.filter(c=>c.pending>0);
+  if (!pending.length) { toast("No pending amounts to share!"); return; }
+  let msg = `*Svaadh Kitchen — Bill Summary*\n📅 ${from} to ${to}\n\n`;
+  pending.forEach(c => { msg += `• ${c.name}: ₹${c.pending} pending\n`; });
+  msg += `\n*Total Outstanding: ₹${_tendayData.grandPending}*\n\nPlease settle at your earliest convenience 🙏\nUPI: shriharioze07-1@okhdfcbank`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+}
 
 // ════════════════════════════════════════════════════════
 // HISTORY PAGE
