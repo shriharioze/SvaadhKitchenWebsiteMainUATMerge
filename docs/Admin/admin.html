@@ -2339,66 +2339,88 @@ async function saveLabelsToDrive() {
 
   try {
     const { jsPDF } = window.jspdf;
-    const W = 50, H = 25;   // mm — matches Colab 50×25mm
-    const SCALE = 10;        // px per mm ≈ 254 dpi
-    const PW = W * SCALE, PH = H * SCALE;
-    const mm = v => Math.round(v * SCALE);
+    const W = 50, H = 25;          // mm
     const isMR = lang === "Devanagari";
-    const font = isMR ? "'Hind','Noto Sans Devanagari',sans-serif" : "'Segoe UI',Arial,sans-serif";
-    const maxW = mm(46);
-
     const doc = new jsPDF({ unit:"mm", format:[W, H] });
 
     labelOrders.forEach((order, idx) => {
       if (idx > 0) doc.addPage([W, H]);
-
-      const canvas = document.createElement("canvas");
-      canvas.width  = PW;
-      canvas.height = PH;
-      const ctx = canvas.getContext("2d");
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, PW, PH);
-
-      // ── Name (bold, with "Name: " prefix) ──
-      ctx.fillStyle = "#000";
-      ctx.font = `bold ${mm(3.2)}px ${font}`;
-      const nameText = "Name: " + order.name;
-      // wrap if too wide
-      let nameBottomY = mm(6.5);
-      if (ctx.measureText(nameText).width > maxW) {
-        const words = nameText.split(" ");
-        const mid = Math.ceil(words.length / 2);
-        ctx.fillText(words.slice(0, mid).join(" "), mm(2), mm(5));
-        ctx.fillText(words.slice(mid).join(" "), mm(2), mm(9.5));
-        nameBottomY = mm(12);
-      } else {
-        ctx.fillText(nameText, mm(2), mm(6.5));
-      }
-
-      // ── Summary (abbreviated, qty×abbr, wrapped by token) ──
-      ctx.fillStyle = "#222";
-      ctx.font = `${mm(2.7)}px ${font}`;
       const summary = getItemSummary(order, meal, lang);
-      const lineH = mm(3.8);
-      const tokens = summary.split(", ");
-      let line = "", y = nameBottomY + mm(4);
-      for (const tok of tokens) {
-        const test = line ? line + ", " + tok : tok;
-        if (ctx.measureText(test).width > maxW && line) {
-          ctx.fillText(line, mm(2), y); y += lineH; line = tok;
-        } else { line = test; }
-      }
-      if (line) { ctx.fillText(line, mm(2), y); y += lineH; }
 
-      // ── Notes ──
-      if (order.notes) {
-        ctx.fillStyle = "#b86000";
-        ctx.font = `${mm(2.2)}px ${font}`;
-        ctx.fillText("★ " + order.notes, mm(2), Math.min(y, PH - mm(2)));
-      }
+      if (!isMR) {
+        // ── English: use jsPDF native text — guaranteed no cut-off ──
+        const TW = 46, LM = 2;       // text width 46mm, left margin 2mm
 
-      doc.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, W, H);
+        // Name (bold)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        const nameLines = doc.splitTextToSize("Name: " + order.name, TW);
+        let y = 7;
+        doc.setTextColor(0, 0, 0);
+        doc.text(nameLines, LM, y);
+        y += nameLines.length * 5 + 1.5;
+
+        // Summary
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        const sumLines = doc.splitTextToSize(summary, TW);
+        doc.text(sumLines, LM, y);
+        y += sumLines.length * 4 + 1;
+
+        // Notes
+        if (order.notes) {
+          doc.setFontSize(8);
+          doc.setTextColor(184, 96, 0);
+          doc.text("* " + order.notes, LM, Math.min(y, H - 2));
+          doc.setTextColor(0, 0, 0);
+        }
+
+      } else {
+        // ── Devanagari: canvas (browser handles Unicode font) ──
+        const SCALE = 10, PW = W * SCALE, PH = H * SCALE;
+        const mm = v => Math.round(v * SCALE);
+        const maxW = mm(46);
+        const devFont = "'Hind','Noto Sans Devanagari',sans-serif";
+
+        const cv = document.createElement("canvas");
+        cv.width = PW; cv.height = PH;
+        const ctx = cv.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, PW, PH);
+
+        // Name
+        ctx.fillStyle = "#000";
+        ctx.font = `bold ${mm(3.0)}px ${devFont}`;
+        const nameText = "Name: " + order.name;
+        function cvWrap(text, fSize, x, startY, lH) {
+          ctx.font = (fSize === mm(3.0) ? "bold " : "") + `${fSize}px ${devFont}`;
+          const words = text.split(" ");
+          let line = "", cy = startY;
+          for (const w of words) {
+            const test = line ? line + " " + w : w;
+            if (ctx.measureText(test).width > maxW && line) {
+              ctx.fillText(line, x, cy); cy += lH; line = w;
+            } else line = test;
+          }
+          if (line) { ctx.fillText(line, x, cy); cy += lH; }
+          return cy;
+        }
+        let y = cvWrap(nameText, mm(3.0), mm(2), mm(5.5), mm(4.2));
+        y += mm(1);
+
+        // Summary
+        ctx.fillStyle = "#222";
+        y = cvWrap(summary, mm(2.6), mm(2), y, mm(3.6));
+
+        // Notes
+        if (order.notes) {
+          ctx.fillStyle = "#b86000";
+          ctx.font = `${mm(2.2)}px ${devFont}`;
+          ctx.fillText("* " + order.notes, mm(2), Math.min(y, PH - mm(2)));
+        }
+
+        doc.addImage(cv.toDataURL("image/png"), "PNG", 0, 0, W, H);
+      }
     });
 
     btn.textContent = "⏳ Saving to Drive…";
