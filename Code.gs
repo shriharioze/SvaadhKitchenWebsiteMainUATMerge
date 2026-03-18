@@ -207,6 +207,22 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getLabelOrders(p.date, p.meal));
     }
+    if (action === "getOrderHistory") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getOrderHistory(p));
+    }
+    if (action === "getCustomerList") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getCustomerList());
+    }
+    if (action === "getCustomerHistory") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getCustomerHistory(p.phone));
+    }
+    if (action === "getDatePayments") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getDatePayments(p.date));
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -250,6 +266,10 @@ function doPost(e) {
     if (action === "markCustomersPaid") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markCustomersPaid(body));
+    }
+    if (action === "markOrdersStatus") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markOrdersStatus(body));
     }
     if (body.pin === ADMIN_PIN)       return jsonRes(saveMenu(body));
     // Regular order submission
@@ -1303,12 +1323,21 @@ function saveLabels(body) {
   var meal   = body.meal;  // "Lunch"
   var pdfB64 = body.pdf;   // base64-encoded PDF bytes
 
-  var parts     = date.split("-");
-  var yearMonth = date.substring(0, 7);                        // "2026-03"
-  var dayLabel  = parts[2] + "-" + parts[1] + "-" + parts[0]; // "18-03-2026"
-  var filename  = meal + "_Labels.pdf";
+  var parts      = date.split("-");
+  var year       = parts[0];                                        // "2026"
+  var monthNum   = parseInt(parts[1], 10);                          // 3
+  var monthNames = ["January","February","March","April","May","June",
+                    "July","August","September","October","November","December"];
+  var monthName  = monthNames[monthNum - 1];                        // "March"
+  var mealAbbrev = meal.toLowerCase().substring(0, 7);              // "breakfa" / "lunch" / "dinner"
+  var langCode   = (body.lang === "Devanagari") ? "mar" : "eng";    // "eng" / "mar"
+  var filename   = "labels_" + mealAbbrev + "_" + langCode + "_" + date + "_58x25.pdf";
+  // e.g. "labels_breakfa_eng_2026-03-05_58x25.pdf"
 
-  var folder = getOrCreateFolderPath(["Processed_Orders", "Labels", yearMonth, dayLabel]);
+  var folder = getOrCreateFolderPath([
+    "Svaadh Kitchen", "Accounting", "Tally Form Daily Sheets",
+    "Processed_Orders", "Labels", year, monthName
+  ]);
 
   // Replace existing file to avoid duplicates
   var existing = folder.getFilesByName(filename);
@@ -1316,7 +1345,7 @@ function saveLabels(body) {
 
   var pdfBlob = Utilities.newBlob(Utilities.base64Decode(pdfB64), "application/pdf", filename);
   var file = folder.createFile(pdfBlob);
-  return {url: file.getUrl(), name: dayLabel + " · " + meal};
+  return {url: file.getUrl(), name: filename};
 }
 
 function getOrCreateFolderPath(pathParts) {
@@ -1475,4 +1504,190 @@ function markCustomersPaid(body) {
     }
   });
   return {success:true, updatedRows:updated, customersMarked:phones.length};
+}
+
+// ── GET ORDER HISTORY (date range) ────────────────────────────────────────────
+function getOrderHistory(p) {
+  var dateFrom = p.dateFrom, dateTo = p.dateTo;
+  if (!dateFrom || !dateTo) return {success:false, error:"dateFrom and dateTo required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var rows = getAllRows(ws);
+
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+
+  var filtered = rows.filter(function(r) {
+    var d = fmtDate(r.Order_Date);
+    return d >= dateFrom && d <= dateTo;
+  });
+
+  var orders = filtered.map(function(r) {
+    return {
+      id:     r.Submission_ID,
+      date:   fmtDate(r.Order_Date),
+      meal:   r.Meal_Type,
+      name:   r.Customer_Name,
+      phone:  r.Phone,
+      area:   r.Area,
+      total:  Number(r.Net_Total) || 0,
+      status: r.Payment_Status || "Pending",
+      notes:  r.Special_Notes || ""
+    };
+  });
+
+  var totalRev     = orders.reduce(function(s,o){return s+o.total;},0);
+  var totalPaid    = orders.filter(function(o){return o.status==="Paid";}).reduce(function(s,o){return s+o.total;},0);
+  var uniqueCusts  = Object.keys(orders.reduce(function(m,o){m[o.phone]=1;return m;},{})).length;
+
+  return {
+    success: true,
+    orders:  orders,
+    summary: {
+      orderCount:      orders.length,
+      uniqueCustomers: uniqueCusts,
+      totalRevenue:    Math.round(totalRev),
+      totalPaid:       Math.round(totalPaid),
+      totalPending:    Math.round(totalRev - totalPaid)
+    }
+  };
+}
+
+// ── GET CUSTOMER LIST ─────────────────────────────────────────────────────────
+function getCustomerList() {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var rows = getAllRows(ws);
+
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+
+  var map = {};
+  rows.forEach(function(r) {
+    var phone = String(r.Phone||"").trim();
+    if (!phone) return;
+    var d = fmtDate(r.Order_Date);
+    if (!map[phone]) {
+      map[phone] = {phone:phone, name:String(r.Customer_Name||"").trim(),
+        area:String(r.Area||"").trim(), payFreq:String(r.Payment_Freq||"").trim(),
+        orderCount:0, totalSpent:0, pendingAmt:0, lastDate:""};
+    }
+    map[phone].orderCount++;
+    map[phone].totalSpent += Number(r.Net_Total)||0;
+    if (r.Payment_Status !== "Paid") map[phone].pendingAmt += Number(r.Net_Total)||0;
+    if (d > map[phone].lastDate) {
+      map[phone].lastDate = d;
+      map[phone].name = String(r.Customer_Name||map[phone].name).trim();
+    }
+  });
+
+  var customers = Object.values(map)
+    .map(function(c){return Object.assign({},c,{totalSpent:Math.round(c.totalSpent),pendingAmt:Math.round(c.pendingAmt)});})
+    .sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
+
+  return {success:true, customers:customers};
+}
+
+// ── GET CUSTOMER HISTORY ──────────────────────────────────────────────────────
+function getCustomerHistory(phone) {
+  if (!phone) return {success:false, error:"phone required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+
+  var rows = getAllRows(ws).filter(function(r){return String(r.Phone||"").trim()===phone;});
+
+  var orders = rows.map(function(r) {
+    return {
+      id:       r.Submission_ID,
+      date:     fmtDate(r.Order_Date),
+      meal:     r.Meal_Type,
+      area:     r.Area,
+      total:    Number(r.Net_Total)||0,
+      subtotal: Number(r.Food_Subtotal)||0,
+      delivery: Number(r.Delivery_Charge)||0,
+      discount: Number(r.Discount_Amount)||0,
+      status:   r.Payment_Status||"Pending",
+      items:    r.Items_JSON,
+      notes:    r.Special_Notes||""
+    };
+  }).sort(function(a,b){return b.date.localeCompare(a.date);});
+
+  var name       = rows.length ? String(rows[0].Customer_Name||"").trim() : "";
+  var area       = rows.length ? String(rows[0].Area||"").trim() : "";
+  var payFreq    = rows.length ? String(rows[0].Payment_Freq||"").trim() : "";
+  var totalSpent = Math.round(orders.reduce(function(s,o){return s+o.total;},0));
+  var pending    = Math.round(orders.filter(function(o){return o.status!=="Paid";}).reduce(function(s,o){return s+o.total;},0));
+
+  return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
+          orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length};
+}
+
+// ── GET DATE PAYMENTS ─────────────────────────────────────────────────────────
+function getDatePayments(date) {
+  if (!date) return {success:false, error:"date required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+
+  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date;});
+
+  var map = {};
+  rows.forEach(function(r) {
+    var phone = String(r.Phone||"").trim();
+    if (!phone) return;
+    if (!map[phone]) map[phone] = {phone:phone, name:String(r.Customer_Name||"").trim(),
+      payFreq:String(r.Payment_Freq||"").trim(), meals:[], total:0, allPaid:true};
+    map[phone].meals.push(r.Meal_Type);
+    map[phone].total += Number(r.Net_Total)||0;
+    if (String(r.Payment_Status)!=="Paid") map[phone].allPaid = false;
+  });
+
+  var customers = Object.values(map).map(function(c) {
+    return Object.assign({},c,{
+      total:  Math.round(c.total),
+      daily:  c.payFreq.toLowerCase().includes("daily"),
+      status: c.allPaid ? "Paid" : "Pending"
+    });
+  }).sort(function(a,b){return a.name.localeCompare(b.name);});
+
+  var grandTotal   = customers.reduce(function(s,c){return s+c.total;},0);
+  var grandPaid    = customers.filter(function(c){return c.status==="Paid";}).reduce(function(s,c){return s+c.total;},0);
+
+  return {success:true, date:date, customers:customers,
+          grandTotal:grandTotal, grandPaid:grandPaid, grandPending:grandTotal-grandPaid};
+}
+
+// ── MARK ORDERS STATUS (by customer phone + date) ─────────────────────────────
+function markOrdersStatus(body) {
+  var date   = body.date;
+  var phone  = body.phone;
+  var status = body.status || "Paid";
+  if (!date || !phone) return {success:false, error:"date and phone required"};
+
+  var ss    = getSpreadsheet();
+  var ws    = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var hIdx  = headerIndex(ws);
+  var rows  = getAllRows(ws);
+  var updated = 0;
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+
+  rows.forEach(function(r) {
+    if (fmtDate(r.Order_Date)===date && String(r.Phone||"").trim()===phone) {
+      ws.getRange(r._row, hIdx["Payment_Status"]).setValue(status);
+      updated++;
+    }
+  });
+  return {success:true, updatedRows:updated};
 }
