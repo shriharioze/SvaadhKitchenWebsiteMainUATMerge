@@ -1162,7 +1162,7 @@ function getDriverOrders(date) {
       maps:          String(r.Maps_Link || ""),
       notes:         String(r.Special_Notes || ""),
       deliveredAt:   delMap[sid] || "",
-      amount:        Number(r.Subtotal || 0),
+      amount:        Number(r.Net_Total || r.Food_Subtotal || 0),
       paymentStatus: String(r.Payment_Status || "")
     });
   });
