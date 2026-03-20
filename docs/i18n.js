@@ -32,7 +32,7 @@
     step1_title: "📱 Enter your phone number",
     phone_label: "Mobile Number",
     phone_hint: "We'll load your saved details if you've ordered before.",
-    btn_view_orders: "📋 View / Edit existing orders",
+    btn_view_orders: "📋 View / Edit upcoming orders",
     faq_title: "❓ Frequently Asked Questions",
 
     // ── Step 2 ───────────────────────────────────────────
