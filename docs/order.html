@@ -132,6 +132,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .meal-addr-section{margin-top:12px;padding-top:12px;border-top:1px dashed #f0e8e5;}
 .meal-addr-section.hidden{display:none;}
 .meal-addr-label{font-size:0.74rem;color:#888;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.addr-section-title{font-size:0.85rem;font-weight:700;color:#2d2d2d;}
 
 /* INFO / WARN */
 .info-box{background:#fff8f0;border:1px solid #fde8c9;border-radius:10px;padding:11px 13px;font-size:0.78rem;color:#666;margin:10px 0;line-height:1.5;}
@@ -283,6 +284,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .faq-a{color:#aaa;}
 [data-theme="dark"] .faq-item{border-color:#333;}
 [data-theme="dark"] .meal-addr-section{border-color:#333;}
+[data-theme="dark"] .addr-section-title{color:#e0e0e0;}
 [data-theme="dark"] .omr-edit-btn{background:#2a2a2a;border-color:#444;color:#aaa;}
 [data-theme="dark"] .omr-del-btn{background:#2a1010;border-color:#4a2020;}
 [data-theme="dark"] .omr-inline-edit{background:#1e1e1e;}
@@ -535,7 +537,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">🌅</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="bf_addr_title">Breakfast Delivery Address</span>
+          <span class="addr-section-title" data-i18n="bf_addr_title">Breakfast Delivery Address</span>
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
@@ -563,7 +565,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">☀️</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="l_addr_title">Lunch Delivery Address</span>
+          <span class="addr-section-title" data-i18n="l_addr_title">Lunch Delivery Address</span>
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
@@ -591,7 +593,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">🌙</span>
-          <span style="font-size:0.85rem;font-weight:700;color:#2d2d2d;" data-i18n="d_addr_title">Dinner Delivery Address</span>
+          <span class="addr-section-title" data-i18n="d_addr_title">Dinner Delivery Address</span>
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
@@ -1396,7 +1398,7 @@ function buildBillScreen(){
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
-      html+=`<div class="bill-line" style="font-weight:600;margin-top:8px;color:#444;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
+      html+=`<div class="bill-line" style="font-weight:600;margin-top:8px;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
       for(const[colKey,qty]of Object.entries(mObj.items||{})){
         if(qty<=0)continue;
         const p=getPrice(colKey,meal,date),n=getItemName(colKey,meal,date);
