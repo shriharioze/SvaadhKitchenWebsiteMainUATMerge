@@ -476,6 +476,7 @@ function submitOrder(body) {
     for (const meal of order.meals) {
       const sid = generateSubmissionID();
       submissionIds.push(sid);
+      meal._sid = sid; // carry sid for ledger
 
       const items  = meal.items || [];   // [{colKey, qty}]
       const mealType = meal.type;
@@ -685,10 +686,13 @@ function deleteOrder(phone, rowId) {
     String(x.Phone).trim() === String(phone).trim()
   );
   if (!r) return {success: false, error: "Order not found"};
-  if (r.Order_Date < today) return {success: false, error: "Cannot delete past orders"};
+  const orderDateStr = r.Order_Date instanceof Date
+    ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+    : String(r.Order_Date).trim();
+  if (orderDateStr < today) return {success: false, error: "Cannot delete past orders"};
 
   // Block deletion if cutoff has passed for today's orders
-  if (r.Order_Date === today) {
+  if (orderDateStr === today) {
     const cutoffHour = CUTOFFS[r.Meal_Type];
     if (cutoffHour !== undefined && hourIST >= cutoffHour) {
       return {success: false, error: `Cutoff for ${r.Meal_Type} has already passed`};
@@ -696,6 +700,25 @@ function deleteOrder(phone, rowId) {
   }
 
   ws.deleteRow(r._row);
+
+  // Also remove from customer ledger if it exists (10-day billing)
+  try {
+    const custWs = ss.getSheetByName("SK_Customers");
+    if (custWs) {
+      const custRows = getAllRows(custWs);
+      const cust = custRows.find(c => String(c.Phone).trim() === String(phone).trim());
+      if (cust && cust.Ledger_Sheet_ID) {
+        const ledger = SpreadsheetApp.openById(cust.Ledger_Sheet_ID);
+        ledger.getSheets().forEach(function(tab) {
+          const data = tab.getDataRange().getValues();
+          for (var i = data.length - 1; i >= 0; i--) {
+            if (String(data[i][0]) === String(rowId)) { tab.deleteRow(i + 1); break; }
+          }
+        });
+      }
+    }
+  } catch(e) { /* ledger cleanup is non-fatal */ }
+
   return {success: true};
 }
 
@@ -974,7 +997,7 @@ function _ensureMonthTab(ledgerSs, year, monthIdx) {
   if (ws) return ws;
 
   ws = ledgerSs.insertSheet(tabName);
-  const headers = ["Date","Meal","Items Ordered","Subtotal (₹)","Delivery (₹)","Discount (₹)","Net Total (₹)"];
+  const headers = ["Submission_ID","Date","Meal","Items Ordered","Subtotal (₹)","Delivery (₹)","Discount (₹)","Net Total (₹)"];
   const periods = ["1–10","11–20","21–end"];
 
   let row = 1;
@@ -1003,13 +1026,15 @@ function _updateLedger(ss, profile, orders) {
 
   for (const order of orders) {
     for (const meal of order.meals) {
-      const summary = Object.entries(JSON.parse(JSON.stringify(meal.items || [])))
-        .map(([k,v]) => `${v}×${k}`).join(", ") || "—";
+      const sid = meal._sid || order.submissionId || "";
+      const summary = (meal.items || [])
+        .filter(function(it){ return it.qty > 0; })
+        .map(function(it){ return it.qty + "×" + it.colKey; })
+        .join(", ") || "—";
       const delCharge = meal.deliveryCharge || 0;
       const discAmt   = meal.discountAmount  || 0;
       const netTotal  = meal.subtotal + delCharge - discAmt;
-      // Append after last data row in the correct period section
-      ws.appendRow([order.date, meal.type, summary, meal.subtotal, delCharge, discAmt, netTotal]);
+      ws.appendRow([sid, order.date, meal.type, summary, meal.subtotal, delCharge, discAmt, netTotal]);
     }
   }
 }
