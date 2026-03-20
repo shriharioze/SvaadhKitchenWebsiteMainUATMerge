@@ -630,11 +630,17 @@ function getCustomerOrders(phone) {
   const rows = getAllRows(ws);
   const today = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
 
+  const fmtD = function(r) {
+    return r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+  };
+
   const upcoming = rows
-    .filter(r => String(r.Phone).trim() === String(phone).trim() && r.Order_Date >= today)
+    .filter(r => String(r.Phone).trim() === String(phone).trim() && fmtD(r) >= today)
     .map(r => ({
       rowId:              r.Submission_ID,
-      date:               r.Order_Date,
+      date:               fmtD(r),
       meal:               r.Meal_Type,
       summary:            _buildSummary(r),
       total:              r.Net_Total,
