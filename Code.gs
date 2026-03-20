@@ -747,11 +747,16 @@ function get10DayRunning(phone) {
   const ps = fmt(periodStart), pe = fmt(periodEnd);
   const pps = fmt(prevStart),  ppe = fmt(prevEnd);
   const phoneStr = String(phone).trim();
+  const fmtD = function(r) {
+    return r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+  };
 
   const running = rows
     .filter(r =>
       String(r.Phone).trim() === phoneStr &&
-      r.Order_Date >= ps && r.Order_Date <= pe &&
+      fmtD(r) >= ps && fmtD(r) <= pe &&
       r.Payment_Status !== "Paid"
     )
     .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
@@ -759,7 +764,7 @@ function get10DayRunning(phone) {
   const prevDue = rows
     .filter(r =>
       String(r.Phone).trim() === phoneStr &&
-      r.Order_Date >= pps && r.Order_Date <= ppe &&
+      fmtD(r) >= pps && fmtD(r) <= ppe &&
       r.Payment_Status !== "Paid"
     )
     .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
