@@ -331,7 +331,7 @@ function renderKitchen(data) {
 // ── AUTO REFRESH ──
 let _lastUpdated = null;
 let _nextRefresh  = null;
-const REFRESH_SECS = 30; // 30 seconds (test)
+const REFRESH_SECS = 300; // 5 minutes
 
 function startAutoRefresh() {
   if (window._rt) clearInterval(window._rt);
@@ -343,13 +343,7 @@ function startAutoRefresh() {
 
   function doRefresh() {
     scheduleNext();
-    const date = document.getElementById("datePicker").value;
-    if (date !== todayIST()) return;
-    const url = `${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`;
-    fetch(url, { cache: "no-store" })
-      .then(r => r.json())
-      .then(data => { if (!data.error) { renderKitchen(data); _lastUpdated = new Date(); } })
-      .catch(() => {});
+    loadKitchen();
   }
 
   scheduleNext();
