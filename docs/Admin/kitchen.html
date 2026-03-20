@@ -330,48 +330,49 @@ function renderKitchen(data) {
 
 // ── AUTO REFRESH ──
 let _lastUpdated = null;
-let _refreshTimer = null;
-let _countdownTimer = null;
+let _nextRefresh  = null;
 const REFRESH_SECS = 300; // 5 minutes
 
 function startAutoRefresh() {
-  // Clear any existing timers
   if (window._rt) clearInterval(window._rt);
   if (window._ct) clearInterval(window._ct);
 
+  function scheduleNext() {
+    _nextRefresh = new Date(Date.now() + REFRESH_SECS * 1000);
+  }
+
   function doRefresh() {
+    scheduleNext();
     const date = document.getElementById("datePicker").value;
-    if (date !== todayIST()) return; // only auto-refresh today's data
+    if (date !== todayIST()) return;
     const url = `${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`;
     fetch(url, { cache: "no-store" })
       .then(r => r.json())
-      .then(data => {
-        if (!data.error) { renderKitchen(data); _lastUpdated = new Date(); }
-      })
-      .catch(() => {}); // silent fail — countdown will keep showing last update time
+      .then(data => { if (!data.error) { renderKitchen(data); _lastUpdated = new Date(); } })
+      .catch(() => {});
   }
 
+  scheduleNext();
   window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
 
   window._ct = setInterval(() => {
     const el = document.getElementById("lastUpdated");
-    if (!el || !_lastUpdated) return;
-    const secsLeft = Math.max(0, REFRESH_SECS - Math.floor((Date.now() - _lastUpdated.getTime()) / 1000));
+    if (!el) return;
+    const secsLeft = _nextRefresh ? Math.max(0, Math.floor((_nextRefresh.getTime() - Date.now()) / 1000)) : REFRESH_SECS;
     const m = Math.floor(secsLeft / 60);
     const s = String(secsLeft % 60).padStart(2, "0");
-    el.textContent = `Updated: ${_lastUpdated.toLocaleTimeString("en-IN")}  ·  Refresh in ${m}:${s}`;
+    const updStr = _lastUpdated ? _lastUpdated.toLocaleTimeString("en-IN") : "—";
+    el.textContent = `Updated: ${updStr}  ·  Refresh in ${m}:${s}`;
   }, 1000);
 
-  // Pause refresh when tab is hidden, resume when visible
+  // Pause when tab hidden, resume when visible
   document.removeEventListener("visibilitychange", window._visHandler);
   window._visHandler = () => {
     if (document.hidden) {
       if (window._rt) { clearInterval(window._rt); window._rt = null; }
     } else {
-      if (!window._rt) {
-        doRefresh(); // immediate refresh on return
-        window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
-      }
+      doRefresh();
+      window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
     }
   };
   document.addEventListener("visibilitychange", window._visHandler);
