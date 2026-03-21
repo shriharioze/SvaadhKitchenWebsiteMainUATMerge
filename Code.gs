@@ -1487,14 +1487,19 @@ function buildSystemPrompt() {
 
   var todayLine = "";
   try {
-    var ist = new Date(new Date().getTime() + 5.5*3600*1000);
-    var todayStr = Utilities.formatDate(ist, "Asia/Kolkata", "yyyy-MM-dd");
+    // Use new Date() directly — Apps Script respects the project timezone (Asia/Kolkata)
+    // DO NOT manually add 5.5 hours — Utilities.formatDate already applies the timezone
+    var now = new Date();
+    var todayStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+    var dayName = Utilities.formatDate(now, "Asia/Kolkata", "EEEE");
     var m = getMenu(todayStr);
     var bf = (m.breakfast||[]).map(function(x){ return x.name+"₹"+x.price; }).join(", ");
-    todayLine = "Today("+todayStr+"): BF:"+(bf||"TBD")
+    todayLine = "Today is "+dayName+", "+todayStr+". "
+      +(dayName==="Sunday" ? "Kitchen is CLOSED today (Sunday).\n" :
+        "BF:"+(bf||"TBD")
       +"|L:"+(m.lunch_dry||"")+(m.lunch_curry?" & "+m.lunch_curry:"")
       +"|D:"+(m.dinner_dry||"")+(m.dinner_curry?" & "+m.dinner_curry:"")
-      +((!m.lunch_dry&&!m.dinner_dry)?" (sabji TBD—send to WA group)":"")+"\n";
+      +((!m.lunch_dry&&!m.dinner_dry)?" (sabji TBD—send to WA group)":"")+"\n");
   } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
   return "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."

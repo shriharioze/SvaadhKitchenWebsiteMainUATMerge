@@ -368,6 +368,20 @@
     [data-theme="dark"] .rv-text{color:#ccc;}
     .rv-more-btn{background:none;border:none;color:#4285f4;font-size:0.82rem;cursor:pointer;padding:0;margin-top:6px;text-align:left;font-family:inherit;}
     .rv-more-btn:hover{text-decoration:underline;}
+    
+    /* ── MOBILE RESPONSIVENESS ──────────────────────────── */
+    @media (max-width: 768px) {
+      .header-content { flex-direction: column; text-align: center; }
+      nav { flex-direction: column; gap: 10px; }
+      nav a { margin: 5px 0; }
+      .menu-card, .icons div { flex: 1 1 100%; max-width: 100%; }
+      .gallery-images img { width: 100%; max-width: 280px; }
+      #hero { padding: 40px 15px; }
+      #hero h2 { font-size: 1.5rem; }
+      section { padding: 30px 15px; }
+      .reviews-header-bar { flex-direction: column; align-items: flex-start; }
+      .reviews-rating-block { flex-wrap: wrap; }
+    }
   </style>
   <script>
     (function(){

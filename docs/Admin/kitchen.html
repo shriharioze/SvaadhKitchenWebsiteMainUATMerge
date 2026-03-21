@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Svaadh Kitchen</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Segoe UI',sans-serif;background:#1a1a1a;color:#fff;min-height:100vh;}
@@ -130,8 +131,25 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
 let K = { pin: "", sessionPin: "" };
 
+// ── RATE LIMITING ──
+let attempts = 0;
+let lockoutEnd = 0;
+function isLocked() {
+  if (Date.now() < lockoutEnd) {
+    const s = Math.ceil((lockoutEnd - Date.now()) / 1000);
+    document.getElementById("kErr").textContent = `Too many attempts. Wait ${s}s.`;
+    return true;
+  }
+  if (lockoutEnd !== 0) {
+    lockoutEnd = 0; attempts = 0;
+    document.getElementById("kErr").textContent = "";
+  }
+  return false;
+}
+
 // ── PIN ──
 function kp(n) {
+  if (isLocked()) return;
   if (K.pin.length >= 4) return;
   K.pin += String(n);
   renderDots();
@@ -146,17 +164,25 @@ function renderDots() {
   for (let i=0;i<4;i++) document.getElementById("kd"+i).classList.toggle("filled", i < K.pin.length);
 }
 async function verifyPin() {
-  document.getElementById("kErr").textContent = "जाँच करत आहे…";
+  if (isLocked()) return;
+  document.getElementById("kErr").textContent = "Checking...";
   try {
     const today = todayIST();
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
     const data = await res.json();
     if (data.error) {
-      document.getElementById("kErr").textContent = "चुकीचा PIN — पुन्हा प्रयत्न करा";
+      attempts++;
+      if (attempts >= 5) {
+        lockoutEnd = Date.now() + 60000;
+        document.getElementById("kErr").textContent = "Too many attempts. Wait 60s.";
+      } else {
+        document.getElementById("kErr").textContent = "Incorrect PIN — Please try again";
+      }
       K.pin = ""; renderDots();
       return;
     }
     // PIN valid
+    attempts = 0;
     K.sessionPin = K.pin;
     K.pin = ""; renderDots();
     document.getElementById("loginWrap").style.display = "none";
@@ -166,7 +192,7 @@ async function verifyPin() {
     _lastUpdated = new Date();
     startAutoRefresh();
   } catch(e) {
-    document.getElementById("kErr").textContent = "त्रुटी (Error): " + e.message;
+    document.getElementById("kErr").textContent = "Error: " + e.message;
     K.pin = ""; renderDots();
   }
 }
@@ -228,7 +254,9 @@ function renderKitchen(data) {
   let html = "";
 
   if (!Object.keys(meals).length) {
-    html = `<div class="no-orders">😴 ${data.date} साठी कोणतेही order नाहीत</div>`;
+    html = `<div class="no-orders" style="display:flex;flex-direction:column;align-items:center;padding:40px;">
+      <div style="font-size:3rem;margin-bottom:10px;">😴</div>
+      No orders set for ${data.date}</div>`;
     document.getElementById("kbody").innerHTML = html;
     return;
   }

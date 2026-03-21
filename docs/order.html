@@ -1382,13 +1382,22 @@ function copyMealsToAllDates(){
   const others=S.selectedDates.filter(d=>d!==activeDate);
   if(!confirm(t('copy_confirm',{date:formatDate(activeDate),n:others.length})))return;
   others.forEach(d=>{
-    S.orders[d]={};
+    // Deep copy each meal from source date, preserving any existing address info
     ["Breakfast","Lunch","Dinner"].forEach(m=>{
-      if(src[m])S.orders[d][m]=JSON.parse(JSON.stringify(src[m]));
+      if(src[m]){
+        const copy=JSON.parse(JSON.stringify(src[m]));
+        // Preserve address from destination if it exists
+        const destAddr=S.orders[d]?.[m]||{};
+        S.orders[d]=S.orders[d]||{};
+        S.orders[d][m]=copy;
+      }
     });
+    // Recalculate subtotals for the copied date
+    ["Breakfast","Lunch","Dinner"].forEach(m=>recalcSubtotal(d,m));
   });
   toast(t('toast_copied',{n:others.length}),2000);
-  renderMealContent(activeDate); // refresh current view to show updated state
+  // Re-render current view and update all tab badges
+  renderMealContent(activeDate);
 }
 function switchTab(date){
   document.querySelectorAll("[id^='tab_']").forEach(b=>{b.style.background="white";b.style.color="#555";b.style.borderColor="#ddd";});

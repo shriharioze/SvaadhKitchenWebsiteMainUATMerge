@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Svaadh Kitchen — Menu Admin</title>
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════
@@ -600,6 +601,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
 <!-- ═══ APP SHELL ═══ -->
 <div class="shell" id="shell">
+  <template id="adminTemplate">
   <div class="topbar">
     <div class="topbar-brand">Svaadh Kitchen <span>ADMIN</span></div>
     <div class="topbar-nav">
@@ -1072,6 +1074,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
     </div><!-- /main -->
   </div><!-- /body-wrap -->
+  </template>
 </div><!-- /shell -->
 
 <div class="toast" id="toast"></div>
@@ -1103,10 +1106,27 @@ let S = {
   menuDirty:      false, // true when unsaved changes exist on the menu page
 };
 
+// ── RATE LIMITING ──
+let attempts = 0;
+let lockoutEnd = 0;
+function isLocked() {
+  if (Date.now() < lockoutEnd) {
+    const s = Math.ceil((lockoutEnd - Date.now()) / 1000);
+    document.getElementById("loginErr").textContent = `Too many attempts. Wait ${s}s.`;
+    return true;
+  }
+  if (lockoutEnd !== 0) {
+    lockoutEnd = 0; attempts = 0;
+    document.getElementById("loginErr").textContent = "";
+  }
+  return false;
+}
+
 // ════════════════════════════════════════════════════════
 // PIN
 // ════════════════════════════════════════════════════════
 function pp(n) {
+  if (isLocked()) return;
   if (S.pin.length >= 4) return;
   S.pin += String(n);
   renderPinDots();
@@ -1121,11 +1141,13 @@ function renderPinDots() {
   for (let i=0;i<4;i++) document.getElementById("pd"+i).classList.toggle("filled", i < S.pin.length);
 }
 async function verifyPin() {
+  if (isLocked()) return;
   document.getElementById("loginErr").textContent = "";
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
+    attempts = 0;
     S.sessionPin  = S.pin;
     S.bfMaster    = data.breakfastMaster || [];
     S.sabjiMaster = data.sabjiMaster     || [];
@@ -1133,14 +1155,19 @@ async function verifyPin() {
     S.pin = ""; renderPinDots();
     bootApp();
   } catch(e) {
-    document.getElementById("loginErr").textContent = "Incorrect PIN — try again";
+    attempts++;
+    if (attempts >= 5) {
+      lockoutEnd = Date.now() + 60000;
+      document.getElementById("loginErr").textContent = "Too many attempts. Wait 60s.";
+    } else {
+      document.getElementById("loginErr").textContent = "Incorrect PIN — try again";
+    }
     S.pin = ""; renderPinDots();
   }
 }
 function logout() {
   S.sessionPin = "";
-  document.getElementById("loginWrap").style.display = "flex";
-  document.getElementById("shell").classList.remove("on");
+  window.location.reload();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1148,6 +1175,12 @@ function logout() {
 // ════════════════════════════════════════════════════════
 function bootApp() {
   document.getElementById("loginWrap").style.display = "none";
+  const tpl = document.getElementById("adminTemplate");
+  if (tpl) {
+    document.getElementById("shell").appendChild(tpl.content.cloneNode(true));
+    tpl.remove();
+  }
+  document.getElementById("shell").classList.add("on");
   document.getElementById("shell").classList.add("on");
   const ist   = getIST();
   S.sidebarYear  = ist.getFullYear();

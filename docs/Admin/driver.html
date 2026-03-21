@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Svaadh Delivery</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;min-height:100vh;}
@@ -124,7 +125,7 @@
   <div class="login-box">
     <div class="login-logo">🛵</div>
     <h1>Svaadh Delivery</h1>
-    <p>PIN टाका</p>
+    <p>Enter PIN to view deliveries</p>
     <div class="pin-dots">
       <div class="pin-dot" id="dd0"></div><div class="pin-dot" id="dd1"></div>
       <div class="pin-dot" id="dd2"></div><div class="pin-dot" id="dd3"></div>
@@ -154,9 +155,9 @@
 
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab active" id="tab_Breakfast" onclick="switchTab('Breakfast')">🌅 न्याहारी<span class="tab-count" id="cnt_Breakfast">0</span></button>
-    <button class="tab" id="tab_Lunch" onclick="switchTab('Lunch')">☀️ दुपार<span class="tab-count" id="cnt_Lunch">0</span></button>
-    <button class="tab" id="tab_Dinner" onclick="switchTab('Dinner')">🌙 रात्र<span class="tab-count" id="cnt_Dinner">0</span></button>
+    <button class="tab active" id="tab_Breakfast" onclick="switchTab('Breakfast')">🌅 Breakfast<span class="tab-count" id="cnt_Breakfast">0</span></button>
+    <button class="tab" id="tab_Lunch" onclick="switchTab('Lunch')">☀️ Lunch<span class="tab-count" id="cnt_Lunch">0</span></button>
+    <button class="tab" id="tab_Dinner" onclick="switchTab('Dinner')">🌙 Dinner<span class="tab-count" id="cnt_Dinner">0</span></button>
   </div>
 
   <!-- PROGRESS STRIP -->
@@ -170,7 +171,7 @@
   <div class="all-done-overlay" id="allDoneOverlay" style="display:none;">
     <div class="done-box">
       <div class="done-emoji">🎉</div>
-      <div class="done-title">सर्व Deliveries झाल्या!</div>
+      <div class="done-title">All Deliveries Done!</div>
       <div class="done-sub" id="doneSub">Great work today!</div>
       <div class="done-stats" id="doneStats"></div>
       <button class="done-close" onclick="document.getElementById('allDoneOverlay').style.display='none'">✓ Close</button>
@@ -195,8 +196,25 @@ let _ordersData = { Breakfast: [], Lunch: [], Dinner: [] };
 let _pollTimer  = null;
 let _routeDists = { Breakfast: null, Lunch: null, Dinner: null };
 
+// ── RATE LIMITING ──
+let attempts = 0;
+let lockoutEnd = 0;
+function isLocked() {
+  if (Date.now() < lockoutEnd) {
+    const s = Math.ceil((lockoutEnd - Date.now()) / 1000);
+    document.getElementById("dErr").textContent = `Too many attempts. Wait ${s}s.`;
+    return true;
+  }
+  if (lockoutEnd !== 0) {
+    lockoutEnd = 0; attempts = 0;
+    document.getElementById("dErr").textContent = "";
+  }
+  return false;
+}
+
 // ── PIN ────────────────────────────────────────────────────────────────────────
 function dp(n) {
+  if (isLocked()) return;
   if (D.pin.length >= 4) return;
   D.pin += String(n);
   renderDots();
@@ -208,15 +226,23 @@ function renderDots() {
 }
 
 async function verifyPin() {
-  document.getElementById("dErr").textContent = "जाँच करत आहे…";
+  if (isLocked()) return;
+  document.getElementById("dErr").textContent = "Checking...";
   try {
     const today = todayIST();
     const res   = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${D.pin}&_t=${Date.now()}`);
     const data  = await res.json();
     if (data.error) {
-      document.getElementById("dErr").textContent = "चुकीचा PIN — पुन्हा प्रयत्न करा";
+      attempts++;
+      if (attempts >= 5) {
+        lockoutEnd = Date.now() + 60000;
+        document.getElementById("dErr").textContent = "Too many attempts. Wait 60s.";
+      } else {
+        document.getElementById("dErr").textContent = "Incorrect PIN — Please try again";
+      }
       D.pin = ""; renderDots(); return;
     }
+    attempts = 0;
     D.sessionPin = D.pin; D.pin = ""; renderDots();
     document.getElementById("loginWrap").style.display = "none";
     document.getElementById("shell").classList.add("on");
@@ -371,8 +397,7 @@ function checkAllDone(meal) {
 
 function renderMealPanel(orders, meal) {
   if (!orders.length) {
-    const labels = {Breakfast:"न्याहारी", Lunch:"दुपारचे जेवण", Dinner:"रात्रीचे जेवण"};
-    return `<div class="empty"><div class="empty-icon">😴</div>${labels[meal]} साठी कोणतेही delivery नाही</div>`;
+    return `<div class="empty"><div class="empty-icon">😴</div>No deliveries for ${meal}</div>`;
   }
 
   // Count geocodable orders for route button
@@ -415,7 +440,7 @@ function renderCard(o, i, meal) {
     ${o.amount > 0 ? `
     <div class="amount-row">
       <span class="amount-badge ${needsCash?"collect":"prepaid"}">
-        ${needsCash ? `💰 ₹${o.amount} collect करा` : `✅ Prepaid (₹${o.amount})`}
+        ${needsCash ? `💰 Collect ₹${o.amount}` : `✅ Prepaid (₹${o.amount})`}
       </span>
     </div>` : ""}
     <div class="card-actions">

@@ -32,8 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const newChatBtn  = document.getElementById("new-chat-btn");
   const closeBtn    = document.getElementById("chat-close-btn");
 
-  // Auto-expand when loaded
-  chatBox.style.display = "flex";
+  // Start minimized — user clicks 💬 to open
+  chatBox.style.display = "none";
 
   toggle.addEventListener("click", () => {
     chatBox.style.display = chatBox.style.display === "none" ? "flex" : "none";
@@ -121,28 +121,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── HISTORY HELPERS ────────────────────────────────────────
   function saveMessage(text, sender) {
-    const history = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
-    history.push({ text, sender, timestamp: new Date().toISOString() });
-    if (history.length > 50) history.shift();
-    localStorage.setItem("svaadhChatHistory", JSON.stringify(history));
+    try {
+      const history = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
+      history.push({ text, sender, timestamp: new Date().toISOString() });
+      if (history.length > 50) history.shift();
+      localStorage.setItem("svaadhChatHistory", JSON.stringify(history));
+    } catch(e) {}
   }
 
   function loadChatHistory() {
-    const history = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
-    history.forEach(msg => appendMessage(msg.text, msg.sender));
+    try {
+      const history = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
+      history.forEach(msg => appendMessage(msg.text, msg.sender, false)); // false = don't resave!
+    } catch(e) {}
   }
 
   // Build Gemini-format history from the last N stored messages
   function buildGeminiHistory() {
-    const stored = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
-    // Take up to last 20 messages (10 turns), exclude the one we're about to send
-    return stored.slice(-21, -1)
-      .filter(m => m.sender === "user" || m.sender === "bot")
-      .map(m => ({ role: m.sender === "bot" ? "model" : "user", text: m.text }));
+    try {
+      const stored = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
+      // Take up to last 20 messages (10 turns), exclude the one we're about to send
+      return stored.slice(-21, -1)
+        .filter(m => m.sender === "user" || m.sender === "bot")
+        .map(m => ({ role: m.sender === "bot" ? "model" : "user", text: m.text }));
+    } catch(e) { return []; }
   }
 
   // ── RENDER ─────────────────────────────────────────────────
-  function appendMessage(text, sender) {
+  function appendMessage(text, sender, save = true) {
     const div = document.createElement("div");
     div.classList.add("message", sender);
     div.innerHTML = text.replace(
@@ -151,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
-    if (!sender.includes("loading")) saveMessage(text, sender);
+    if (save && !sender.includes("loading")) saveMessage(text, sender);
   }
 
   function showLoading() {
@@ -203,8 +209,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── INIT ───────────────────────────────────────────────────
   loadChatHistory();
-  const existing = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
-  if (existing.length === 0) {
+  let existing = [];
+  try {
+    existing = JSON.parse(localStorage.getItem("svaadhChatHistory") || "[]");
+  } catch(e) {}
+  
+  // Only add welcome if history is empty AND no messages already rendered
+  if (existing.length === 0 && messages.children.length === 0) {
     setTimeout(() => {
       appendMessage("Hello! 👋 Welcome to Svaadh Kitchen! How can I help you today?", "bot");
       showQuickReplies();
