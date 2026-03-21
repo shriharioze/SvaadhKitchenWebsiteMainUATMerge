@@ -17,10 +17,10 @@
 // Flip enabled to true once you've added getReviews() to the
 // Apps Script (see instructions at the bottom of this file).
 var SK_LIVE = {
-  enabled   : false,         // ← set true after Apps Script setup
+  enabled   : true,         // ← Turned ON for live server fetch
   url       : 'https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec',
   cacheKey  : 'sk-rv-v1',   // bump (e.g. sk-rv-v2) to force a cache refresh
-  cacheTtlMs: 6 * 60 * 60 * 1000  // re-fetch every 6 hours
+  cacheTtlMs: 2 * 60 * 60 * 1000  // re-fetch every 2 hours
 };
 
 // ── Static fallback / seed data ─────────────────────────
@@ -231,8 +231,16 @@ function renderReviews() {
   }
 
   var readMore = (typeof t === 'function' ? t('idx_read_more') : 'Read more');
-
-  grid.innerHTML = SK_REVIEWS.reviews.map(function(r) {
+  
+  // Create a copy of the reviews array and shuffle it
+  var shuffledReviews = SK_REVIEWS.reviews.slice();
+  for (let i = shuffledReviews.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledReviews[i], shuffledReviews[j]] = [shuffledReviews[j], shuffledReviews[i]];
+  }
+  
+  // Show up to 8 random reviews to keep the UI clean
+  grid.innerHTML = shuffledReviews.slice(0, 8).map(function(r) {
     var stars    = '\u2605'.repeat(r.rating);
     var isLong   = r.text.length > _MAX_REVIEW_LEN;
     var textHtml = isLong

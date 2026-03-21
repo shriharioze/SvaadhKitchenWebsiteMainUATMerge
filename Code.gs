@@ -9,6 +9,11 @@ const ADMIN_PIN      = "7284";                       // ← Updated before go-li
 const CODE_VERSION   = 3;   // ← bump this each deploy so you can verify version
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
+// ── GOOGLE PLACES API (For Real-Time Reviews) ──
+// Paste your API Key here from Google Cloud Console. Leave blank to fallback to static reviews.
+const GOOGLE_PLACES_API_KEY = ""; 
+const PLACE_ID = "ChIJ_z_00zK_wjsR6wR-F4D6O8U"; // Update to your exact Google Maps Place ID
+
 // Sheet tab names
 const TAB_ORDERS     = "SK_Orders";
 const TAB_CUSTOMERS  = "SK_Customers";
@@ -266,6 +271,7 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveLabels(body));
     }
+    if (action === "getReviews")      return jsonRes(getReviews());
     if (action === "chat")            return jsonRes(handleChat(body));
     if (action === "saveArea") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
@@ -1939,4 +1945,50 @@ function markDelivered(body) {
     ws.appendRow([sid, deliveredAt]);
   }
   return {success:true, submissionId:sid, deliveredAt:deliveredAt};
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE GOOGLE REVIEWS
+// ═══════════════════════════════════════════════════════
+function getReviews() {
+  if (!GOOGLE_PLACES_API_KEY) {
+    return { error: true, message: "Missing GOOGLE_PLACES_API_KEY. Please configure in Code.gs." };
+  }
+  
+  try {
+    var url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=" + PLACE_ID + "&fields=url,rating,user_ratings_total,reviews&key=" + GOOGLE_PLACES_API_KEY;
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    var json = JSON.parse(res.getContentText());
+    
+    if (json.status !== "OK") {
+      return { error: true, message: json.error_message || json.status };
+    }
+    
+    var place = json.result;
+    var liveReviews = [];
+    
+    if (place.reviews) {
+      liveReviews = place.reviews.map(function(r) {
+        return {
+          name: r.author_name,
+          rating: r.rating,
+          date: r.relative_time_description, 
+          text: r.text || ""
+        };
+      });
+    }
+    
+    // Sort reviews randomly so they don't look repetitive
+    liveReviews.sort(function() { return 0.5 - Math.random() });
+    
+    return {
+      success: true,
+      rating: place.rating || 5.0,
+      total: place.user_ratings_total || 85,
+      reviewUrl: place.url || 'https://g.page/r/CasEH8gGAhzLEBM/review',
+      reviews: liveReviews
+    };
+  } catch(e) {
+    return { error: true, message: e.message };
+  }
 }
