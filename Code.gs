@@ -11,8 +11,8 @@ const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── GOOGLE PLACES API (For Real-Time Reviews) ──
 // Paste your API Key here from Google Cloud Console. Leave blank to fallback to static reviews.
-const GOOGLE_PLACES_API_KEY = ""; 
-const PLACE_ID = ""; // Update to your exact Google Maps Place ID
+const GOOGLE_PLACES_API_KEY = "AIzaSyC-C7vBcJqCL3y_dy4Gt1YjT1dh7zBWrBY"; 
+const PLACE_ID = "ChIJ98azHY_BwjsRqwQfyAYCHMs"; // Update to your exact Google Maps Place ID
 
 // Sheet tab names
 const TAB_ORDERS     = "SK_Orders";
@@ -21,6 +21,7 @@ const TAB_MENU       = "SK_Daily_Menu";
 const TAB_BF_MASTER  = "SK_Master_Breakfast";
 const TAB_SABJI      = "SK_Master_Sabjis";
 const TAB_AREAS      = "SK_Areas";
+const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
 
 // ── COLUMN LAYOUT — SK_Orders ────────────────────────────────
 // A   Submission_ID
@@ -294,6 +295,10 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(adminCancelOrder(body));
     }
+    if (action === "markEnRoute") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markEnRoute(body));
+    }
     if (action === "markDelivered") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markDelivered(body));
@@ -388,7 +393,15 @@ function getCustomer(phone) {
   const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
   const rows = getAllRows(ws);
   const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
-  if (!r) return {found: false};
+  if (!r) return {found: false, wallet_balance: 0};
+  
+  // Also check wallet balance
+  let balance = 0;
+  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+  const walletRows = getAllRows(walletWs);
+  const w = walletRows.find(x => String(x.Phone).trim() === String(phone).trim());
+  if (w && w.Balance) balance = Number(w.Balance) || 0;
+
   return {
     found: true,
     name:               r.Name || "",
@@ -400,6 +413,7 @@ function getCustomer(phone) {
     maps:               r.Maps_Link || "",
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily bill Payment",
+    wallet_balance:     balance
   };
 }
 
@@ -593,8 +607,30 @@ function submitOrder(body) {
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
       set("Net_Total",           netTotal);
+      
+      let pStat = payStatus;
+      // ════ WALLET DEDUCTION LOGIC ════
+      if (payMethod === "Wallet") {
+        const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+        const wRows = getAllRows(walletWs);
+        const w = wRows.find(x => String(x.Phone).trim() === String(profile.phone).trim());
+        if (w) {
+          let currentBalance = Number(w.Balance) || 0;
+          if (currentBalance >= netTotal) {
+            // Deduct from wallet instantly
+            const hIdxWallet = headerIndex(walletWs);
+            walletWs.getRange(w._row, hIdxWallet["Balance"]).setValue(currentBalance - netTotal);
+            pStat = "Wallet Paid";
+          } else {
+            pStat = "Pending"; // Wallet failed, fallback to pending
+          }
+        } else {
+           pStat = "Pending";
+        }
+      }
+      
       set("Payment_Method",      payMethod);
-      set("Payment_Status",      payStatus);
+      set("Payment_Status",      pStat);
       set("Payment_Freq",        payFreq);
       set("First_Time",          firstTime);
       set("Source",              "WebApp");
@@ -696,26 +732,44 @@ function getCustomerOrders(phone) {
       : String(r.Order_Date).trim();
   };
 
+  const delWs = ss.getSheetByName("SK_Deliveries");
+  const deliveryMap = {};
+  if (delWs) {
+    const delRows = getAllRows(delWs);
+    delRows.forEach(d => {
+      if (d.Submission_ID) deliveryMap[d.Submission_ID] = {
+        deliveredAt: d.Delivered_At || null,
+        enRouteAt: d.EnRoute_At || null
+      };
+    });
+  }
+
   const upcoming = rows
     .filter(r => String(r.Phone).trim() === String(phone).trim() && fmtD(r) >= today)
-    .map(r => ({
-      rowId:              r.Submission_ID,
-      date:               fmtD(r),
-      meal:               r.Meal_Type,
-      summary:            _buildSummary(r),
-      total:              r.Net_Total,
-      customer_name:      r.Customer_Name      || "",
-      area:               r.Area               || "",
-      wing:               r.Wing               || "",
-      flat:               r.Flat               || "",
-      floor:              r.Floor              || "",
-      society:            r.Society            || "",
-      maps:               r.Maps_Link          || "",
-      landmark:           r.Landmark           || "",
-      items_json:         r.Items_JSON         || "{}",
-      notes:              r.Special_Notes      || "",
-      payment_preference: r.Payment_Freq       || "Daily bill Payment",
-    }));
+    .map(r => {
+      const delTracker = deliveryMap[r.Submission_ID] || {};
+      return {
+        rowId:              r.Submission_ID,
+        date:               fmtD(r),
+        meal:               r.Meal_Type,
+        summary:            _buildSummary(r),
+        total:              r.Net_Total,
+        customer_name:      r.Customer_Name      || "",
+        area:               r.Area               || "",
+        wing:               r.Wing               || "",
+        flat:               r.Flat               || "",
+        floor:              r.Floor              || "",
+        society:            r.Society            || "",
+        maps:               r.Maps_Link          || "",
+        landmark:           r.Landmark           || "",
+        items_json:         r.Items_JSON         || "{}",
+        notes:              r.Special_Notes      || "",
+        payment_preference: r.Payment_Freq       || "Daily bill Payment",
+        payment_status:     r.Payment_Status     || "",
+        enRouteAt:          delTracker.enRouteAt || null,
+        deliveredAt:        delTracker.deliveredAt || null
+      };
+    });
 
   return {orders: upcoming};
 }
@@ -1977,6 +2031,41 @@ function get10DayBilling(p) {
   return {success:true,period:{from:dateFrom,to:dateTo},customers:customers,grandTotal:gTotal,grandPaid:gPaid,grandPending:gTotal-gPaid};
 }
 
+// ── LIVE TRACKER LOGIC: En Route & Delivered ──────────────────────────────────
+function markEnRoute(body) {
+  var sid         = body.submissionId;
+  var enRouteAt   = body.enRouteAt;
+  if (!sid) return {success:false, error:"submissionId required"};
+
+  var ss  = getSpreadsheet();
+  // Ensure header array matches what we use in markDelivered
+  var ws  = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At","EnRoute_At"]);
+  var rows = getAllRows(ws);
+  
+  // Backwards compatibility safety check: if header doesn't exist, we must add it.
+  var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  if (headers.indexOf("EnRoute_At") === -1) {
+    ws.getRange(1, headers.length + 1).setValue("EnRoute_At");
+  }
+  var hIdx = headerIndex(ws);
+
+  var existing = null;
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i].Submission_ID) === sid) { existing = rows[i]; break; }
+  }
+  if (existing) {
+    ws.getRange(existing._row, hIdx["EnRoute_At"]).setValue(enRouteAt);
+  } else {
+    // Note: Append Row pushes based on sheet width. Best to be safe using indices.
+    var newRowArr = [];
+    newRowArr[hIdx["Submission_ID"] - 1] = sid;
+    newRowArr[hIdx["Delivered_At"] - 1] = "";
+    newRowArr[hIdx["EnRoute_At"] - 1] = enRouteAt;
+    ws.appendRow(newRowArr);
+  }
+  return {success:true, submissionId:sid, enRouteAt:enRouteAt};
+}
+
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
 function markDelivered(body) {
   var sid         = body.submissionId;
@@ -1984,7 +2073,14 @@ function markDelivered(body) {
   if (!sid) return {success:false, error:"submissionId required"};
 
   var ss  = getSpreadsheet();
-  var ws  = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At"]);
+  // Ensure we define the tab properly
+  var ws  = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At","EnRoute_At"]);
+  
+  var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  if (headers.indexOf("EnRoute_At") === -1) {
+    ws.getRange(1, headers.length + 1).setValue("EnRoute_At");
+  }
+  
   var rows = getAllRows(ws);
   var hIdx = headerIndex(ws);
 
@@ -1995,7 +2091,11 @@ function markDelivered(body) {
   if (existing) {
     ws.getRange(existing._row, hIdx["Delivered_At"]).setValue(deliveredAt);
   } else {
-    ws.appendRow([sid, deliveredAt]);
+    var newRowArr = [];
+    newRowArr[hIdx["Submission_ID"] - 1] = sid;
+    newRowArr[hIdx["Delivered_At"] - 1] = deliveredAt;
+    newRowArr[hIdx["EnRoute_At"] - 1] = "";
+    ws.appendRow(newRowArr);
   }
   return {success:true, submissionId:sid, deliveredAt:deliveredAt};
 }

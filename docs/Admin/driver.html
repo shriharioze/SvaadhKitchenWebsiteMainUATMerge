@@ -454,11 +454,18 @@ function renderCard(o, i, meal) {
         ? `<a class="btn-whatsapp" href="https://wa.me/${waNum}?text=${waText}" target="_blank">💬</a>`
         : ""}
     </div>
-    <button class="btn-delivered${isDelivered?" done":""}" id="dbtn_${o.submissionId}"
-      onclick="markDelivered('${o.submissionId}','${meal}',this)"
-      ${isDelivered?"disabled":""}>
-      ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : "⬜ Mark as Delivered"}
-    </button>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn-delivered${o.enRouteAt?" done":""}" style="flex:1;background:${o.enRouteAt?'#fff8e1':'#f8f9fa'};border:1px solid ${o.enRouteAt?'#ffb300':'#ddd'};color:${o.enRouteAt?'#f57f17':'#555'};margin-top:0;" id="ebtn_${o.submissionId}"
+        onclick="markEnRoute('${o.submissionId}')"
+        ${o.enRouteAt?"disabled":""}>
+        ${o.enRouteAt ? `🚗 Out for Delivery` : `🚗 Tap to track`}
+      </button>
+      <button class="btn-delivered${isDelivered?" done":""}" style="flex:1.2;margin-top:0;" id="dbtn_${o.submissionId}"
+        onclick="markDelivered('${o.submissionId}','${meal}',this)"
+        ${isDelivered?"disabled":""}>
+        ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : "⬜ Mark Delivered"}
+      </button>
+    </div>
   </div>`;
 }
 
@@ -494,8 +501,30 @@ async function markDelivered(submissionId, meal, btn) {
     // Refresh progress strip
     updateProgress(meal);
   } catch(e) {
-    btn.innerHTML = "⬜ Mark as Delivered"; btn.disabled = false;
+    btn.innerHTML = "⬜ Mark Delivered"; btn.disabled = false;
     alert("Error: " + e.message);
+  }
+}
+
+async function markEnRoute(sid) {
+  const btn = document.getElementById("ebtn_"+sid);
+  if (!sid || btn.classList.contains("done")) return;
+  btn.innerHTML = "⏳…"; btn.disabled = true;
+  const enRouteAt = new Date().toISOString(); 
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body: JSON.stringify({_action:"markEnRoute", pin:D.sessionPin, submissionId:sid, enRouteAt})});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+
+    btn.className = "btn-delivered done";
+    btn.style.background = "#fff8e1";
+    btn.style.borderColor = "#ffb300";
+    btn.style.color = "#f57f17";
+    btn.innerHTML = `🚗 Out for Delivery`;
+  } catch(err) {
+    alert("Error: " + err.message);
+    btn.innerHTML = "🚗 Tap to track"; btn.disabled = false;
   }
 }
 

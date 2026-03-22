@@ -871,6 +871,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div id="billSummaryContent"></div>
   </div>
 
+  <!-- WALLET -->
+  <div class="card" id="walletCard" style="display:none;">
+    <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
+    <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:12px;margin-bottom:6px;">
+      <div style="font-size:0.85rem;color:#1a6640;font-weight:600;">Available Balance: <span id="walletBalDisplay">₹0</span></div>
+      <div style="font-size:0.75rem;color:#27ae60;margin-top:4px;">You have sufficient balance. Wait while we process your order seamlessly!</div>
+    </div>
+  </div>
+
   <!-- UPI (daily customers) -->
   <div class="card" id="paymentCard">
     <h2 data-i18n="step5_payment_title">💳 Payment</h2>
@@ -1665,7 +1674,17 @@ function buildBillScreen(){
   if(codBtnEl){codBtnEl.textContent="🏠 Cash on Delivery";codBtnEl.style.background="";}
   $("billSummaryContent").innerHTML=html+
     `<div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
-  if(S.is10Day){
+  
+  const wb = Number(S.profile?.wallet_balance) || 0;
+  S.walletMode = (wb >= grandTotal && grandTotal > 0);
+
+  if (S.walletMode) {
+    $("walletCard").style.display="block";
+    $("paymentCard").style.display="none";
+    $("tenDayCard").style.display="none";
+    $("walletBalDisplay").textContent = `₹${wb}`;
+  } else if(S.is10Day){
+    $("walletCard").style.display="none";
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
     // Show loading while fetching hissab
@@ -1705,6 +1724,7 @@ function buildBillScreen(){
         $("hissabPeriod").textContent = t('period_this_order',{amt:grandTotal,p:getPeriodLabel()});
       });
   } else {
+    $("walletCard").style.display="none";
     $("paymentCard").style.display="block";
     $("tenDayCard").style.display="none";
     setupUPI(grandTotal);
@@ -1840,8 +1860,12 @@ function setupUPI(amount){
 // PLACE ORDER
 // ═══════════════════════════════════════════════════════════
 async function placeOrder(){
-  const confirmEl=S.is10Day?$("tenDayConfirm"):$("paidConfirm");
-  if(!confirmEl?.checked){toast(S.is10Day?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
+  let confirmEl=null;
+  if(S.walletMode) confirmEl = null;
+  else if(S.is10Day) confirmEl=$("tenDayConfirm");
+  else confirmEl=$("paidConfirm");
+  
+  if(confirmEl && !confirmEl.checked){toast(S.is10Day?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
   $("btnNext").disabled=true;$("btnNext").textContent=t('loading_placing');
   const orders=[];
   for(const date of S.selectedDates){
@@ -1863,7 +1887,9 @@ async function placeOrder(){
       wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
-    orders,payment_method:S.codMode?"COD":"UPI",payment_status:S.is10Day?"10-Day Pending":"Pending",
+    orders,
+    payment_method: S.walletMode ? "Wallet" : (S.is10Day ? "10-Day Billing" : (S.codMode ? "COD" : "UPI")),
+    payment_status: S.walletMode ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
   };
   const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
   try{
@@ -1924,11 +1950,17 @@ async function loadExistingOrders(phone){
     });
     $("manageOrdersList").innerHTML=upcoming.map(o=>{
       const mealAvail=o.date>today||getMealAvailability(o.date)[o.meal];
+      
+      let trackHtml="";
+      if(o.deliveredAt) trackHtml=`<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>`;
+      else if(o.enRouteAt) trackHtml=`<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 Your driver is in your area!</div>`;
+
       return `<div class="order-manage-row" id="omr_${o.rowId}">
         <div class="omr-top">
           <div class="omr-info">
             <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
             <div class="omr-sub">${o.summary||"(items)"} · ₹${o.total}</div>
+            ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
             ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
           </div>
           <div class="omr-actions">
@@ -2096,7 +2128,7 @@ async function resubmitOrder(rowId, date, meal){
 }
 
 async function deleteOrder(rowId,date,meal){
-  if(!confirm(t('delete_confirm',{meal,date:formatDate(date)})))return;
+  if(!confirm(`Are you sure you want to completely cancel your ${meal} order for ${formatDate(date)}?\n\nBecause we are already procuring fresh ingredients for your specific meal, cancellations must be done before the cutoff time.\n\n(Note: If you have already paid for this order via UPI, the amount will be manually refunded back to you via Google Pay, or adjusted against your next 10-day bill.)`))return;
   try{
     const res=await fetch(APPS_SCRIPT_URL,{method:"POST",
       body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
