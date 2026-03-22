@@ -655,6 +655,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div class="faq-section" id="faqList"></div>
     </div>
   </div>
+  <div id="pwaInstallWrap" style="display:none;margin-top:14px;padding:0 20px;">
+    <button class="btn btn-primary" id="btnInstallPWA" style="background:#1a73e8;border-color:#145dbf;width:100%;font-size:0.9rem;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;gap:10px;">
+      <span style="font-size:1.2rem;">📲</span> <span>Install Svaadh Kitchen App</span>
+    </button>
+  </div>
   <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:none;background:transparent;">
     <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn">📅 View This Week's Menu</button>
   </div>
@@ -1039,7 +1044,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <a id="walletUpiLink" href="#" class="btn btn-primary" style="margin-top:12px;background:#2e7d32;border-color:#1b5e20;">👆 Open GPay / PhonePe</a>
     </div>
     
-    <button class="btn btn-primary" style="margin-top:16px;" onclick="closeWalletRecharge()">✅ I have completed the payment</button>
+    <button class="btn btn-primary" id="btnSubmitWallet" style="margin-top:16px;" onclick="submitWalletRecharge()">✅ I have completed the payment</button>
     <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
   </div>
 </div>
@@ -1854,6 +1859,36 @@ function updateWalletQr() {
   $('walletQrWrap').style.display = 'block';
 }
 
+async function submitWalletRecharge() {
+  const amt = parseInt($('walletRechargeAmt').value, 10);
+  if (isNaN(amt) || amt < 10) { toast("Please enter a valid amount."); return; }
+  
+  $('btnSubmitWallet').disabled = true;
+  $('btnSubmitWallet').textContent = "⏳ Submitting...";
+  
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        _action: "submitWalletRecharge",
+        phone: S.phone,
+        name: S.profile?.name || "Customer",
+        amount: amt
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    
+    toast("Recharge initiated! Svaadh Kitchen Admin will verify and activate your balance shortly.", 6000);
+    closeWalletRecharge();
+  } catch(err) {
+    toast("Error: " + err.message);
+  } finally {
+    $('btnSubmitWallet').disabled = false;
+    $('btnSubmitWallet').textContent = "✅ I have completed the payment";
+  }
+}
+
 function setupUPI(amount){
   $("upiAmountDisplay").textContent=`₹${amount}`;
 
@@ -2363,13 +2398,46 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 <!-- PWA Service Worker Registration -->
 <script>
+  let deferredPrompt;
+  const pwaInstallWrap = document.getElementById('pwaInstallWrap');
+  const btnInstallPWA = document.getElementById('btnInstallPWA');
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
-        .then(registration => console.log('PWA ServiceWorker registered successfuly!'))
-        .catch(err => console.error('ServiceWorker registration failed: ', err));
+        .then(reg => console.log('SW Registered'))
+        .catch(err => console.log('SW Failed', err));
     });
   }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    if (pwaInstallWrap) pwaInstallWrap.style.display = 'block';
+  });
+
+  if (btnInstallPWA) {
+    btnInstallPWA.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      // We've used the prompt, and can't use it again, throw it away
+      deferredPrompt = null;
+      // Hide our button
+      pwaInstallWrap.style.display = 'none';
+    });
+  }
+
+  window.addEventListener('appinstalled', (event) => {
+    console.log('PWA was installed');
+    if (pwaInstallWrap) pwaInstallWrap.style.display = 'none';
+  });
 </script>
 </body>
 </html>

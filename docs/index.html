@@ -438,7 +438,12 @@
     <h2>Fresh, Healthy, Homemade Vegetarian Meals in Hadapsar, Pune</h2>
     <p>Order delicious homemade breakfast, lunch, and dinner delivered to your doorstep. Authentic taste, quality ingredients, and quick service.</p>
     <p class="mr-note">ताज्या घरगुती जेवणाची ऑर्डर द्या — नाश्ता, दुपारचे व रात्रीचे जेवण घरपोच.</p>
-    <a href="order.html" class="btn-orange">Order Now »</a>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;">
+      <a href="order.html" class="btn-orange" style="margin:0;">Order Now »</a>
+      <div id="pwaInstallWrap" style="display:none;">
+        <button id="btnInstallPWA" class="btn-orange" style="background:#1a73e8;border-color:#145dbf;margin:0;">📲 Install App</button>
+      </div>
+    </div>
   </section>
 
   <!-- What We Serve -->
@@ -862,13 +867,39 @@
 </main>
   <!-- PWA Service Worker Registration -->
   <script>
+    let deferredPrompt;
+    const pwaInstallWrap = document.getElementById('pwaInstallWrap');
+    const btnInstallPWA = document.getElementById('btnInstallPWA');
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-          .then(registration => console.log('PWA ServiceWorker registered successfuly!'))
-          .catch(err => console.error('ServiceWorker registration failed: ', err));
+          .then(reg => console.log('SW Registered'))
+          .catch(err => console.log('SW Failed', err));
       });
     }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (pwaInstallWrap) pwaInstallWrap.style.display = 'block';
+    });
+
+    if (btnInstallPWA) {
+      btnInstallPWA.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
+        pwaInstallWrap.style.display = 'none';
+      });
+    }
+
+    window.addEventListener('appinstalled', (event) => {
+      console.log('App installed');
+      if (pwaInstallWrap) pwaInstallWrap.style.display = 'none';
+    });
   </script>
 </body>
 
