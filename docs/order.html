@@ -608,12 +608,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 </div>
 
 <!-- HEADER -->
-<div class="page-header">
+<div class="page-header" style="position:relative;">
   <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
   <p data-i18n="header_tagline">Home-cooked food, made for you</p>
   <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
+  
+  <div id="walletChip" style="display:none;position:absolute;bottom:-15px;right:20px;background:#fff;border:1.5px solid #2e7d32;border-radius:20px;padding:4px 10px;font-size:0.75rem;font-weight:700;color:#2e7d32;box-shadow:0 4px 12px rgba(46,125,50,0.18);z-index:100;align-items:center;gap:4px;animation:slideDown 0.3s ease;">
+    <span>💼 Wallet:</span>
+    <span id="headerWalletBalance">₹0</span>
+  </div>
 </div>
+<style>@keyframes slideDown{from{transform:translateY(-10px);opacity:0;}to{transform:translateY(0);opacity:1;}}</style>
 
 <!-- PROGRESS -->
 <div class="progress-wrap">
@@ -1225,8 +1231,12 @@ function updateNav(){
   $("btnNext").disabled=false;$("btnNext").style.opacity="1";
   const labels=[t('btn_continue'),t('btn_continue'),t('btn_continue'),t('btn_review'),t('btn_place')];
   $("btnNext").textContent=labels[s];
-  // On meal screen, disable if nothing ordered yet
+  // Disable if nothing ordered yet
   if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
+  
+  // Toggle Wallet Chip visibility: visible Step 2-5 (s > 0)
+  const wc = $("walletChip");
+  if (wc) wc.style.display = (s > 0) ? "flex" : "none";
 }
 function refreshBillBtn(){
   if(S.step!==3)return;
@@ -1300,6 +1310,8 @@ async function lookupCustomer(){
     clearTimeout(_lTid);
     const data=await res.json();
     if(data.found){
+      const wb = Number(data.wallet_balance) || 0;
+      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
       S.isFirstTime=false;
       const parts=(data.name||"").trim().split(" ");
       const fn=parts[0]||"";
