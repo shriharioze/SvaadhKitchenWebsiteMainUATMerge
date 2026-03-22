@@ -12,7 +12,7 @@ const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── GOOGLE PLACES API (For Real-Time Reviews) ──
 // Paste your API Key here from Google Cloud Console. Leave blank to fallback to static reviews.
 const GOOGLE_PLACES_API_KEY = ""; 
-const PLACE_ID = "ChIJ_z_00zK_wjsR6wR-F4D6O8U"; // Update to your exact Google Maps Place ID
+const PLACE_ID = ""; // Update to your exact Google Maps Place ID
 
 // Sheet tab names
 const TAB_ORDERS     = "SK_Orders";
@@ -182,6 +182,7 @@ function doGet(e) {
     if (action === "getAreas")      return jsonRes(getAreas());
     if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
     if (action === "getMenu")       return jsonRes(getMenu(p.date));
+    if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
     if (action === "get10DayRunning")   return jsonRes(get10DayRunning(p.phone));
     if (action === "getAdminData") {
@@ -442,6 +443,58 @@ function getMenu(dateStr) {
     dinner_curry: r.Dinner_Curry || "",
     cutoff_overrides: co
   };
+}
+
+// ── GET WEEKLY MENU (next 7 days) ────────────────────────────
+function getWeeklyMenu() {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_MENU, []);
+  const rows = getAllRows(ws);
+
+  // Breakfast master items
+  const bfWs = getOrCreateTab(ss, TAB_BF_MASTER, []);
+  const bfRows = getAllRows(bfWs).filter(x => String(x.Active).toLowerCase() !== "false");
+  const defaultBreakfast = bfRows.map(x => ({name: String(x.Name), price: Number(x.Price)}));
+
+  // Build a map: dateStr → row for quick lookup
+  const menuMap = {};
+  rows.forEach(x => {
+    const d = x.Date instanceof Date
+      ? Utilities.formatDate(x.Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(x.Date).trim();
+    menuMap[d] = x;
+  });
+
+  // Generate next 7 days
+  const today = new Date();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateStr = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    const dayName = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
+    const displayDate = Utilities.formatDate(d, "Asia/Kolkata", "dd MMM");
+
+    const r = menuMap[dateStr];
+    let bfItems = defaultBreakfast;
+    try {
+      if (r && r.Breakfast_JSON) bfItems = JSON.parse(r.Breakfast_JSON);
+    } catch(e) {}
+
+    days.push({
+      date: dateStr,
+      dayName: dayName,
+      displayDate: displayDate,
+      breakfast: bfItems,
+      lunch_dry: r ? (r.Lunch_Dry || "") : "",
+      lunch_curry: r ? (r.Lunch_Curry || "") : "",
+      dinner_dry: r ? (r.Dinner_Dry || "") : "",
+      dinner_curry: r ? (r.Dinner_Curry || "") : "",
+      menuSet: !!r
+    });
+  }
+
+  return { success: true, days: days };
 }
 
 // ── SUBMIT ORDER ─────────────────────────────────────────────

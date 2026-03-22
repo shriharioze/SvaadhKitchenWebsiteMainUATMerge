@@ -443,6 +443,53 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .mr-note strong{color:#777;}
 [data-theme="dark"] .mr-note{color:#999;}
 [data-theme="dark"] .mr-note strong{color:#bbb;}
+
+/* ═══════════════════════════════════════════
+   WEEKLY MENU MODAL
+═══════════════════════════════════════════ */
+.wm-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);animation:fadeIn 0.2s;}
+.wm-overlay.active{display:flex;}
+.wm-sheet{background:#fdf8f2;width:100%;max-width:540px;max-height:92vh;border-radius:20px 20px 0 0;overflow:hidden;display:flex;flex-direction:column;animation:slideUp 0.3s ease-out;}
+.wm-handle-bar{text-align:center;padding:10px 0 4px;}
+.wm-handle-bar span{display:inline-block;width:36px;height:4px;border-radius:99px;background:#ccc;}
+.wm-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;border-bottom:1px solid #eee;}
+.wm-header h3{font-size:1.05rem;font-weight:700;color:#c0392b;}
+.wm-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:#888;padding:4px 8px;}
+.wm-tabs{display:flex;gap:6px;padding:12px 16px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.wm-tabs::-webkit-scrollbar{display:none;}
+.wm-tab{flex-shrink:0;padding:7px 14px;border-radius:99px;font-size:0.76rem;font-weight:600;border:1.5px solid #ddd;background:white;color:#555;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;}
+.wm-tab.active{border-color:#e74c3c;background:#e74c3c;color:white;}
+.wm-tab.today{border-color:#27ae60;}
+.wm-tab.today.active{background:#27ae60;border-color:#27ae60;}
+.wm-body{flex:1;overflow-y:auto;padding:12px 18px 24px;}
+.wm-day-title{font-size:0.82rem;font-weight:700;color:#333;margin-bottom:12px;}
+.wm-meal-card{background:white;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #f0ebe6;box-shadow:0 1px 6px rgba(0,0,0,0.04);}
+.wm-meal-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.wm-meal-label.bf{color:#e67e22;}
+.wm-meal-label.ln{color:#27ae60;}
+.wm-meal-label.dn{color:#8e44ad;}
+.wm-sabji-name{font-size:0.88rem;font-weight:600;color:#333;}
+.wm-sabji-type{font-size:0.72rem;color:#888;margin-top:2px;}
+.wm-bf-list{display:flex;flex-wrap:wrap;gap:6px;}
+.wm-bf-chip{background:#fff8f0;border:1px solid #fde2c8;border-radius:8px;padding:4px 10px;font-size:0.76rem;font-weight:500;color:#b45309;}
+.wm-not-set{font-size:0.82rem;color:#aaa;font-style:italic;padding:8px 0;}
+.wm-btn{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fff7ed,#fff);border:1.5px solid #fbbf24;border-radius:12px;padding:10px 16px;font-size:0.84rem;font-weight:600;color:#92400e;cursor:pointer;font-family:inherit;width:100%;justify-content:center;transition:all 0.2s;margin-top:10px;}
+.wm-btn:hover{background:#fff7ed;box-shadow:0 2px 8px rgba(251,191,36,0.2);}
+[data-theme="dark"] .wm-sheet{background:#1a1a1a;}
+[data-theme="dark"] .wm-header{border-color:#333;}
+[data-theme="dark"] .wm-header h3{color:#e74c3c;}
+[data-theme="dark"] .wm-close{color:#888;}
+[data-theme="dark"] .wm-tab{background:#242424;border-color:#444;color:#aaa;}
+[data-theme="dark"] .wm-tab.active{background:#e74c3c;border-color:#e74c3c;color:white;}
+[data-theme="dark"] .wm-day-title{color:#ddd;}
+[data-theme="dark"] .wm-meal-card{background:#242424;border-color:#333;}
+[data-theme="dark"] .wm-sabji-name{color:#eee;}
+[data-theme="dark"] .wm-sabji-type{color:#777;}
+[data-theme="dark"] .wm-bf-chip{background:#2a2218;border-color:#5a4020;color:#fbbf24;}
+[data-theme="dark"] .wm-not-set{color:#666;}
+[data-theme="dark"] .wm-btn{background:#2a2218;border-color:#5a4020;color:#fbbf24;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -537,6 +584,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   </div>
 </div>
 
+<!-- WEEKLY MENU MODAL -->
+<div class="wm-overlay" id="wmOverlay" onclick="if(event.target===this)closeWeeklyMenu()">
+  <div class="wm-sheet">
+    <div class="wm-handle-bar"><span></span></div>
+    <div class="wm-header">
+      <h3>📅 This Week's Menu</h3>
+      <button class="wm-close" onclick="closeWeeklyMenu()">✕</button>
+    </div>
+    <div class="wm-tabs" id="wmTabs"></div>
+    <div class="wm-body" id="wmBody">
+      <div style="text-align:center;padding:40px;"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:8px;">Loading menu...</p></div>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <div class="page-header">
   <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
@@ -584,6 +646,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div id="faqBody" style="display:none;">
       <div class="faq-section" id="faqList"></div>
     </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:none;background:transparent;">
+    <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn">📅 View This Week's Menu</button>
   </div>
 </div>
 
@@ -2065,6 +2130,111 @@ async function loadAreas() {
     });
   } catch(e) { /* keep hardcoded fallback options if API fails */ }
 }
+
+/* ═════════════════════════════════════════════════
+   WEEKLY MENU LOGIC
+═════════════════════════════════════════════════ */
+let wmLoaded = false;
+let wmDays = [];
+
+async function openWeeklyMenu() {
+  $("wmOverlay").classList.add("active");
+  document.body.style.overflow = "hidden";
+  
+  if (!wmLoaded) {
+    $("wmBody").innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="border-top-color:#e74c3c;"></div><p style="font-size:0.78rem;color:#c0392b;margin-top:12px;font-weight:600;">Fetching the freshest menus...</p></div>`;
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
+      const data = await res.json();
+      if (data.success && data.days) {
+        wmDays = data.days;
+        wmLoaded = true;
+        renderWeeklyTabs();
+        renderWeeklyDay(0); // auto-select today
+      } else {
+        throw new Error(data.error);
+      }
+    } catch(err) {
+      $("wmBody").innerHTML = `<div style="text-align:center;padding:30px;color:#e74c3c;">Failed to load weekly menu. Please try again later.</div>`;
+    }
+  }
+}
+
+function closeWeeklyMenu() {
+  $("wmOverlay").classList.remove("active");
+  document.body.style.overflow = "";
+}
+
+function renderWeeklyTabs() {
+  $("wmTabs").innerHTML = wmDays.map((d, i) => {
+    let classes = "wm-tab";
+    if (i === 0) classes += " today";
+    let txt = i === 0 ? "Today" : (i === 1 ? "Tomorrow" : d.displayDate);
+    return `<button class="${classes}" id="wmTab_${i}" onclick="renderWeeklyDay(${i})">${txt}</button>`;
+  }).join("");
+}
+
+function renderWeeklyDay(idx) {
+  // Update active tab styles
+  document.querySelectorAll(".wm-tab").forEach((el, i) => {
+    el.classList.toggle("active", i === idx);
+  });
+  
+  const d = wmDays[idx];
+  
+  if (!d.menuSet) {
+    $("wmBody").innerHTML = `
+      <div class="wm-day-title">${d.dayName}, ${d.displayDate}</div>
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:2rem;margin-bottom:8px;">👨‍🍳</div>
+        <div style="font-size:1rem;font-weight:600;color:#c0392b;margin-bottom:4px;">Menu Yet to be Fixed</div>
+        <p style="font-size:0.8rem;color:#888;">We're currently planning a delicious homemade meal for this day. Check back soon!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Format Breakfast list
+  const bfChips = (d.breakfast && d.breakfast.length > 0) 
+    ? d.breakfast.map(b => `<div class="wm-bf-chip">${b.name}</div>`).join('') 
+    : `<div class="wm-not-set">Standard breakfast menu available</div>`;
+    
+  // Format Lunch
+  let lnContent = "";
+  if (!d.lunch_dry && !d.lunch_curry) lnContent = `<div class="wm-not-set">Sabjis yet to be decided</div>`;
+  else {
+    if (d.lunch_dry) lnContent += `<div class="wm-sabji-name">${d.lunch_dry} <span class="wm-sabji-type">(Dry)</span></div>`;
+    if (d.lunch_curry) lnContent += `<div style="margin-top:6px;"><div class="wm-sabji-name">${d.lunch_curry} <span class="wm-sabji-type">(Curry)</span></div></div>`;
+  }
+  
+  // Format Dinner
+  let dnContent = "";
+  if (!d.dinner_dry && !d.dinner_curry) dnContent = `<div class="wm-not-set">Sabjis yet to be decided</div>`;
+  else {
+    if (d.dinner_dry) dnContent += `<div class="wm-sabji-name">${d.dinner_dry} <span class="wm-sabji-type">(Dry)</span></div>`;
+    if (d.dinner_curry) dnContent += `<div style="margin-top:6px;"><div class="wm-sabji-name">${d.dinner_curry} <span class="wm-sabji-type">(Curry)</span></div></div>`;
+  }
+
+  $("wmBody").innerHTML = `
+    <div class="wm-day-title">${idx === 0 ? "Today's Menu ("+d.dayName+")" : d.dayName+", "+d.displayDate}</div>
+    
+    <div class="wm-meal-card">
+      <div class="wm-meal-label bf">☀️ Breakfast Menu</div>
+      <div class="wm-bf-list">${bfChips}</div>
+    </div>
+    
+    <div class="wm-meal-card">
+      <div class="wm-meal-label ln">🍱 Lunch Sabjis</div>
+      <div>${lnContent}</div>
+    </div>
+    
+    <div class="wm-meal-card">
+      <div class="wm-meal-label dn">🌙 Dinner Sabjis</div>
+      <div>${dnContent}</div>
+    </div>
+  `;
+}
+
 
 document.addEventListener("DOMContentLoaded",()=>{
   applyThemeIcon();
