@@ -300,6 +300,10 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markEnRoute(body));
     }
+    if (action === "batchMarkEnRoute") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(batchMarkEnRoute(body));
+    }
     if (action === "submitWalletRecharge") {
       return jsonRes(submitWalletRecharge(body));
     }
@@ -2062,17 +2066,52 @@ function get10DayBilling(p) {
 }
 
 // ── LIVE TRACKER LOGIC: En Route & Delivered ──────────────────────────────────
+function batchMarkEnRoute(body) {
+  var sids      = body.submissionIds;
+  var enRouteAt = body.enRouteAt;
+  if (!sids || !sids.length) return {success:false, error:"submissionIds required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At","EnRoute_At"]);
+  var data = ws.getDataRange().getValues();
+  var headers = data[0];
+  var erIdx   = headers.indexOf("EnRoute_At");
+  var sidIdx  = headers.indexOf("Submission_ID");
+
+  if (erIdx === -1) {
+    ws.getRange(1, headers.length + 1).setValue("EnRoute_At");
+    erIdx = headers.length;
+  }
+
+  // Create lookup for existing rows
+  var sidToRowMap = {};
+  for (var i = 1; i < data.length; i++) {
+    sidToRowMap[String(data[i][sidIdx])] = i + 1;
+  }
+
+  sids.forEach(function(sid) {
+    var row = sidToRowMap[String(sid)];
+    if (row) {
+      ws.getRange(row, erIdx + 1).setValue(enRouteAt);
+    } else {
+      // Append if not found (though usually we expect them to be found if already rendered)
+      ws.appendRow([sid, "", enRouteAt]);
+    }
+  });
+
+  return {success:true};
+}
+
 function markEnRoute(body) {
   var sid         = body.submissionId;
   var enRouteAt   = body.enRouteAt;
   if (!sid) return {success:false, error:"submissionId required"};
 
   var ss  = getSpreadsheet();
-  // Ensure header array matches what we use in markDelivered
   var ws  = getOrCreateTab(ss, "SK_Deliveries", ["Submission_ID","Delivered_At","EnRoute_At"]);
   var rows = getAllRows(ws);
   
-  // Backwards compatibility safety check: if header doesn't exist, we must add it.
+  // Ensure "EnRoute_At" header exists
   var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
   if (headers.indexOf("EnRoute_At") === -1) {
     ws.getRange(1, headers.length + 1).setValue("EnRoute_At");
@@ -2081,7 +2120,7 @@ function markEnRoute(body) {
 
   var existing = null;
   for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i].Submission_ID) === sid) { existing = rows[i]; break; }
+    if (String(rows[i].Submission_ID) === String(sid)) { existing = rows[i]; break; }
   }
   if (existing) {
     ws.getRange(existing._row, hIdx["EnRoute_At"]).setValue(enRouteAt);

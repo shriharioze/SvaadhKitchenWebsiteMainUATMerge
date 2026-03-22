@@ -411,10 +411,11 @@ function renderMealPanel(orders, meal) {
   // Count geocodable orders for route button
   const canOptimize = orders.some(o => extractCoords(o));
 
-  const routeBar = `<div class="route-bar" id="routeBar_${meal}">
+  const routeBar = `<div class="route-bar" id="routeBar_${meal}" style="border-bottom:2.5px solid #c0392b;">
+    <button class="route-btn green" onclick="markAllEnRoute('${meal}')" id="startBtn_${meal}" style="padding:10px 14px;font-size:0.85rem;box-shadow:0 3px 10px rgba(39,174,96,0.3);">🚀 Start ${meal} Delivery</button>
     ${canOptimize
-      ? `<button class="route-btn" onclick="optimizeRoute('${meal}')">🗺 Optimise Route</button>`
-      : `<span style="font-size:0.75rem;color:#aaa;">Add Maps links to enable route optimisation</span>`}
+      ? `<button class="route-btn" onclick="optimizeRoute('${meal}')">🗺 Optimize Route</button>`
+      : ""}
     <span class="route-info" id="routeInfo_${meal}"></span>
     <a id="routeLink_${meal}" class="route-maps-link" style="display:none;" target="_blank">📍 Open in Maps</a>
   </div>`;
@@ -462,15 +463,11 @@ function renderCard(o, i, meal) {
         ? `<a class="btn-whatsapp" href="https://wa.me/${waNum}?text=${waText}" target="_blank">💬</a>`
         : ""}
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button class="btn-delivered${o.enRouteAt?" done":""}" style="flex:1;background:${o.enRouteAt?'#fff8e1':'#f8f9fa'};border:1px solid ${o.enRouteAt?'#ffb300':'#ddd'};color:${o.enRouteAt?'#f57f17':'#555'};margin-top:0;" id="ebtn_${o.submissionId}"
-        onclick="markEnRoute('${o.submissionId}')"
-        ${o.enRouteAt?"disabled":""}>
-        ${o.enRouteAt ? `🚗 Out for Delivery` : `🚗 Tap to track`}
-      </button>
-      <button class="btn-delivered${isDelivered?" done":""}" style="flex:1.2;margin-top:0;" id="dbtn_${o.submissionId}"
+    <div style="margin-top:10px;">
+      <button class="btn-delivered${isDelivered?" done":""}" style="width:100%;margin-top:0;padding:14px;font-size:1rem;" id="dbtn_${o.submissionId}"
         onclick="markDelivered('${o.submissionId}','${meal}',this)"
         ${isDelivered?"disabled":""}>
+        ${o.enRouteAt && !isDelivered ? `<span style="float:left;">🚗</span>` : ""}
         ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : "⬜ Mark Delivered"}
       </button>
     </div>
@@ -514,25 +511,47 @@ async function markDelivered(submissionId, meal, btn) {
   }
 }
 
-async function markEnRoute(sid) {
-  const btn = document.getElementById("ebtn_"+sid);
-  if (!sid || btn.classList.contains("done")) return;
-  btn.innerHTML = "⏳…"; btn.disabled = true;
-  const enRouteAt = new Date().toISOString(); 
-  try {
-    const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
-      body: JSON.stringify({_action:"markEnRoute", pin:D.sessionPin, submissionId:sid, enRouteAt})});
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || "Failed");
+async function markAllEnRoute(meal) {
+  const orders = _ordersData[meal] || [];
+  if (!orders.length) return;
+  const count = orders.filter(o => !o.enRouteAt && !o.deliveredAt).length;
+  if (count === 0) { alert("All orders for " + meal + " are already marked as out for delivery!"); return; }
 
-    btn.className = "btn-delivered done";
-    btn.style.background = "#fff8e1";
-    btn.style.borderColor = "#ffb300";
-    btn.style.color = "#f57f17";
-    btn.innerHTML = `🚗 Out for Delivery`;
-  } catch(err) {
+  if (!confirm(`Mark all ${count} ${meal} orders as 'Out for Delivery'?\n\nThis will notify customers that their food is on the way!`)) return;
+
+  const btn = document.getElementById("startBtn_" + meal);
+  btn.disabled = true; btn.innerHTML = "⏳ Sending notifications...";
+  
+  const enRouteAt = new Date().toISOString();
+  const submissionIds = orders.filter(o => !o.enRouteAt && !o.deliveredAt).map(o => o.submissionId);
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        _action: "batchMarkEnRoute",
+        pin: D.sessionPin,
+        submissionIds: submissionIds,
+        enRouteAt: enRouteAt
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed to update");
+
+    // Update local data
+    orders.forEach(o => {
+      if (submissionIds.includes(o.submissionId)) o.enRouteAt = enRouteAt;
+    });
+
+    btn.className = "route-btn green done";
+    btn.innerHTML = `🚗 ${meal} Out for Delivery`;
+    
+    // Refresh the UI cards to show the car emoji
+    switchTab(meal);
+    alert(`Success! ${submissionIds.length} orders marked as Out for Delivery.`);
+  } catch (err) {
     alert("Error: " + err.message);
-    btn.innerHTML = "🚗 Tap to track"; btn.disabled = false;
+    btn.disabled = false; btn.innerHTML = `🚀 Start ${meal} Delivery`;
   }
 }
 
