@@ -1,0 +1,23 @@
+{
+  "name": "Svaadh Kitchen",
+  "short_name": "Svaadh Kitchen",
+  "description": "Order homemade vegetarian meals in Hadapsar, Pune.",
+  "start_url": "/order.html",
+  "display": "standalone",
+  "background_color": "#fdf8f2",
+  "theme_color": "#e74c3c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./images/svaadh-kitchen-hero.PNG",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./images/svaadh-kitchen-hero.PNG",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

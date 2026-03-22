@@ -4,6 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- PWA & Mobile Web App settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e74c3c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Svaadh">
 
   <!-- SEO Meta Tags -->
   <title>Svaadh Kitchen - Homemade Vegetarian Meals in Hadapsar, Pune | Order Online</title>
@@ -854,6 +860,16 @@
     });
   </script>
 </main>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => console.log('PWA ServiceWorker registered successfuly!'))
+          .catch(err => console.error('ServiceWorker registration failed: ', err));
+      });
+    }
+  </script>
 </body>
 
 </html>

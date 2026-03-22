@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow">
+
+<!-- PWA & Mobile Web App settings -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e74c3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Svaadh">
+
 <title>Order Online - Svaadh Kitchen | Homemade Vegetarian Food Delivery Hadapsar Pune</title>
 <meta name="description" content="Order fresh homemade vegetarian breakfast, lunch & dinner online from Svaadh Kitchen, Hadapsar Pune. Build your own meal — chapati, sabji, dal, rice & more. Free delivery on orders above ₹100. No app needed.">
 <meta name="keywords" content="order food online hadapsar, tiffin service pune, homemade food delivery, vegetarian food order, svaadh kitchen order, cloud kitchen hadapsar, lunch delivery pune, dinner delivery hadapsar, breakfast delivery pune, chapati sabji order online">
@@ -2247,6 +2255,17 @@ document.addEventListener("DOMContentLoaded",()=>{
   // Close how modal on backdrop click
   $("howModal").addEventListener("click",e=>{if(e.target===$("howModal"))$("howModal").style.display="none";});
 });
+</script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(registration => console.log('PWA ServiceWorker registered successfuly!'))
+        .catch(err => console.error('ServiceWorker registration failed: ', err));
+    });
+  }
 </script>
 </body>
 </html>
