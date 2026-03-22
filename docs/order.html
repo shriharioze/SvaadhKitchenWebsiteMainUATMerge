@@ -614,9 +614,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
   
-  <div id="walletChip" style="display:none;position:absolute;top:50%;right:52px;transform:translateY(-50%);background:#fff;border:1.5px solid #2e7d32;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;color:#2e7d32;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:100;align-items:center;gap:4px;white-space:nowrap;">
-    <span>💼</span>
+  <div id="walletChip" onclick="openWalletRecharge()" style="display:none;position:absolute;top:50%;right:52px;transform:translateY(-50%);background:#fff;border:1.5px solid #2e7d32;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;color:#2e7d32;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:100;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;">
+    <span>💼 Wallet:</span>
     <span id="headerWalletBalance">₹0</span>
+    <span style="border-left:1px solid #c8e6c9;padding-left:4px;margin-left:2px;color:#2e7d32;">➕</span>
   </div>
 </div>
 <style>@keyframes slideDown{from{transform:translateY(-10px);opacity:0;}to{transform:translateY(0);opacity:1;}}</style>
