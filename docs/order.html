@@ -1858,7 +1858,7 @@ function setWalletRecharge(amt) {
 }
 function updateWalletQr() {
   const amt = parseInt($('walletRechargeAmt').value, 10);
-  if (isNaN(amt) || amt < 10) {
+  if (isNaN(amt) || amt < 100) {
     $('walletQrWrap').style.display = 'none';
     return;
   }
@@ -1874,7 +1874,7 @@ function updateWalletQr() {
 
 async function submitWalletRecharge() {
   const amt = parseInt($('walletRechargeAmt').value, 10);
-  if (isNaN(amt) || amt < 10) { toast("Please enter a valid amount."); return; }
+  if (isNaN(amt) || amt < 100) { toast("Minimum recharge amount is ₹100."); return; }
   
   $('btnSubmitWallet').disabled = true;
   $('btnSubmitWallet').textContent = "⏳ Submitting...";
