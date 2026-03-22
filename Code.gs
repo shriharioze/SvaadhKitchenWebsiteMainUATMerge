@@ -771,7 +771,13 @@ function getCustomerOrders(phone) {
       };
     });
 
-  return {orders: upcoming};
+  let balance = 0;
+  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+  const wRows = getAllRows(walletWs);
+  const w = wRows.find(x => String(x.Phone).trim() === String(phone).trim());
+  if (w && w.Balance) balance = Number(w.Balance) || 0;
+
+  return {orders: upcoming, wallet_balance: balance};
 }
 
 function _buildSummary(r) {

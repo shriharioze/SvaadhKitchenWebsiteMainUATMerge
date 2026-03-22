@@ -968,6 +968,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
 <!-- MANAGE ORDERS PANEL -->
 <div id="manageOrdersPanel" style="display:none;">
+  <div id="walletDashWrap"></div>
   <div class="card">
     <h2 data-i18n="manage_title">📋 Your Upcoming Orders</h2>
     <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
@@ -999,23 +1000,50 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- BILL MODAL (10-day balance / period-due popup) -->
 <div id="billModal" class="bill-modal-overlay" style="display:none;">
   <div class="bill-modal-sheet">
-    <div class="bm-handle"></div>
-    <div id="bmChip" class="bm-chip running">📊 Current Period</div>
-    <div style="font-size:0.95rem;font-weight:700;margin-bottom:4px;" id="bmTitle"></div>
-    <div id="bmAmount" class="bm-amount running">₹0</div>
-    <div id="bmPeriod" class="bm-period"></div>
-    <div id="bmQrWrap" class="bm-qr-wrap" style="display:none;">
-      <img id="bmQrImg" style="width:160px;height:160px;border-radius:8px;" alt="UPI QR">
-      <div style="font-size:0.7rem;color:#888;margin-top:8px;">UPI: shriharioze07-1@okhdfcbank</div>
-      <a id="bmUpiLink" class="bm-upi-btn" href="#">📱 Pay via UPI App</a>
+    <div class="bm-handle"><span></span></div>
+    <div class="bm-chip" id="bmChip"></div>
+    <h2 class="bm-title" id="bmTitle">Loading…</h2>
+    <div class="bm-amount" id="bmAmount">…</div>
+    <div class="bm-period" id="bmPeriod"></div>
+    <div id="bmRunNote" class="bm-run-note">Keep ordering, and settle up when the period finishes.</div>
+    <div id="bmQrWrap" class="bm-qr-wrap">
+      <div style="font-size:0.8rem;text-align:center;margin-bottom:8px;color:#888;">Scan to pay</div>
+      <img id="bmQrImg" class="bm-qr" src="" alt="QR">
+      <a id="bmUpiLink" href="#" class="btn btn-secondary bm-open-upi">👆 Tap to open UPI App</a>
     </div>
-    <div id="bmRunNote" style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:10px 12px;font-size:0.78rem;color:#1a5c36;margin-bottom:14px;display:none;">
-      No payment due yet — your bill will be ready at the end of this period.
-    </div>
-    <button onclick="ackBillModal()" class="btn btn-primary" style="margin-bottom:0;" id="bmGotIt">Got it!</button>
-    <button onclick="closeBillModal()" class="bm-later">View later</button>
+    <button class="bm-btn" id="bmGotIt" onclick="ackBillModal()">Great</button>
+    <button class="bm-later" onclick="closeBillModal()">I'll check later</button>
   </div>
 </div>
+
+<!-- WALLET RECHARGE MODAL -->
+<div id="walletRechargeModal" class="bill-modal-overlay" style="display:none;z-index:9999;">
+  <div class="bill-modal-sheet" style="max-width:400px;">
+    <div class="bm-handle"><span></span></div>
+    <h2 class="bm-title" style="margin-bottom:6px;">Add Funds to Wallet</h2>
+    <p style="font-size:0.8rem;color:#777;text-align:center;margin-bottom:16px;">Admin will verify your payment and credit it to your account within 1-2 hours.</p>
+    
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(500)">₹500</button>
+      <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(1000)">₹1000</button>
+      <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(2000)">₹2000</button>
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <input type="number" id="walletRechargeAmt" class="custom-input" placeholder="Or enter custom amount (Min. 500)" oninput="updateWalletQr()" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+    </div>
+    
+    <div id="walletQrWrap" class="bm-qr-wrap" style="display:none;border-color:#c8e6c9;background:#e8f5e9;">
+      <div style="font-size:0.8rem;text-align:center;margin-bottom:8px;color:#2e7d32;font-weight:600;">Scan QR or Tap</div>
+      <img id="walletQrImg" class="bm-qr" src="" alt="QR">
+      <a id="walletUpiLink" href="#" class="btn btn-primary" style="margin-top:12px;background:#2e7d32;border-color:#1b5e20;">👆 Open GPay / PhonePe</a>
+    </div>
+    
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="closeWalletRecharge()">✅ I have completed the payment</button>
+    <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
+  </div>
+</div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -1798,6 +1826,34 @@ function ackBillModal() {
 }
 function closeBillModal() { $('billModal').style.display = 'none'; }
 
+function openWalletRecharge() {
+  $('walletRechargeAmt').value = '';
+  $('walletQrWrap').style.display = 'none';
+  $('walletRechargeModal').style.display = 'flex';
+}
+function closeWalletRecharge() {
+  $('walletRechargeModal').style.display = 'none';
+}
+function setWalletRecharge(amt) {
+  $('walletRechargeAmt').value = amt;
+  updateWalletQr();
+}
+function updateWalletQr() {
+  const amt = parseInt($('walletRechargeAmt').value, 10);
+  if (isNaN(amt) || amt < 10) {
+    $('walletQrWrap').style.display = 'none';
+    return;
+  }
+  const name = (S.profile?.name || 'Customer').trim();
+  const phone = (S.phone || '').trim();
+  const note = `Wallet Recharge: ${name} ${phone}`.slice(0, 50);
+  const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=${encodeURIComponent(note)}`;
+  
+  $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
+  $('walletUpiLink').href = upiData;
+  $('walletQrWrap').style.display = 'block';
+}
+
 function setupUPI(amount){
   $("upiAmountDisplay").textContent=`₹${amount}`;
 
@@ -1934,6 +1990,22 @@ async function loadExistingOrders(phone){
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
     const data=await res.json();
+    
+    // Render Wallet Dash wrap
+    const wb = Number(data.wallet_balance) || 0;
+    $("walletDashWrap").innerHTML = `
+      <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#e8f5e9,#ffffff);border:1px solid #c8e6c9;">
+        <h2 style="color:#1b5e20;margin-bottom:12px;font-size:1.1rem;">💼 Prepaid Wallet</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.75rem;color:#666;">Available Balance</div>
+            <div style="font-size:1.6rem;font-weight:700;color:#2e7d32;">₹${wb}</div>
+          </div>
+          <button onclick="openWalletRecharge()" class="btn btn-primary" style="padding:10px 16px;border-radius:10px;font-size:0.85rem;white-space:nowrap;margin:0;background:#2e7d32;border-color:#1b5e20;">➕ Add Funds</button>
+        </div>
+      </div>
+    `;
+    
     const orders=(data.orders||[]);
     const today=todayISO();
     const upcoming=orders.filter(o=>o.date>=today);
