@@ -4,15 +4,16 @@
 // ============================================================
 
 // ── CONFIG ──────────────────────────────────────────────────
-const SHEET_ID       = "17X7JOrMe1Oj_QykH7mk6UGoBjuguLfyC1RmKYATDXlI";   // ← Create a new blank Google Sheet and paste its ID here
-const ADMIN_PIN      = "7284";                       // ← Updated before go-live
+// SECRETS & KEYS: Setup these in Google Apps Script Project Settings > Script Properties
+const SP             = PropertiesService.getScriptProperties();
+const SHEET_ID       = SP.getProperty("SHEET_ID");
+const ADMIN_PIN      = SP.getProperty("ADMIN_PIN") || "0000";
+const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
+const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
+
 const CODE_VERSION   = 3;   // ← bump this each deploy so you can verify version
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
-
-// ── GOOGLE PLACES API (For Real-Time Reviews) ──
-// Paste your API Key here from Google Cloud Console. Leave blank to fallback to static reviews.
-const GOOGLE_PLACES_API_KEY = "AIzaSyC-C7vBcJqCL3y_dy4Gt1YjT1dh7zBWrBY"; 
-const PLACE_ID = "ChIJ98azHY_BwjsRqwQfyAYCHMs"; // Update to your exact Google Maps Place ID
+// ─────────────────────────────────────────────────────────────
 
 // Sheet tab names
 const TAB_ORDERS     = "SK_Orders";
@@ -299,6 +300,9 @@ function doPost(e) {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markEnRoute(body));
     }
+    if (action === "submitWalletRecharge") {
+      return jsonRes(submitWalletRecharge(body));
+    }
     if (action === "markDelivered") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markDelivered(body));
@@ -383,6 +387,7 @@ function initSchema() {
   ]);
   getOrCreateTab(ss, TAB_BF_MASTER, ["ID","Name","Price","Active"]);
   getOrCreateTab(ss, TAB_SABJI,     ["ID","Name","Type","Active"]);
+  getOrCreateTab(ss, TAB_WALLET,    ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
   return {success: true, message: "Schema initialised"};
 }
 
@@ -397,10 +402,15 @@ function getCustomer(phone) {
   
   // Also check wallet balance
   let balance = 0;
-  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
   const walletRows = getAllRows(walletWs);
-  const w = walletRows.find(x => String(x.Phone).trim() === String(phone).trim());
-  if (w && w.Balance) balance = Number(w.Balance) || 0;
+  walletRows.forEach(w => {
+    if (String(w.Phone).trim() === String(phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
+      let amt = Number(w.Amount) || 0;
+      if (w.Txn_Type === "Recharge") balance += amt;
+      else if (w.Txn_Type === "Order Deduction") balance -= amt;
+    }
+  });
 
   return {
     found: true,
@@ -611,21 +621,30 @@ function submitOrder(body) {
       let pStat = payStatus;
       // ════ WALLET DEDUCTION LOGIC ════
       if (payMethod === "Wallet") {
-        const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+        const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
         const wRows = getAllRows(walletWs);
-        const w = wRows.find(x => String(x.Phone).trim() === String(profile.phone).trim());
-        if (w) {
-          let currentBalance = Number(w.Balance) || 0;
-          if (currentBalance >= netTotal) {
-            // Deduct from wallet instantly
-            const hIdxWallet = headerIndex(walletWs);
-            walletWs.getRange(w._row, hIdxWallet["Balance"]).setValue(currentBalance - netTotal);
-            pStat = "Wallet Paid";
-          } else {
-            pStat = "Pending"; // Wallet failed, fallback to pending
+        let currentBalance = 0;
+        wRows.forEach(w => {
+          if (String(w.Phone).trim() === String(profile.phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
+            let amt = Number(w.Amount) || 0;
+            if (w.Txn_Type === "Recharge") currentBalance += amt;
+            else if (w.Txn_Type === "Order Deduction") currentBalance -= amt;
           }
+        });
+        
+        if (currentBalance >= netTotal) {
+          // Log deduction to ledger
+          walletWs.appendRow([
+            profile.phone || "",
+            profile.name || "Customer",
+            "Order Deduction",
+            netTotal,
+            "TRUE", // System transactions are automatically verified
+            getISTTimestamp()
+          ]);
+          pStat = "Wallet Paid";
         } else {
-           pStat = "Pending";
+          pStat = "Pending"; // Wallet failed, fallback to pending
         }
       }
       
@@ -772,10 +791,15 @@ function getCustomerOrders(phone) {
     });
 
   let balance = 0;
-  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance"]);
+  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
   const wRows = getAllRows(walletWs);
-  const w = wRows.find(x => String(x.Phone).trim() === String(phone).trim());
-  if (w && w.Balance) balance = Number(w.Balance) || 0;
+  wRows.forEach(w => {
+    if (String(w.Phone).trim() === String(phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
+      let amt = Number(w.Amount) || 0;
+      if (w.Txn_Type === "Recharge") balance += amt;
+      else if (w.Txn_Type === "Order Deduction") balance -= amt;
+    }
+  });
 
   return {orders: upcoming, wallet_balance: balance};
 }
@@ -2070,6 +2094,29 @@ function markEnRoute(body) {
     ws.appendRow(newRowArr);
   }
   return {success:true, submissionId:sid, enRouteAt:enRouteAt};
+}
+
+// ── WALLET TOPUP LOGIC ────────────────────────────────────────────────────────
+function submitWalletRecharge(body) {
+  var phone  = String(body.phone || "").trim();
+  var name   = String(body.name || "").trim();
+  var amount = Number(body.amount);
+  if (!phone || isNaN(amount) || amount <= 0) return {success:false, error:"Invalid amount or phone"};
+
+  var ss  = getSpreadsheet();
+  var ws  = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  
+  // Unverified entry requiring admin to flip to TRUE
+  ws.appendRow([
+    phone,
+    name,
+    "Recharge",
+    amount,
+    "FALSE", // Initial pending value
+    getISTTimestamp()
+  ]);
+  
+  return {success:true};
 }
 
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
