@@ -1036,13 +1036,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <p style="font-size:0.8rem;color:#777;text-align:center;margin-bottom:16px;">Admin will verify your payment and credit it to your account within 1-2 hours.</p>
     
     <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(100)">₹100</button>
       <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(500)">₹500</button>
       <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(1000)">₹1000</button>
-      <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(2000)">₹2000</button>
     </div>
     
     <div style="margin-bottom:16px;">
-      <input type="number" id="walletRechargeAmt" class="custom-input" placeholder="Or enter custom amount (Min. 500)" oninput="updateWalletQr()" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+      <input type="number" id="walletRechargeAmt" class="custom-input" placeholder="Or enter custom amount (Min. 100)" oninput="updateWalletQr()" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
     </div>
     
     <div id="walletQrWrap" class="bm-qr-wrap" style="display:none;border-color:#c8e6c9;background:#e8f5e9;">
