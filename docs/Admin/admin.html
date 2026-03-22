@@ -100,6 +100,28 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .body-wrap { display: flex; flex: 1; overflow: hidden; }
 
 /* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVENESS
+   ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .shell { height: auto; min-height: 100vh; overflow-x: hidden; }
+  .topbar { padding: 0 12px; height: auto; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+  .topbar-nav { margin-left: 0; width: 100%; order: 3; justify-content: center; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .topbar-btn { padding: 6px 10px; font-size: 0.75rem; white-space: nowrap; }
+  .topbar-right { order: 2; margin-left: auto; }
+  
+  .body-wrap { flex-direction: column; overflow: visible; height: auto; }
+  .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
+  .main { height: auto; overflow: visible; }
+  
+  .panel-head { padding: 16px; flex-wrap: wrap; gap: 12px; }
+  .panel-body { padding: 12px; }
+  
+  .order-card { padding: 12px; }
+  .order-card-row1 { flex-wrap: wrap; gap: 8px; }
+  .item-pill { font-size: 0.7rem; padding: 2px 6px; }
+}
+
+/* ═══════════════════════════════════════════════
    LEFT SIDEBAR — date strip
 ═══════════════════════════════════════════════ */
 .sidebar {
@@ -411,7 +433,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .label-preview h3{font-size:0.85rem;color:#888;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.04em;}
 .label-card{border:1.5px solid #eee;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;}
 .label-card .lname{font-weight:700;font-size:0.9rem;color:#222;}
-.label-card .lsummary{font-size:0.78rem;color:#555;margin-top:2px;}
+.label-card  .last-updated{text-align:center;font-size:0.7rem;color:#555;padding:10px 0 20px;}
+
+  /* ── MOBILE ── */
+  @media (max-width: 600px) {
+    .kheader { flex-direction: column; gap: 10px; padding: 14px; text-align: center; }
+    .kheader .controls { width: 100%; justify-content: center; flex-wrap: wrap; }
+    .kheader input[type=date] { flex: 1; min-width: 120px; }
+    
+    .item-grid { grid-template-columns: 1fr 1fr; }
+    .sabji-cook-grid { grid-template-columns: 1fr; }
+    .meal-title { font-size: 1rem; }
+    .item-card .inum { font-size: 1.5rem; }
+    .sabji-cook-card .cook-val, .dal-card .cook-val { font-size: 1.8rem; }
+  }
 .label-card .lnotes{font-size:0.72rem;color:#e67e22;margin-top:3px;}
 .label-card .lnum{font-size:0.65rem;color:#ccc;white-space:nowrap;margin-left:10px;padding-top:2px;}
 .download-btn{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;margin-top:14px;display:none;}
@@ -576,6 +611,54 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .billing-table tfoot td{background:var(--bg2);font-weight:700;border-top:2px solid var(--border);}
 .wa-share-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;background:#25D366;color:#fff;border:none;border-radius:var(--radius-sm);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;}
 .wa-share-btn:hover{background:#1da851;}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  /* Admin specific */
+  .body-wrap { flex-direction: column; }
+  .sidebar { width: 100%; max-width: none; border-right: none; border-bottom: 1px solid var(--border); }
+  .main { padding: 16px; }
+  .topbar { flex-wrap: wrap; height: auto; padding: 10px 16px; }
+  .topbar-brand { margin-bottom: 10px; }
+  .topbar-nav { width: 100%; margin-bottom: 10px; }
+  .topbar-right { width: 100%; justify-content: flex-end; }
+  .meal-card { padding: 16px; }
+  .meal-card-head { flex-wrap: wrap; gap: 8px; }
+  .sabji-columns { grid-template-columns: 1fr; }
+  .manage-tabs { flex-wrap: wrap; }
+  .manage-tab { flex: 1 1 auto; text-align: center; }
+  .mt-head.bf-cols, .mt-row.bf-cols { grid-template-columns: 1fr 60px 70px 80px 80px; }
+  .mt-head.sabji-cols, .mt-row.sabji-cols { grid-template-columns: 1fr 90px 80px 80px; }
+  .add-row.bf-cols { grid-template-columns: 1fr 60px 70px auto; }
+  .add-row.sabji-cols { grid-template-columns: 1fr 90px auto; }
+  .add-row input, .add-row select { font-size: .8rem; padding: 7px 8px; }
+  .add-btn { font-size: .8rem; padding: 7px 12px; }
+  .orders-header { flex-direction: column; align-items: flex-start; }
+  .orders-header > div { width: 100%; justify-content: flex-start; }
+  .stat-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+  .item-totals-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .pkg-header { flex-direction: column; align-items: flex-start; }
+  .pkg-meta { flex-wrap: wrap; }
+  .label-controls { flex-direction: column; align-items: stretch; }
+  .label-controls .ctrl-group { width: 100%; }
+  .label-controls select, .label-controls input[type=date] { min-width: unset; width: 100%; }
+  .gen-btn { width: 100%; }
+  .recon-custom-range { flex-direction: column; align-items: flex-start; }
+  .recon-custom-range input { width: 100%; }
+  .recon-actions { flex-direction: column; align-items: stretch; }
+  .recon-parse-btn, .recon-upload-label { width: 100%; text-align: center; }
+  .recon-stat { min-width: unset; }
+  .analytics-kpis { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+  .meal-breakdown { grid-template-columns: 1fr; }
+  .top-item-name { width: 100px; }
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .filter-bar input, .filter-bar select, .filter-bar button { width: 100%; }
+  .wa-share-btn { margin-left: 0; width: 100%; }
+  .cust-search { max-width: none; }
+  .cust-grid { grid-template-columns: 1fr; }
+  .pay-summary-strip { flex-direction: column; }
+  .pay-sum-card { min-width: unset; }
+}
 </style>
 </head>
 <body>
@@ -1384,7 +1467,7 @@ async function saveCurrentMenu() {
       method: "POST", body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (!data.success) throw new Error(data.error || "Save failed");
+    if (!data.success) throw new Error(data.error);
 
     // Update local cache
     const cutoffOverrides = {};

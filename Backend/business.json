@@ -48,14 +48,22 @@
     "note": "Discounts are applied automatically per day's total when you place an order online."
   },
   "payment": {
-    "options": ["UPI", "Cash on Delivery (COD)", "10-Day post-paid cycle"],
+    "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "Cash on Delivery (COD)", "10-Day post-paid cycle"],
     "upi_id": "shriharioze07-1@okhdfcbank",
+    "wallet": {
+      "name": "Svaadh Wallet",
+      "recharge": "Min ₹100 via UPI. Pay to the provided VPA/QR, then click 'I have completed the payment' to alert Admin for verification (usually takes 1-2 hours).",
+      "benefit": "Enables 1-tap ordering without paying every time. Balance is visible at the top-right of the order page from Step 2 onwards.",
+      "ten_day_adjust": "On the 10th, 20th, and end of month, any 10-day pending bill is automatically adjusted from your wallet balance."
+    },
     "ten_day_cycle": "Instead of paying per order, your amount accumulates over 10 days (1st–10th, 11th–20th, 21st–end of month). You settle once at the end of the period. Choose this under Payment Preference in the order form."
   },
   "ordering": {
-    "platform": "Website order form",
+    "platform": "Website order form / PWA Mobile App",
     "order_url": "https://www.svaadhkitchen.in/order.html",
-    "process": "Open the order form → enter phone number → fill delivery address → pick dates on calendar → choose meals → review bill → pay via UPI or COD.",
+    "mobile_app": "You can install our website as a mobile app (PWA) on your phone. Click 'Install App' on the home page or order page for a home-screen icon and fast access.",
+    "process": "Open the order form → enter phone number → fill delivery address → pick dates on calendar → choose meals → review bill → pay via Wallet, UPI, or COD.",
+    "live_tracking": "Once an order is marked 'Out for Delivery' by our driver, you'll see a '🚗 Out for Delivery' badge in your 'View/Edit upcoming orders' dashboard.",
     "advance_ordering": "You can select multiple dates on the calendar to order for the whole week in one go.",
     "edit_cancel": "You can edit or cancel any order before the cutoff time using 'View/Edit existing orders' on the order form home screen.",
     "no_login": "No login needed — your phone number is your identity. Your address and details are saved for the next order."

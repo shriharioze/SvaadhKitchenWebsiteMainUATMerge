@@ -86,6 +86,19 @@
 
   /* ── LAST UPDATED ── */
   .last-updated{text-align:center;font-size:0.7rem;color:#555;padding:10px 0 20px;}
+
+  /* ── MOBILE OPTIMIZATION ── */
+  @media (max-width: 650px) {
+    .kheader { flex-direction: column; gap: 12px; height: auto; text-align: center; padding: 16px; }
+    .kheader .controls { width: 100%; justify-content: center; flex-wrap: wrap; gap: 10px; }
+    .kheader input[type=date] { flex: 1; min-width: 140px; }
+    .kbody { padding: 12px; }
+    .meal-head { padding: 12px; }
+    .meal-title { font-size: 1.1rem; }
+    .item-grid { grid-template-columns: 1fr 1fr; }
+    .sabji-cook-grid { grid-template-columns: 1fr; }
+    .sabji-cook-card .cook-val, .dal-card .cook-val { font-size: 2rem; }
+  }
 </style>
 </head>
 <body>
