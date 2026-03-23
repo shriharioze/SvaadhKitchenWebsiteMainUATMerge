@@ -270,9 +270,11 @@ const SABJI_WEIGHTS = {
   "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
   "French Beans": 80,
   "French_Beans": 80,
+  "Beans": 80,
   "Cabbage": 75,
   "Mataki": 55,
   "Matki (Dry)": 55,
+  "Matki masala": 55,
   "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, 
   "Shima besan": { "ढोबळी": 70, "बेसन": 25 },
   "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
@@ -281,6 +283,7 @@ const SABJI_WEIGHTS = {
   "Green Moong": 30,
   "Bhindi": 140,
   "Bhendi Fry": 140,
+  "Palak corn": 140,
 
   // Curry Sabjis (raw weights per standardized unit)
   "Soyabean": 10,
@@ -297,8 +300,10 @@ const SABJI_WEIGHTS = {
 };
 
 function getWeight(name, mini, full) {
-  const w = SABJI_WEIGHTS[name] || SABJI_WEIGHTS["default"];
-  const totalUnits = (mini * 0.6) + (full * 1.4);
+  // Normalize lookup keys
+  const lookup = (name || "").trim();
+  const w = SABJI_WEIGHTS[lookup] || SABJI_WEIGHTS["default"];
+  const totalUnits = ((mini || 0) * 0.6) + ((full || 0) * 1.4);
   
   const fmtWeight = (g) => {
     if (g >= 1000) return (g/1000).toFixed(2) + " kg";
@@ -381,20 +386,25 @@ function renderKitchen(data) {
         ).join("")
       : `<div class="item-card zero"><span class="iname">—</span><span class="inum">0</span></div>`;
 
+    const showDry = (s.dry_name && s.dry_name !== "none") && ((s.dry_mini||0) + (s.dry_full||0) > 0);
+    const showCurry = (s.curry_name && s.curry_name !== "none") && ((s.curry_mini||0) + (s.curry_full||0) > 0);
+
     const sabjiHtml = `
       <div class="sabji-cook-grid">
+        ${showDry ? `
         <div class="sabji-cook-card">
           <div class="cook-label">${mr("Dry Sabji")}: <strong>${s.dry_name}</strong></div>
           <div class="cook-val">${getWeight(s.dry_name, s.dry_mini, s.dry_full)}</div>
           <div class="cook-unit">Required Weight</div>
-          <div class="cook-breakdown">${s.dry_mini} Mini + ${s.dry_full} Full</div>
-        </div>
+          <div class="cook-breakdown">${s.dry_mini || 0} Mini + ${s.dry_full || 0} Full</div>
+        </div>` : ""}
+        ${showCurry ? `
         <div class="sabji-cook-card">
           <div class="cook-label">${mr("Curry Sabji")}: <strong>${s.curry_name}</strong></div>
           <div class="cook-val">${getWeight(s.curry_name, s.curry_mini, s.curry_full)}</div>
           <div class="cook-unit">Required Weight</div>
-          <div class="cook-breakdown">${s.curry_mini} Mini + ${s.curry_full} Full</div>
-        </div>
+          <div class="cook-breakdown">${s.curry_mini || 0} Mini + ${s.curry_full || 0} Full</div>
+        </div>` : ""}
       </div>`;
 
     const dal = m.other["Dal"];
