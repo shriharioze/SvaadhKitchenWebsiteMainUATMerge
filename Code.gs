@@ -1262,6 +1262,7 @@ function getKitchenSummary(date) {
 
   var meals = {};
   var ROTI_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+  var menu = getMenu(date);
 
   dayRows.forEach(function(r) {
     var meal = String(r.Meal_Type || "");
@@ -1285,9 +1286,19 @@ function getKitchenSummary(date) {
         var q = Number(r[c]) || 0;
         if (q > 0) m.rotis[c] = (m.rotis[c] || 0) + q;
       });
-      if (!m.sabji) m.sabji = {dry_kg: 0, curry_kg: 0};
-      m.sabji.dry_kg   += (Number(r.Dry_Sabji_Mini)||0)*0.6  + (Number(r.Dry_Sabji_Full)||0)*1.4;
-      m.sabji.curry_kg += (Number(r.Curry_Sabji_Mini)||0)*0.6 + (Number(r.Curry_Sabji_Full)||0)*1.4;
+      if (!m.sabji) {
+        m.sabji = {
+          dry_kg: 0, curry_kg: 0,
+          dry_name: (meal === "Lunch" ? menu.lunch_dry : menu.dinner_dry) || "Sabji (Dry)",
+          curry_name: (meal === "Lunch" ? menu.lunch_curry : menu.dinner_curry) || "Sabji (Curry)",
+          dry_mini: 0, dry_full: 0, curry_mini: 0, curry_full: 0
+        };
+      }
+      m.sabji.dry_mini  += (Number(r.Dry_Sabji_Mini)||0);
+      m.sabji.dry_full  += (Number(r.Dry_Sabji_Full)||0);
+      m.sabji.curry_mini += (Number(r.Curry_Sabji_Mini)||0);
+      m.sabji.curry_full += (Number(r.Curry_Sabji_Full)||0);
+
       if (!m.other) m.other = {Dal:{kg:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
       m.other.Dal.kg      += (Number(r.Dal)   || 0) * 1.33;
       m.other.Rice.count  += (Number(r.Rice)  || 0);
@@ -1299,10 +1310,12 @@ function getKitchenSummary(date) {
   ["Lunch","Dinner"].forEach(function(meal) {
     if (!meals[meal]) return;
     var m = meals[meal];
-    m.sabji.dry_kg   = Math.round(m.sabji.dry_kg   * 100) / 100;
-    m.sabji.curry_kg = Math.round(m.sabji.curry_kg * 100) / 100;
     m.other.Dal.kg   = Math.round(m.other.Dal.kg   * 100) / 100;
+    // Calculate final KG based on mini=0.4 and full=1.0 "portions" (multiplied in frontend later)
+    // Actually we keep counts and calculate in frontend now
   });
+
+  return {date: date, meals: meals};
 
   return {date: date, meals: meals};
 }

@@ -265,6 +265,23 @@ const MR = {
 };
 function mr(name) { return MR[name] || name; }
 
+// ── SABJI WEIGHTS (gms per Full unit) ──
+const SABJI_WEIGHTS = {
+  "Bhindi": 140,
+  "Aloo Matar": 150,
+  "Bhendi Fry": 140,
+  "Paneer Masala": 130,
+  "Shev Bhaji": 120,
+  "default": 140
+};
+function getWeight(name, mini, full) {
+  const w = SABJI_WEIGHTS[name] || SABJI_WEIGHTS["default"];
+  const totalUnits = (mini * 0.4) + (full * 1.0);
+  const grams = totalUnits * w;
+  if (grams >= 1000) return (grams/1000).toFixed(1) + " kg";
+  return Math.round(grams) + " g";
+}
+
 // ── RENDER ──
 function getMealOrder() {
   const h = new Date(new Date().getTime() + 5.5 * 3600000).getUTCHours();
@@ -330,13 +347,19 @@ function renderKitchen(data) {
       : `<div class="item-card zero"><span class="iname">—</span><span class="inum">0</span></div>`;
 
     const sabjiHtml = `
-      <div class="item-card ${s.dry_kg===0?"zero":""}">
-        <span class="iname">${mr("Dry Sabji")}</span>
-        <span class="inum">${s.dry_kg}</span>
-      </div>
-      <div class="item-card ${s.curry_kg===0?"zero":""}">
-        <span class="iname">${mr("Curry Sabji")}</span>
-        <span class="inum">${s.curry_kg}</span>
+      <div class="sabji-cook-grid">
+        <div class="sabji-cook-card">
+          <div class="cook-label">${mr("Dry Sabji")}: <strong>${s.dry_name}</strong></div>
+          <div class="cook-val">${getWeight(s.dry_name, s.dry_mini, s.dry_full)}</div>
+          <div class="cook-unit">Required Weight</div>
+          <div class="cook-breakdown">${s.dry_mini} Mini + ${s.dry_full} Full</div>
+        </div>
+        <div class="sabji-cook-card">
+          <div class="cook-label">${mr("Curry Sabji")}: <strong>${s.curry_name}</strong></div>
+          <div class="cook-val">${getWeight(s.curry_name, s.curry_mini, s.curry_full)}</div>
+          <div class="cook-unit">Required Weight</div>
+          <div class="cook-breakdown">${s.curry_mini} Mini + ${s.curry_full} Full</div>
+        </div>
       </div>`;
 
     const dal = m.other["Dal"];
