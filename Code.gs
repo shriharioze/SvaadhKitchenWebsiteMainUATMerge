@@ -1316,8 +1316,6 @@ function getKitchenSummary(date) {
   });
 
   return {date: date, meals: meals};
-
-  return {date: date, meals: meals};
 }
 
 // ── DRIVER ORDERS ─────────────────────────────────────────────
