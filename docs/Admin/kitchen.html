@@ -235,21 +235,33 @@ async function loadKitchen() {
 // ── Marathi display names ──
 const MR = {
   // Rotis
-  "Chapati":             "चपाती",
+  "Chapati": "चपाती",
   "Without Oil Chapati": "विना तेल चपाती",
-  "Phulka":              "फुलका",
-  "Ghee Phulka":         "तूप फुलका",
-  "Jowar Bhakri":        "ज्वारी भाकरी",
-  "Bajra Bhakri":        "बाजरी भाकरी",
+  "Without_Oil_Chapati": "विना तेल चपाती",
+  "Phulka": "फुलका",
+  "Ghee Phulka": "तूप फुलका",
+  "Ghee_Phulka": "तूप फुलका",
+  "Jowar Bhakri": "ज्वारी भाकरी",
+  "Jowar_Bhakri": "ज्वारी भाकरी",
+  "Bajra Bhakri": "बाजरी भाकरी",
+  "Bajra_Bhakri": "बाजरी भाकरी",
   // Sabji
-  "Dry Sabji":           "सुकी भाजी",
-  "Curry Sabji":         "रस्सा भाजी",
+  "Dry Sabji": "सुकी भाजी",
+  "Curry Sabji": "रस्सा भाजी",
   // Other
-  "Dal":                 "वरण",
-  "Rice":                "भात",
-  "Salad":               "सलाड",
-  "Curd":                "दही",
-  "Curd (50g)":          "दही",
+  "Dal": "वरण",
+  "Rice": "भात",
+  "Salad": "सलाड",
+  "Curd": "दही",
+  "Curd (50g)": "दही",
+  // Breakfast items
+  "Kanda Poha": "कांदा पोहे",
+  "Sabudana Khichdi": "साबुदाणा खिचडी",
+  "Ghee Upma": "तूप उपमा",
+  "Upma": "उपमा",
+  "Poha": "पोहे",
+  // Additional
+  "orders": "ऑर्डर",
 };
 function mr(name) { return MR[name] || name; }
 
@@ -300,7 +312,7 @@ function renderKitchen(data) {
         <div class="meal-head">
           <span class="meal-icon">${icon}</span>
           <span class="meal-title">${label}</span>
-          <span class="meal-count">${m.count} orders</span>
+          <span class="meal-count">${m.count} ${mr('orders')}</span>
         </div>
         <div class="meal-body">
           <div class="item-grid">${bfHtml}</div>
@@ -345,7 +357,7 @@ function renderKitchen(data) {
       <div class="meal-head">
         <span class="meal-icon">${icon}</span>
         <span class="meal-title">${label}</span>
-        <span class="meal-count">${m.count} orders</span>
+        <span class="meal-count">${m.count} ${mr('orders')}</span>
       </div>
       <div class="meal-body">
         <div class="sec-label">पोळी / भाकरी</div>
