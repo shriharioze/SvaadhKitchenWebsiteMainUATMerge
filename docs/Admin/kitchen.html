@@ -265,21 +265,56 @@ const MR = {
 };
 function mr(name) { return MR[name] || name; }
 
-// ── SABJI WEIGHTS (gms per Full unit) ──
 const SABJI_WEIGHTS = {
+  // Dry Sabjis (raw weights per standardized unit)
+  "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
+  "French Beans": 80,
+  "French_Beans": 80,
+  "Cabbage": 75,
+  "Mataki": 55,
+  "Matki (Dry)": 55,
+  "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, 
+  "Shima besan": { "ढोबळी": 70, "बेसन": 25 },
+  "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
+  "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 },
+  "Green Moong (Dry)": 30,
+  "Green Moong": 30,
   "Bhindi": 140,
-  "Aloo Matar": 150,
   "Bhendi Fry": 140,
-  "Paneer Masala": 130,
-  "Shev Bhaji": 120,
+
+  // Curry Sabjis (raw weights per standardized unit)
+  "Soyabean": 10,
+  "Gavari": 42,
+  "Matki": 34,
+  "Matki (Curry)": 34,
+  "Pithla": { "बेसन": 23 },
+  "Akha Masoor": 27,
+  "Kofta": { "दुधी": 100, "कोफ्ता गोळे": 10 }, // Assuming 10 pieces Dudhi based on user msg
+  "Green moong": 27,
+  "Green moong (Curry)": 27,
+
   "default": 140
 };
+
 function getWeight(name, mini, full) {
   const w = SABJI_WEIGHTS[name] || SABJI_WEIGHTS["default"];
-  const totalUnits = (mini * 0.4) + (full * 1.0);
-  const grams = totalUnits * w;
-  if (grams >= 1000) return (grams/1000).toFixed(1) + " kg";
-  return Math.round(grams) + " g";
+  const totalUnits = (mini * 0.6) + (full * 1.4);
+  
+  const fmtWeight = (g) => {
+    if (g >= 1000) return (g/1000).toFixed(2) + " kg";
+    return Math.round(g) + " g";
+  };
+
+  if (typeof w === "number") {
+    return fmtWeight(totalUnits * w);
+  } else {
+    // Multi-ingredient map
+    let rows = [];
+    for (let ing in w) {
+      rows.push(`<span style="color:#aaa;">${ing}:</span> <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>`);
+    }
+    return rows.join("<br>");
+  }
 }
 
 // ── RENDER ──
