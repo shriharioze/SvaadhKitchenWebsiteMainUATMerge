@@ -1320,7 +1320,8 @@ async function lookupCustomer(){
       S.profile={...S.profile,name:data.name||"",first_name:fn,last_name:ln,
         area:data.area||"",wing:data.wing||"",
         flat:data.flat||"",floor:data.floor||"",society:data.society||"",
-        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily bill Payment"};
+        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily bill Payment",
+        wallet_balance:wb};
       S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
       $("returningBadge").innerHTML=`<div class="customer-badge">
         <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
@@ -2041,6 +2042,11 @@ async function loadExistingOrders(phone){
     
     // Render Wallet Dash wrap
     const wb = Number(data.wallet_balance) || 0;
+    S.profile = (S.profile || {});
+    S.profile.wallet_balance = wb;
+    
+    if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
+    
     $("walletDashWrap").innerHTML = `
       <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#e8f5e9,#ffffff);border:1px solid #c8e6c9;">
         <h2 style="color:#1b5e20;margin-bottom:12px;font-size:1.1rem;">💼 Prepaid Wallet</h2>

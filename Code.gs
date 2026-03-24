@@ -430,23 +430,29 @@ function _calculateWalletBalance(phone) {
   const pStr = String(phone).trim();
 
   rows.forEach(w => {
-    // Normalise keys to handle manual header renaming in sheet
     let rPhone = "";
     let rType  = "";
     let rAmt   = 0;
     let rVer   = "";
     
+    // Header-agnostic mapping using substring matching
     for (let key in w) {
-      let kl = key.toLowerCase().trim();
-      if (kl === "phone" || kl === "mobile") rPhone = String(w[key]).trim();
-      if (kl === "txn_type" || kl === "balance" || kl === "type") rType = String(w[key]).trim();
-      if (kl === "amount" || kl === "amt")   rAmt = Number(w[key]) || 0;
-      if (kl === "verified") rVer = String(w[key]).trim().toUpperCase();
+      let kl = key.toLowerCase();
+      if (kl.includes("phone") || kl.includes("mobile")) rPhone = String(w[key]).trim();
+      else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = String(w[key]).trim();
+      else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(w[key]) || 0;
+      else if (kl.includes("verif")) rVer = String(w[key]).trim().toUpperCase();
+    }
+
+    // Handle potential scientific notation or Number type for phone
+    if (rPhone.includes("E+") && !isNaN(Number(rPhone))) {
+       rPhone = Number(rPhone).toLocaleString('fullwide', {useGrouping:false});
     }
 
     if (rPhone === pStr && rVer === "TRUE") {
-      if (rType === "Recharge") balance += rAmt;
-      else if (rType === "Order Deduction") balance -= rAmt;
+      let typeNorm = rType.toLowerCase();
+      if (typeNorm.includes("recharge")) balance += rAmt;
+      else if (typeNorm.includes("order") || typeNorm.includes("deduct")) balance -= rAmt;
     }
   });
   return balance;
@@ -804,8 +810,6 @@ function getCustomerOrders(phone) {
         enRouteAt:          delTracker.enRouteAt || null,
         deliveredAt:        delTracker.deliveredAt || null
       };
-    });
-
     });
   return {orders: upcoming, wallet_balance: _calculateWalletBalance(phone)};
 }
