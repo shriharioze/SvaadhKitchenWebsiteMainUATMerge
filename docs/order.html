@@ -1828,6 +1828,7 @@ async function payPendingWithWallet(amt) {
       const nwb = data.remaining_balance || 0;
       S.profile.wallet_balance = nwb;
       if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${nwb}`;
+      fetchAndShowHissab(S.phone);
       loadExistingOrders(S.phone);
     } else {
       alert("Payment failed: " + (data.error || "Unknown error"));

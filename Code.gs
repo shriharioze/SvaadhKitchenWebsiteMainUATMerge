@@ -981,7 +981,7 @@ function get10DayRunning(phone) {
     .filter(r =>
       String(r.Phone).trim() === phoneStr &&
       fmtD(r) >= ps && fmtD(r) <= pe &&
-      r.Payment_Status !== "Paid"
+      r.Payment_Status !== "Paid" && r.Payment_Status !== "Wallet Paid"
     )
     .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
 
@@ -989,7 +989,7 @@ function get10DayRunning(phone) {
     .filter(r =>
       String(r.Phone).trim() === phoneStr &&
       fmtD(r) >= pps && fmtD(r) <= ppe &&
-      r.Payment_Status !== "Paid"
+      r.Payment_Status !== "Paid" && r.Payment_Status !== "Wallet Paid"
     )
     .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
 
