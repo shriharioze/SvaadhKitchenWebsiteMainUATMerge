@@ -307,6 +307,9 @@ function doPost(e) {
     if (action === "submitWalletRecharge") {
       return jsonRes(submitWalletRecharge(body));
     }
+    if (action === "payAllPendingWithWallet") {
+      return jsonRes(payAllPendingWithWallet(body));
+    }
     if (action === "markDelivered") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markDelivered(body));
@@ -873,6 +876,51 @@ function deleteOrder(phone, rowId) {
   } catch(e) { /* ledger cleanup is non-fatal */ }
 
   return {success: true};
+}
+
+// ── PAY ALL PENDING WITH WALLET ─────────────────────────────
+function payAllPendingWithWallet(body) {
+  var phone = String(body.phone || "").trim();
+  if (!phone) return {success:false, error:"No phone"};
+  
+  var ss = getSpreadsheet();
+  var balance = _calculateWalletBalance(phone);
+  
+  var ws = ss.getSheetByName(TAB_ORDERS);
+  var rows = getAllRows(ws);
+  
+  // Find all unpaid orders for this customer
+  var unpaid = rows.filter(r => {
+    var rPhone = String(r.Phone || "").trim();
+    var pStat  = String(r.Payment_Status || "").trim();
+    return rPhone === phone && pStat !== "Paid" && pStat !== "Wallet Paid";
+  });
+  
+  var totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
+  totalDue = Math.round(totalDue * 100) / 100;
+
+  if (totalDue <= 0) return {success:false, error:"No pending balance to pay"};
+  if (balance < totalDue) return {success:false, error: "Insufficient balance (Need ₹" + totalDue + ", Have ₹" + balance + ")"};
+
+  // 1. Log Verified Deduction
+  var walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  walletWs.appendRow([
+    phone,
+    unpaid[0].Customer_Name || "Customer",
+    "Order Deduction",
+    totalDue,
+    "TRUE",
+    getISTTimestamp()
+  ]);
+
+  // 2. Mark all orders as Paid
+  var hIdx = headerIndex(ws);
+  var payCol = hIdx["Payment_Status"];
+  unpaid.forEach(r => {
+    ws.getRange(r._row, payCol).setValue("Wallet Paid");
+  });
+
+  return {success:true, paid_amount: totalDue, remaining_balance: balance - totalDue};
 }
 
 // ── GET 10-DAY RUNNING TOTAL ─────────────────────────────────

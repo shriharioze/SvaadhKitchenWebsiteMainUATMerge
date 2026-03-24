@@ -1786,26 +1786,58 @@ function fetchAndShowHissab(phone) {
     .then(r => r.json())
     .then(d => {
       S.hissabData = d;
-      const prevDue = d.prevDue || 0;
-      const running = d.running || 0;
-      // Update badge chip
       const wrap = document.getElementById('hissabBadgeWrap');
       if (wrap) {
-        if (prevDue > 0)
-          wrap.innerHTML = `<button class="bill-chip-btn due" onclick="openBillModal()">⚠️ ₹${prevDue} payment due · Tap to pay</button>`;
-        else if (running > 0)
-          wrap.innerHTML = `<button class="bill-chip-btn" onclick="openBillModal()">📊 ₹${running} this period</button>`;
+        let btnHtml = "";
+        const totalPending = (d.prevDue || 0) + (d.running || 0);
+        const wb = S.profile?.wallet_balance || 0;
+        
+        if (d.prevDue > 0)
+          btnHtml = `<button class="bill-chip-btn due" onclick="openBillModal()">⚠️ ₹${d.prevDue} payment due · Tap to pay</button>`;
+        else if (d.running > 0)
+          btnHtml = `<button class="bill-chip-btn" onclick="openBillModal()">📊 ₹${d.running} this period</button>`;
         else
-          wrap.innerHTML = `<button class="bill-chip-btn" onclick="openBillModal()">📊 View my bill</button>`;
+          btnHtml = `<button class="bill-chip-btn" onclick="openBillModal()">📊 View my bill</button>`;
+          
+        if (wb >= totalPending && totalPending > 0) {
+          btnHtml += `<button onclick="payPendingWithWallet(${totalPending})" class="btn-wallet-pay" style="margin-top:8px;">💳 Use Wallet to Pay ₹${totalPending}</button>`;
+        }
+        wrap.innerHTML = btnHtml;
       }
-      // Auto-show if period due and not yet acknowledged this period
       const ackKey = `sk-bill-ack-${phone}-${d.prevLabel}`;
-      if (prevDue > 0 && !localStorage.getItem(ackKey)) openBillModal();
+      if ((d.prevDue || 0) > 0 && !localStorage.getItem(ackKey)) openBillModal();
     })
     .catch(() => {
       const wrap = document.getElementById('hissabBadgeWrap');
       if (wrap) wrap.innerHTML = `<button class="bill-chip-btn" onclick="openBillModal()">📊 View my bill</button>`;
     });
+}
+
+async function payPendingWithWallet(amt) {
+  if (!confirm(`Clear your pending bill of ₹${amt} using your Svaadh Wallet balance?`)) return;
+  const btn = document.querySelector(".btn-wallet-pay");
+  if (btn) { btn.disabled = true; btn.textContent = "Processing..."; }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "payAllPendingWithWallet", phone: S.phone })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(`Successfully paid ₹${amt} from wallet!`);
+      const nwb = data.remaining_balance || 0;
+      S.profile.wallet_balance = nwb;
+      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${nwb}`;
+      loadExistingOrders(S.phone);
+    } else {
+      alert("Payment failed: " + (data.error || "Unknown error"));
+      if (btn) { btn.disabled = false; btn.textContent = `💳 Use Wallet to Pay ₹${amt}`; }
+    }
+  } catch(e) {
+    console.error(e);
+    alert("Error: " + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = `💳 Use Wallet to Pay ₹${amt}`; }
+  }
 }
 
 function openBillModal() {
