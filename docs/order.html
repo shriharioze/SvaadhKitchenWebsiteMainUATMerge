@@ -1511,10 +1511,13 @@ function copyMealsToAllDates(){
   }
   const others=S.selectedDates.filter(d=>d!==activeDate);
   if(!confirm(t('copy_confirm',{date:formatDate(activeDate),n:others.length})))return;
+  let skipped = 0;
   others.forEach(d=>{
+    const avail = getMealAvailability(d);
     // Deep copy each meal from source date, preserving any existing address info
     ["Breakfast","Lunch","Dinner"].forEach(m=>{
       if(src[m]){
+        if(!avail[m]){ skipped++; return; }
         const copy=JSON.parse(JSON.stringify(src[m]));
         // Preserve address from destination if it exists
         const destAddr=S.orders[d]?.[m]||{};
@@ -1525,7 +1528,9 @@ function copyMealsToAllDates(){
     // Recalculate subtotals for the copied date
     ["Breakfast","Lunch","Dinner"].forEach(m=>recalcSubtotal(d,m));
   });
-  toast(t('toast_copied',{n:others.length}),2000);
+  let msg = t('toast_copied',{n:others.length});
+  if(skipped > 0) msg += ` (${skipped} ${t('meals_skipped_cutoff', 'meals skipped due to cutoff')})`;
+  toast(msg, 3000);
   // Re-render current view and update all tab badges
   renderMealContent(activeDate);
 }
