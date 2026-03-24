@@ -441,21 +441,23 @@ function _calculateWalletBalance(phone) {
     // Header-agnostic mapping using substring matching
     for (let key in w) {
       let kl = key.toLowerCase();
-      if (kl.includes("phone") || kl.includes("mobile")) rPhone = String(w[key]).trim();
-      else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = String(w[key]).trim();
-      else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(w[key]) || 0;
-      else if (kl.includes("verif")) rVer = String(w[key]).trim().toUpperCase();
+      let val = w[key];
+      if (kl.includes("phone") || kl.includes("mobile")) rPhone = String(val).trim();
+      else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = String(val).trim();
+      else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
+      else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = String(val).trim().toUpperCase();
     }
 
-    // Handle potential scientific notation or Number type for phone
+    // Standardize phone (remove decimals if numeric)
+    if (rPhone.includes(".")) rPhone = rPhone.split(".")[0];
     if (rPhone.includes("E+") && !isNaN(Number(rPhone))) {
        rPhone = Number(rPhone).toLocaleString('fullwide', {useGrouping:false});
     }
 
-    if (rPhone === pStr && rVer === "TRUE") {
+    if (rPhone === pStr && (rVer === "TRUE" || rVer === "YES" || rVer === "VERIFIED")) {
       let typeNorm = rType.toLowerCase();
       if (typeNorm.includes("recharge")) balance += rAmt;
-      else if (typeNorm.includes("order") || typeNorm.includes("deduct")) balance -= rAmt;
+      else if (typeNorm.includes("order") || typeNorm.includes("deduct") || typeNorm.includes("payment")) balance -= rAmt;
     }
   });
   return balance;

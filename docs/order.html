@@ -880,6 +880,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="screen" id="screen4">
   <div class="card">
     <h2 data-i18n="step5_summary_title">🧾 Order Summary</h2>
+    <div id="walletBalMsg" class="wallet-bal-msg" style="display:none;margin-bottom:12px;text-align:center;font-size:0.85rem;color:#2e7d32;background:#e8f5e9;padding:10px;border-radius:10px;border:1px solid #c8e6c9;"></div>
     <div id="billSummaryContent"></div>
   </div>
 
@@ -1313,6 +1314,7 @@ async function lookupCustomer(){
     const data=await res.json();
     if(data.found){
       const wb = Number(data.wallet_balance) || 0;
+      toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
       if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
       S.isFirstTime=false;
       const parts=(data.name||"").trim().split(" ");
@@ -1730,6 +1732,14 @@ function buildBillScreen(){
   
   const wb = Number(S.profile?.wallet_balance) || 0;
   S.walletMode = (wb >= grandTotal && grandTotal > 0);
+
+  // Debug: Ensure balance is visible if present
+  if (wb > 0) {
+    if ($("walletBalMsg")) {
+      $("walletBalMsg").innerHTML = `💰 <strong>Wallet Balance: ₹${wb}</strong>`;
+      $("walletBalMsg").style.display = "block";
+    }
+  }
 
   if(S.is10Day){
     $("walletCard").style.display="none";
