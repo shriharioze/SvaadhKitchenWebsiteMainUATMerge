@@ -948,6 +948,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div class="hissab-card">
       <div class="hissab-label" data-i18n="hissab_card_label">Total owed this period</div>
       <div class="hissab-amount" id="hissabAmount">₹0</div>
+      <div id="walletSettlementSection" style="display:none;"></div>
       <div class="hissab-period" id="hissabPeriod"></div>
     </div>
     <div class="hissab-msg" data-i18n-html="hissab_msg_html">
@@ -1765,6 +1766,27 @@ function buildBillScreen(){
           $("prevDueSection").style.display = "none";
         }
         S.runningTotal = curTotal;
+        
+        // WALLET SETTLEMENT OPTION (for 10-day users)
+        const wb = Number(S.profile?.wallet_balance) || 0;
+        const totalToSettle = curTotal + prevDue;
+        const walletSettlementDiv = $("walletSettlementSection");
+        if (wb >= totalToSettle && totalToSettle > 0) {
+          if (walletSettlementDiv) {
+            walletSettlementDiv.innerHTML = `
+              <div style="background:#e8f5e9;border:1.5px solid #c8e6c9;border-radius:12px;padding:16px;margin:16px 0 10px;text-align:center;">
+                <div style="font-size:0.8rem;color:#2e7d32;font-weight:700;margin-bottom:8px;">💡 Svaadh Wallet Advantage</div>
+                <div style="font-size:0.75rem;color:#388e3c;margin-bottom:12px;">You have ₹${wb} balance. Settle your entire bill (including this order) in one tap.</div>
+                <button onclick="placeOrder(true)" class="btn btn-primary" style="background:#2e7d32;border-color:#1b5e20;margin:0;width:100%;font-size:0.95rem;padding:12px;">
+                  💳 Pay ₹${totalToSettle} with Wallet
+                </button>
+              </div>
+            `;
+            walletSettlementDiv.style.display = "block";
+          }
+        } else if (walletSettlementDiv) {
+          walletSettlementDiv.style.display = "none";
+        }
       }).catch(()=>{
         S.runningTotal = grandTotal;
         $("hissabAmount").textContent = `₹${grandTotal}`;
@@ -1997,7 +2019,7 @@ function setupUPI(amount){
 // ═══════════════════════════════════════════════════════════
 // PLACE ORDER
 // ═══════════════════════════════════════════════════════════
-async function placeOrder(){
+async function placeOrder(settleAll = false){
   let confirmEl=null;
   if(S.walletMode) confirmEl = null;
   else if(S.is10Day) confirmEl=$("tenDayConfirm");
@@ -2026,8 +2048,9 @@ async function placeOrder(){
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
-    payment_method: S.walletMode ? "Wallet" : (S.is10Day ? "10-Day Billing" : (S.codMode ? "COD" : "UPI")),
-    payment_status: S.walletMode ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
+    payment_method: (S.walletMode || settleAll) ? "Wallet" : (S.is10Day ? "10-Day Billing" : (S.codMode ? "COD" : "UPI")),
+    payment_status: (S.walletMode || settleAll) ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
+    settle_all: settleAll
   };
   const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
   try{

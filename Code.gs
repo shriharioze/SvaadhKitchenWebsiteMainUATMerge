@@ -708,12 +708,44 @@ function submitOrder(body) {
   // Upsert customer record
   _upsertCustomer(ss, profile);
 
+  // If user requested to settle ALL pending dues in this same transaction
+  if (body.settle_all && payMethod === "Wallet") {
+    _settlePendingInternal(ss, profile.phone, profile.name || "Customer");
+  }
+
   // Update customer ledger (10-day)
-  if (payFreq === "Post paid bill payment for every 10 days") {
+  if (payFreq === "Post paid bill payment for every 10 days" || payFreq.includes("10 days")) {
     try { _updateLedger(ss, profile, orders); } catch(e) { /* non-fatal */ }
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
+}
+
+/** 
+ * INTERNAL: Settles all outstanding "10-Day Pending" or "Pending" orders for a customer
+ * logic is shared between manual pay-all and automated settlement during checkout.
+ */
+function _settlePendingInternal(ss, phone, custName) {
+  const ws = ss.getSheetByName(TAB_ORDERS);
+  const rows = getAllRows(ws);
+  const hIdx = headerIndex(ws);
+  const payCol = hIdx["Payment_Status"];
+  
+  const unpaid = rows.filter(r => {
+    const rPhone = String(r.Phone || "").trim();
+    const pStat  = String(r.Payment_Status || "").trim();
+    return rPhone === phone && (pStat === "Pending" || pStat === "10-Day Pending" || !pStat);
+  });
+
+  const totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
+  if (totalDue <= 0) return;
+
+  // Log Deduction
+  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  walletWs.appendRow([ phone, custName, "Order Deduction", Math.round(totalDue * 100)/100, "TRUE", getISTTimestamp() ]);
+
+  // Mark all as Paid
+  unpaid.forEach(r => { ws.getRange(r._row, payCol).setValue("Wallet Paid"); });
 }
 
 // ── UPSERT CUSTOMER ──────────────────────────────────────────
@@ -880,47 +912,29 @@ function deleteOrder(phone, rowId) {
 
 // ── PAY ALL PENDING WITH WALLET ─────────────────────────────
 function payAllPendingWithWallet(body) {
-  var phone = String(body.phone || "").trim();
+  const phone = String(body.phone || "").trim();
   if (!phone) return {success:false, error:"No phone"};
   
-  var ss = getSpreadsheet();
-  var balance = _calculateWalletBalance(phone);
+  const ss = getSpreadsheet();
+  const balance = _calculateWalletBalance(phone);
   
-  var ws = ss.getSheetByName(TAB_ORDERS);
-  var rows = getAllRows(ws);
-  
-  // Find all unpaid orders for this customer
-  var unpaid = rows.filter(r => {
-    var rPhone = String(r.Phone || "").trim();
-    var pStat  = String(r.Payment_Status || "").trim();
+  const ws = ss.getSheetByName(TAB_ORDERS);
+  const rows = getAllRows(ws);
+  const unpaid = rows.filter(r => {
+    const rPhone = String(r.Phone || "").trim();
+    const pStat  = String(r.Payment_Status || "").trim();
     return rPhone === phone && pStat !== "Paid" && pStat !== "Wallet Paid";
   });
-  
-  var totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
-  totalDue = Math.round(totalDue * 100) / 100;
 
-  if (totalDue <= 0) return {success:false, error:"No pending balance to pay"};
-  if (balance < totalDue) return {success:false, error: "Insufficient balance (Need ₹" + totalDue + ", Have ₹" + balance + ")"};
+  const totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
+  const roundedDue = Math.round(totalDue * 100) / 100;
 
-  // 1. Log Verified Deduction
-  var walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-  walletWs.appendRow([
-    phone,
-    unpaid[0].Customer_Name || "Customer",
-    "Order Deduction",
-    totalDue,
-    "TRUE",
-    getISTTimestamp()
-  ]);
+  if (roundedDue <= 0) return {success:false, error:"No pending balance to pay"};
+  if (balance < roundedDue) return {success:false, error: "Insufficient balance (Need ₹" + roundedDue + ", Have ₹" + balance + ")"};
 
-  // 2. Mark all orders as Paid
-  var hIdx = headerIndex(ws);
-  var payCol = hIdx["Payment_Status"];
-  unpaid.forEach(r => {
-    ws.getRange(r._row, payCol).setValue("Wallet Paid");
-  });
+  _settlePendingInternal(ss, phone, unpaid[0].Customer_Name || "Customer");
 
-  return {success:true, paid_amount: totalDue, remaining_balance: balance - totalDue};
+  return {success:true, paid_amount: roundedDue, remaining_balance: balance - roundedDue};
 }
 
 // ── GET 10-DAY RUNNING TOTAL ─────────────────────────────────
