@@ -1731,12 +1731,7 @@ function buildBillScreen(){
   const wb = Number(S.profile?.wallet_balance) || 0;
   S.walletMode = (wb >= grandTotal && grandTotal > 0);
 
-  if (S.walletMode) {
-    $("walletCard").style.display="block";
-    $("paymentCard").style.display="none";
-    $("tenDayCard").style.display="none";
-    $("walletBalDisplay").textContent = `₹${wb}`;
-  } else if(S.is10Day){
+  if(S.is10Day){
     $("walletCard").style.display="none";
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
@@ -1797,6 +1792,11 @@ function buildBillScreen(){
         $("hissabAmount").textContent = `₹${grandTotal}`;
         $("hissabPeriod").textContent = t('period_this_order',{amt:grandTotal,p:getPeriodLabel()});
       });
+  } else if (S.walletMode) {
+    $("walletCard").style.display="block";
+    $("paymentCard").style.display="none";
+    $("tenDayCard").style.display="none";
+    $("walletBalDisplay").textContent = `₹${wb}`;
   } else {
     $("walletCard").style.display="none";
     $("paymentCard").style.display="block";
