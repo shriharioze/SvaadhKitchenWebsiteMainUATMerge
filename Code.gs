@@ -404,18 +404,6 @@ function getCustomer(phone) {
   const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
   if (!r) return {found: false, wallet_balance: 0};
   
-  // Also check wallet balance
-  let balance = 0;
-  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-  const walletRows = getAllRows(walletWs);
-  walletRows.forEach(w => {
-    if (String(w.Phone).trim() === String(phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
-      let amt = Number(w.Amount) || 0;
-      if (w.Txn_Type === "Recharge") balance += amt;
-      else if (w.Txn_Type === "Order Deduction") balance -= amt;
-    }
-  });
-
   return {
     found: true,
     name:               r.Name || "",
@@ -427,8 +415,41 @@ function getCustomer(phone) {
     maps:               r.Maps_Link || "",
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily bill Payment",
-    wallet_balance:     balance
+    wallet_balance:     _calculateWalletBalance(phone)
   };
+}
+
+// ── WALLET HELPER ──────────────────────────────────────────
+function _calculateWalletBalance(phone) {
+  if (!phone) return 0;
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const rows = getAllRows(ws);
+  
+  let balance = 0;
+  const pStr = String(phone).trim();
+
+  rows.forEach(w => {
+    // Normalise keys to handle manual header renaming in sheet
+    let rPhone = "";
+    let rType  = "";
+    let rAmt   = 0;
+    let rVer   = "";
+    
+    for (let key in w) {
+      let kl = key.toLowerCase().trim();
+      if (kl === "phone" || kl === "mobile") rPhone = String(w[key]).trim();
+      if (kl === "txn_type" || kl === "balance" || kl === "type") rType = String(w[key]).trim();
+      if (kl === "amount" || kl === "amt")   rAmt = Number(w[key]) || 0;
+      if (kl === "verified") rVer = String(w[key]).trim().toUpperCase();
+    }
+
+    if (rPhone === pStr && rVer === "TRUE") {
+      if (rType === "Recharge") balance += rAmt;
+      else if (rType === "Order Deduction") balance -= rAmt;
+    }
+  });
+  return balance;
 }
 
 // ── GET MENU ─────────────────────────────────────────────────
@@ -625,19 +646,10 @@ function submitOrder(body) {
       let pStat = payStatus;
       // ════ WALLET DEDUCTION LOGIC ════
       if (payMethod === "Wallet") {
-        const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-        const wRows = getAllRows(walletWs);
-        let currentBalance = 0;
-        wRows.forEach(w => {
-          if (String(w.Phone).trim() === String(profile.phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
-            let amt = Number(w.Amount) || 0;
-            if (w.Txn_Type === "Recharge") currentBalance += amt;
-            else if (w.Txn_Type === "Order Deduction") currentBalance -= amt;
-          }
-        });
+        let currentBalance = _calculateWalletBalance(profile.phone);
         
         if (currentBalance >= netTotal) {
-          // Log deduction to ledger
+          const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
           walletWs.appendRow([
             profile.phone || "",
             profile.name || "Customer",
@@ -794,18 +806,8 @@ function getCustomerOrders(phone) {
       };
     });
 
-  let balance = 0;
-  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-  const wRows = getAllRows(walletWs);
-  wRows.forEach(w => {
-    if (String(w.Phone).trim() === String(phone).trim() && String(w.Verified).toUpperCase() === "TRUE") {
-      let amt = Number(w.Amount) || 0;
-      if (w.Txn_Type === "Recharge") balance += amt;
-      else if (w.Txn_Type === "Order Deduction") balance -= amt;
-    }
-  });
-
-  return {orders: upcoming, wallet_balance: balance};
+    });
+  return {orders: upcoming, wallet_balance: _calculateWalletBalance(phone)};
 }
 
 function _buildSummary(r) {
