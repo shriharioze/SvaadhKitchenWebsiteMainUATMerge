@@ -699,6 +699,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navPayments" onclick="switchPage('payments')">💳 Payments</button>
+      <button class="topbar-btn" id="navRefunds" onclick="switchPage('refunds')">💸 Refunds</button>
     </div>
     <div class="topbar-right">
       <button onclick="logout()">Logout</button>
@@ -1142,18 +1143,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
       </div><!-- /pageCustomers -->
 
-      <!-- ════ PAGE: PAYMENTS ════ -->
-      <div class="page" id="pagePayments">
-        <div class="page-header">
-          <div class="page-title">Daily Payments <small>View and mark payments for a single date</small></div>
-        </div>
-        <div class="filter-bar">
-          <input type="date" id="payDate">
-          <button class="btn-primary" onclick="loadPayments()">Load</button>
-          <button class="btn-green" style="margin-left:auto;" onclick="markAllPaid()">✓ Mark All Paid</button>
-        </div>
-        <div id="payContent"></div>
       </div><!-- /pagePayments -->
+
+      <!-- ════ PAGE: REFUNDS ════ -->
+      <div class="page" id="pageRefunds">
+        <div class="page-header">
+          <div class="page-title">UPI Refund Requests <small>Manual UPI refunds from cancellations</small></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <button class="btn-primary" onclick="loadRefunds()">↺ Refresh Requests</button>
+        </div>
+        <div id="refundsContent">
+          <div class="empty-msg">Click Refresh to load refund requests</div>
+        </div>
+      </div><!-- /pageRefunds -->
 
     </div><!-- /main -->
   </div><!-- /body-wrap -->
@@ -1755,6 +1758,7 @@ function switchPage(page) {
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
   document.getElementById("pagePayments").classList.toggle("on", page==="payments");
+  document.getElementById("pageRefunds").classList.toggle("on", page==="refunds");
   document.getElementById("navMenu").classList.toggle("active", page==="menu");
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
@@ -1766,6 +1770,9 @@ function switchPage(page) {
   document.getElementById("navHistory").classList.toggle("active", page==="history");
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navPayments").classList.toggle("active", page==="payments");
+  document.getElementById("navRefunds").classList.toggle("active", page==="refunds");
+  
+  if (page==="refunds") loadRefunds();
   // Stop orders timer when leaving orders tab
   if (page !== "orders") stopOrdersAutoRefresh();
   if (page === "orders") {
@@ -3530,6 +3537,70 @@ async function markAllPaid() {
     toast(`✅ ${phones.length} customer(s) marked as Paid`);
     loadPayments();
   } catch(e) { toast("Error: "+e.message); }
+}
+
+// ── REFUND MANAGEMENT (Manual UPI) ──
+async function loadRefunds() {
+  const wrap = document.getElementById("refundsContent");
+  wrap.innerHTML = `<div class="loader"><div class="spinner"></div><p>Fetching refund requests...</p></div>`;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getPendingRefunds&pin=${S.sessionPin}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    
+    if (!data.length) {
+      wrap.innerHTML = `<div class="empty-msg">No pending UPI refund requests. ✅</div>`;
+      return;
+    }
+
+    let html = `<div class="pay-table-wrap"><table class="pay-table">
+      <thead><tr>
+        <th>Customer</th>
+        <th>Amount</th>
+        <th>Order Details</th>
+        <th>Requested At</th>
+        <th>Action</th>
+      </tr></thead>
+      <tbody>`;
+    
+    data.forEach(r => {
+      const ts = new Date(r.Timestamp).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+      html += `<tr>
+        <td>
+          <div style="font-weight:700;">${r.Name}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
+        </td>
+        <td style="font-weight:700;color:var(--red);">₹${r.Amount}</td>
+        <td>
+          <div style="font-size:0.8rem;">${r.Meal} - ${r.Date}</div>
+          <div style="font-size:0.65rem;color:var(--muted);">ID: ${r.Submission_ID}</div>
+        </td>
+        <td style="font-size:0.75rem;color:var(--muted);">${ts}</td>
+        <td>
+          <button class="btn-green" onclick="markAsRefunded('${r.Submission_ID}')">Apply Refund</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`;
+  }
+}
+
+async function markAsRefunded(subId) {
+  if (!confirm("Confirm you have paid this customer via UPI? This will mark it as refunded.")) return;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "markRefunded", pin: S.sessionPin, submissionId: subId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast("Marked as Refunded ✅");
+      loadRefunds();
+    } else throw new Error(data.error);
+  } catch(e) { toast("Error: " + e.message, 4000); }
 }
 
 </script>

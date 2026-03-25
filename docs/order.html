@@ -1056,6 +1056,27 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <button class="btn btn-primary" id="btnSubmitWallet" style="margin-top:16px;" onclick="submitWalletRecharge()">✅ I have completed the payment</button>
     <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
   </div>
+</div><!-- REFUND CHOICE MODAL -->
+<div id="refundModal" class="bill-modal-overlay" style="display:none;z-index:10000;">
+  <div class="bill-modal-sheet" style="max-width:400px;">
+    <div class="bm-handle"><span></span></div>
+    <h2 class="bm-title" style="margin-bottom:12px;">Order Cancellation Refund</h2>
+    <p id="refundModalMsg" style="font-size:0.85rem;color:#555;text-align:center;margin-bottom:20px;line-height:1.4;"></p>
+    
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;">
+        <div style="font-weight:700;font-size:0.95rem;">⚡ Instant Wallet Credit</div>
+        <div style="font-size:0.75rem;opacity:0.9;margin-top:2px;">Get refund immediately to your Svaadh Wallet</div>
+      </button>
+      
+      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;">
+        <div style="font-weight:700;font-size:0.95rem;">💸 Original UPI Refund</div>
+        <div style="font-size:0.75rem;opacity:0.9;margin-top:2px;">Sent to your UPI ID (Takes ~24 hours)</div>
+      </button>
+      
+      <button class="bm-later" onclick="closeRefundModal()" style="margin-top:8px;">Don't Cancel Order</button>
+    </div>
+  </div>
 </div>
 
 
@@ -2375,19 +2396,65 @@ async function resubmitOrder(rowId, date, meal){
   }catch(e){toast("Error: "+e.message,4000);}
 }
 
+let currentDeleteData = null; // { rowId, date, meal, allIds, totalPaid }
+
 async function deleteOrder(rowId,date,meal){
   const cached = orderDataCache[rowId]||{};
   const allIds = cached.all_row_ids || [rowId];
+  
+  // Identify if any part of the order was "Paid"
+  // We'll trust the payment_status from the first row or check all if needed
+  // For simplicity and safety, we check if the group row is marked Paid
+  const orders = await fetchOrdersForRefCheck(S.phone);
+  const relevant = orders.filter(o => allIds.includes(o.rowId));
+  const paidRows = relevant.filter(o => String(o.payment_status).toLowerCase() === "paid");
+  const totalPaid = paidRows.reduce((sum, o) => sum + (Number(o.total)||0), 0);
+
   const count = allIds.length;
   const confirmMsg = count > 1 
     ? `Are you sure you want to completely cancel these ${count} combined ${meal} orders for ${formatDate(date)}?`
     : `Are you sure you want to completely cancel your ${meal} order for ${formatDate(date)}?`;
 
-  if(!confirm(confirmMsg + `\n\nBecause we are already procuring fresh ingredients for your specific meal, cancellations must be done before the cutoff time.\n\n(Note: If you have already paid for this order via UPI, the amount will be manually refunded back to you via Google Pay, or adjusted against your next 10-day bill.)`))return;
-  
+  if(!confirm(confirmMsg + `\n\nBecause we are already procuring fresh ingredients for your specific meal, cancellations must be done before the cutoff time.`)) return;
+
+  if (totalPaid > 0) {
+    currentDeleteData = { rowId, date, meal, allIds, totalPaid };
+    $("refundModalMsg").innerHTML = `You have already paid <strong>₹${totalPaid}</strong> for this order. How would you like to receive your refund?`;
+    $("refundModal").style.display = "flex";
+  } else {
+    // COD or Unpaid logic
+    performActualDeletion(allIds, "none");
+  }
+}
+
+async function fetchOrdersForRefCheck(phone) {
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
+    const data = await res.json();
+    return data.orders || [];
+  } catch(e) { return []; }
+}
+
+function closeRefundModal() {
+  $("refundModal").style.display = "none";
+  currentDeleteData = null;
+}
+
+async function processRefund(type) {
+  if (!currentDeleteData) return;
+  const { allIds } = currentDeleteData;
+  if (type === 'manual_upi') {
+    if (!confirm("Note: UPI refunds are processed manually and take up to 24 hours. Proceed?")) return;
+  }
+  $("refundModal").style.display = "none";
+  performActualDeletion(allIds, type);
+}
+
+async function performActualDeletion(allIds, refundType) {
+  const loadingToast = toast("Processing cancellation...", 10000);
   try{
     const delPromises = allIds.map(rid => 
-      fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid})})
+      fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid, refundType: refundType})})
       .then(r => r.json())
     );
     const results = await Promise.all(delPromises);
@@ -2397,7 +2464,11 @@ async function deleteOrder(rowId,date,meal){
     } else {
       throw new Error("One or more orders could not be cancelled.");
     }
-  }catch(err){toast("Error: "+err.message,4000);}
+  } catch(err) { 
+    toast("Error: " + err.message, 4000); 
+  } finally {
+    currentDeleteData = null;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

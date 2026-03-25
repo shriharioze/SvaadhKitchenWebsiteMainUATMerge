@@ -23,6 +23,7 @@ const TAB_BF_MASTER  = "SK_Master_Breakfast";
 const TAB_SABJI      = "SK_Master_Sabjis";
 const TAB_AREAS      = "SK_Areas";
 const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
+const TAB_REFUNDS    = "SK_Refunds"; // Manual refund requests
 
 // ── COLUMN LAYOUT — SK_Orders ────────────────────────────────
 // A   Submission_ID
@@ -243,6 +244,10 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(get10DayBilling(p));
     }
+    if (action === "getPendingRefunds") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getPendingRefunds());
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -253,7 +258,11 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     const action = body._action || "";
-    if (action === "deleteOrder")       return jsonRes(deleteOrder(body.phone, body.rowId));
+    if (action === "deleteOrder")       return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
+    if (action === "markRefunded") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markRefunded(body.submissionId));
+    }
     if (action === "deleteBreakfastItem") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(deleteBreakfastItem(body.id));
@@ -844,6 +853,7 @@ function getCustomerOrders(phone) {
         notes:              r.Special_Notes      || "",
         payment_preference: r.Payment_Freq       || "Daily bill Payment",
         payment_status:     r.Payment_Status     || "",
+        payment_method:     r.Payment_Method     || "UPI",
         enRouteAt:          delTracker.enRouteAt || null,
         deliveredAt:        delTracker.deliveredAt || null
       };
@@ -861,8 +871,8 @@ function _buildSummary(r) {
   } catch(e) { return "—"; }
 }
 
-// ── DELETE ORDER ─────────────────────────────────────────────
-function deleteOrder(phone, rowId) {
+// ── DELETE ORDER (with Refund Logic) ─────────────────────────
+function deleteOrder(phone, rowId, refundType) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
@@ -886,6 +896,24 @@ function deleteOrder(phone, rowId) {
     const cutoffHour = CUTOFFS[r.Meal_Type];
     if (cutoffHour !== undefined && hourIST >= cutoffHour) {
       return {success: false, error: `Cutoff for ${r.Meal_Type} has already passed`};
+    }
+  }
+
+  // GRACEFUL REFUND HANDLING
+  if (String(r.Payment_Status).toLowerCase() === "paid") {
+    const refundAmt = Number(r.Net_Total) || 0;
+    const custName = r.Customer_Name || "Customer";
+    
+    if (refundType === "wallet") {
+      // 1-click instant refund to Svaadh Wallet
+      const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone","Name","Type","Amount","Approved","Timestamp"]);
+      walletWs.appendRow([phone, custName, "Order Cancellation Refund", refundAmt, "TRUE", now]);
+    } 
+    else if (refundType === "manual_upi") {
+      // Log for Admin to handle manually (24h promise)
+      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp"];
+      const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
+      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now]);
     }
   }
 
@@ -1315,6 +1343,32 @@ function deleteArea(body) {
     }
   }
   return {success: false, error: "Area not found"};
+}
+
+// ── REFUND MANAGEMENT (ADMIN) ────────────────────────────────
+function getPendingRefunds() {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp"]);
+  const rows = getAllRows(ws);
+  return rows.filter(r => r.Status === "Pending");
+}
+
+function markRefunded(submissionId) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_REFUNDS, []);
+  const data = ws.getDataRange().getValues();
+  const idIdx = data[0].indexOf("Submission_ID");
+  const statusIdx = data[0].indexOf("Status");
+  if (idIdx === -1 || statusIdx === -1) return {success: false, error: "Sheet layout error"};
+
+  const now = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm");
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][idIdx]) === String(submissionId)) {
+      ws.getRange(i + 1, statusIdx + 1).setValue("Refunded (" + now + ")");
+      return {success: true};
+    }
+  }
+  return {success: false, error: "Refund request not found"};
 }
 
 // ── KITCHEN SUMMARY ──────────────────────────────────────────
