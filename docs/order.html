@@ -2133,20 +2133,63 @@ async function loadExistingOrders(phone){
     
     const orders=(data.orders||[]);
     const today=todayISO();
-    const upcoming=orders.filter(o=>o.date>=today);
+    
+    // 1. Group by Date + Meal
+    const groups = {};
+    const MEAL_ORDER = { Breakfast: 1, Lunch: 2, Dinner: 3 };
+    
+    orders.forEach(o => {
+      if (o.date < today) return;
+      const key = `${o.date}_${o.meal}`;
+      if (!groups[key]) {
+        groups[key] = { 
+          ...o, 
+          rowIds: [o.rowId], 
+          summaryParts: [o.summary || "(items)"], 
+          totalSum: Number(o.total) || 0 
+        };
+      } else {
+        groups[key].rowIds.push(o.rowId);
+        groups[key].summaryParts.push(o.summary || "(items)");
+        groups[key].totalSum += Number(o.total) || 0;
+        if (o.enRouteAt) groups[key].enRouteAt = o.enRouteAt;
+        if (o.deliveredAt) groups[key].deliveredAt = o.deliveredAt;
+      }
+    });
+
+    // 2. Sort Groups: Date ASC, then Meal ASC
+    const upcoming = Object.values(groups).sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (MEAL_ORDER[a.meal] || 9) - (MEAL_ORDER[b.meal] || 9);
+    });
+
     if(!upcoming.length){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">${t('no_upcoming_orders')}</p>`;return;}
-    // Cache per-order data for edit/resubmit use
-    upcoming.forEach(o=>{
-      orderDataCache[o.rowId]={
-        area:o.area||"",wing:o.wing||"",flat:o.flat||"",floor:o.floor||"",
-        society:o.society||"",maps:o.maps||"",landmark:o.landmark||"",
-        items_json:o.items_json||"{}",notes:o.notes||"",
-        payment_preference:o.payment_preference||"Daily bill Payment",
-        customer_name:o.customer_name||"",
+    
+    // Cache per-order data
+    upcoming.forEach(g => {
+      // For merged editing, we combine their items into the first rowId's cache entry
+      let combinedItems = {};
+      g.rowIds.forEach(rid => {
+        const o = orders.find(x => x.rowId === rid);
+        if (o && o.items_json) {
+          try {
+            const parsed = JSON.parse(o.items_json);
+            Object.entries(parsed).forEach(([k, v]) => { combinedItems[k] = (combinedItems[k] || 0) + v; });
+          } catch(e) {}
+        }
+      });
+
+      orderDataCache[g.rowId] = {
+        area: g.area, wing: g.wing, flat: g.flat, floor: g.floor, society: g.society, maps: g.maps, landmark: g.landmark,
+        items_json: JSON.stringify(combinedItems), notes: g.notes || "",
+        payment_preference: g.payment_preference, customer_name: g.customer_name,
+        all_row_ids: g.rowIds // Store for batch cancel
       };
     });
+
     $("manageOrdersList").innerHTML=upcoming.map(o=>{
       const mealAvail=o.date>today||getMealAvailability(o.date)[o.meal];
+      const displaySummary = o.summaryParts.join(", ");
       
       let trackHtml="";
       if(o.deliveredAt) trackHtml=`<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>`;
@@ -2156,7 +2199,7 @@ async function loadExistingOrders(phone){
         <div class="omr-top">
           <div class="omr-info">
             <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
-            <div class="omr-sub">${o.summary||"(items)"} · ₹${o.total}</div>
+            <div class="omr-sub">${displaySummary} · ₹${o.totalSum}</div>
             ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
             ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
           </div>
@@ -2271,12 +2314,20 @@ function iedSet(rowId,colKey,val){
 async function resubmitOrder(rowId, date, meal){
   const items=Object.entries(editState[rowId]||{}).filter(([,q])=>q>0);
   if(!items.length){toast(t('toast_add_item'));return;}
-  // First delete the old row
+  
+  const cached=orderDataCache[rowId]||{};
+  const allIds = cached.all_row_ids || [rowId];
+
+  // Deleting multiple old rows if this was a consolidated group
   try{
-    const del=await fetch(APPS_SCRIPT_URL,{method:"POST",
-      body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
-    const dd=await del.json();if(!dd.success)throw new Error(dd.error||"Delete failed");
+    const delPromises = allIds.map(rid => 
+      fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid})})
+      .then(r => r.json())
+    );
+    const results = await Promise.all(delPromises);
+    if(results.some(r => !r.success)) throw new Error("Could not clear previous records");
   }catch(e){toast("Error: "+e.message,4000);return;}
+
   // Calculate subtotal for this meal
   const menu=S.menuCache[date]||{};
   let sub=0;
@@ -2325,13 +2376,27 @@ async function resubmitOrder(rowId, date, meal){
 }
 
 async function deleteOrder(rowId,date,meal){
-  if(!confirm(`Are you sure you want to completely cancel your ${meal} order for ${formatDate(date)}?\n\nBecause we are already procuring fresh ingredients for your specific meal, cancellations must be done before the cutoff time.\n\n(Note: If you have already paid for this order via UPI, the amount will be manually refunded back to you via Google Pay, or adjusted against your next 10-day bill.)`))return;
+  const cached = orderDataCache[rowId]||{};
+  const allIds = cached.all_row_ids || [rowId];
+  const count = allIds.length;
+  const confirmMsg = count > 1 
+    ? `Are you sure you want to completely cancel these ${count} combined ${meal} orders for ${formatDate(date)}?`
+    : `Are you sure you want to completely cancel your ${meal} order for ${formatDate(date)}?`;
+
+  if(!confirm(confirmMsg + `\n\nBecause we are already procuring fresh ingredients for your specific meal, cancellations must be done before the cutoff time.\n\n(Note: If you have already paid for this order via UPI, the amount will be manually refunded back to you via Google Pay, or adjusted against your next 10-day bill.)`))return;
+  
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",
-      body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId})});
-    const data=await res.json();
-    if(data.success){toast(t('toast_order_deleted'));loadExistingOrders(S.phone);}
-    else throw new Error(data.error);
+    const delPromises = allIds.map(rid => 
+      fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid})})
+      .then(r => r.json())
+    );
+    const results = await Promise.all(delPromises);
+    if (results.every(r => r.success)) {
+      toast(t('toast_order_deleted'));
+      loadExistingOrders(S.phone);
+    } else {
+      throw new Error("One or more orders could not be cancelled.");
+    }
   }catch(err){toast("Error: "+err.message,4000);}
 }
 
