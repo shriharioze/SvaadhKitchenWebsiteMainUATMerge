@@ -2353,7 +2353,6 @@ async function resubmitOrder(rowId, date, meal){
   });
   const mappedItems=items.map(([colKey,qty])=>({colKey,qty}));
   // Use original order's address; fall back to S.profile if not cached
-  const cached=orderDataCache[rowId]||{};
   const addr={
     wing:    cached.wing    ||S.profile.wing    ||"",
     flat:    cached.flat    ||S.profile.flat    ||"",
