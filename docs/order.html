@@ -1062,15 +1062,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// GLOBAL ERROR HANDLER
-// ═══════════════════════════════════════════════════════════
-window.onerror = function(msg, url, lineNo, columnNo, error) {
-  const errText = `FATAL ERROR: ${msg}\nLine: ${lineNo}, Column: ${columnNo}`;
-  console.error(errText, error);
-  alert(errText);
-  return false;
-};
 
 // ═══════════════════════════════════════════════════════════
 // CONFIG
