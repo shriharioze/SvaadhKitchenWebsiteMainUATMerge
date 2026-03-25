@@ -1203,8 +1203,15 @@ let S = {
 // ═══════════════════════════════════════════════════════════
 const $ = id => document.getElementById(id);
 const toISO = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-const getIST = () => new Date(Date.now()+5.5*3600000);
-const todayISO = () => { const t=getIST(); return toISO(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()); };
+const getIST = () => {
+  const now = new Date();
+  // Always return a Date object representing IST regardless of browser timezone
+  return new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
+};
+const todayISO = () => {
+  const t = getIST();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+};
 const formatDate = ds => new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
 function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
 

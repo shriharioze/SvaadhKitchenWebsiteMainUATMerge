@@ -356,14 +356,18 @@ function getOrCreateTab(ss, name, headers) {
   return ws;
 }
 
-function getISTTimestamp() {
+function getISTDate() {
   const now = new Date();
-  const ist = new Date(now.getTime() + 5.5 * 3600 * 1000);
-  return Utilities.formatDate(ist, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+  // Cross-environment IST Date object
+  return new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
+}
+
+function getISTTimestamp() {
+  return Utilities.formatDate(getISTDate(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
 }
 
 function generateSubmissionID() {
-  const ist = new Date(new Date().getTime() + 5.5 * 3600 * 1000);
+  const ist = getISTDate();
   const dateStr = Utilities.formatDate(ist, "Asia/Kolkata", "yyyyMMdd");
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `SK-${dateStr}-${rand}`;
@@ -465,8 +469,11 @@ function _calculateWalletBalance(phone) {
 
     if (rPhone === pStr && (rVer === "TRUE" || rVer === "YES" || rVer === "VERIFIED")) {
       let typeNorm = rType.toLowerCase();
-      if (typeNorm.includes("recharge")) balance += rAmt;
-      else if (typeNorm.includes("order") || typeNorm.includes("deduct") || typeNorm.includes("payment")) balance -= rAmt;
+      if (typeNorm.includes("recharge") || typeNorm.includes("refund") || typeNorm.includes("credit")) {
+        balance += rAmt;
+      } else if (typeNorm.includes("order") || typeNorm.includes("deduct") || typeNorm.includes("payment")) {
+        balance -= rAmt;
+      }
     }
   });
   return balance;
@@ -876,7 +883,7 @@ function deleteOrder(phone, rowId, refundType) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
-  const now = new Date(new Date().getTime() + 5.5 * 3600 * 1000);
+  const now = getISTDate();
   const today = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
   const hourIST = now.getHours() + now.getMinutes() / 60;
   const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
@@ -973,7 +980,7 @@ function get10DayRunning(phone) {
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
 
-  const now = new Date(new Date().getTime() + 5.5 * 3600 * 1000);
+  const now = getISTDate();
   const day = now.getDate();
   const y   = now.getFullYear();
   const m   = now.getMonth();

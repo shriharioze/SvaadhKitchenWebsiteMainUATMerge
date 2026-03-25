@@ -1704,7 +1704,7 @@ function startOrdersAutoRefresh() {
   _ordersNextAt = Date.now() + 5 * 60 * 1000;
   _ordersTimer  = setTimeout(async () => {
     const date  = document.getElementById("orderDatePicker").value;
-    const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
+    const today = toISO(getIST());
     if (date === today && document.getElementById("pageOrders").classList.contains("on")) {
       await loadOrderSummary();
     } else {
@@ -1715,7 +1715,7 @@ function startOrdersAutoRefresh() {
   _ordersTick = setInterval(() => {
     const badge = document.getElementById("ordersRefreshBadge");
     if (!badge) return;
-    const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
+    const today = toISO(getIST());
     if (document.getElementById("orderDatePicker").value !== today) {
       badge.textContent = ""; return;
     }
@@ -1788,17 +1788,17 @@ function switchPage(page) {
   if (page !== "orders") stopOrdersAutoRefresh();
   if (page === "orders") {
     const picker = document.getElementById("orderDatePicker");
-    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+    if (!picker.value) { picker.value = toISO(getIST()); }
     loadOrderSummary();
   }
   if (page === "packaging") {
     const picker = document.getElementById("pkgDatePicker");
-    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+    if (!picker.value) { picker.value = toISO(getIST()); }
     loadPackaging();
   }
   if (page === "labels") {
     const picker = document.getElementById("labelDate");
-    if (!picker.value) { picker.value = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10); }
+    if (!picker.value) { picker.value = toISO(getIST()); }
   }
   if (page === "reconcile") reconInit();
   if (page === "analytics") {
@@ -1821,7 +1821,7 @@ function switchPage(page) {
 // ════════════════════════════════════════════════════════
 function getIST() {
   const now = new Date();
-  return new Date(now.getTime() + 5.5*3600000);
+  return new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
 }
 function toISO(d) {
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -2318,8 +2318,8 @@ let reconState = { customers:[], matches:[], dateFrom:"", dateTo:"" };
 
 function reconInit() {
   if (document.getElementById("reconChips").childElementCount > 0) return; // already built
-  const ist = new Date(new Date().getTime() + 5.5*3600000);
-  const y = ist.getUTCFullYear(), m = ist.getUTCMonth(), d = ist.getUTCDate();
+  const ist = getIST();
+  const y = ist.getFullYear(), m = ist.getMonth(), d = ist.getDate();
   const lastDay = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
 
   const periods = [
