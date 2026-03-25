@@ -1143,6 +1143,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
       </div><!-- /pageCustomers -->
 
+      <!-- ════ PAGE: PAYMENTS ════ -->
+      <div class="page" id="pagePayments">
+        <div class="page-header">
+          <div class="page-title">Daily Payments <small>View and mark payments for a single date</small></div>
+        </div>
+        <div class="filter-bar">
+          <input type="date" id="payDate">
+          <button class="btn-primary" onclick="loadPayments()">Load</button>
+          <button class="btn-green" style="margin-left:auto;" onclick="markAllPaid()">✓ Mark All Paid</button>
+        </div>
+        <div id="payContent"></div>
       </div><!-- /pagePayments -->
 
       <!-- ════ PAGE: REFUNDS ════ -->
