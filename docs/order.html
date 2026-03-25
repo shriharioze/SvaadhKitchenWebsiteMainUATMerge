@@ -1368,7 +1368,7 @@ async function lookupCustomer(){
     if(data.found){
       const wb = Number(data.wallet_balance) || 0;
       toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
-      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
+      updateWalletBalanceUI(wb);
       S.isFirstTime=false;
       const parts=(data.name||"").trim().split(" ");
       const fn=parts[0]||"";
@@ -1424,6 +1424,25 @@ async function lookupCustomer(){
     $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
     S.step++;updateNav();window.scrollTo(0,0);
   }
+}
+
+function updateWalletBalanceUI(wb) {
+  S.walletBalance = wb; S.profile.wallet_balance = wb;
+  if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
+  if ($("walletBalDisplay")) $("walletBalDisplay").textContent = `₹${wb}`;
+  // Also update hissab if 10-day
+  if (S.is10Day && typeof fetchAndShowHissab === "function") fetchAndShowHissab(S.phone);
+}
+
+async function refreshWalletBalance() {
+  if (!S.phone) return;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.found) {
+      updateWalletBalanceUI(Number(data.wallet_balance) || 0);
+    }
+  } catch(e) { console.error("Balance refresh failed", e); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2517,7 +2536,14 @@ async function performActualDeletion(allIds, refundType) {
     );
     const results = await Promise.all(delPromises);
     if (results.every(r => r.success)) {
-      toast(t('toast_order_deleted'));
+      if (refundType === "wallet") {
+        toast("Order cancelled! Amount credited back to your wallet shortly. 🍰", 5000);
+        refreshWalletBalance();
+      } else if (refundType === "manual_upi") {
+        toast("Cancellation request sent. UPI refund will be processed within 24 hours. ✅", 5000);
+      } else {
+        toast(t('toast_order_deleted'));
+      }
       loadExistingOrders(S.phone);
     } else {
       throw new Error("One or more orders could not be cancelled.");
