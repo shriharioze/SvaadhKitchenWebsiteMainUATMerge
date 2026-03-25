@@ -1063,6 +1063,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
 <script>
 // ═══════════════════════════════════════════════════════════
+// GLOBAL ERROR HANDLER
+// ═══════════════════════════════════════════════════════════
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+  const errText = `FATAL ERROR: ${msg}\nLine: ${lineNo}, Column: ${columnNo}`;
+  console.error(errText, error);
+  alert(errText);
+  return false;
+};
+
+// ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
