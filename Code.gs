@@ -248,6 +248,14 @@ function doGet(e) {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPendingRefunds());
     }
+    if (action === "getPendingRecharges") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getPendingRecharges());
+    }
+    if (action === "getPendingUPIPayments") {
+      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getPendingUPIPayments());
+    }
     return jsonRes({error:"Unknown action"});
   } catch(err) {
     return jsonRes({error: err.message});
@@ -262,6 +270,10 @@ function doPost(e) {
     if (action === "markRefunded") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markRefunded(body.submissionId));
+    }
+    if (action === "approveWalletRecharge") {
+      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(approveWalletRecharge(body));
     }
     if (action === "deleteBreakfastItem") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
@@ -346,12 +358,25 @@ function getOrCreateTab(ss, name, headers) {
   let ws = ss.getSheetByName(name);
   if (!ws) {
     ws = ss.insertSheet(name);
-    ws.appendRow(headers);
-    ws.setFrozenRows(1);
-    ws.getRange(1, 1, 1, headers.length)
-      .setFontWeight("bold")
-      .setBackground("#c0392b")
-      .setFontColor("white");
+    if (headers && headers.length > 0) {
+      ws.appendRow(headers);
+      ws.setFrozenRows(1);
+      ws.getRange(1, 1, 1, headers.length)
+        .setFontWeight("bold")
+        .setBackground("#c0392b")
+        .setFontColor("white");
+    }
+  } else if (headers && headers.length > 0) {
+    // Sync headers: Ensure all requested headers exist in row 1
+    const currentHeaders = ws.getRange(1, 1, 1, Math.max(1, ws.getLastColumn())).getValues()[0];
+    headers.forEach(h => {
+      if (currentHeaders.indexOf(h) === -1) {
+        ws.getRange(1, ws.getLastColumn() + 1).setValue(h)
+          .setFontWeight("bold")
+          .setBackground("#c0392b")
+          .setFontColor("white");
+      }
+    });
   }
   return ws;
 }
@@ -2285,7 +2310,7 @@ function submitWalletRecharge(body) {
   if (!phone || isNaN(amount) || amount <= 0) return {success:false, error:"Invalid amount or phone"};
 
   var ss  = getSpreadsheet();
-  var ws  = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  var ws  = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
   
   // Unverified entry requiring admin to flip to TRUE
   ws.appendRow([
@@ -2298,6 +2323,70 @@ function submitWalletRecharge(body) {
   ]);
   
   return {success:true};
+}
+
+/**
+ * ADMIN: Fetch unverified wallet recharges
+ */
+function getPendingRecharges() {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
+  const rows = getAllRows(ws);
+  // Match "FALSE", "false", or empty
+  return rows.filter(r => {
+    const ver = String(r.Verified || "").toUpperCase();
+    const type = String(r.Balance || "").toLowerCase();
+    return (ver === "FALSE" || !ver) && type.includes("recharge");
+  });
+}
+
+/**
+ * ADMIN: Approve a wallet recharge
+ */
+function approveWalletRecharge(body) {
+  const phone = String(body.phone || "").trim();
+  const ts    = String(body.timestamp || "").trim();
+  if (!phone || !ts) return {success:false, error:"Missing phone or timestamp"};
+
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
+  const hIdx = headerIndex(ws);
+  const rows = ws.getDataRange().getValues();
+  const vCol = hIdx["Verified"];
+  const pCol = hIdx["Phone"];
+  const tCol = hIdx["Date Time"];
+
+  for (let i = 1; i < rows.length; i++) {
+    const rPhone = String(rows[i][pCol-1]).trim();
+    const rTs    = String(rows[i][tCol-1]).trim();
+    const rVer   = String(rows[i][vCol-1]).toUpperCase();
+
+    if (rPhone === phone && rTs === ts && rVer !== "TRUE") {
+      ws.getRange(i+1, vCol).setValue("TRUE");
+      return {success:true};
+    }
+  }
+  return {success:false, error:"Recharge request not found or already verified"};
+}
+
+/**
+ * ADMIN: Fetch all orders with "Pending" status (usually UPI)
+ */
+function getPendingUPIPayments() {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(ws);
+  // We want Payment_Status == "Pending" (NOT 10-Day Pending)
+  return rows.filter(r => String(r.Payment_Status).trim() === "Pending")
+             .map(r => ({
+               id: r.Submission_ID,
+               date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
+               customer: r.Customer_Name,
+               phone: r.Phone,
+               amount: r.Net_Total,
+               meal: r.Meal_Type,
+               timestamp: r.Submitted_At
+             }));
 }
 
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────

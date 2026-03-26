@@ -410,8 +410,6 @@ function renderCard(o, i, meal) {
   const hasMap      = o.maps && o.maps.startsWith("http");
   const hasPhone    = o.phone && o.phone.length >= 10;
   const isDelivered = !!o.deliveredAt;
-  const isPaid      = o.paymentStatus && o.paymentStatus.toLowerCase().includes("paid");
-  const isPostpaid  = o.paymentStatus === "10-Day Pending";
   const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your ${meal} has been delivered. Thank you! 🙏`);
   const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
@@ -430,12 +428,7 @@ function renderCard(o, i, meal) {
       ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
     </div>
     ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
-    ${o.amount > 0 ? `
-    <div class="amount-row">
-      <span class="amount-badge ${isPostpaid?"postpaid":""}">
-        ${isPaid ? `✅ Paid (₹${o.amount})` : (isPostpaid ? `💳 10-Day Billing (₹${o.amount})` : `⏳ Payment: ${o.paymentStatus} (₹${o.amount})`)}
-      </span>
-    </div>` : ""}
+
     <div class="card-actions">
       ${hasPhone
         ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`

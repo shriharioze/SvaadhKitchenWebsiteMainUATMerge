@@ -1809,7 +1809,11 @@ function buildBillScreen(){
     `<div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
   const wb = Number(S.walletBalance) || 0;
+  // S.walletMode is true if user HAS enough balance
   S.walletMode = (wb >= grandTotal && grandTotal > 0);
+  
+  // Default to wallet if enough balance, but allow override
+  if (S.paymentChoice === undefined) S.paymentChoice = S.walletMode ? "Wallet" : "UPI";
 
   // Debug: Ensure balance is visible if present
   if (wb > 0) {
@@ -1823,12 +1827,10 @@ function buildBillScreen(){
     $("walletCard").style.display="none";
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
-    // Show loading while fetching hissab
     $("hissabAmount").textContent="…";
     $("hissabPeriod").textContent=t('loading_account');
     fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${S.phone}`)
       .then(r=>r.json()).then(d=>{
-        // Running total from sheet + this order (not yet placed)
         const curTotal = (d.running || 0) + grandTotal;
         $("hissabAmount").textContent = `₹${curTotal}`;
         $("hissabPeriod").textContent = t('period_label',{p:d.period||getPeriodLabel(),amt:grandTotal});
@@ -1880,16 +1882,38 @@ function buildBillScreen(){
         $("hissabAmount").textContent = `₹${grandTotal}`;
         $("hissabPeriod").textContent = t('period_this_order',{amt:grandTotal,p:getPeriodLabel()});
       });
-  } else if (S.walletMode) {
-    $("walletCard").style.display="block";
-    $("paymentCard").style.display="none";
-    $("tenDayCard").style.display="none";
-    $("walletBalDisplay").textContent = `₹${wb}`;
   } else {
-    $("walletCard").style.display="none";
-    $("paymentCard").style.display="block";
+    // PREPAID logic (Daily Payer)
     $("tenDayCard").style.display="none";
-    setupUPI(grandTotal);
+    if (S.walletMode) {
+      $("walletCard").style.display = "block";
+      if (S.paymentChoice === "Wallet") {
+         $("paymentCard").style.display = "none";
+         $("walletCard").innerHTML = `
+           <h2 data-i18n="step5_wallet_title">${t('step5_wallet_title')}</h2>
+           <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;">
+             <div style="font-size:0.9rem;color:#1a6640;font-weight:700;margin-bottom:4px;">Available Balance: ₹${wb}</div>
+             <div style="font-size:0.75rem;color:#27ae60;margin-bottom:12px;">You have sufficient balance to pay ₹${grandTotal} for this order.</div>
+             <button onclick="S.paymentChoice='UPI';buildBillScreen();" class="btn btn-secondary" style="font-size:0.78rem;padding:6px;width:auto;margin:0 auto 10px;display:inline-block;">💳 Pay via UPI instead</button>
+           </div>
+         `;
+      } else {
+         $("paymentCard").style.display = "block";
+         setupUPI(grandTotal);
+         $("walletCard").innerHTML = `
+           <h2 data-i18n="step5_wallet_title">${t('step5_wallet_title')}</h2>
+           <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+             <div style="font-size:0.8rem;color:#1a6640;font-weight:600;">Wallet: ₹${wb}</div>
+             <button onclick="S.paymentChoice='Wallet';buildBillScreen();" class="btn btn-primary" style="font-size:0.7rem;padding:5px 10px;width:auto;margin:0;">Use Wallet</button>
+           </div>
+         `;
+      }
+    } else {
+      $("walletCard").style.display = "none";
+      $("paymentCard").style.display = "block";
+      S.paymentChoice = "UPI";
+      setupUPI(grandTotal);
+    }
   }
   $("btnNext").textContent=t('btn_place');
 }
@@ -2040,8 +2064,8 @@ async function submitWalletRecharge() {
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Failed");
-    
-    toast("Recharge initiated! Svaadh Kitchen Admin will verify and activate your balance shortly.", 6000);
+
+    toast(t('toast_recharge_submitted'), 7000);
     closeWalletRecharge();
   } catch(err) {
     toast("Error: " + err.message);
@@ -2109,7 +2133,10 @@ function setupUPI(amount){
 // ═══════════════════════════════════════════════════════════
 async function placeOrder(settleAll = false){
   let confirmEl=null;
-  if(S.walletMode) confirmEl = null;
+  // If using wallet (either via prepaid selection OR via 10-day settle button)
+  const isWalletOrder = settleAll || (S.paymentChoice === "Wallet" && !S.is10Day);
+
+  if(isWalletOrder) confirmEl = null;
   else if(S.is10Day) confirmEl=$("tenDayConfirm");
   else confirmEl=$("paidConfirm");
   
@@ -2136,8 +2163,8 @@ async function placeOrder(settleAll = false){
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
-    payment_method: (S.walletMode || settleAll) ? "Wallet" : (S.is10Day ? "10-Day Billing" : "UPI"),
-    payment_status: (S.walletMode || settleAll) ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
+    payment_method: isWalletOrder ? "Wallet" : (S.is10Day ? "10-Day Billing" : "UPI"),
+    payment_status: isWalletOrder ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
     settle_all: settleAll
   };
   const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
@@ -2145,7 +2172,12 @@ async function placeOrder(settleAll = false){
     const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload),signal:_pCtrl.signal});
     clearTimeout(_pTid);
     const data=await res.json();
-    if(data.success)showSuccess(data.submissionId);
+    if(data.success) {
+      if (payload.payment_status === "Pending") {
+        toast(t('toast_payment_submitted'), 7000);
+      }
+      showSuccess(data.submissionId);
+    }
     else throw new Error(data.error||"Unknown error");
   }catch(err){
     clearTimeout(_pTid);
