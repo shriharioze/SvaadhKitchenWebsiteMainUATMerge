@@ -3692,9 +3692,9 @@ async function loadPendingRecharges() {
           <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
         </td>
         <td style="font-weight:700;color:var(--green);">₹${r.Amount}</td>
-        <td style="font-size:0.8rem;color:var(--muted);">${r.Timestamp}</td>
+        <td style="font-size:0.8rem;color:var(--muted);">${r["Date Time"]}</td>
         <td>
-          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount})">Activate Credits</button>
+          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r["Date Time"]}', ${r.Amount})">Activate Credits</button>
         </td>
       </tr>`;
     });
