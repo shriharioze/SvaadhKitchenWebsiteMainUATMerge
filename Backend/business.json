@@ -48,7 +48,7 @@
     "note": "Discounts are applied automatically per day's total when you place an order online."
   },
   "payment": {
-    "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "Cash on Delivery (COD)", "10-Day post-paid cycle"],
+    "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "10-Day post-paid cycle"],
     "upi_id": "shriharioze07-1@okhdfcbank",
     "wallet": {
       "name": "Svaadh Wallet",
@@ -62,7 +62,7 @@
     "platform": "Website order form / PWA Mobile App",
     "order_url": "https://www.svaadhkitchen.in/order.html",
     "mobile_app": "You can install our website as a mobile app (PWA) on your phone. Click 'Install App' on the home page or order page for a home-screen icon and fast access.",
-    "process": "Open the order form → enter phone number → fill delivery address → pick dates on calendar → choose meals → review bill → pay via Wallet, UPI, or COD.",
+    "process": "Open the order form → enter phone number → fill delivery address → pick dates on calendar → choose meals → review bill → pay via Wallet or UPI.",
     "live_tracking": "Once an order is marked 'Out for Delivery' by our driver, you'll see a '🚗 Out for Delivery' badge in your 'View/Edit upcoming orders' dashboard.",
     "advance_ordering": "You can select multiple dates on the calendar to order for the whole week in one go.",
     "edit_cancel": "You can edit or cancel any order before the cutoff time using 'View/Edit existing orders' on the order form home screen.",

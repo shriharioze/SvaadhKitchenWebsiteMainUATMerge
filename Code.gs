@@ -154,13 +154,13 @@ const BUSINESS_CONTEXT = {
     note: "Discounts are applied automatically per day's total when placing an order."
   },
   payment: {
-    options: ["UPI", "Cash on Delivery (COD)", "10-Day post-paid cycle"],
+    options: ["Svaadh Wallet", "UPI", "10-Day post-paid cycle"],
     upi_id: "shriharioze07-1@okhdfcbank",
     ten_day: "Amount accumulates over 10 days (1–10, 11–20, 21–end of month), settled once at period end."
   },
   ordering: {
     order_url: "https://www.svaadhkitchen.in/order.html",
-    process: "Open the order form → enter phone number → fill address → pick dates → choose meals → review bill → pay via UPI or COD.",
+    process: "Open the order form → enter phone number → fill address → pick dates → choose meals → review bill → pay via Wallet or UPI.",
     advance: "Select multiple dates on the calendar to order for the full week in one go.",
     edit_cancel: "Use 'View/Edit existing orders' on the order form home screen to edit or cancel before the cutoff.",
     no_login: "No login needed — phone number is your identity. Details are saved automatically."
@@ -1801,7 +1801,7 @@ function buildSystemPrompt() {
     +"Self pickup also available (no delivery charge).\n"
     +"Uses Pure Ghee & Groundnut refined oil.\n"
     +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
-    +"Payment: UPI("+B.payment.upi_id+"), COD, 10-day billing.\n"
+    +"Payment: Wallet or UPI("+B.payment.upi_id+"), 10-day billing.\n"
     +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
     +"WhatsApp: "+B.contact.whatsapp+" | WA group: "+B.contact.whatsapp_group+"\n"
     +"Reply in customer's language(English/Hindi/Marathi). Be brief & warm."

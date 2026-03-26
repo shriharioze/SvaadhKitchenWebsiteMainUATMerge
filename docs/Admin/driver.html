@@ -52,14 +52,12 @@
   .progress-bar-fill{height:100%;background:#27ae60;border-radius:99px;transition:width 0.4s ease;}
   .progress-text{font-size:0.72rem;font-weight:700;color:#555;white-space:nowrap;}
   .progress-text.done{color:#27ae60;}
-  .cash-badge{font-size:0.72rem;font-weight:700;color:#e67e22;background:#fff8e1;padding:2px 8px;border-radius:99px;white-space:nowrap;}
-  .cash-badge.full{color:#27ae60;background:#eafaf1;}
+  /* cash-badge removed */
 
   /* ── AMOUNT BADGE ── */
   .amount-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-  .amount-badge{font-size:0.82rem;font-weight:700;padding:5px 12px;border-radius:8px;}
-  .amount-badge.collect{background:#fff3cd;color:#856404;}
-  .amount-badge.prepaid{background:#eafaf1;color:#27ae60;}
+  .amount-badge{font-size:0.82rem;font-weight:700;padding:5px 12px;border-radius:8px;background:#eafaf1;color:#27ae60;}
+  .amount-badge.postpaid{background:#e3f2fd;color:#1976d2;}
 
   /* ── CARD ACTIONS (3 buttons) ── */
   .btn-whatsapp{flex:1;background:#25d366;color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;display:block;}
@@ -72,7 +70,7 @@
   .done-title{font-size:1.3rem;font-weight:800;color:#27ae60;margin-bottom:4px;}
   .done-sub{font-size:0.82rem;color:#888;margin-bottom:20px;}
   .done-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
-  .done-stat{background:#f8f8f8;border-radius:12px;padding:12px 8px;}
+  .done-stat{background:#f8f8f8;border-radius:12px;padding:12px 8px;grid-column:span 2;}
   .done-stat-val{font-size:1.3rem;font-weight:800;color:#222;}
   .done-stat-lbl{font-size:0.68rem;color:#999;margin-top:2px;}
   .done-close{width:100%;padding:13px;background:#c0392b;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;}
@@ -172,7 +170,7 @@
   <div class="progress-strip" id="progressStrip" style="display:none;">
     <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
     <div class="progress-text" id="progressText">0 / 0</div>
-    <div class="cash-badge" id="cashBadge" style="display:none;"></div>
+    <!-- cash-badge removed -->
   </div>
 
   <!-- ALL DONE OVERLAY -->
@@ -372,17 +370,7 @@ function updateProgress(meal) {
   // Tab count shows remaining
   const remaining = total - done;
   document.getElementById("cnt_"+meal).textContent = remaining > 0 ? remaining : "✓";
-  // Cash badge — total to collect vs collected so far
-  const cashBadge = document.getElementById("cashBadge");
-  const totalCash = orders.reduce((s,o) => s + (o.paymentStatus !== "Paid" ? (o.amount||0) : 0), 0);
-  if (totalCash > 0) {
-    const collected = orders.filter(o=>o.deliveredAt && o.paymentStatus!=="Paid").reduce((s,o)=>s+(o.amount||0),0);
-    cashBadge.textContent = `💰 ₹${collected} / ₹${totalCash}`;
-    cashBadge.className   = "cash-badge" + (collected===totalCash ? " full" : "");
-    cashBadge.style.display = "";
-  } else {
-    cashBadge.style.display = "none";
-  }
+  // Cash badge logic removed
   // Check if all done
   if (done === total && total > 0) checkAllDone(meal);
 }
@@ -390,13 +378,8 @@ function updateProgress(meal) {
 function checkAllDone(meal) {
   const orders   = _ordersData[meal] || [];
   const total    = orders.length;
-  const totalCash = orders.reduce((s,o) => s + (o.paymentStatus!=="Paid"?(o.amount||0):0), 0);
-  const collected = orders.filter(o=>o.deliveredAt && o.paymentStatus!=="Paid").reduce((s,o)=>s+(o.amount||0),0);
-  const km        = _routeDists[meal];
-  document.getElementById("doneSub").textContent = `${meal} route complete!`;
   document.getElementById("doneStats").innerHTML = `
-    <div class="done-stat"><div class="done-stat-val">${total}</div><div class="done-stat-lbl">Deliveries</div></div>
-    <div class="done-stat"><div class="done-stat-val" style="color:#27ae60;">₹${collected}</div><div class="done-stat-lbl">Cash Collected</div></div>
+    <div class="done-stat"><div class="done-stat-val">${total}</div><div class="done-stat-lbl">Deliveries Completed</div></div>
     ${km ? `<div class="done-stat"><div class="done-stat-val">~${km} km</div><div class="done-stat-lbl">Estimated Route</div></div>` : ""}
     <div class="done-stat"><div class="done-stat-val">${fmtTime(new Date().toISOString())}</div><div class="done-stat-lbl">Finished At</div></div>
   `;
@@ -427,7 +410,8 @@ function renderCard(o, i, meal) {
   const hasMap      = o.maps && o.maps.startsWith("http");
   const hasPhone    = o.phone && o.phone.length >= 10;
   const isDelivered = !!o.deliveredAt;
-  const needsCash   = o.amount > 0 && o.paymentStatus !== "Paid";
+  const isPaid      = o.paymentStatus && o.paymentStatus.toLowerCase().includes("paid");
+  const isPostpaid  = o.paymentStatus === "10-Day Pending";
   const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your ${meal} has been delivered. Thank you! 🙏`);
   const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
@@ -448,8 +432,8 @@ function renderCard(o, i, meal) {
     ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
     ${o.amount > 0 ? `
     <div class="amount-row">
-      <span class="amount-badge ${needsCash?"collect":"prepaid"}">
-        ${needsCash ? `💰 Collect ₹${o.amount}` : `✅ Prepaid (₹${o.amount})`}
+      <span class="amount-badge ${isPostpaid?"postpaid":""}">
+        ${isPaid ? `✅ Paid (₹${o.amount})` : (isPostpaid ? `💳 10-Day Billing (₹${o.amount})` : `⏳ Payment: ${o.paymentStatus} (₹${o.amount})`)}
       </span>
     </div>` : ""}
     <div class="card-actions">

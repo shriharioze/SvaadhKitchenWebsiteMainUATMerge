@@ -61,7 +61,7 @@
   "servesCuisine": ["Vegetarian", "Indian", "Maharashtrian", "North Indian"],
   "priceRange": "₹",
   "currenciesAccepted": "INR",
-  "paymentAccepted": "UPI, Cash",
+  "paymentAccepted": "UPI",
   "openingHours": "Mo-Sa 07:00-21:00",
   "hasMenu": {
     "@type": "Menu",
@@ -558,7 +558,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div class="how-num">5</div>
       <div class="how-step-text">
         <h4 data-i18n="how_step5_title">Review your bill &amp; pay</h4>
-        <p data-i18n="how_step5_desc">See your full itemized bill with discounts applied automatically. Pay via UPI QR code, UPI app, or Cash on Delivery.</p>
+        <p data-i18n="how_step5_desc">See your full itemized bill with discounts applied automatically. Pay via UPI QR code or your preferred UPI app.</p>
       </div>
     </div>
 
@@ -911,12 +911,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       </div>
       <a id="upiDeepLink" href="#" class="btn btn-primary" style="text-decoration:none;margin-top:6px;font-size:1rem;">👆 Tap here to pay via UPI</a>
       <div class="upi-or" data-i18n="upi_or">or</div>
-      <button class="btn btn-secondary" id="codBtn" data-i18n="btn_cod_text">🏠 Cash on Delivery</button>
+      <!-- COD Button Removed -->
       <div style="margin-top:14px;">
         <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
           <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;">
-          <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has been made (or I've chosen COD)</span>
-          <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे (किंवा मी COD निवडले आहे)</span>
+          <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has been made</span>
+          <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</span>
         </label>
       </div>
     </div>
@@ -1195,7 +1195,7 @@ let S = {
            payment_preference:"Daily bill Payment"},
   selectedDates:[], menuCache:{}, orders:{},
   calYear:0, calMonth:0,
-  grandTotal:0, codMode:false, runningTotal:0, walletBalance:0,
+  grandTotal:0, runningTotal:0, walletBalance:0,
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1801,11 +1801,10 @@ function buildBillScreen(){
   }
   S.grandTotal=grandTotal;
   // Reset payment confirmation state
-  S.codMode=false;
+  // codMode removed
   const paidCb=$("paidConfirm");if(paidCb)paidCb.checked=false;
   const tenCb=$("tenDayConfirm");if(tenCb)tenCb.checked=false;
-  const codBtnEl=$("codBtn");
-  if(codBtnEl){codBtnEl.textContent="🏠 Cash on Delivery";codBtnEl.style.background="";}
+  // codBtn logic removed
   $("billSummaryContent").innerHTML=html+
     `<div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
@@ -2102,12 +2101,7 @@ function setupUPI(amount){
     deepLinkBtn.textContent=t('upi_pay_btn',{amt:amount});
   }
 
-  $("codBtn").onclick=()=>{
-    S.codMode=!S.codMode;
-    $("codBtn").textContent=S.codMode?t('cod_selected'):t('btn_cod_text');
-    $("codBtn").style.background=S.codMode?"#f0faf4":"";
-    $("paidConfirm").checked=S.codMode;
-  };
+  // codBtn event handlers removed
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2142,7 +2136,7 @@ async function placeOrder(settleAll = false){
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
-    payment_method: (S.walletMode || settleAll) ? "Wallet" : (S.is10Day ? "10-Day Billing" : (S.codMode ? "COD" : "UPI")),
+    payment_method: (S.walletMode || settleAll) ? "Wallet" : (S.is10Day ? "10-Day Billing" : "UPI"),
     payment_status: (S.walletMode || settleAll) ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
     settle_all: settleAll
   };
