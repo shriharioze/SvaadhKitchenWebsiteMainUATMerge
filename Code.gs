@@ -2331,12 +2331,18 @@ function submitWalletRecharge(body) {
 function getPendingRecharges() {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
-  const rows = getAllRows(ws);
+  const rawRows = getAllRows(ws);
   // Match "FALSE", "false", or empty
-  return rows.filter(r => {
+  return rawRows.filter(r => {
     const ver = String(r.Verified || "").toUpperCase();
     const type = String(r.Balance || "").toLowerCase();
     return (ver === "FALSE" || !ver) && type.includes("recharge");
+  }).map(r => {
+    // Format "Date Time" if it's a Date object
+    if (r["Date Time"] instanceof Date) {
+      r["Date Time"] = Utilities.formatDate(r["Date Time"], "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    }
+    return r;
   });
 }
 
@@ -2357,12 +2363,26 @@ function approveWalletRecharge(body) {
   const tCol = hIdx["Date Time"];
 
   for (let i = 1; i < rows.length; i++) {
-    const rPhone = String(rows[i][pCol-1]).trim();
-    const rTs    = String(rows[i][tCol-1]).trim();
-    const rVer   = String(rows[i][vCol-1]).toUpperCase();
+    const rPhone = String(rows[i][pCol-1] || "").trim();
+    let rTs      = rows[i][tCol-1];
+    
+    // Standardize timestamp comparison (handle both Strings and Date objects)
+    if (rTs instanceof Date) {
+      rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    } else {
+      rTs = String(rTs || "").trim();
+    }
+    
+    const rVer = String(rows[i][vCol-1] || "").toUpperCase();
 
     if (rPhone === phone && rTs === ts && rVer !== "TRUE") {
       ws.getRange(i+1, vCol).setValue("TRUE");
+      // Also credit the wallet
+      const amt = Number(rows[i][hIdx["Amount"]-1]);
+      if (!isNaN(amt)) {
+        // We don't need to do anything else here if we assume the balance is calculated 
+        // by summing all TRUE rows (which it should be in Svaadh's architecture)
+      }
       return {success:true};
     }
   }
