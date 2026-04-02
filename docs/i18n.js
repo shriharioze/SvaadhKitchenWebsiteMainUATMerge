@@ -42,8 +42,8 @@
     label_payment_pref: "Payment Preference",
     payment_pref_can_change: "(can change anytime)",
     payment_daily_opt: "Daily Payment",
-    payment_10day_opt: "10-Day Cycle (Post-paid)",
-    payment_helper: "💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars",
+    payment_10day_opt: "Prepaid Wallet Billing",
+    payment_helper: "💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>Prepaid:</strong> auto-deducts per order from your loaded Svaadh Wallet balance.",
     step2_addr_title: "📍 Delivery Address",
     same_addr_label: "Same address for all meals (Breakfast, Lunch & Dinner)",
     label_area: "Delivery Area *",
@@ -80,15 +80,15 @@
     step5_wallet_title: "💼 Svaadh Wallet Balance",
     paid_confirm_label: "✅ Payment complete — I confirm payment has been made",
 
-    // ── Step 5 — 10-Day Hissab ───────────────────────────
-    step5_hissab_title: "📒 Your Account",
+    // ── Step 5 — Prepaid Wallet Hissab ────────────────────────
+    step5_hissab_title: "📒 Your Wallet Account",
     prev_due_heading: "⚠️ Previous period due",
     prev_due_paid_note: "✅ Already paid? Ignore this — we'll update your account within 1–2 days.",
     pay_now_heading: "💳 Pay now",
     screenshot_whatsapp: "After payment, send screenshot on WhatsApp:",
     hissab_card_label: "Total owed this period",
-    hissab_msg_html: "✅ This order is recorded in your account. No payment needed now — settle once at period end.",
-    tenday_warning_html: "⚠️ <strong>Pay at period end.</strong> Each transaction is verified manually. Please pay only after the period ends.",
+    hissab_msg_html: "✅ This order is automatically deducted from your Prepaid Wallet balance.",
+    tenday_warning_html: "⚠️ <strong>Maintain Balance.</strong> Orders require sufficient Wallet balance to process.",
     tenday_confirm_label: "I agree to pay at the end of this billing period",
 
     // ── Success screen ────────────────────────────────────

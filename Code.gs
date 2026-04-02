@@ -154,9 +154,9 @@ const BUSINESS_CONTEXT = {
     note: "Discounts are applied automatically per day's total when placing an order."
   },
   payment: {
-    options: ["Svaadh Wallet (Prepaid)", "UPI", "10-Day prepaid cycle"],
+    options: ["Svaadh Wallet (Prepaid)", "UPI", "Prepaid Wallet Billing"],
     upi_id: "shriharioze07-1@okhdfcbank",
-    ten_day: "10-Day billing now works via Svaadh Wallet. Customers must keep their wallet balance topped up, and orders are deducted immediately."
+    prepaid_wallet: "Prepaid Wallet Billing operates as a prepaid wallet. Customers must maintain a top-up balance, and orders are deducted immediately."
   },
   ordering: {
     order_url: "https://www.svaadhkitchen.in/order.html",

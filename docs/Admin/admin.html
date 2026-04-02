@@ -712,7 +712,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
       <button class="topbar-btn" id="navReconcile" onclick="switchPage('reconcile')">💰 Reconcile</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
-      <button class="topbar-btn" id="nav10Day" onclick="switchPage('tenday')">🗓️ 10-Day</button>
+      <button class="topbar-btn" id="nav10Day" onclick="switchPage('tenday')">💼 Prepaid Accounts</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
@@ -1077,7 +1077,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <!-- ════ PAGE: 10-DAY BILLING ════ -->
       <div class="page" id="pageTenday">
         <div class="page-header">
-          <div class="page-title">10-Day Billing <small>Who owes what for the billing cycle</small></div>
+          <div class="page-title">Prepaid Wallet Accounts <small>Customer balances and spending patterns</small></div>
         </div>
         <div class="billing-period-chips">
           <button class="chip" onclick="tendaySetPeriod('1-10')">1–10 this month</button>
@@ -1126,7 +1126,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
             <button class="chip sel" id="hf-all"     onclick="setHistFilter('all')">All</button>
             <button class="chip"     id="hf-paid"    onclick="setHistFilter('Paid')">✓ Paid</button>
             <button class="chip"     id="hf-pending" onclick="setHistFilter('Pending')">⏳ Pending</button>
-            <button class="chip"     id="hf-tenday"  onclick="setHistFilter('10-Day Pending')">📒 10-Day</button>
+            <button class="chip"     id="hf-tenday"  onclick="setHistFilter('10-Day Pending')">💼 Wallet Old</button>
             <span id="histRowCount" style="margin-left:auto;font-size:.78rem;color:var(--muted);"></span>
           </div>
         </div>
@@ -2212,7 +2212,7 @@ function renderOrderSummary(data) {
 
     const payBadge = s => {
       if (s === "Paid" || s === "Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
-      if (s === "10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
+      if (s === "10-Day Pending") return `<span class="pay-badge tenday">💼 Wallet Old</span>`;
       return `<span class="pay-badge pending">⏳ Pending</span>`;
     };
 
@@ -3353,7 +3353,7 @@ function renderHistTable() {
   const mChip = m => { const c=m==="Breakfast"?"bf":m==="Lunch"?"ln":"dn"; return `<span class="meal-chip ${c}">${m}</span>`; };
   const pBadge = s => {
     if (s==="Paid" || s==="Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
-    if (s==="10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
+    if (s==="10-Day Pending") return `<span class="pay-badge tenday">💼 Wallet Old</span>`;
     return `<span class="pay-badge pending">⏳ Pending</span>`;
   };
   const th = (label, colKey, align="") => {
@@ -3471,7 +3471,7 @@ function renderCustomerDetail(data) {
   const mChip = m => { const c=m==="Breakfast"?"bf":m==="Lunch"?"ln":"dn"; return `<span class="meal-chip ${c}">${m}</span>`; };
   const pBadge = s => {
     if (s==="Paid" || s==="Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
-    if (s==="10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
+    if (s==="10-Day Pending") return `<span class="pay-badge tenday">💼 Wallet Old</span>`;
     return `<span class="pay-badge pending">⏳ Pending</span>`;
   };
   const rows = data.orders.map(o => {

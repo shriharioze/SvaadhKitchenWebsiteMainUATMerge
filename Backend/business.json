@@ -48,7 +48,7 @@
     "note": "Discounts are applied automatically per day's total when you place an order online."
   },
   "payment": {
-    "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "10-Day prepaid cycle"],
+    "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "Prepaid Wallet Billing"],
     "upi_id": "shriharioze07-1@okhdfcbank",
     "wallet": {
       "name": "Svaadh Wallet",
@@ -56,7 +56,7 @@
       "benefit": "Enables 1-tap ordering without paying every time. Balance is visible at the top-right of the order page from Step 2 onwards.",
       "refunds": "Order cancellations instantly refund the amount back into your Svaadh Wallet."
     },
-    "ten_day_cycle": "10-Day billing operates as a prepaid wallet. You must load money into your Svaadh Wallet beforehand. Each order is then immediately deducted from your wallet balance flawlessly. If your balance is low, you can pay via UPI instantly or recharge your wallet."
+    "prepaid_wallet_billing": "Prepaid Wallet Billing operates as a prepaid wallet. You must load money into your Svaadh Wallet beforehand. Each order is then immediately deducted from your wallet balance. If your balance is low, you can pay via UPI instantly or recharge your wallet."
   },
   "ordering": {
     "platform": "Website order form / PWA Mobile App",
