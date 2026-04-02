@@ -42,7 +42,7 @@
     label_payment_pref: "Payment Preference",
     payment_pref_can_change: "(can change anytime)",
     payment_daily_opt: "Daily Payment",
-    payment_10day_opt: "Prepaid Wallet Billing",
+    payment_prepaid_opt: "Prepaid Wallet Billing",
     payment_helper: "💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>Prepaid:</strong> auto-deducts per order from your loaded Svaadh Wallet balance.",
     step2_addr_title: "📍 Delivery Address",
     same_addr_label: "Same address for all meals (Breakfast, Lunch & Dinner)",
