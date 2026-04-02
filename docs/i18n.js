@@ -89,7 +89,7 @@
     hissab_card_label: "Total owed this period",
     hissab_msg_html: "✅ This order is automatically deducted from your Prepaid Wallet balance.",
     tenday_warning_html: "⚠️ <strong>Maintain Balance.</strong> Orders require sufficient Wallet balance to process.",
-    tenday_confirm_label: "I agree to pay at the end of this billing period",
+    tenday_confirm_label: "I confirm to deduct this from my Wallet",
 
     // ── Success screen ────────────────────────────────────
     success_title: "Order Placed!",
