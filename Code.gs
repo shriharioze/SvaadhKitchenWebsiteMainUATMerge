@@ -455,7 +455,7 @@ function getCustomer(phone) {
     society:            r.Society || "",
     maps:               r.Maps_Link || "",
     landmark:           r.Landmark || "",
-    payment_preference: r.Payment_Freq || "Daily bill Payment",
+    payment_preference: r.Payment_Freq || "Daily Payment",
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -640,7 +640,7 @@ function submitOrder(body) {
   const payMethod    = body.payment_method  || "UPI";
   const payStatus    = body.payment_status  || "Pending";
   const firstTime    = profile.isFirstTime ? "Yes" : "No";
-  const payFreq      = profile.payment_preference || "Daily bill Payment";
+  const payFreq      = profile.payment_preference || "Daily Payment";
 
   // Build the header→index map once
   const hIdx = headerIndex(ordersWs);
@@ -779,8 +779,7 @@ function submitOrder(body) {
     _settlePendingInternal(ss, profile.phone, profile.name || "Customer");
   }
 
-  // Update customer ledger (10-day)
-  if (payFreq === "Post paid bill payment for every 10 days" || payFreq.includes("10 days")) {
+  if (payFreq === "Prepaid Wallet" || payFreq.includes("10 days") || payFreq.includes("Wallet")) {
     try { _updateLedger(ss, profile, orders); } catch(e) { /* non-fatal */ }
   }
 
@@ -852,7 +851,7 @@ function _upsertCustomer(ss, profile) {
       fullAddr,
       profile.maps    || "",
       profile.landmark|| "",
-      profile.payment_preference || "Daily bill Payment",
+      profile.payment_preference || "Daily Payment",
       getISTTimestamp(),
       ""   // Ledger_Sheet_ID filled later
     ]);
@@ -905,7 +904,7 @@ function getCustomerOrders(phone) {
         landmark:           r.Landmark           || "",
         items_json:         r.Items_JSON         || "{}",
         notes:              r.Special_Notes      || "",
-        payment_preference: r.Payment_Freq       || "Daily bill Payment",
+        payment_preference: r.Payment_Freq       || "Daily Payment",
         payment_status:     r.Payment_Status     || "",
         payment_method:     r.Payment_Method     || "UPI",
         enRouteAt:          delTracker.enRouteAt || null,

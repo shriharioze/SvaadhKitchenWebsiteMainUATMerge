@@ -692,8 +692,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div class="form-group">
       <label><span data-i18n="label_payment_pref">Payment Preference</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="payment_pref_can_change">(can change anytime)</span></label>
       <select id="payFreqSelect">
-        <option value="Daily bill Payment" data-i18n="payment_daily_opt">Daily Payment</option>
-        <option value="Post paid bill payment for every 10 days" data-i18n="payment_10day_opt">10-Day Cycle (Post-paid)</option>
+        <option value="Daily Payment" data-i18n="payment_daily_opt">Daily Payment</option>
+        <option value="Prepaid Wallet" data-i18n="payment_prepaid_opt">Prepaid Wallet Billing</option>
       </select>
       <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;" data-i18n-html="payment_helper">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars</p>
     </div>
@@ -1193,7 +1193,7 @@ const BREAKFAST_COL_MAP = {
 let S = {
   step:0, phone:"", isFirstTime:true, is10Day:false, sameAddr:true,
   profile:{name:"",first_name:"",last_name:"",area:"",wing:"",flat:"",floor:"",society:"",maps:"",landmark:"",
-           payment_preference:"Daily bill Payment"},
+           payment_preference:"Daily Payment"},
   selectedDates:[], menuCache:{}, orders:{},
   calYear:0, calMonth:0,
   grandTotal:0, runningTotal:0, walletBalance:0,
@@ -1358,7 +1358,7 @@ function validate(step){
         payment_preference:$("payFreqSelect").value};
       S.mealAddrs={Breakfast:bf,Lunch:l,Dinner:d};
     }
-    S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
+    S.is10Day=S.profile.payment_preference==="Prepaid Wallet";
   }
   return true;
 }
@@ -1384,9 +1384,9 @@ async function lookupCustomer(){
       S.profile={...S.profile,name:data.name||"",first_name:fn,last_name:ln,
         area:data.area||"",wing:data.wing||"",
         flat:data.flat||"",floor:data.floor||"",society:data.society||"",
-        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily bill Payment"};
+        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily Payment"};
       S.walletBalance=wb;
-      S.is10Day=S.profile.payment_preference==="Post paid bill payment for every 10 days";
+      S.is10Day=S.profile.payment_preference==="Prepaid Wallet";
       $("returningBadge").innerHTML=`<div class="customer-badge">
         <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
         <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
@@ -2176,8 +2176,8 @@ async function placeOrder(settleAll = false){
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
-    payment_method: isWalletOrder ? "Wallet" : (S.tempUpiMode ? "UPI" : (S.is10Day ? "10-Day Billing" : "UPI")),
-    payment_status: isWalletOrder ? "Paid" : (S.tempUpiMode ? "Pending" : (S.is10Day ? "10-Day Pending" : "Pending")),
+    payment_method: isWalletOrder ? "Wallet" : "UPI",
+    payment_status: isWalletOrder ? "Paid" : "Pending",
     settle_all: settleAll
   };
   const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
@@ -2471,7 +2471,7 @@ async function resubmitOrder(rowId, date, meal){
     landmark:cached.landmark||S.profile.landmark||"",
   };
   const customerName=cached.customer_name||S.profile.name||"Customer";
-  const payPref=cached.payment_preference||S.profile.payment_preference||"Daily bill Payment";
+  const payPref=cached.payment_preference||S.profile.payment_preference||"Daily Payment";
   const payload={
     profile:{name:customerName,phone:S.phone,
       address:buildAddr(addr.wing,addr.flat,addr.floor,addr.society,addr.area),

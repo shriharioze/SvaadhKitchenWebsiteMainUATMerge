@@ -55,8 +55,8 @@ def update_customer_info():
 
     # Map payment freq → Daily? flag (keeps backward compat with dispatch/accounting)
     freq_map = {
-        "Daily bill Payment":                       "Yes",
-        "Post paid bill payment for every 10 days": "No",
+        "Daily Payment":                            "Yes",
+        "Prepaid Wallet":                           "No",
         "Will decide later?":                       "Yes",
     }
     new_df["Daily?"] = new_df["Payment_Freq"].map(freq_map).fillna("Yes")
