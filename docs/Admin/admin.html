@@ -2211,7 +2211,7 @@ function renderOrderSummary(data) {
     if (!m) return;
 
     const payBadge = s => {
-      if (s === "Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
+      if (s === "Paid" || s === "Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
       if (s === "10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
       return `<span class="pay-badge pending">⏳ Pending</span>`;
     };
@@ -3352,7 +3352,7 @@ function renderHistTable() {
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
   const mChip = m => { const c=m==="Breakfast"?"bf":m==="Lunch"?"ln":"dn"; return `<span class="meal-chip ${c}">${m}</span>`; };
   const pBadge = s => {
-    if (s==="Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
+    if (s==="Paid" || s==="Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
     if (s==="10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
     return `<span class="pay-badge pending">⏳ Pending</span>`;
   };
@@ -3470,7 +3470,7 @@ function renderCustomerDetail(data) {
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
   const mChip = m => { const c=m==="Breakfast"?"bf":m==="Lunch"?"ln":"dn"; return `<span class="meal-chip ${c}">${m}</span>`; };
   const pBadge = s => {
-    if (s==="Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
+    if (s==="Paid" || s==="Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
     if (s==="10-Day Pending") return `<span class="pay-badge tenday">📒 10-Day</span>`;
     return `<span class="pay-badge pending">⏳ Pending</span>`;
   };

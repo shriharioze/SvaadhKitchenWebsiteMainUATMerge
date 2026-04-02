@@ -154,9 +154,9 @@ const BUSINESS_CONTEXT = {
     note: "Discounts are applied automatically per day's total when placing an order."
   },
   payment: {
-    options: ["Svaadh Wallet", "UPI", "10-Day post-paid cycle"],
+    options: ["Svaadh Wallet (Prepaid)", "UPI", "10-Day prepaid cycle"],
     upi_id: "shriharioze07-1@okhdfcbank",
-    ten_day: "Amount accumulates over 10 days (1–10, 11–20, 21–end of month), settled once at period end."
+    ten_day: "10-Day billing now works via Svaadh Wallet. Customers must keep their wallet balance topped up, and orders are deducted immediately."
   },
   ordering: {
     order_url: "https://www.svaadhkitchen.in/order.html",
@@ -476,14 +476,18 @@ function _calculateWalletBalance(phone) {
     let rAmt   = 0;
     let rVer   = "";
     
-    // Header-agnostic mapping using substring matching
+    // Header-agnostic mapping using substring matching, ignore empty cells
     for (let key in w) {
+      if (key === "_row") continue;
       let kl = key.toLowerCase();
-      let val = w[key];
-      if (kl.includes("phone") || kl.includes("mobile")) rPhone = String(val).trim();
-      else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = String(val).trim();
-      else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
-      else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = String(val).trim().toUpperCase();
+      let val = String(w[key]).trim();
+      
+      if (val !== "") { // Crucial fix: prevents trailing empty columns from overwriting legitimate match
+        if (kl.includes("phone") || kl.includes("mobile")) rPhone = val;
+        else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = val;
+        else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
+        else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = val.toUpperCase();
+      }
     }
 
     // Standardize phone (remove decimals if numeric)
@@ -598,6 +602,33 @@ function getWeeklyMenu() {
   return { success: true, days: days };
 }
 
+// ── WALLET LOGIC ───────────────────────────────────────────────
+function _appendWalletTransaction(phone, name, txnType, amount, isVerified) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const hIdx = headerIndex(ws);
+  const totalCols = Math.max(6, ws.getLastColumn());
+  const row = new Array(totalCols).fill("");
+  
+  const setBySub = (subs, val) => {
+     let colNum = null;
+     Object.keys(hIdx).forEach(th => {
+       const hl = String(th).toLowerCase();
+       if (subs.some(s => hl.includes(s))) colNum = hIdx[th];
+     });
+     if (colNum) row[colNum - 1] = val;
+  };
+  
+  setBySub(["phone", "mobile"], phone);
+  setBySub(["name", "customer"], name);
+  setBySub(["txn", "balance", "type"], txnType);
+  setBySub(["amount", "amt"], amount);
+  setBySub(["verif", "status", "approved"], isVerified ? "TRUE" : "FALSE");
+  setBySub(["time", "date", "timestamp"], getISTTimestamp());
+  
+  ws.appendRow(row);
+}
+
 // ── SUBMIT ORDER ─────────────────────────────────────────────
 function submitOrder(body) {
   const ss = getSpreadsheet();
@@ -701,15 +732,7 @@ function submitOrder(body) {
         let currentBalance = _calculateWalletBalance(profile.phone);
         
         if (currentBalance >= netTotal) {
-          const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-          walletWs.appendRow([
-            profile.phone || "",
-            profile.name || "Customer",
-            "Order Deduction",
-            netTotal,
-            "TRUE", // System transactions are automatically verified
-            getISTTimestamp()
-          ]);
+          _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true);
           pStat = "Wallet Paid";
         } else {
           pStat = "Pending"; // Wallet failed, fallback to pending
@@ -784,8 +807,7 @@ function _settlePendingInternal(ss, phone, custName) {
   if (totalDue <= 0) return;
 
   // Log Deduction
-  const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
-  walletWs.appendRow([ phone, custName, "Order Deduction", Math.round(totalDue * 100)/100, "TRUE", getISTTimestamp() ]);
+  _appendWalletTransaction(phone, custName, "Order Deduction", Math.round(totalDue * 100)/100, true);
 
   // Mark all as Paid
   unpaid.forEach(r => { ws.getRange(r._row, payCol).setValue("Wallet Paid"); });
@@ -932,14 +954,14 @@ function deleteOrder(phone, rowId, refundType) {
   }
 
   // GRACEFUL REFUND HANDLING
-  if (String(r.Payment_Status).toLowerCase() === "paid") {
+  const pStatStr = String(r.Payment_Status).toLowerCase();
+  if (pStatStr === "paid" || pStatStr === "wallet paid") {
     const refundAmt = Number(r.Net_Total) || 0;
     const custName = r.Customer_Name || "Customer";
     
     if (refundType === "wallet") {
       // 1-click instant refund to Svaadh Wallet
-      const walletWs = getOrCreateTab(ss, TAB_WALLET, ["Phone","Name","Type","Amount","Approved","Timestamp"]);
-      walletWs.appendRow([phone, custName, "Order Cancellation Refund", refundAmt, "TRUE", now]);
+      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true);
     } 
     else if (refundType === "manual_upi") {
       // Log for Admin to handle manually (24h promise)
@@ -1611,7 +1633,7 @@ function getOrderSummary(date) {
 
     m.count++;
     m.revenue += net;
-    if (payStatus === "Paid") m.paid += net; else m.pending += net;
+    if (payStatus === "Paid" || payStatus === "Wallet Paid") m.paid += net; else m.pending += net;
     m.customers.push({
       id:        String(r.Submission_ID || ""),
       name:      String(r.Customer_Name || ""),
@@ -1626,7 +1648,7 @@ function getOrderSummary(date) {
 
     totals.orders++;
     totals.revenue += net;
-    if (payStatus === "Paid") totals.paid += net; else totals.pending += net;
+    if (payStatus === "Paid" || payStatus === "Wallet Paid") totals.paid += net; else totals.pending += net;
     if (!customerSet[String(r.Phone)]) { customerSet[String(r.Phone)] = true; totals.customers++; }
   });
 
@@ -1826,7 +1848,7 @@ function buildSystemPrompt() {
     +"Self pickup also available (no delivery charge).\n"
     +"Uses Pure Ghee & Groundnut refined oil.\n"
     +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
-    +"Payment: Wallet or UPI("+B.payment.upi_id+"), 10-day billing.\n"
+    +"Payment: Wallet (Prepaid) or UPI("+B.payment.upi_id+"), 10-day prepaid cycle (requires wallet balance).\n"
     +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
     +"WhatsApp: "+B.contact.whatsapp+" | WA group: "+B.contact.whatsapp_group+"\n"
     +"Reply in customer's language(English/Hindi/Marathi). Be brief & warm."
@@ -1953,7 +1975,7 @@ function getOrderHistory(p) {
 
   var filtered = rows.filter(function(r) {
     var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo;
+    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
   });
 
   var orders = filtered.map(function(r) {
@@ -1971,7 +1993,7 @@ function getOrderHistory(p) {
   });
 
   var totalRev     = orders.reduce(function(s,o){return s+o.total;},0);
-  var totalPaid    = orders.filter(function(o){return o.status==="Paid";}).reduce(function(s,o){return s+o.total;},0);
+  var totalPaid    = orders.filter(function(o){return String(o.status)==="Paid" || String(o.status)==="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0);
   var uniqueCusts  = Object.keys(orders.reduce(function(m,o){m[o.phone]=1;return m;},{})).length;
 
   return {
@@ -1999,6 +2021,7 @@ function getCustomerList() {
 
   var map = {};
   rows.forEach(function(r) {
+    if (String(r.Payment_Status) === "Cancelled") return;
     var phone = String(r.Phone||"").trim();
     if (!phone) return;
     var d = fmtDate(r.Order_Date);
@@ -2009,7 +2032,7 @@ function getCustomerList() {
     }
     map[phone].orderCount++;
     map[phone].totalSpent += Number(r.Net_Total)||0;
-    if (r.Payment_Status !== "Paid") map[phone].pendingAmt += Number(r.Net_Total)||0;
+    if (String(r.Payment_Status) !== "Paid" && String(r.Payment_Status) !== "Wallet Paid") map[phone].pendingAmt += Number(r.Net_Total)||0;
     if (d > map[phone].lastDate) {
       map[phone].lastDate = d;
       map[phone].name = String(r.Customer_Name||map[phone].name).trim();
@@ -2054,8 +2077,9 @@ function getCustomerHistory(phone) {
   var name       = rows.length ? String(rows[0].Customer_Name||"").trim() : "";
   var area       = rows.length ? String(rows[0].Area||"").trim() : "";
   var payFreq    = rows.length ? String(rows[0].Payment_Freq||"").trim() : "";
-  var totalSpent = Math.round(orders.reduce(function(s,o){return s+o.total;},0));
-  var pending    = Math.round(orders.filter(function(o){return o.status!=="Paid";}).reduce(function(s,o){return s+o.total;},0));
+  var activeOrders = orders.filter(function(o){return String(o.status)!=="Cancelled";});
+  var totalSpent = Math.round(activeOrders.reduce(function(s,o){return s+o.total;},0));
+  var pending    = Math.round(activeOrders.filter(function(o){return String(o.status)!=="Paid" && String(o.status)!=="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0));
 
   return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
           orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length};
@@ -2071,7 +2095,7 @@ function getDatePayments(date) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
-  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date;});
+  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && String(r.Payment_Status)!=="Cancelled";});
 
   var map = {};
   rows.forEach(function(r) {
@@ -2081,7 +2105,7 @@ function getDatePayments(date) {
       payFreq:String(r.Payment_Freq||"").trim(), meals:[], total:0, allPaid:true};
     map[phone].meals.push(r.Meal_Type);
     map[phone].total += Number(r.Net_Total)||0;
-    if (String(r.Payment_Status)!=="Paid") map[phone].allPaid = false;
+    if (String(r.Payment_Status)!=="Paid" && String(r.Payment_Status)!=="Wallet Paid") map[phone].allPaid = false;
   });
 
   var customers = Object.values(map).map(function(c) {
@@ -2171,7 +2195,7 @@ function getAnalytics(p) {
   var itemCounts={};
   rows.forEach(function(r) {
     var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
-    totalRev+=net; if(String(r.Payment_Status)==="Paid") totalPaid+=net;
+    totalRev+=net; if(String(r.Payment_Status)==="Paid" || String(r.Payment_Status)==="Wallet Paid") totalPaid+=net;
     var ph=String(r.Phone||"").trim(); if(ph) custSet[ph]=true;
     var meal=String(r.Meal_Type||"");
     if(mealStats[meal]){mealStats[meal].count++;mealStats[meal].revenue+=net;}
@@ -2224,7 +2248,7 @@ function get10DayBilling(p) {
     var phone=String(r.Phone||"").trim(); if(!phone)return;
     if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),payFreq:String(r.Payment_Freq||"").trim(),orders:0,total:0,paid:0};
     map[phone].orders++; map[phone].total+=Number(r.Net_Total)||0;
-    if(String(r.Payment_Status)==="Paid")map[phone].paid+=Number(r.Net_Total)||0;
+    if(String(r.Payment_Status)==="Paid" || String(r.Payment_Status)==="Wallet Paid")map[phone].paid+=Number(r.Net_Total)||0;
   });
   var customers=Object.values(map).map(function(c){return Object.assign({},c,{total:Math.round(c.total),paid:Math.round(c.paid),pending:Math.round(c.total-c.paid),status:Math.round(c.total-c.paid)===0?"Paid":"Pending"});}).sort(function(a,b){return b.pending-a.pending;});
   var gTotal=customers.reduce(function(s,c){return s+c.total;},0);
@@ -2309,18 +2333,8 @@ function submitWalletRecharge(body) {
   var amount = Number(body.amount);
   if (!phone || isNaN(amount) || amount <= 0) return {success:false, error:"Invalid amount or phone"};
 
-  var ss  = getSpreadsheet();
-  var ws  = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
-  
   // Unverified entry requiring admin to flip to TRUE
-  ws.appendRow([
-    phone,
-    name,
-    "Recharge",
-    amount,
-    "FALSE", // Initial pending value
-    getISTTimestamp()
-  ]);
+  _appendWalletTransaction(phone, name, "Recharge", amount, false);
   
   return {success:true};
 }
@@ -2330,20 +2344,40 @@ function submitWalletRecharge(body) {
  */
 function getPendingRecharges() {
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
   const rawRows = getAllRows(ws);
-  // Match "FALSE", "false", or empty
-  return rawRows.filter(r => {
-    const ver = String(r.Verified || "").toUpperCase();
-    const type = String(r.Balance || "").toLowerCase();
-    return (ver === "FALSE" || !ver) && type.includes("recharge");
-  }).map(r => {
-    // Format "Date Time" if it's a Date object
-    if (r["Date Time"] instanceof Date) {
-      r["Date Time"] = Utilities.formatDate(r["Date Time"], "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+  const pending = [];
+  
+  rawRows.forEach(w => {
+    let rPhone = "", rName = "", rType = "", rAmt = 0, rVer = "", rTs = "";
+    for (let key in w) {
+      if (key === "_row") continue;
+      let kl = key.toLowerCase();
+      let val = String(w[key]).trim();
+      
+      if (val !== "") {
+        if (kl.includes("phone") || kl.includes("mobile")) rPhone = val;
+        else if (kl.includes("name") || kl.includes("customer")) rName = val;
+        else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = val;
+        else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
+        else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = val.toUpperCase();
+        else if (kl.includes("time") || kl.includes("date") || kl.includes("timestamp")) {
+           rTs = (w[key] instanceof Date) ? Utilities.formatDate(w[key], "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss") : val;
+        }
+      }
     }
-    return r;
+
+    if ((rVer === "FALSE" || !rVer) && rType.toLowerCase().includes("recharge")) {
+      pending.push({
+         "Phone": rPhone,
+         "Customer_Name": rName,
+         "Amount": rAmt,
+         "Date Time": rTs,
+         "_row": w._row
+      });
+    }
   });
+  return pending;
 }
 
 /**
@@ -2355,18 +2389,24 @@ function approveWalletRecharge(body) {
   if (!phone || !ts) return {success:false, error:"Missing phone or timestamp"};
 
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Balance", "Amount", "Verified", "Date Time"]);
+  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
   const hIdx = headerIndex(ws);
   const rows = ws.getDataRange().getValues();
-  const vCol = hIdx["Verified"];
-  const pCol = hIdx["Phone"];
-  const tCol = hIdx["Date Time"];
+  
+  let vCol = 0, pCol = 0, tCol = 0;
+  Object.keys(hIdx).forEach(key => {
+    let kl = key.toLowerCase();
+    if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) vCol = hIdx[key];
+    if (kl.includes("phone") || kl.includes("mobile")) pCol = hIdx[key];
+    if (kl.includes("time") || kl.includes("date") || kl.includes("timestamp")) tCol = hIdx[key];
+  });
+  
+  if (!vCol || !pCol || !tCol) return {success:false, error:"Could not find required columns in Wallet sheet"};
 
   for (let i = 1; i < rows.length; i++) {
     const rPhone = String(rows[i][pCol-1] || "").trim();
     let rTs      = rows[i][tCol-1];
     
-    // Standardize timestamp comparison (handle both Strings and Date objects)
     if (rTs instanceof Date) {
       rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
     } else {
@@ -2377,12 +2417,6 @@ function approveWalletRecharge(body) {
 
     if (rPhone === phone && rTs === ts && rVer !== "TRUE") {
       ws.getRange(i+1, vCol).setValue("TRUE");
-      // Also credit the wallet
-      const amt = Number(rows[i][hIdx["Amount"]-1]);
-      if (!isNaN(amt)) {
-        // We don't need to do anything else here if we assume the balance is calculated 
-        // by summing all TRUE rows (which it should be in Svaadh's architecture)
-      }
       return {success:true};
     }
   }

@@ -952,19 +952,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div id="walletSettlementSection" style="display:none;"></div>
       <div class="hissab-period" id="hissabPeriod"></div>
     </div>
-    <div class="hissab-msg" data-i18n-html="hissab_msg_html">
+    <div class="hissab-msg" id="hissabMsgText" data-i18n-html="hissab_msg_html">
       ✅ This order is recorded in your account. No payment needed now — settle once at period end.
     </div>
-    <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;" data-i18n-html="tenday_warning_html">
+    <div id="hissabWarnText" style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;" data-i18n-html="tenday_warning_html">
       ⚠️ <strong>Pay at period end.</strong> Each transaction is verified manually. Please pay only after the period ends.
     </div>
-    <div style="margin-top:4px;">
+    <div id="hissabConfirmWrap" style="margin-top:4px;">
       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
         <input type="checkbox" id="tenDayConfirm" style="margin-top:2px;width:auto;accent-color:#27ae60;">
         <span style="font-size:0.82rem;" data-i18n="tenday_confirm_label">I agree to pay at the end of this billing period</span>
         <span class="mr-note" style="margin-top:2px;">मी या बिलिंग कालावधीच्या शेवटी पैसे देण्यास सहमत आहे</span>
       </label>
     </div>
+    <div id="tenDayInsufficient" style="display:none;"></div>
   </div>
 
   <div class="card" id="successCard" style="display:none;">
@@ -1768,6 +1769,7 @@ function hasAnyOrder(){
 // STEP 5: BILL
 // ═══════════════════════════════════════════════════════════
 function buildBillScreen(){
+  S.tempUpiMode = false;
   let html="",grandTotal=0;
   for(const date of S.selectedDates){
     const dayOrders=S.orders[date]||{};
@@ -1827,61 +1829,59 @@ function buildBillScreen(){
     $("walletCard").style.display="none";
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
-    $("hissabAmount").textContent="…";
-    $("hissabPeriod").textContent=t('loading_account');
-    fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${S.phone}`)
-      .then(r=>r.json()).then(d=>{
-        const curTotal = (d.running || 0) + grandTotal;
-        $("hissabAmount").textContent = `₹${curTotal}`;
-        $("hissabPeriod").textContent = t('period_label',{p:d.period||getPeriodLabel(),amt:grandTotal});
-
-        // Previous period unpaid dues
-        const prevDue = d.prevDue || 0;
-        if (prevDue > 0) {
-          $("prevDueSection").style.display = "block";
-          $("prevDueAmount").textContent = `₹${prevDue}`;
-          $("prevDueLabel").textContent = t('prev_period_label',{label:d.prevLabel});
-
-          // Show QR on due dates OR if previous period has unpaid dues
-          if (d.isDueDate || prevDue > 0) {
-            $("qrPaySection").style.display = "block";
-            $("qrAmountLabel").textContent = t('qr_amount_label',{label:d.prevLabel,amt:prevDue});
-            // Smart note for 10-day payment
-            const name10 = (S.profile?.name||"Customer").trim();
-            const note10 = `Svaadh: ${name10} - ${d.prevLabel}`.slice(0,50);
-            const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${prevDue}&cu=INR&tn=${encodeURIComponent(note10)}`;
-            $("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiData)}`;
-          }
-        } else {
-          $("prevDueSection").style.display = "none";
-        }
-        S.runningTotal = curTotal;
-        
-        // WALLET SETTLEMENT OPTION (for 10-day users)
-        const wb = Number(S.walletBalance) || 0;
-        const totalToSettle = curTotal + prevDue;
-        const walletSettlementDiv = $("walletSettlementSection");
-        if (wb >= totalToSettle && totalToSettle > 0) {
-          if (walletSettlementDiv) {
-            walletSettlementDiv.innerHTML = `
-              <div style="background:#e8f5e9;border:1.5px solid #c8e6c9;border-radius:12px;padding:16px;margin:16px 0 10px;text-align:center;">
-                <div style="font-size:0.8rem;color:#2e7d32;font-weight:700;margin-bottom:8px;">💡 Svaadh Wallet Advantage</div>
-                <div style="font-size:0.75rem;color:#388e3c;margin-bottom:12px;">You have ₹${wb} balance. Settle your entire bill (including this order) in one tap.</div>
-                <button onclick="placeOrder(true)" class="btn btn-primary" style="background:#2e7d32;border-color:#1b5e20;margin:0;width:100%;font-size:0.95rem;padding:12px;">
-                  💳 Pay ₹${totalToSettle} with Wallet
-                </button>
-              </div>
-            `;
-            walletSettlementDiv.style.display = "block";
-          }
-        } else if (walletSettlementDiv) {
-          walletSettlementDiv.style.display = "none";
-        }
-      }).catch(()=>{
-        S.runningTotal = grandTotal;
-        $("hissabAmount").textContent = `₹${grandTotal}`;
-        $("hissabPeriod").textContent = t('period_this_order',{amt:grandTotal,p:getPeriodLabel()});
-      });
+    
+    // 10-day users now deduct completely from Wallet per order.
+    $("hissabAmount").textContent = `₹${grandTotal}`;
+    const wb = Number(S.walletBalance) || 0;
+    
+    if (wb < grandTotal) {
+      $("hissabPeriod").textContent = `Insufficient balance.`;
+      if ($("hissabMsgText")) $("hissabMsgText").style.display = "none";
+      if ($("hissabWarnText")) $("hissabWarnText").style.display = "none";
+      if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "none";
+      if ($("prevDueSection")) $("prevDueSection").style.display = "none";
+      if ($("walletSettlementSection")) $("walletSettlementSection").style.display = "none";
+      $("btnNext").style.display = "none";
+      S.paymentChoice = null;
+      
+      if ($("tenDayInsufficient")) {
+        $("tenDayInsufficient").innerHTML = `
+          <div style="background:#fff5f4; border:1px solid #ffd5d0; border-radius:10px; padding:12px; margin-top:12px; margin-bottom:12px;">
+            <div style="font-weight:700; color:#c0392b; margin-bottom:6px;">⚠️ Wallet Balance Insufficient</div>
+            <div style="font-size:0.8rem; color:#c0392b; margin-bottom:10px;">
+              Your 10-day prepaid account requires sufficient balance to place this order (₹${grandTotal}). Your balance is ₹${wb}.
+            </div>
+            <button class="btn btn-primary" onclick="openWalletRecharge()" style="margin-bottom:6px; padding:10px; font-size:0.85rem;">💼 Add Money to Wallet</button>
+            <div style="font-size:0.72rem; color:#c0392b; margin-bottom:14px; text-align:center; line-height:1.4;">
+              <em>Note: Wallet recharges require admin approval and may take a few hours to update.</em>
+            </div>
+            <div style="text-align:center; font-size:0.75rem; color:#888; margin-bottom:8px;">OR (To avoid waiting)</div>
+            <button class="btn btn-secondary" onclick="forceUpiFor10Day(${grandTotal})" style="padding:10px; font-size:0.85rem; border-color:#c0392b; color:#c0392b;">💳 Pay ₹${grandTotal} for this order via UPI now</button>
+          </div>
+        `;
+        $("tenDayInsufficient").style.display = "block";
+      }
+    } else {
+      S.paymentChoice = "Wallet";
+      $("hissabPeriod").textContent = `Balance after order: ₹${wb - grandTotal}`;
+      
+      if ($("hissabMsgText")) {
+        $("hissabMsgText").style.display = "block";
+        $("hissabMsgText").innerHTML = `✅ ₹${grandTotal} will be automatically deducted from your Svaadh Wallet.`;
+      }
+      if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "block";
+      if ($("tenDayConfirm")) {
+        $("tenDayConfirm").nextElementSibling.textContent = "I confirm to deduct this from my Wallet";
+        $("tenDayConfirm").nextElementSibling.nextElementSibling.textContent = "मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो";
+      }
+      if ($("hissabWarnText")) $("hissabWarnText").style.display = "none";
+      if ($("prevDueSection")) $("prevDueSection").style.display = "none";
+      if ($("walletSettlementSection")) $("walletSettlementSection").style.display = "none";
+      if ($("tenDayInsufficient")) $("tenDayInsufficient").style.display = "none";
+      
+      $("btnNext").style.display = "block";
+      $("btnNext").disabled = false;
+    }
   } else {
     // PREPAID logic (Daily Payer)
     $("tenDayCard").style.display="none";
@@ -2128,19 +2128,32 @@ function setupUPI(amount){
   // codBtn event handlers removed
 }
 
+window.forceUpiFor10Day = function(amt) {
+   S.tempUpiMode = true;
+   $("tenDayCard").style.display = "none";
+   $("paymentCard").style.display = "block";
+   S.paymentChoice = "UPI";
+   setupUPI(amt);
+   $("btnNext").style.display = "block";
+   $("btnNext").disabled = false;
+};
+
 // ═══════════════════════════════════════════════════════════
 // PLACE ORDER
 // ═══════════════════════════════════════════════════════════
 async function placeOrder(settleAll = false){
   let confirmEl=null;
   // If using wallet (either via prepaid selection OR via 10-day settle button)
-  const isWalletOrder = settleAll || (S.paymentChoice === "Wallet" && !S.is10Day);
+  const isWalletOrder = settleAll || S.paymentChoice === "Wallet";
 
-  if(isWalletOrder) confirmEl = null;
-  else if(S.is10Day) confirmEl=$("tenDayConfirm");
+  if(isWalletOrder) {
+      if (S.is10Day && !S.tempUpiMode) confirmEl=$("tenDayConfirm");
+      else confirmEl = null;
+  }
+  else if(S.is10Day && !S.tempUpiMode) confirmEl=$("tenDayConfirm");
   else confirmEl=$("paidConfirm");
   
-  if(confirmEl && !confirmEl.checked){toast(S.is10Day?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
+  if(confirmEl && !confirmEl.checked){toast((S.is10Day && !S.tempUpiMode)?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
   $("btnNext").disabled=true;$("btnNext").textContent=t('loading_placing');
   const orders=[];
   for(const date of S.selectedDates){
@@ -2163,8 +2176,8 @@ async function placeOrder(settleAll = false){
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
-    payment_method: isWalletOrder ? "Wallet" : (S.is10Day ? "10-Day Billing" : "UPI"),
-    payment_status: isWalletOrder ? "Paid" : (S.is10Day ? "10-Day Pending" : "Pending"),
+    payment_method: isWalletOrder ? "Wallet" : (S.tempUpiMode ? "UPI" : (S.is10Day ? "10-Day Billing" : "UPI")),
+    payment_status: isWalletOrder ? "Paid" : (S.tempUpiMode ? "Pending" : (S.is10Day ? "10-Day Pending" : "Pending")),
     settle_all: settleAll
   };
   const _pCtrl=new AbortController();const _pTid=setTimeout(()=>_pCtrl.abort(),15000);
