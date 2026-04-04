@@ -715,7 +715,13 @@ function submitOrder(body) {
       // Delivery charge (free areas loaded dynamically from SK_Areas sheet)
       const delCharge = (!freeAreaNames.includes(mealArea) && sub > 0 && sub < FREE_THR) ? DELIVERY : 0;
       const discAmt   = getDisc(sub);
-      const netTotal  = sub + delCharge - discAmt;
+      
+      let smallOrderFee = 0;
+      if ((mealType === "Lunch" || mealType === "Dinner") && sub > 0 && sub < 50) {
+        smallOrderFee = 10;
+      }
+
+      const netTotal  = sub + delCharge + smallOrderFee - discAmt;
 
       // Build items JSON
       const itemsObj = {};
@@ -756,9 +762,14 @@ function submitOrder(body) {
       set("Full_Address",        fullAddr);
       set("Maps_Link",           mapsLink);
       set("Landmark",            landmark);
+      if (!hIdx["Small_Order_Fee"]) {
+        ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Small_Order_Fee");
+        hIdx["Small_Order_Fee"] = ordersWs.getLastColumn();
+      }
       set("Items_JSON",          JSON.stringify(itemsObj));
       set("Special_Notes",       notes);
       set("Food_Subtotal",       sub);
+      set("Small_Order_Fee",     smallOrderFee);
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
       set("Net_Total",           netTotal);

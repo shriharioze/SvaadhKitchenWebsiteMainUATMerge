@@ -1885,6 +1885,7 @@ function buildBillScreen(){
     const discAmt=Math.round(dayFoodTotal*discRate);
     html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
     let totalDelivery=0;
+    let totalSmallOrderFee=0;
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
@@ -1894,6 +1895,14 @@ function buildBillScreen(){
         const p=getPrice(colKey,meal,date),n=getItemName(colKey,meal,date);
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
+      
+      let smallOrderFee = 0;
+      if ((meal === "Lunch" || meal === "Dinner") && sub < 50) {
+        smallOrderFee = 10;
+        totalSmallOrderFee += smallOrderFee;
+        html+=`<div class="bill-line delivery-line" style="color:#d35400;"><span>📦 Small Order Fee</span><span>₹${smallOrderFee}</span></div>`;
+      }
+
       const mAddr=getMealAddr(meal);
       if(!FREE_AREAS.includes(mAddr.area)&&sub>0&&sub<FREE_THRESHOLD){
         html+=`<div class="bill-line delivery-line"><span>🚚 Delivery (${meal})</span><span>₹${DELIVERY_CHARGE}</span></div>`;
@@ -1901,7 +1910,7 @@ function buildBillScreen(){
       }
     });
     if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
-    const dayTotal=dayFoodTotal-discAmt+totalDelivery;grandTotal+=dayTotal;
+    const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee;grandTotal+=dayTotal;
     html+=`<div class="bill-line date-total"><span>${t('day_total')}</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
   }
   S.grandTotal=grandTotal;
