@@ -710,7 +710,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         <option value="Daily Payment" data-i18n="payment_daily_opt">Daily Payment</option>
         <option value="Prepaid Wallet" data-i18n="payment_prepaid_opt">Prepaid Wallet Billing</option>
       </select>
-      <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;" data-i18n-html="payment_helper">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>10-Day:</strong> orders accumulate, settle once per period — ideal for regulars</p>
+      <p class="text-sm" style="margin-top:5px;font-size:0.72rem;line-height:1.5;" data-i18n-html="payment_helper">💡 <strong>Daily:</strong> pay after each order &nbsp;·&nbsp; <strong>Prepaid:</strong> orders are automatically deducted from wallet — ideal for regulars</p>
     </div>
   </div>
 
@@ -1276,7 +1276,7 @@ const FAQ_ITEMS = [
   {q:"What are the order cutoff times?", a:"Breakfast: before 7:00 AM · Lunch: before 9:30 AM · Dinner: before 5:00 PM. Cutoff times are strictly strictly for same-day delivery."},
   {q:"Can I order for multiple days at once?", a:"Yes! On the date selection screen, tap as many dates as you want. You'll set meals for each date individually."},
   {q:"How do discounts work?", a:"If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen."},
-  {q:"What is the 10-day billing cycle?", a:"Accumulate your bills over 10 days (1st–10th, 11th–20th, 21st–end of month) and settle once. Select 'Post paid bill payment' under Payment Preference. Perfect for regular customers!"},
+  {q:"What is Prepaid Wallet Billing?", a:"Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!"},
   {q:"Can I edit or cancel an order?", a:"Yes, before the cutoff time. Tap 'View / Edit upcoming orders' on the home screen to delete or modify upcoming orders. Any UPI payments for cancelled orders will be manually refunded via GPay or adjusted in your next bill."},
 ];
 
@@ -1891,7 +1891,12 @@ function buildBillScreen(){
       if ((meal === "Lunch" || meal === "Dinner") && sub < 50) {
         smallOrderFee = 10;
         totalSmallOrderFee += smallOrderFee;
-        html+=`<div class="bill-line delivery-line" style="color:#d35400;"><span>📦 Small Order Fee</span><span>₹${smallOrderFee}</span></div>`;
+        html+=`<div class="bill-line delivery-line" style="color:#d35400;">
+           <span style="display:flex;align-items:center;gap:6px;">📦 Small Order Fee 
+             <span class="info-icon" onclick="toast('A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads.', 5000)" style="background:#f2dbcc;color:#d35400;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
+           </span>
+           <span>₹${smallOrderFee}</span>
+         </div>`;
       }
 
       const mAddr=getMealAddr(meal);
@@ -1944,7 +1949,7 @@ function buildBillScreen(){
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
     
-    // 10-day users now deduct completely from Wallet per order.
+    // Prepaid users now deduct completely from Wallet per order.
     $("hissabAmount").textContent = `₹${grandTotal}`;
     const wb = Number(S.walletBalance) || 0;
     
@@ -1963,7 +1968,7 @@ function buildBillScreen(){
           <div style="background:#fff5f4; border:1px solid #ffd5d0; border-radius:10px; padding:12px; margin-top:12px; margin-bottom:12px;">
             <div style="font-weight:700; color:#c0392b; margin-bottom:6px;">⚠️ Wallet Balance Insufficient</div>
             <div style="font-size:0.8rem; color:#c0392b; margin-bottom:10px;">
-              Your 10-day prepaid account requires sufficient balance to place this order (₹${grandTotal}). Your balance is ₹${wb}.
+              Your prepaid account requires sufficient balance to place this order (₹${grandTotal}). Your balance is ₹${wb}.
             </div>
             <button class="btn btn-primary" onclick="openWalletRecharge()" style="margin-bottom:6px; padding:10px; font-size:0.85rem;">💼 Add Money to Wallet</button>
             <div style="font-size:0.72rem; color:#c0392b; margin-bottom:14px; text-align:center; line-height:1.4;">
