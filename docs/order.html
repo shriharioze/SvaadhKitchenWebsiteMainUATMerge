@@ -688,6 +688,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="screen" id="screen1">
 
   <!-- Name + payment -->
+  <div style="text-align:right;margin-bottom:8px;padding-right:10px;">
+    <button onclick="logoutCustomer()" style="background:none;border:none;color:#e74c3c;font-size:0.8rem;cursor:pointer;font-weight:600;">Not you? Log out</button>
+  </div>
   <div class="card">
     <h2 data-i18n="step2_details_title">👤 Your Details</h2>
     <div id="returningBadge"></div>
@@ -1488,19 +1491,6 @@ function handleLoginSuccess(profileData, isNew) {
     S.isFirstTime = true;
     $("returningBadge").innerHTML = "";
     if (!localStorage.getItem("sk_seen_how")) showHowScreen();
-  }
-  
-  // Header Logout Button Setup
-  const headerBtn = document.getElementById("headerLogoutWrap");
-  if (!headerBtn) {
-    const wrap = document.createElement("div");
-    wrap.id = "headerLogoutWrap";
-    wrap.style.cssText = "position:absolute;top:15px;right:20px;";
-    wrap.innerHTML = `<button onclick="logoutCustomer()" style="background:transparent;border:1px solid #ffcdcc;color:#ffeded;padding:5px 8px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Log out</button>`;
-    const pageHeader = document.querySelector(".page-header");
-    if (pageHeader) pageHeader.appendChild(wrap);
-  } else {
-    headerBtn.style.display = "block";
   }
 
   // Pre-fill form
