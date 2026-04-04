@@ -617,6 +617,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   <p data-i18n="header_tagline">Home-cooked food, made for you</p>
   <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
+  <style>
+    .discount{color:#27ae60;font-weight:600;}
+    .extra-charges-bundle{background:#fdf8f2;border:1px dashed #e8ddd7;border-radius:8px;padding:8px 10px;margin-top:6px;cursor:pointer;transition:background 0.2s;}
+    .extra-charges-bundle:hover{background:#f9f0e8;}
+    .extra-breakdown{display:none;padding-top:6px;margin-top:6px;border-top:1px solid #eee;}
+    .extra-breakdown.open{display:block;}
+    .extra-toggle-icon{font-size:0.7rem;color:#c0392b;margin-left:4px;transition:transform 0.2s;display:inline-block;}
+    .extra-toggle-icon.open{transform:rotate(180deg);}
+  </style>
   
   <div id="walletChip" onclick="openWalletRecharge()" style="display:none;position:absolute;top:50%;right:52px;transform:translateY(-50%);background:#fff;border:1.5px solid #2e7d32;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;color:#2e7d32;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:100;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;">
     <span>💼 Wallet:</span>
@@ -1907,33 +1916,50 @@ function buildBillScreen(){
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
       
-      let smallOrderFee = 0;
+      let mealExtras = [];
+      let mExtrasTotal = 0;
+
+      // Small Order Fee
       if ((meal === "Lunch" || meal === "Dinner") && sub > 0 && sub < 50) {
-        smallOrderFee = 10;
-        totalSmallOrderFee += smallOrderFee;
-        html+=`<div class="bill-line delivery-line" style="color:#d35400;">
-           <span style="display:flex;align-items:center;gap:6px;">📦 Small Order Fee 
-             <span class="info-icon" onclick="toast('A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads.', 5000)" style="background:#f2dbcc;color:#d35400;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
-           </span>
-           <span>₹${smallOrderFee}</span>
-         </div>`;
+        const fee = 10;
+        mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
+        mExtrasTotal += fee; totalSmallOrderFee += fee;
       }
 
-      const mAddr=getMealAddr(meal);
-      if(!FREE_AREAS.includes(mAddr.area)&&sub>0&&sub<FREE_THRESHOLD){
-        html+=`<div class="bill-line delivery-line"><span>🚚 Delivery (${meal})</span><span>₹${DELIVERY_CHARGE}</span></div>`;
-        totalDelivery+=DELIVERY_CHARGE;
+      // Delivery
+      const mAddr = getMealAddr(meal);
+      if (!FREE_AREAS.includes(mAddr.area) && sub > 0 && sub < FREE_THRESHOLD) {
+        const fee = DELIVERY_CHARGE;
+        mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
+        mExtrasTotal += fee; totalDelivery += fee;
       }
-      
-      const inflationSurcharge = Math.ceil(sub / 10);
-      if (inflationSurcharge > 0) {
-        totalInflationSurcharge += inflationSurcharge;
-        html+=`<div class="bill-line delivery-line" style="color:#7f8c8d;">
-           <span style="display:flex;align-items:center;gap:6px;">📈 Market Surcharge 
-             <span class="info-icon" onclick="toast('A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market.', 5000)" style="background:#ddd;color:#333;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
-           </span>
-           <span>₹${inflationSurcharge}</span>
-         </div>`;
+
+      // Market Surcharge
+      const surcharge = Math.ceil(sub / 10);
+      if (surcharge > 0) {
+        mealExtras.push({ icon: "📈", name: "Market Surcharge", val: surcharge, desc: "A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market." });
+        mExtrasTotal += surcharge; totalInflationSurcharge += surcharge;
+      }
+
+      if (mExtrasTotal > 0) {
+        const exId = `ex_${date}_${meal}`.replace(/\W/g,'_');
+        html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
+          <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
+            <span style="display:flex;align-items:center;font-size:0.82rem;color:#7f8c8d;">🚚 Delivery & Extra Charges (${mealExtras.length} items) <span id="icon_${exId}" class="extra-toggle-icon">▼</span></span>
+            <span style="font-weight:600;color:#7f8c8d;">₹${mExtrasTotal}</span>
+          </div>
+          <div id="${exId}" class="extra-breakdown">
+            ${mealExtras.map(ex => `
+              <div class="bill-line indent delivery-line" style="margin-top:5px;font-size:0.75rem;color:#95a5a6;">
+                <span style="display:flex;align-items:center;gap:5px;">
+                  ${ex.icon} ${ex.name}
+                  ${ex.desc ? `<span class="info-icon" onclick="event.stopPropagation();toast('${ex.desc}', 5000)" style="background:#eee;color:#7f8c8d;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;font-weight:700;">?</span>` : ''}
+                </span>
+                <span>₹${ex.val}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
       }
     });
     if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
@@ -2057,6 +2083,13 @@ function buildBillScreen(){
   $("btnNext").textContent=t('btn_place');
 }
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
+
+function toggleExtraBundle(id) {
+  const el = $(id);
+  const icon = $(`icon_${id}`);
+  if (el) el.classList.toggle('open');
+  if (icon) icon.classList.toggle('open');
+}
 
 // ── 10-DAY BILL MODAL ─────────────────────────────────────────────────────────
 function fetchAndShowHissab(phone) {
