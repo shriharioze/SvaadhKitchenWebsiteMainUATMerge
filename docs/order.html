@@ -655,6 +655,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div id="pinAuthSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
       <h3 id="pinAuthTitle" style="font-size:0.95rem;color:#1a6640;margin-bottom:8px;">🔒 Protect your account</h3>
       <p id="pinAuthDesc" style="font-size:0.8rem;color:#555;margin-bottom:12px;line-height:1.4;">Please set a 4-digit PIN.</p>
+      <div id="pinHint" style="display:none;font-size:0.72rem; color:#d35400; background:#fdf2e9; padding:8px; border-radius:6px; margin-bottom:12px; text-align:center;">
+        💡 <strong>Hint:</strong> Use your birthday (DDMM) so it's easy to remember!
+      </div>
       <div class="form-group" style="margin-bottom:0;">
         <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;">
       </div>
@@ -1446,6 +1449,7 @@ async function lookupCustomer(){
        S.authMode = "verify";
        $("pinAuthTitle").innerHTML = "🔒 Welcome back";
        $("pinAuthDesc").innerHTML = "Please enter your 4-digit PIN to access your account.";
+       if($("pinHint")) $("pinHint").style.display = "none";
        $("forgotPinWrap").style.display = "block";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Verify PIN & Continue";
@@ -1456,6 +1460,7 @@ async function lookupCustomer(){
        S.authMode = "create";
        $("pinAuthTitle").innerHTML = "🔒 Protect your account";
        $("pinAuthDesc").innerHTML = "Please set a new 4-digit secure PIN for your Wallet.";
+       if($("pinHint")) $("pinHint").style.display = "block";
        $("forgotPinWrap").style.display = "none";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Set PIN & Continue";
@@ -1474,6 +1479,7 @@ async function lookupCustomer(){
 }
 
 function handleLoginSuccess(profileData, isNew) {
+  if($("globalLogoutWrap")) $("globalLogoutWrap").style.display = "block";
   if (profileData) {
     const wb = Number(profileData.wallet_balance) || 0;
     toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
