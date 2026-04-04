@@ -1915,13 +1915,19 @@ async function buildBillScreen(){
     const existingDayFoodTotal = Object.values(existDay).reduce((s,m) => s+(m.subtotal||0), 0);
     const combinedDayTotal = dayFoodTotal + existingDayFoodTotal;
 
-    let discRate=0,discLabel="";
+    // Retroactive discount credit: if existing orders didn't get a discount but combined now qualifies
+    let discRate=0, discLabel="";
     if(combinedDayTotal>=DISC_T2.min){discRate=DISC_T2.rate;discLabel=`7.5% off (≥ ₹${DISC_T2.min})`;}
     else if(combinedDayTotal>=DISC_T1.min){discRate=DISC_T1.rate;discLabel=`5% off (≥ ₹${DISC_T1.min})`;}
-    const discAmt=Math.round(dayFoodTotal*discRate);
+    const existingDiscountTotal = Object.values(existDay).reduce((s,m) => s+(m.discount_applied||0), 0);
+    const existingEntitledDiscount = Math.round(existingDayFoodTotal * discRate);
+    const retroDiscountCredit = Math.max(0, existingEntitledDiscount - existingDiscountTotal);
+    // Current cart discount = on current food + retro credit for prev orders
+    const discAmt = Math.round(dayFoodTotal * discRate) + retroDiscountCredit;
+
     html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
     if(existingDayFoodTotal > 0) {
-      html+=`<div style="font-size:0.7rem;color:#7f8c8d;margin-bottom:6px;padding:4px 8px;background:#f8f9fa;border-radius:6px;">📋 Existing orders today: ₹${existingDayFoodTotal} → Combined day total: ₹${combinedDayTotal}</div>`;
+      html+=`<div style="font-size:0.7rem;color:#7f8c8d;margin-bottom:6px;padding:5px 8px;background:#f8f9fa;border-radius:6px;line-height:1.5;">📋 Existing orders today: <strong>₹${existingDayFoodTotal}</strong> → Combined day total: <strong>₹${combinedDayTotal}</strong></div>`;
     }
     let totalDelivery=0;
     let totalSmallOrderFee=0;
@@ -1955,6 +1961,24 @@ async function buildBillScreen(){
       let mealExtras = [];
       let mExtrasTotal = 0;
 
+      // Delivery Credit: if existing orders paid delivery but combined meal now crosses FREE_THRESHOLD
+      const deliveryCredit = (combinedMealSub >= FREE_THRESHOLD && existMealSub > 0 && !FREE_AREAS.includes(mAddr.area))
+        ? (existDay[meal]?.delivery_charged || 0) : 0;
+      if (deliveryCredit > 0) {
+        mealExtras.push({ icon: "🏷️", name: `Free Delivery Upgrade`, val: -deliveryCredit, credit: true,
+          desc: `Your combined ${meal} total is ₹${combinedMealSub} (₹${existMealSub} prev + ₹${sub} now) — which crosses ₹${FREE_THRESHOLD}. We're refunding the ₹${deliveryCredit} delivery you paid earlier!` });
+        mExtrasTotal -= deliveryCredit; totalDelivery -= deliveryCredit;
+      }
+
+      // Small Order Fee Credit: if existing orders paid small fee but combined meal now >= 50
+      const smallFeeCredit = ((meal === 'Lunch' || meal === 'Dinner') && combinedMealSub >= 50 && existMealSub > 0)
+        ? (existDay[meal]?.small_fee_charged || 0) : 0;
+      if (smallFeeCredit > 0) {
+        mealExtras.push({ icon: "🏷️", name: `Small Order Fee Credit`, val: -smallFeeCredit, credit: true,
+          desc: `Your combined ${meal} total is now ₹${combinedMealSub} which is ≥₹50. We're refunding the small order fee paid on your earlier ${meal} order!` });
+        mExtrasTotal -= smallFeeCredit; totalSmallOrderFee -= smallFeeCredit;
+      }
+
       // Small Order Fee — based on combined meal total
       if ((meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
         const fee = 10;
@@ -1976,28 +2000,41 @@ async function buildBillScreen(){
         mExtrasTotal += surcharge; totalInflationSurcharge += surcharge;
       }
 
-      if (mExtrasTotal > 0) {
+      if (mealExtras.length > 0) {
+        const creditItems = mealExtras.filter(e => e.credit);
+        const chargeItems = mealExtras.filter(e => !e.credit);
         const exId = `ex_${date}_${meal}`.replace(/\W/g,'_');
+        const creditTotal = creditItems.reduce((s,e) => s + e.val, 0);
+        const chargeTotal = chargeItems.reduce((s,e) => s + e.val, 0);
+        const netTotal = creditTotal + chargeTotal;
+        const bundleLabel = creditItems.length > 0
+          ? `🏷️ Credits & Charges (${mealExtras.length} items)`
+          : `🚚 Delivery & Extra Charges (${mealExtras.length} items)`;
         html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
           <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
-            <span style="display:flex;align-items:center;font-size:0.82rem;color:#7f8c8d;">🚚 Delivery & Extra Charges (${mealExtras.length} items) <span id="icon_${exId}" class="extra-toggle-icon">▼</span></span>
-            <span style="font-weight:600;color:#7f8c8d;">₹${mExtrasTotal}</span>
+            <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon">▼</span></span>
+            <span style="font-weight:600;color:${netTotal <= 0 ? '#27ae60' : '#7f8c8d'};">₹${netTotal}</span>
           </div>
           <div id="${exId}" class="extra-breakdown">
             ${mealExtras.map(ex => `
-              <div class="bill-line indent delivery-line" style="margin-top:5px;font-size:0.75rem;color:#95a5a6;">
+              <div class="bill-line indent delivery-line" style="margin-top:5px;font-size:0.75rem;color:${ex.credit ? '#27ae60' : '#95a5a6'};">
                 <span style="display:flex;align-items:center;gap:5px;">
                   ${ex.icon} ${ex.name}
-                  ${ex.desc ? `<span class="info-icon" onclick="event.stopPropagation();toast('${ex.desc}', 5000)" style="background:#eee;color:#7f8c8d;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;font-weight:700;">?</span>` : ''}
+                  ${ex.desc ? `<span class="info-icon" onclick="event.stopPropagation();toast('${ex.desc}',6000)" style="background:#eee;color:#7f8c8d;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;font-weight:700;">?</span>` : ''}
                 </span>
-                <span>₹${ex.val}</span>
+                <span>${ex.credit ? '−' : ''}₹${Math.abs(ex.val)}</span>
               </div>
             `).join('')}
           </div>
         </div>`;
       }
     });
-    if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
+    // Full discount line — includes retro credit for previous orders if applicable
+    if(discAmt > 0) {
+      let discNote = discLabel;
+      if(retroDiscountCredit > 0) discNote += ` (incl. ₹${retroDiscountCredit} credit for earlier orders)`;
+      html+=`<div class="bill-line discount" style="cursor:pointer;" onclick="toast('Day discount of ${discLabel} applied on combined total ₹${combinedDayTotal}. This includes a ₹${retroDiscountCredit} credit passing the savings from your earlier orders to this bill.', 6000)"><span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>`;
+    }
     const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee+totalInflationSurcharge;grandTotal+=dayTotal;
     html+=`<div class="bill-line date-total"><span>${t('day_total')}</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
   }
