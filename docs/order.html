@@ -1915,6 +1915,22 @@ function buildBillScreen(){
         const p=getPrice(colKey,meal,date),n=getItemName(colKey,meal,date);
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
+
+      // Upsell Nudges
+      const mAddr = getMealAddr(meal);
+      if (meal === "Lunch" || meal === "Dinner") {
+        if (sub > 0 && sub < 50) {
+          const diff = 50 - sub;
+          html += `<div style="font-size:0.72rem; color:#2980b9; background:#ebf5fb; padding:6px 10px; border-radius:6px; margin:8px 0 4px; display:flex; align-items:center; gap:6px; font-weight:500; border:1px solid #d6eaf8;">
+            <span>💡 Order <strong>₹${diff}</strong> more to avoid the Small Order Fee!</span>
+          </div>`;
+        } else if (sub >= 50 && sub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
+          const diff = FREE_THRESHOLD - sub;
+          html += `<div style="font-size:0.72rem; color:#27ae60; background:#f0faf4; padding:6px 10px; border-radius:6px; margin:8px 0 4px; display:flex; align-items:center; gap:6px; font-weight:500; border:1px solid #d5f5e3;">
+            <span>✨ Order <strong>₹${diff}</strong> more for <strong>FREE delivery</strong>!</span>
+          </div>`;
+        }
+      }
       
       let mealExtras = [];
       let mExtrasTotal = 0;
@@ -1927,7 +1943,6 @@ function buildBillScreen(){
       }
 
       // Delivery
-      const mAddr = getMealAddr(meal);
       if (!FREE_AREAS.includes(mAddr.area) && sub > 0 && sub < FREE_THRESHOLD) {
         const fee = DELIVERY_CHARGE;
         mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
