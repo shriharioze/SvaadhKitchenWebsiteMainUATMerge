@@ -13,7 +13,7 @@
     how_tagline: "Fresh home-cooked food, delivered to your door",
     how_title: "How to order",
     how_step1_title: "Enter your phone number",
-    how_step1_desc: "Your number is your identity — no login needed. Your address and preferences are saved automatically for next time.",
+    how_step1_desc: "Your number is your identity — protected by a 4-digit PIN. Your address and preferences are saved automatically for next time.",
     how_step2_title: "Enter your delivery address",
     how_step2_desc: "Wing, flat number, society, and area. Each meal can go to a <strong>different address</strong> — breakfast at home, lunch at the office, dinner back home.",
     how_step3_title: "Select your dates",
@@ -24,7 +24,7 @@
     how_step5_desc: "See your full itemized bill with discounts applied automatically. Pay via UPI QR code or UPI app.",
     how_cutoffs_label: "⏰ Order cutoffs",
     how_discounts_label: "💰 Discounts",
-    how_delivery_label: "🚚 Delivery",
+    how_delivery_label: "🚚 Delivery & Fees",
     how_help_label: "❓ Help",
     how_cta: "Got it, let's start! →",
 

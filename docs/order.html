@@ -526,7 +526,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div class="how-num">1</div>
       <div class="how-step-text">
         <h4 data-i18n="how_step1_title">Enter your phone number</h4>
-        <p data-i18n="how_step1_desc">Your number is your identity — no login needed. Your address and preferences are saved automatically for next time.</p>
+        <p data-i18n="how_step1_desc">Your number is your identity — protected by a 4-digit PIN for your wallet. Your address and preferences are saved automatically for next time.</p>
       </div>
     </div>
 
@@ -575,9 +575,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         <p class="mr-note">₹३०० पेक्षा जास्त — ५% सूट · ₹४५० पेक्षा जास्त — ७.५% सूट</p>
       </div>
       <div class="how-info-box">
-        <div class="hi-label" data-i18n="how_delivery_label">🚚 Delivery</div>
-        <div class="hi-val">Free in Bhosale Garden<br>₹10/meal elsewhere if order &lt; ₹100</div>
+        <div class="hi-label" data-i18n="how_delivery_label">🚚 Delivery & Fees</div>
+        <div class="hi-val">Free in Bhosale Garden<br>₹10/meal elsewhere if order &lt; ₹100<br><strong>₹10 Small Order Fee for Lunch/Dinner if bill &lt; ₹50</strong></div>
         <p class="mr-note">भोसले गार्डन — मोफत डिलिव्हरी · इतर ठिकाणी ₹१०/जेवण (जर ऑर्डर ₹१०० पेक्षा कमी असेल)</p>
+      </div>
+      <div class="how-info-box">
+        <div class="hi-label">📈 Market Surcharge</div>
+        <div class="hi-val">₹1 surcharge for every ₹10 of food bill to handle rising ingredient costs.</div>
       </div>
       <div class="how-info-box">
         <div class="hi-label" data-i18n="how_help_label">❓ Help</div>
@@ -1250,11 +1254,13 @@ function dismissHowScreen(){$("howScreen").classList.add("hidden");localStorage.
 function showHowModal(){
   $("howModalContent").innerHTML = `
     <div style="font-size:0.82rem;color:#555;line-height:1.8;">
+      <strong>🔐 Security:</strong> 4-digit PIN to secure your wallet<br>
       <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ','')}</strong>: Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
       <strong>💰 ${t('how_discounts_label').replace('💰 ','')}</strong>: 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
       <strong>🚚 ${t('how_delivery_label').replace('🚚 ','')}</strong>: Free in Bhosale Garden · ₹10/meal elsewhere if &lt;₹100<br>
+      <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50<br>
+      <strong>📈 Market Surcharge:</strong> ₹1 per ₹10 of food bill<br>
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
-      <strong>✏️ Edit orders:</strong> Use "${t('btn_view_orders').replace('📋 ','')}" on home screen before cutoff<br>
       <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
       <strong>${t('how_help_label')}</strong><br>
       WhatsApp: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a>
