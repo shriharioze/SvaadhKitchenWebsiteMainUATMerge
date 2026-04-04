@@ -2899,6 +2899,14 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("phoneInput").addEventListener("keydown",e=>{if(e.key==="Enter")goNext();});
   // Close how modal on backdrop click
   $("howModal").addEventListener("click",e=>{if(e.target===$("howModal"))$("howModal").style.display="none";});
+
+  const savedPhone = localStorage.getItem('sk_logged_in_phone');
+  const savedPin = localStorage.getItem('sk_logged_in_pin');
+  if (savedPhone && savedPin) {
+    S.phone = savedPhone;
+    if ($("phoneInput")) $("phoneInput").value = savedPhone;
+    lookupCustomer();
+  }
 });
 </script>
 
