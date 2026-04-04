@@ -647,7 +647,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <label data-i18n="phone_label">Mobile Number</label>
       <div class="phone-wrap">
         <span class="prefix">+91</span>
-        <input type="tel" id="phoneInput" maxlength="10" placeholder="9876543210" inputmode="numeric">
+        <input type="tel" id="phoneInput" maxlength="10" placeholder="9876543210" inputmode="numeric" oninput="if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
+      </div>
+    </div>
+    
+    <!-- PIN Auth Section (Hidden initially) -->
+    <div id="pinAuthSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
+      <h3 id="pinAuthTitle" style="font-size:0.95rem;color:#1a6640;margin-bottom:8px;">🔒 Protect your account</h3>
+      <p id="pinAuthDesc" style="font-size:0.8rem;color:#555;margin-bottom:12px;line-height:1.4;">Please set a 4-digit PIN.</p>
+      <div class="form-group" style="margin-bottom:0;">
+        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;">
+      </div>
+      <div id="forgotPinWrap" style="margin-top:14px;display:none;">
+        <a href="https://wa.me/919930748908?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
       </div>
     </div>
     <p class="text-sm" style="margin-top:8px;" data-i18n="phone_hint">We'll load your saved details if you've ordered before.</p>
@@ -1311,7 +1323,34 @@ function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
 async function goNext(){
   if($("btnNext").disabled)return;
   if(!validate(S.step)) return;
-  if(S.step===0){await lookupCustomer();return;}
+  if(S.step===0){
+     if (!S.authMode) { await lookupCustomer(); return; }
+     
+     const enteredPin = $("pinInput").value.trim();
+     if (enteredPin.length !== 4) { toast("Please enter a 4-digit PIN."); return; }
+     
+     if (S.authMode === "verify") {
+       $("btnNext").textContent = "Verifying..."; $("btnNext").disabled = true;
+       try {
+         const res = await fetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
+         const verData = await res.json();
+         if (verData.success) {
+           localStorage.setItem('sk_logged_in_phone', S.phone);
+           localStorage.setItem('sk_logged_in_pin', enteredPin);
+           handleLoginSuccess(verData.profile, false);
+         } else {
+           toast(verData.error || "Incorrect PIN");
+           $("btnNext").textContent = "Verify PIN & Continue"; $("btnNext").disabled = false;
+         }
+       } catch(e) { toast("Server error, please try again."); $("btnNext").textContent = "Verify PIN & Continue"; $("btnNext").disabled = false; }
+     } else if (S.authMode === "create") {
+       S.profile.pin = enteredPin;
+       localStorage.setItem('sk_logged_in_phone', S.phone);
+       localStorage.setItem('sk_logged_in_pin', enteredPin);
+       handleLoginSuccess(S.tempProfileData, !S.tempProfileData);
+     }
+     return;
+  }
   if(S.step===2){
     if(!S.selectedDates.length){toast(t('toast_select_date'));return;}
     $("btnNext").disabled=true;$("btnNext").textContent=t('loading_loading');$("btnNext").style.opacity="0.6";
@@ -1368,70 +1407,133 @@ function validate(step){
 // ═══════════════════════════════════════════════════════════
 async function lookupCustomer(){
   $("btnNext").textContent=t('loading_checking');$("btnNext").disabled=true;
+  if ($("pinAuthSection")) $("pinAuthSection").style.display = "none";
   const _lCtrl=new AbortController();const _lTid=setTimeout(()=>_lCtrl.abort(),15000);
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`,{signal:_lCtrl.signal});
     clearTimeout(_lTid);
     const data=await res.json();
-    if(data.found){
-      const wb = Number(data.wallet_balance) || 0;
-      toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
-      updateWalletBalanceUI(wb);
-      S.isFirstTime=false;
-      const parts=(data.name||"").trim().split(" ");
-      const fn=parts[0]||"";
-      const ln=parts.slice(1).join(" ")||"";
-      S.profile={...S.profile,name:data.name||"",first_name:fn,last_name:ln,
-        area:data.area||"",wing:data.wing||"",
-        flat:data.flat||"",floor:data.floor||"",society:data.society||"",
-        maps:data.maps||"",landmark:data.landmark||"",payment_preference:data.payment_preference||"Daily Payment"};
-      S.walletBalance=wb;
-      S.is10Day=S.profile.payment_preference==="Prepaid Wallet";
-      $("returningBadge").innerHTML=`<div class="customer-badge">
-        <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
-        <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
-        <div class="csub">${t('welcome_back_hint')}</div>
-        ${S.is10Day?`<div id="hissabBadgeWrap" style="margin-top:6px;"><span style="font-size:0.72rem;color:#888;">Loading your account…</span></div>`:''}
-        </div></div>
-      <div style="background:#f0faf4;border:1px solid #6fcf97;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.78rem;color:#1a6640;">
-        ${t('no_changes_hint')}
-      </div>`;
-      if(S.is10Day) fetchAndShowHissab(S.phone);
+    
+    // Auto-login check
+    const savedPin = localStorage.getItem('sk_logged_in_pin');
+    const savedPhone = localStorage.getItem('sk_logged_in_phone');
+    if (data.hasPin && savedPhone === S.phone && savedPin) {
+       $("btnNext").textContent="Authenticating...";
+       const resVer = await fetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${savedPin}`);
+       const verData = await resVer.json();
+       if (verData.success) {
+          handleLoginSuccess(verData.profile, false);
+          return;
+       } else {
+          // Bad saved PIN, clear it
+          localStorage.removeItem('sk_logged_in_pin');
+       }
+    }
+    
+    if (data.hasPin) {
+       S.authMode = "verify";
+       $("pinAuthTitle").innerHTML = "🔒 Welcome back";
+       $("pinAuthDesc").innerHTML = "Please enter your 4-digit PIN to access your account.";
+       $("forgotPinWrap").style.display = "block";
+       $("pinAuthSection").style.display = "block";
+       $("btnNext").textContent = "Verify PIN & Continue";
+       $("btnNext").disabled = false;
+       setTimeout(()=>$("pinInput").focus(), 100);
+       return;
     } else {
-      S.isFirstTime=true;
-      $("returningBadge").innerHTML="";
-      if(!localStorage.getItem("sk_seen_how")) showHowScreen();
+       S.authMode = "create";
+       $("pinAuthTitle").innerHTML = "🔒 Protect your account";
+       $("pinAuthDesc").innerHTML = "Please set a new 4-digit secure PIN for your Wallet.";
+       $("forgotPinWrap").style.display = "none";
+       $("pinAuthSection").style.display = "block";
+       $("btnNext").textContent = "Set PIN & Continue";
+       $("btnNext").disabled = false;
+       S.tempProfileData = data.found ? data : null;
+       setTimeout(()=>$("pinInput").focus(), 100);
+       return;
     }
-    // Pre-fill form
-    $("firstNameInput").value=$("firstNameInput").value||S.profile.first_name;
-    $("lastNameInput").value=$("lastNameInput").value||S.profile.last_name;
-    $("areaSelect").value=S.profile.area;
-    $("wingInput").value=S.profile.wing;
-    $("flatInput").value=S.profile.flat;
-    $("floorInput").value=S.profile.floor;
-    $("societyInput").value=S.profile.society;
-    $("mapsInput").value=S.profile.maps||"";
-    $("landmarkInput").value=S.profile.landmark||"";
-    $("payFreqSelect").value=S.profile.payment_preference;
-    // Default to sameAddr=true for returning customers (they already have a saved address)
-    S.sameAddr=true;
-    $("sameAddrCheck").checked=true;
-    $("singleAddrBlock").style.display="block";
-    $("perMealAddrBlock").style.display="none";
-    // Init mealAddrs from profile
-    if(!S.mealAddrs){
-      const def={area:S.profile.area,wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,maps:S.profile.maps||"",landmark:S.profile.landmark||""};
-      S.mealAddrs={Breakfast:{...def},Lunch:{...def},Dinner:{...def}};
-    }
-    $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
-    S.step++;updateNav();window.scrollTo(0,0);
   }catch(err){
     clearTimeout(_lTid);
-    if(err.name==="AbortError"){toast(t('toast_server_slow'),4000);$("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;return;}
-    S.isFirstTime=true;$("returningBadge").innerHTML="";
+    if(err.name==="AbortError"){toast(t('toast_server_slow'),4000);}
     $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
-    S.step++;updateNav();window.scrollTo(0,0);
+    // Let them proceed without auth if server timeouts? No, block them.
+    S.authMode = null;
   }
+}
+
+function handleLoginSuccess(profileData, isNew) {
+  if (profileData) {
+    const wb = Number(profileData.wallet_balance) || 0;
+    toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
+    updateWalletBalanceUI(wb);
+    S.isFirstTime = false;
+    const parts = (profileData.name || "").trim().split(" ");
+    const fn = parts[0] || "";
+    const ln = parts.slice(1).join(" ") || "";
+    S.profile = {...S.profile, name: profileData.name || "", first_name: fn, last_name: ln,
+      area: profileData.area || "", wing: profileData.wing || "",
+      flat: profileData.flat || "", floor: profileData.floor || "", society: profileData.society || "",
+      maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment"
+    };
+    S.walletBalance = wb;
+    S.is10Day = S.profile.payment_preference === "Prepaid Wallet";
+    $("returningBadge").innerHTML = `<div class="customer-badge">
+      <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
+      <div class="csub">${t('welcome_back_hint')}</div></div></div>
+    <div style="background:#f0faf4;border:1px solid #6fcf97;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.78rem;color:#1a6640;">
+      ${t('no_changes_hint')}
+    </div>`;
+  } else {
+    S.isFirstTime = true;
+    $("returningBadge").innerHTML = "";
+    if (!localStorage.getItem("sk_seen_how")) showHowScreen();
+  }
+  
+  // Header Logout Button Setup
+  const headerBtn = document.getElementById("headerLogoutWrap");
+  if (!headerBtn) {
+    const wrap = document.createElement("div");
+    wrap.id = "headerLogoutWrap";
+    wrap.style.cssText = "position:absolute;top:15px;right:20px;";
+    wrap.innerHTML = `<button onclick="logoutCustomer()" style="background:transparent;border:1px solid #e74c3c;color:#e74c3c;padding:4px 8px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Log out</button>`;
+    document.querySelector(".header").appendChild(wrap);
+  } else {
+    headerBtn.style.display = "block";
+  }
+
+  // Pre-fill form
+  $("firstNameInput").value = $("firstNameInput").value || S.profile.first_name;
+  $("lastNameInput").value = $("lastNameInput").value || S.profile.last_name;
+  $("areaSelect").value = S.profile.area;
+  $("wingInput").value = S.profile.wing;
+  $("flatInput").value = S.profile.flat;
+  $("floorInput").value = S.profile.floor;
+  $("societyInput").value = S.profile.society;
+  $("mapsInput").value = S.profile.maps || "";
+  $("landmarkInput").value = S.profile.landmark || "";
+  $("payFreqSelect").value = S.profile.payment_preference;
+  
+  if (!S.isFirstTime) {
+    S.sameAddr = true;
+    $("sameAddrCheck").checked = true;
+    $("singleAddrBlock").style.display = "block";
+    $("perMealAddrBlock").style.display = "none";
+  }
+  
+  if (!S.mealAddrs) {
+    const def = {area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society, maps: S.profile.maps || "", landmark: S.profile.landmark || ""};
+    S.mealAddrs = {Breakfast: {...def}, Lunch: {...def}, Dinner: {...def}};
+  }
+  
+  $("btnNext").textContent = t('btn_continue'); $("btnNext").disabled = false;
+  S.step++; updateNav(); window.scrollTo(0,0);
+}
+
+function logoutCustomer() {
+  localStorage.removeItem('sk_logged_in_phone');
+  localStorage.removeItem('sk_logged_in_pin');
+  location.reload();
 }
 
 function updateWalletBalanceUI(wb) {

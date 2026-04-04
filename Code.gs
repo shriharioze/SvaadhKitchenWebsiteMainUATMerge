@@ -184,6 +184,7 @@ function doGet(e) {
     if (action === "version")       return jsonRes({version: CODE_VERSION, status:"ok"});
     if (action === "getAreas")      return jsonRes(getAreas());
     if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
+    if (action === "verifyLogin")   return jsonRes(verifyLogin(p.phone, p.pin));
     if (action === "getMenu")       return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
@@ -443,10 +444,18 @@ function getCustomer(phone) {
   const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
   const rows = getAllRows(ws);
   const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
-  if (!r) return {found: false, wallet_balance: 0};
+  if (!r) return {found: false, hasPin: false, wallet_balance: 0};
+  
+  const hasPin = (String(r.PIN || "").trim() !== "");
+  
+  if (hasPin) {
+    // Return early without profile details to secure them.
+    return { found: true, hasPin: true };
+  }
   
   return {
     found: true,
+    hasPin: false,
     name:               r.Name || "",
     area:               r.Area || "",
     wing:               r.Wing || "",
@@ -457,6 +466,34 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     wallet_balance:     _calculateWalletBalance(phone)
+  };
+}
+
+// ── VERIFY LOGIN ─────────────────────────────────────────────
+function verifyLogin(phone, pin) {
+  if (!phone || !pin) return {success: false, error: "Missing Phone or PIN."};
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
+  const rows = getAllRows(ws);
+  const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
+  
+  if (!r) return {success: false, error: "Account not found."};
+  if (String(r.PIN).trim() !== String(pin).trim()) return {success: false, error: "Incorrect PIN."};
+  
+  return {
+    success: true,
+    profile: {
+      name:               r.Name || "",
+      area:               r.Area || "",
+      wing:               r.Wing || "",
+      flat:               r.Flat || "",
+      floor:              r.Floor || "",
+      society:            r.Society || "",
+      maps:               r.Maps_Link || "",
+      landmark:           r.Landmark || "",
+      payment_preference: r.Payment_Freq || "Daily Payment",
+      wallet_balance:     _calculateWalletBalance(phone)
+    }
   };
 }
 
@@ -825,37 +862,41 @@ function _upsertCustomer(ss, profile) {
     profile.society, profile.area
   ].filter(Boolean).join(", ");
 
-  if (existing) {
-    const rowNum = existing._row;
-    const hIdx = headerIndex(ws);
-    const setCell = (col, val) => { if (hIdx[col]) ws.getRange(rowNum, hIdx[col]).setValue(val); };
-    setCell("Name",        profile.name    || existing.Name);
-    setCell("Area",        profile.area    || existing.Area);
-    setCell("Wing",        profile.wing    !== undefined ? profile.wing    : existing.Wing);
-    setCell("Flat",        profile.flat    !== undefined ? profile.flat    : existing.Flat);
-    setCell("Floor",       profile.floor   !== undefined ? profile.floor  : existing.Floor);
-    setCell("Society",     profile.society !== undefined ? profile.society: existing.Society);
-    setCell("Full_Address",fullAddr || existing.Full_Address);
-    setCell("Maps_Link",   profile.maps    !== undefined ? profile.maps   : existing.Maps_Link);
-    setCell("Landmark",    profile.landmark!== undefined ? profile.landmark: existing.Landmark);
-    setCell("Payment_Freq",profile.payment_preference || existing.Payment_Freq);
-  } else {
-    ws.appendRow([
-      profile.phone || "",
-      profile.name  || "",
-      profile.area  || "",
-      profile.wing  || "",
-      profile.flat  || "",
-      profile.floor || "",
-      profile.society || "",
-      fullAddr,
-      profile.maps    || "",
-      profile.landmark|| "",
-      profile.payment_preference || "Daily Payment",
-      getISTTimestamp(),
-      ""   // Ledger_Sheet_ID filled later
-    ]);
+  let rowNum;
+  const hIdx = headerIndex(ws);
+
+  // Dynamically add PIN column if missing for legacy sheets
+  if (!hIdx["PIN"]) {
+    ws.getRange(1, ws.getLastColumn() + 1).setValue("PIN");
+    hIdx["PIN"] = ws.getLastColumn();
   }
+
+  if (existing) {
+    rowNum = existing._row;
+  } else {
+    ws.appendRow([]);
+    rowNum = ws.getLastRow();
+  }
+
+  const setCell = (col, val) => { if (hIdx[col] && val !== undefined && val !== null) ws.getRange(rowNum, hIdx[col]).setValue(val); };
+
+  if (!existing) {
+    setCell("Phone",      profile.phone || "");
+    setCell("Created_At", getISTTimestamp());
+    setCell("Payment_Freq", "Daily Payment");
+  }
+
+  setCell("Name",         profile.name);
+  setCell("Area",         profile.area);
+  setCell("Wing",         profile.wing);
+  setCell("Flat",         profile.flat);
+  setCell("Floor",        profile.floor);
+  setCell("Society",      profile.society);
+  setCell("Full_Address", fullAddr);
+  setCell("Maps_Link",    profile.maps);
+  setCell("Landmark",     profile.landmark);
+  setCell("Payment_Freq", profile.payment_preference);
+  setCell("PIN",          profile.pin);
 }
 
 // ── GET CUSTOMER ORDERS ──────────────────────────────────────
