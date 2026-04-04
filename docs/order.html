@@ -1895,7 +1895,7 @@ function buildBillScreen(){
       }
       
       let smallOrderFee = 0;
-      if ((meal === "Lunch" || meal === "Dinner") && sub < 50) {
+      if (sub > 0 && sub < 50) {
         smallOrderFee = 10;
         totalSmallOrderFee += smallOrderFee;
         html+=`<div class="bill-line delivery-line" style="color:#d35400;">

@@ -722,7 +722,7 @@ function submitOrder(body) {
       const discAmt   = getDisc(sub);
       
       let smallOrderFee = 0;
-      if ((mealType === "Lunch" || mealType === "Dinner") && sub > 0 && sub < 50) {
+      if (sub > 0 && sub < 50) {
         smallOrderFee = 10;
       }
 
