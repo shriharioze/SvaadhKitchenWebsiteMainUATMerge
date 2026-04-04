@@ -194,6 +194,7 @@ function doGet(e) {
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
     if (action === "get10DayRunning")   return jsonRes(get10DayRunning(p.phone));
+    if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
     if (action === "getAdminData") {
       if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getAdminData());
@@ -922,6 +923,41 @@ function _upsertCustomer(ss, profile) {
 }
 
 // ── GET CUSTOMER ORDERS ──────────────────────────────────────
+// ── GET DAY TOTALS FOR DATES (used to compute combined-day fees) ─
+// Returns existing meal subtotals per date for the given phone,
+// excluding the current cart being built (which is not yet placed).
+function getDayTotalsForDates(phone, datesParam) {
+  if (!phone || !datesParam) return { dayTotals: {} };
+  const dates = String(datesParam).split(',').map(d => d.trim()).filter(Boolean);
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(ws);
+
+  const result = {};
+  dates.forEach(d => { result[d] = {}; });
+
+  rows.filter(r => {
+    const rPhone = String(r.Phone || '').trim();
+    const status = String(r.Status || '').toLowerCase();
+    if (rPhone !== String(phone).trim()) return false;
+    if (status === 'deleted' || status === 'cancelled') return false;
+    const rDate = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+      : String(r.Order_Date).trim();
+    return dates.includes(rDate);
+  }).forEach(r => {
+    const rDate = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+      : String(r.Order_Date).trim();
+    const meal = String(r.Meal_Type).trim();
+    if (!result[rDate][meal]) result[rDate][meal] = { subtotal: 0, count: 0 };
+    result[rDate][meal].subtotal += Number(r.Food_Subtotal || 0);
+    result[rDate][meal].count++;
+  });
+
+  return { dayTotals: result };
+}
+
 function getCustomerOrders(phone) {
   if (!phone) return {orders:[]};
   const ss = getSpreadsheet();
@@ -1015,21 +1051,90 @@ function deleteOrder(phone, rowId, refundType) {
     }
   }
 
-  // GRACEFUL REFUND HANDLING
+  // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
   if (pStatStr === "paid" || pStatStr === "wallet paid") {
-    const refundAmt = Number(r.Net_Total) || 0;
     const custName = r.Customer_Name || "Customer";
-    
+    const ordersWs2 = ws; // same sheet
+    const deleteDate = orderDateStr;
+    const deleteMeal = r.Meal_Type;
+
+    // Get all orders for this phone+date (excluding the one being deleted)
+    const sameDayRows = rows.filter(x =>
+      String(x.Phone).trim() === String(phone).trim() &&
+      (() => {
+        const xd = x.Order_Date instanceof Date
+          ? Utilities.formatDate(x.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+          : String(x.Order_Date).trim();
+        return xd === deleteDate && String(x.Submission_ID) !== String(rowId);
+      })()
+    );
+
+    // Calc remaining day subtotal (food only) after deletion
+    const remainingDaySubtotal = sameDayRows.reduce((s, x) => s + (Number(x.Food_Subtotal) || 0), 0);
+    // Calc old day subtotal (including deleted row)
+    const oldDaySubtotal = remainingDaySubtotal + (Number(r.Food_Subtotal) || 0);
+
+    // Discount eligibility helper
+    const discRate = (sub) => sub >= 450 ? 0.075 : sub >= 300 ? 0.05 : 0;
+    const oldRate = discRate(oldDaySubtotal);
+    const newRate = discRate(remainingDaySubtotal);
+
+    // Calc over-discount on remaining orders: they received discount at oldRate
+    // but now only deserve newRate
+    let overDiscount = 0;
+    if (oldRate > newRate) {
+      const overOnRemaining = sameDayRows.reduce((s, x) => {
+        const xSub = Number(x.Food_Subtotal) || 0;
+        const oldD = Math.round(xSub * oldRate);
+        const newD = Math.round(xSub * newRate);
+        return s + (oldD - newD);
+      }, 0);
+      overDiscount = overOnRemaining;
+    }
+
+    // Delivery eligibility for same-meal remaining orders
+    // If combined meal total drops below FREE_THR after deletion → those remaining orders
+    // should have been charged delivery → customer saved delivery on them unjustly
+    const FREE_THR_D = 100;
+    const freeAreaNames2 = getAreas().filter(a => a.free).map(a => a.name);
+    const sameMealRemaining = sameDayRows.filter(x => x.Meal_Type === deleteMeal);
+    const remainingMealSub = sameMealRemaining.reduce((s,x) => s + (Number(x.Food_Subtotal)||0), 0);
+    const deletedMealSub = Number(r.Food_Subtotal) || 0;
+    const combinedMealSub = remainingMealSub + deletedMealSub;
+    const mealArea = r.Area || profile.area || "";
+    const isNonFree = !freeAreaNames2.includes(mealArea);
+
+    // Delivery was waived on remaining orders because combined total was >= FREE_THR
+    // After deletion, if remaining < FREE_THR, those remaining orders owe delivery
+    let deliveryOwed = 0;
+    if (isNonFree && combinedMealSub >= FREE_THR_D && remainingMealSub < FREE_THR_D) {
+      // Each remaining same-meal order that was charged ₹0 delivery now owes ₹10
+      deliveryOwed = sameMealRemaining.filter(x => (Number(x.Delivery_Charge)||0) === 0).length * 10;
+    }
+
+    // Small order fee: if remaining same-meal sub was >= 50 (no fee) but now < 50
+    let smallFeeOwed = 0;
+    if ((deleteMeal === 'Lunch' || deleteMeal === 'Dinner') &&
+        combinedMealSub >= 50 && remainingMealSub < 50) {
+      smallFeeOwed = sameMealRemaining.filter(x => (Number(x.Small_Order_Fee)||0) === 0).length * 10;
+    }
+
+    // Actual refund = what was charged on deleted row minus any amount now owed back
+    const adjustment = overDiscount + deliveryOwed + smallFeeOwed;
+    const rawRefund = Number(r.Net_Total) || 0;
+    const refundAmt = Math.max(0, rawRefund - adjustment);
+
     if (refundType === "wallet") {
-      // 1-click instant refund to Svaadh Wallet
       _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true);
-    } 
+    }
     else if (refundType === "manual_upi") {
-      // Log for Admin to handle manually (24h promise)
-      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp"];
+      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
-      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now]);
+      const note = adjustment > 0
+        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
+        : "";
+      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note]);
     }
   }
 

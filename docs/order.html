@@ -1889,20 +1889,40 @@ function hasAnyOrder(){
 // ═══════════════════════════════════════════════════════════
 // STEP 5: BILL
 // ═══════════════════════════════════════════════════════════
-function buildBillScreen(){
+async function buildBillScreen(){
   S.tempUpiMode = false;
   $("summaryCard").style.display = "block";
+  $("billSummaryContent").innerHTML = `<div style="text-align:center;padding:24px;"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:6px;">Building your summary…</p></div>`;
+
+  // Fetch existing orders for all selected dates (for combined-day billing logic)
+  let existingDayTotals = {};
+  try {
+    const dates = S.selectedDates.join(',');
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getDayTotalsForDates&phone=${S.phone}&dates=${encodeURIComponent(dates)}`);
+    const data = await res.json();
+    existingDayTotals = data.dayTotals || {};
+  } catch(e) { /* non-fatal: fall back to no existing orders */ }
+
   let html="",grandTotal=0;
   for(const date of S.selectedDates){
     const dayOrders=S.orders[date]||{};
     let dayFoodTotal=0;
     ["Breakfast","Lunch","Dinner"].forEach(m=>{dayFoodTotal+=dayOrders[m]?.subtotal||0;});
     if(dayFoodTotal===0)continue;
+
+    // Combined day total includes previously placed orders for this date
+    const existDay = existingDayTotals[date] || {};
+    const existingDayFoodTotal = Object.values(existDay).reduce((s,m) => s+(m.subtotal||0), 0);
+    const combinedDayTotal = dayFoodTotal + existingDayFoodTotal;
+
     let discRate=0,discLabel="";
-    if(dayFoodTotal>=DISC_T2.min){discRate=DISC_T2.rate;discLabel=`7.5% off (≥ ₹${DISC_T2.min})`;}
-    else if(dayFoodTotal>=DISC_T1.min){discRate=DISC_T1.rate;discLabel=`5% off (≥ ₹${DISC_T1.min})`;}
+    if(combinedDayTotal>=DISC_T2.min){discRate=DISC_T2.rate;discLabel=`7.5% off (≥ ₹${DISC_T2.min})`;}
+    else if(combinedDayTotal>=DISC_T1.min){discRate=DISC_T1.rate;discLabel=`5% off (≥ ₹${DISC_T1.min})`;}
     const discAmt=Math.round(dayFoodTotal*discRate);
     html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
+    if(existingDayFoodTotal > 0) {
+      html+=`<div style="font-size:0.7rem;color:#7f8c8d;margin-bottom:6px;padding:4px 8px;background:#f8f9fa;border-radius:6px;">📋 Existing orders today: ₹${existingDayFoodTotal} → Combined day total: ₹${combinedDayTotal}</div>`;
+    }
     let totalDelivery=0;
     let totalSmallOrderFee=0;
     let totalInflationSurcharge=0;
@@ -1916,34 +1936,34 @@ function buildBillScreen(){
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
 
-      // Upsell Nudges
+      // Combined MEAL-level total (for delivery & small order fee eligibility)
+      const existMealSub = (existDay[meal]?.subtotal) || 0;
+      const combinedMealSub = sub + existMealSub;
       const mAddr = getMealAddr(meal);
+
+      // Upsell Nudges (based on combined total)
       if (meal === "Lunch" || meal === "Dinner") {
-        if (sub > 0 && sub < 50) {
-          const diff = 50 - sub;
-          html += `<div style="font-size:0.72rem; color:#2980b9; background:#ebf5fb; padding:6px 10px; border-radius:6px; margin:8px 0 4px; display:flex; align-items:center; gap:6px; font-weight:500; border:1px solid #d6eaf8;">
-            <span>💡 Order <strong>₹${diff}</strong> more to avoid the Small Order Fee!</span>
-          </div>`;
-        } else if (sub >= 50 && sub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
-          const diff = FREE_THRESHOLD - sub;
-          html += `<div style="font-size:0.72rem; color:#27ae60; background:#f0faf4; padding:6px 10px; border-radius:6px; margin:8px 0 4px; display:flex; align-items:center; gap:6px; font-weight:500; border:1px solid #d5f5e3;">
-            <span>✨ Order <strong>₹${diff}</strong> more for <strong>FREE delivery</strong>!</span>
-          </div>`;
+        if (combinedMealSub > 0 && combinedMealSub < 50) {
+          const diff = 50 - combinedMealSub;
+          html += `<div style="font-size:0.72rem;color:#2980b9;background:#ebf5fb;padding:6px 10px;border-radius:6px;margin:8px 0 4px;display:flex;align-items:center;gap:6px;font-weight:500;border:1px solid #d6eaf8;"><span>💡 Order <strong>₹${diff}</strong> more to avoid the Small Order Fee!</span></div>`;
+        } else if (combinedMealSub >= 50 && combinedMealSub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
+          const diff = FREE_THRESHOLD - combinedMealSub;
+          html += `<div style="font-size:0.72rem;color:#27ae60;background:#f0faf4;padding:6px 10px;border-radius:6px;margin:8px 0 4px;display:flex;align-items:center;gap:6px;font-weight:500;border:1px solid #d5f5e3;"><span>✨ Order <strong>₹${diff}</strong> more for <strong>FREE delivery</strong>!</span></div>`;
         }
       }
       
       let mealExtras = [];
       let mExtrasTotal = 0;
 
-      // Small Order Fee
-      if ((meal === "Lunch" || meal === "Dinner") && sub > 0 && sub < 50) {
+      // Small Order Fee — based on combined meal total
+      if ((meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
         const fee = 10;
         mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
         mExtrasTotal += fee; totalSmallOrderFee += fee;
       }
 
-      // Delivery
-      if (!FREE_AREAS.includes(mAddr.area) && sub > 0 && sub < FREE_THRESHOLD) {
+      // Delivery — waived if combined meal total >= FREE_THRESHOLD
+      if (!FREE_AREAS.includes(mAddr.area) && sub > 0 && combinedMealSub < FREE_THRESHOLD) {
         const fee = DELIVERY_CHARGE;
         mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
         mExtrasTotal += fee; totalDelivery += fee;
