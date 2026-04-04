@@ -623,7 +623,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <style>@keyframes slideDown{from{transform:translateY(-10px);opacity:0;}to{transform:translateY(0);opacity:1;}}</style>
 
 <!-- PROGRESS -->
-<div class="progress-wrap">
+<div class="progress-wrap" style="position:relative;z-index:50;">
+  <button id="globalLogoutWrap" onclick="logoutCustomer()" style="display:none;position:absolute;right:15px;top:50%;transform:translateY(-50%);background:#fff5f4;border:1px solid #ffcdcc;color:#c0392b;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);z-index:60;">Log out</button>
   <div class="progress-steps" id="progressSteps">
     <div class="step-dot active" id="dot0"></div>
     <div class="step-dot" id="dot1"></div>
@@ -691,9 +692,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <div class="screen" id="screen1">
 
   <!-- Name + payment -->
-  <div style="text-align:right;margin-bottom:8px;padding-right:10px;">
-    <button onclick="logoutCustomer()" style="background:#fff5f4;border:1px solid #ffcdcc;color:#c0392b;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);">Log out</button>
-  </div>
   <div class="card">
     <h2 data-i18n="step2_details_title">👤 Your Details</h2>
     <div id="returningBadge"></div>
