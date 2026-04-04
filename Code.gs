@@ -185,6 +185,11 @@ function doGet(e) {
     if (action === "getAreas")      return jsonRes(getAreas());
     if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
     if (action === "verifyLogin")   return jsonRes(verifyLogin(p.phone, p.pin));
+    if (action === "setPin") {
+      const ss = getSpreadsheet();
+      _upsertCustomer(ss, {phone: p.phone, pin: p.pin});
+      return jsonRes({success: true});
+    }
     if (action === "getMenu")       return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
