@@ -726,7 +726,7 @@ function submitOrder(body) {
         smallOrderFee = 10;
       }
 
-      const inflationSurcharge = Math.floor(sub / 10);
+      const inflationSurcharge = Math.ceil(sub / 10);
       const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt;
 
       // Build items JSON
