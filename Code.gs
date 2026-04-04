@@ -721,7 +721,8 @@ function submitOrder(body) {
         smallOrderFee = 10;
       }
 
-      const netTotal  = sub + delCharge + smallOrderFee - discAmt;
+      const inflationSurcharge = Math.floor(sub / 10);
+      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt;
 
       // Build items JSON
       const itemsObj = {};
@@ -766,10 +767,15 @@ function submitOrder(body) {
         ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Small_Order_Fee");
         hIdx["Small_Order_Fee"] = ordersWs.getLastColumn();
       }
+      if (!hIdx["Inflation_Surcharge"]) {
+        ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Inflation_Surcharge");
+        hIdx["Inflation_Surcharge"] = ordersWs.getLastColumn();
+      }
       set("Items_JSON",          JSON.stringify(itemsObj));
       set("Special_Notes",       notes);
       set("Food_Subtotal",       sub);
       set("Small_Order_Fee",     smallOrderFee);
+      set("Inflation_Surcharge", inflationSurcharge);
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
       set("Net_Total",           netTotal);

@@ -1886,6 +1886,7 @@ function buildBillScreen(){
     html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
     let totalDelivery=0;
     let totalSmallOrderFee=0;
+    let totalInflationSurcharge=0;
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
@@ -1908,9 +1909,20 @@ function buildBillScreen(){
         html+=`<div class="bill-line delivery-line"><span>🚚 Delivery (${meal})</span><span>₹${DELIVERY_CHARGE}</span></div>`;
         totalDelivery+=DELIVERY_CHARGE;
       }
+      
+      const inflationSurcharge = Math.floor(sub / 10);
+      if (inflationSurcharge > 0) {
+        totalInflationSurcharge += inflationSurcharge;
+        html+=`<div class="bill-line delivery-line" style="color:#7f8c8d;">
+           <span style="display:flex;align-items:center;gap:6px;">📈 Platform Surcharge 
+             <span class="info-icon" onclick="toast('A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market.', 5000)" style="background:#ddd;color:#333;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
+           </span>
+           <span>₹${inflationSurcharge}</span>
+         </div>`;
+      }
     });
     if(discAmt>0)html+=`<div class="bill-line discount"><span>🎉 ${discLabel}</span><span>−₹${discAmt}</span></div>`;
-    const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee;grandTotal+=dayTotal;
+    const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee+totalInflationSurcharge;grandTotal+=dayTotal;
     html+=`<div class="bill-line date-total"><span>${t('day_total')}</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
   }
   S.grandTotal=grandTotal;
