@@ -1343,6 +1343,8 @@ async function goNext(){
          }
        } catch(e) { toast("Server error, please try again."); $("btnNext").textContent = "Verify PIN & Continue"; $("btnNext").disabled = false; }
      } else if (S.authMode === "create") {
+       const forbidden_pins = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999","1234","4321","9876","2580"];
+       if(forbidden_pins.includes(enteredPin)){toast("Please choose a stronger PIN.", 3000);return;}
        S.profile.pin = enteredPin;
        localStorage.setItem('sk_logged_in_phone', S.phone);
        localStorage.setItem('sk_logged_in_pin', enteredPin);
