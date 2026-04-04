@@ -894,7 +894,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
 <!-- STEP 5: BILL + PAYMENT -->
 <div class="screen" id="screen4">
-  <div class="card">
+  <div class="card" id="summaryCard">
     <h2 data-i18n="step5_summary_title">🧾 Order Summary</h2>
     <div id="walletBalMsg" class="wallet-bal-msg" style="display:none;margin-bottom:12px;text-align:center;font-size:0.85rem;color:#2e7d32;background:#e8f5e9;padding:10px;border-radius:10px;border:1px solid #c8e6c9;"></div>
     <div id="billSummaryContent"></div>
@@ -1876,6 +1876,7 @@ function hasAnyOrder(){
 // ═══════════════════════════════════════════════════════════
 function buildBillScreen(){
   S.tempUpiMode = false;
+  $("summaryCard").style.display = "block";
   let html="",grandTotal=0;
   for(const date of S.selectedDates){
     const dayOrders=S.orders[date]||{};
@@ -2332,7 +2333,10 @@ async function placeOrder(settleAll = false){
   }
 }
 function showSuccess(id){
-  $("paymentCard").style.display="none";$("tenDayCard").style.display="none";
+  $("summaryCard").style.display="none";
+  $("paymentCard").style.display="none";
+  $("tenDayCard").style.display="none";
+  $("walletCard").style.display="none";
   $("successCard").style.display="block";
   $("orderIdDisplay").textContent=id.toUpperCase();
   $("bottomNav").style.display="none";window.scrollTo(0,0);
