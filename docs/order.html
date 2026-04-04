@@ -1496,8 +1496,9 @@ function handleLoginSuccess(profileData, isNew) {
     const wrap = document.createElement("div");
     wrap.id = "headerLogoutWrap";
     wrap.style.cssText = "position:absolute;top:15px;right:20px;";
-    wrap.innerHTML = `<button onclick="logoutCustomer()" style="background:transparent;border:1px solid #e74c3c;color:#e74c3c;padding:4px 8px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Log out</button>`;
-    document.querySelector(".header").appendChild(wrap);
+    wrap.innerHTML = `<button onclick="logoutCustomer()" style="background:transparent;border:1px solid #ffcdcc;color:#ffeded;padding:5px 8px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Log out</button>`;
+    const pageHeader = document.querySelector(".page-header");
+    if (pageHeader) pageHeader.appendChild(wrap);
   } else {
     headerBtn.style.display = "block";
   }
