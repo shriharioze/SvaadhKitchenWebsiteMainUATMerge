@@ -1370,7 +1370,9 @@ async function goNext(){
       }
     }
     $("btnNext").disabled=true;$("btnNext").textContent=t('loading_building');$("btnNext").style.opacity="0.6";
+    S.step++;updateNav();window.scrollTo(0,0);
     buildBillScreen();
+    return;
   }
   if(S.step===4){await placeOrder();return;}
   S.step++;updateNav();window.scrollTo(0,0);
