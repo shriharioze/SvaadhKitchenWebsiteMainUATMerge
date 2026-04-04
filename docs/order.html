@@ -1929,6 +1929,18 @@ async function buildBillScreen(){
     if(existingDayFoodTotal > 0) {
       html+=`<div style="font-size:0.7rem;color:#7f8c8d;margin-bottom:6px;padding:5px 8px;background:#f8f9fa;border-radius:6px;line-height:1.5;">📋 Existing orders today: <strong>₹${existingDayFoodTotal}</strong> → Combined day total: <strong>₹${combinedDayTotal}</strong></div>`;
     }
+    // Discount upsell nudge based on combined day total
+    if(combinedDayTotal < DISC_T1.min) {
+      const diff = DISC_T1.min - combinedDayTotal;
+      html+=`<div style="font-size:0.72rem;color:#8e44ad;background:#f5eef8;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #e8d5f5;">
+        🎯 Add <strong>₹${diff}</strong> more to this day's order to get <strong>5% off</strong> your total!
+      </div>`;
+    } else if(combinedDayTotal >= DISC_T1.min && combinedDayTotal < DISC_T2.min) {
+      const diff = DISC_T2.min - combinedDayTotal;
+      html+=`<div style="font-size:0.72rem;color:#8e44ad;background:#f5eef8;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #e8d5f5;">
+        🎯 Add <strong>₹${diff}</strong> more to upgrade to <strong>7.5% off</strong>!
+      </div>`;
+    }
     let totalDelivery=0;
     let totalSmallOrderFee=0;
     let totalInflationSurcharge=0;
