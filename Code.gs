@@ -182,91 +182,99 @@ const BUSINESS_CONTEXT = {
 // ── ENTRY POINT ──────────────────────────────────────────────
 function doGet(e) {
   const p = e.parameter;
-  const action = p.action || "";
+  const action = p.parameter ? p.action : (e.parameter.action || ""); // Fix for inconsistent parameter access
+  const pin = p.pin || "";
+  
   try {
-    if (action === "version")       return jsonRes({version: CODE_VERSION, status:"ok"});
-    if (action === "getAreas")      return jsonRes(getAreas());
-    if (action === "getCustomer")   return jsonRes(getCustomer(p.phone));
-    if (action === "verifyLogin")   return jsonRes(verifyLogin(p.phone, p.pin));
-    if (action === "setPin") {
-      const ss = getSpreadsheet();
-      _upsertCustomer(ss, {phone: p.phone, pin: p.pin});
-      return jsonRes({success: true});
-    }
-    if (action === "getMenu")       return jsonRes(getMenu(p.date));
-    if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
-    if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
-    if (action === "get10DayRunning")   return jsonRes(get10DayRunning(p.phone));
-    if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
-    if (action === "getAdminData") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(getAdminData());
-    }
-    if (action === "getUnpaidCustomers") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(getUnpaidCustomers(p));
-    }
+    if (action === "version") return jsonRes({version: CODE_VERSION, status:"ok"});
+    if (action === "getAreas") return jsonRes(getAreas());
+    if (action === "getCustomer") return jsonRes(getCustomer(p.phone));
+    if (action === "verifyLogin") return jsonRes(verifyLogin(p.phone, p.pin));
+    
+    // Auth Tiers
+    const isAdmin = (pin === ADMIN_PIN && pin !== "");
+    const isStaff = (isAdmin || (pin === KITCHEN_PIN && pin !== ""));
+
+    // READ-ONLY STAFF ACCESS (Kitchen / Driver)
     if (action === "getKitchenSummary") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getKitchenSummary(p.date));
     }
     if (action === "getDriverOrders") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getDriverOrders(p.date));
     }
+    if (action === "getLabelOrders") {
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getLabelOrders(p.date, p.meal));
+    }
+
+    // FULL ADMIN ACCESS
+    if (action === "getAdminData") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getAdminData());
+    }
+    if (action === "getUnpaidCustomers") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(getUnpaidCustomers(p));
+    }
     if (action === "getOrderSummary") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getOrderSummary(p.date));
     }
     if (action === "getPackagingExpenses") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPackagingExpenses(p.date));
     }
-    if (action === "getLabelOrders") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(getLabelOrders(p.date, p.meal));
-    }
     if (action === "getOrderHistory") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getOrderHistory(p));
     }
     if (action === "getCustomerList") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getCustomerList());
     }
     if (action === "getCustomerHistory") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getCustomerHistory(p.phone));
     }
     if (action === "getDatePayments") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getDatePayments(p.date));
     }
     if (action === "getAnalytics") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getAnalytics(p));
     }
     if (action === "getChurnReport") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getChurnReport(p.sinceDate));
     }
     if (action === "get10DayBilling") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(get10DayBilling(p));
     }
     if (action === "getPendingRefunds") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPendingRefunds());
     }
     if (action === "getPendingRecharges") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPendingRecharges());
     }
     if (action === "getPendingUPIPayments") {
-      if (p.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPendingUPIPayments());
     }
-    return jsonRes({error:"Unknown action"});
+    
+    // Fallback menu / orders for customers (legacy)
+    if (action === "getMenu") return jsonRes(getMenu(p.date));
+    if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
+    if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
+    if (action === "get10DayRunning") return jsonRes(get10DayRunning(p.phone));
+    if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
+
+    return jsonRes({error:"Unknown action or Access Denied"});
   } catch(err) {
     return jsonRes({error: err.message});
   }
@@ -276,73 +284,86 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     const action = body._action || "";
-    if (action === "deleteOrder")       return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
-    if (action === "adminCancelOrder")  return jsonRes(adminCancelOrder(body));
+    const pin = body.pin || "";
+    const isAdmin = (pin === ADMIN_PIN && pin !== "");
+    const isStaff = (isAdmin || (pin === KITCHEN_PIN && pin !== ""));
+
+    // Customer actions (pinned via their own phone/PIN handled inside functions)
+    if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
+    
+    // Delivery Actions (Staff + Admin)
+    if (action === "markDelivered") {
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markDelivered(body));
+    }
+    if (action === "batchMarkEnRoute") {
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(batchMarkEnRoute(body));
+    }
+    if (action === "markEnRoute") {
+      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markEnRoute(body));
+    }
+
+    // Admin-only write actions
+    if (action === "adminCancelOrder") {
+      if (!isAdmin) return jsonRes({success:false, error: "Invalid Admin PIN"});
+      return jsonRes(adminCancelOrder(body));
+    }
     if (action === "markRefunded") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markRefunded(body.submissionId));
     }
     if (action === "approveWalletRecharge") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(approveWalletRecharge(body));
     }
     if (action === "deleteBreakfastItem") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(deleteBreakfastItem(body.id));
     }
     if (action === "saveBreakfastItem") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveBreakfastItem(body));
     }
     if (action === "deleteSabjiItem") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(deleteSabjiItem(body.id));
     }
     if (action === "saveSabjiItem") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveSabjiItem(body));
     }
     if (action === "saveLabels") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveLabels(body));
     }
-    if (action === "getReviews")      return jsonRes(getReviews());
-    if (action === "chat")            return jsonRes(handleChat(body));
     if (action === "saveArea") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(saveArea(body));
     }
     if (action === "deleteArea") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(deleteArea(body));
     }
     if (action === "markCustomersPaid") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markCustomersPaid(body));
     }
     if (action === "markOrdersStatus") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markOrdersStatus(body));
     }
-    if (action === "markEnRoute") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(markEnRoute(body));
+    if (action === "getReviews") return jsonRes(getReviews());
+    if (action === "chat") return jsonRes(handleChat(body));
+    if (action === "submitWalletRecharge") return jsonRes(submitWalletRecharge(body));
+    if (action === "payAllPendingWithWallet") return jsonRes(payAllPendingWithWallet(body));
+
+    if (action === "saveMenu") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(saveMenu(body));
     }
-    if (action === "batchMarkEnRoute") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(batchMarkEnRoute(body));
-    }
-    if (action === "submitWalletRecharge") {
-      return jsonRes(submitWalletRecharge(body));
-    }
-    if (action === "payAllPendingWithWallet") {
-      return jsonRes(payAllPendingWithWallet(body));
-    }
-    if (action === "markDelivered") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(markDelivered(body));
-    }
-    if (body.pin === ADMIN_PIN)       return jsonRes(saveMenu(body));
+    
     // Regular order submission
     return jsonRes(submitOrder(body));
   } catch(err) {
@@ -2694,7 +2715,7 @@ function getReviews() {
 // Audit Fix #13: Helper to cancel order from Admin Dashboard
 function adminCancelOrder(body) {
   const pin = String(body.pin || "").trim();
-  if (pin !== "1994") return {success:false, error:"Invalid Admin PIN"}; // Basic security
+  if (pin !== ADMIN_PIN) return {success:false, error:"Invalid Admin PIN"}; // Security via Script Properties
   
   const phone = String(body.phone || "").trim();
   const dateStr = String(body.date || "").trim();

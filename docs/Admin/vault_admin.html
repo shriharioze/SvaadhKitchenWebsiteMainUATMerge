@@ -1863,6 +1863,24 @@ function getIST() {
 function toISO(d) {
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
+function isMealCancellable(dateStr, meal) {
+  const now = getIST();
+  const todayStr = toISO(now);
+  
+  // Future dates are always cancellable
+  if (dateStr > todayStr) return true;
+  // Past dates are NEVER cancellable
+  if (dateStr < todayStr) return false;
+  
+  // Today: check hour/minute cutoff
+  const time = now.getHours() * 60 + now.getMinutes();
+  const cutoffs = {
+    "Breakfast": 7 * 60,      // 7:00 AM
+    "Lunch":     9 * 60 + 30, // 9:30 AM
+    "Dinner":    17 * 60      // 5:00 PM (17:00)
+  };
+  return time < (cutoffs[meal] || 0);
+}
 function toast(msg, ms=2500) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
@@ -2235,7 +2253,10 @@ function renderOrderSummary(data) {
           ${c.notes ? `<br><span class="notes-badge">📝 ${c.notes}</span>` : ""}
         </td>
         <td style="text-align:center;">
-          <button class="cancel-order-btn" onclick="adminCancelMealOrder('${c.phone}','${date}','${meal}')" title="Cancel this order">✕ Cancel</button>
+          ${isMealCancellable(date, meal) 
+            ? `<button class="cancel-order-btn" onclick="adminCancelMealOrder('${c.phone}','${date}','${meal}')" title="Cancel this order">✕ Cancel</button>`
+            : `<span style="color:#aaa;font-size:0.65rem;font-weight:700;background:#f8f8f8;padding:4px 8px;border:1px solid #eee;border-radius:6px;display:inline-block;cursor:not-allowed;">🔒 Locked</span>`
+          }
         </td>
       </tr>`;
     }).join("");
