@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 12;  // Past Orders Support
+const CODE_VERSION   = 12.1; // Simplified Past Orders
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 

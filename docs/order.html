@@ -2597,13 +2597,11 @@ async function loadExistingOrders(phone){
       $("pastOrdersList").innerHTML=`<p style="font-size:0.8rem;color:#999;text-align:center;padding:12px;">No past orders found.</p>`;
     } else {
       $("pastOrdersList").innerHTML=past.map(o=>{
-        let trackHtml = o.deliveredAt ? `✅ Delivered` : `Completed`;
         return `<div class="order-manage-row" style="opacity:0.8;">
           <div class="omr-top">
             <div class="omr-info">
               <div class="omr-title" style="color:#666;">${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
-              <div style="font-size:0.7rem;color:#1b5e20;font-weight:600;margin-top:4px;">${trackHtml}</div>
             </div>
           </div>
         </div>`;
