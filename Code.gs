@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 6;   // Secure Tiered PINs (v2)
+const CODE_VERSION   = 8;   // Final Secure Rollout
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -2716,16 +2716,16 @@ function getReviews() {
 // Audit Fix #13: Helper to cancel order from Admin Dashboard
 function adminCancelOrder(body) {
   const pin = String(body.pin || "").trim();
-  if (pin !== ADMIN_PIN) return {success:false, error:"Invalid Admin PIN"}; // Security via Script Properties
+  if (pin !== ADMIN_PIN) return {success:false, error:"STRICT ADMIN PIN REQUIRED"};
   
   const phone = String(body.phone || "").trim();
   const dateStr = String(body.date || "").trim();
   const meal = String(body.meal || "").trim();
-  
+
   const ss = getSpreadsheet();
   const ws = ss.getSheetByName(TAB_ORDERS);
   const rows = getAllRows(ws);
-  
+
   // Find matching row
   const match = rows.find(r => {
     const rPhone = String(r.Phone || "").trim();
@@ -2736,9 +2736,17 @@ function adminCancelOrder(body) {
     const status = String(r.Payment_Status || "").toLowerCase();
     return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && status !== 'cancelled';
   });
-  
+
   if (!match) return {success:false, error: "Order not found"};
-  
-  // Call deleteOrder with positional arguments
-  return deleteOrder(phone, match.Submission_ID, "manual_upi");
+
+  // Automatic refund routing based on status
+  const pStat = String(match.Payment_Status || "").toLowerCase();
+  let refundType = "none"; 
+  if (pStat === "wallet paid") {
+    refundType = "wallet";
+  } else if (pStat === "paid") {
+    refundType = "manual_upi";
+  }
+
+  return deleteOrder(phone, match.Submission_ID, refundType);
 }
