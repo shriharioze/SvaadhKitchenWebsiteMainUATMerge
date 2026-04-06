@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 9;   // Mixed-Payment Refunds
+const CODE_VERSION   = 10;  // Batch Admin Cancellations
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -2749,27 +2749,62 @@ function adminCancelOrder(body) {
   const ws = ss.getSheetByName(TAB_ORDERS);
   const rows = getAllRows(ws);
 
-  // Find matching row
-  const match = rows.find(r => {
+  // Find ALL matching orders for this guest/meal/date
+  const matches = rows.filter(r => {
     const rPhone = String(r.Phone || "").trim();
     const rMeal = String(r.Meal_Type || "").trim();
     const orderDate = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
       : String(r.Order_Date).trim();
     const status = String(r.Payment_Status || "").toLowerCase();
+    
     return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && status !== 'cancelled';
   });
 
-  if (!match) return {success:false, error: "Order not found"};
+  if (!matches.length) return {success:false, error: "No matching orders found"};
 
-  // Automatic refund routing based on status
-  const pStat = String(match.Payment_Status || "").toLowerCase();
-  let refundType = "none"; 
-  if (pStat === "wallet paid") {
-    refundType = "wallet";
-  } else if (pStat === "paid") {
-    refundType = "manual_upi";
+  // 1. Determine Global Batch Refund Type
+  // If ANY order in the batch is wallet-paid, or any OTHER order in the sheet for this guest/meal is wallet-paid
+  let anyWallet = matches.some(m => String(m.Payment_Status).toLowerCase() === "wallet paid");
+  if (!anyWallet) {
+    // Also check if any order REMAINS that is wallet paid (should have been covered by filter but check rows list)
+    anyWallet = rows.some(r => 
+      String(r.Phone).trim() === phone && 
+      String(r.Meal_Type).trim() === meal &&
+      Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd') === dateStr &&
+      String(r.Payment_Status).toLowerCase() === "wallet paid"
+    );
   }
 
-  return deleteOrder(phone, match.Submission_ID, refundType);
+  // 2. Process each match one by one
+  let totalRefund = 0;
+  let batchMsg = "";
+  let refundedToWallet = false;
+
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const pStat = String(m.Payment_Status).toLowerCase();
+    
+    // Decide refundType for this specific row in the batch context
+    let rType = "none";
+    if (pStat === "wallet paid") rType = "wallet";
+    else if (pStat === "paid") {
+      // Consolidate UPI to Wallet if ANY item in the batch/meal was Wallet Paid
+      rType = anyWallet ? "wallet" : "manual_upi";
+    }
+
+    const result = deleteOrder(phone, m.Submission_ID, rType);
+    if (result.success) {
+      if (result.message.includes("Wallet")) refundedToWallet = true;
+      // Extract amount from message if possible to sum up? No, too messy. 
+      // Just track that the batch happened.
+    }
+  }
+
+  const noun = matches.length === 1 ? "order" : `${matches.length} orders`;
+  const mode = refundedToWallet ? "Wallet" : "Approvals";
+  return {
+    success: true, 
+    message: `${matches.length} ${meal} ${noun} cancelled successfully (Refunded to ${mode})`
+  };
 }
