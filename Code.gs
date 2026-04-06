@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 13.1; // Responsive Header Fix
+const CODE_VERSION   = 14.1; // Prepaid Standard (Legacy Removal)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -77,6 +77,11 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 // AS  Payment_Freq
 // AT  First_Time
 // AU  Source
+
+const CUSTOMERS_HEADERS = [
+  "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
+  "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN"
+];
 
 const ORDERS_HEADERS = [
   "Submission_ID","Submitted_At","Order_Date","Meal_Type",
@@ -251,10 +256,6 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getChurnReport(p.sinceDate));
     }
-    if (action === "get10DayBilling") {
-      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
-      return jsonRes(get10DayBilling(p));
-    }
     if (action === "getPendingRefunds") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getPendingRefunds());
@@ -272,7 +273,6 @@ function doGet(e) {
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
-    if (action === "get10DayRunning") return jsonRes(get10DayRunning(p.phone));
     if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
 
     return jsonRes({error:"Unknown action or Access Denied"});
@@ -360,11 +360,13 @@ function doPost(e) {
     if (action === "submitWalletRecharge") return jsonRes(submitWalletRecharge(body));
     if (action === "payAllPendingWithWallet") return jsonRes(payAllPendingWithWallet(body));
 
-    if (action === "saveMenu") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(saveMenu(body));
+    if (action === "upsertProfile") {
+      // Capture PIN if provided during mid-flow profile upserts
+      const profile = { ...body, pin: body.pin || "" };
+      _upsertCustomer(getSpreadsheet(), profile);
+      return jsonRes({success:true});
     }
-    
+
     // Regular order submission
     return jsonRes(submitOrder(body));
   } catch(err) {
@@ -387,23 +389,24 @@ function getOrCreateTab(ss, name, headers) {
   let ws = ss.getSheetByName(name);
   if (!ws) {
     ws = ss.insertSheet(name);
-    if (headers && headers.length > 0) {
-      ws.appendRow(headers);
-      ws.setFrozenRows(1);
-      ws.getRange(1, 1, 1, headers.length)
-        .setFontWeight("bold")
-        .setBackground("#c0392b")
-        .setFontColor("white");
-    }
-  } else if (headers && headers.length > 0) {
-    // Sync headers: Ensure all requested headers exist in row 1
-    const currentHeaders = ws.getRange(1, 1, 1, Math.max(1, ws.getLastColumn())).getValues()[0];
-    headers.forEach(h => {
-      if (currentHeaders.indexOf(h) === -1) {
-        ws.getRange(1, ws.getLastColumn() + 1).setValue(h)
+  }
+  
+  if (headers && headers.length > 0) {
+    const lastCol = ws.getLastColumn();
+    const currentHeaders = lastCol > 0 ? ws.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h||"").trim()) : [];
+    
+    // Force header row synchronization by explicitly setting range if any mismatch
+    headers.forEach((h, i) => {
+      if (currentHeaders[i] !== h) {
+        ws.getRange(1, i + 1).setValue(h)
           .setFontWeight("bold")
           .setBackground("#c0392b")
           .setFontColor("white");
+        if (i === 0) ws.setFrozenRows(1);
+        // Force certain columns to stay as Plain Text to preserve leading zeros
+        if (h === "Phone" || h === "PIN") {
+          ws.getRange(1, i + 1, ws.getMaxRows(), 1).setNumberFormat("@");
+        }
       }
     });
   }
@@ -451,10 +454,7 @@ function getAllRows(ws) {
 function initSchema() {
   const ss = getSpreadsheet();
   getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  getOrCreateTab(ss, TAB_CUSTOMERS, [
-    "Phone","Name","Area","Wing","Flat","Floor","Society","Full_Address",
-    "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID"
-  ]);
+  getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
     "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner"
@@ -469,7 +469,7 @@ function initSchema() {
 function getCustomer(phone) {
   if (!phone) return {found: false};
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const rows = getAllRows(ws);
   const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
   if (!r) return {found: false, hasPin: false, wallet_balance: 0};
@@ -484,7 +484,7 @@ function getCustomer(phone) {
   return {
     found: true,
     hasPin: false,
-    name:               r.Name || "",
+    name:               r.Customer_Name || "",
     area:               r.Area || "",
     wing:               r.Wing || "",
     flat:               r.Flat || "",
@@ -501,7 +501,7 @@ function getCustomer(phone) {
 function verifyLogin(phone, pin) {
   if (!phone || !pin) return {success: false, error: "Missing Phone or PIN."};
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const rows = getAllRows(ws);
   const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
   
@@ -511,7 +511,7 @@ function verifyLogin(phone, pin) {
   return {
     success: true,
     profile: {
-      name:               r.Name || "",
+      name:               r.Customer_Name || "",
       area:               r.Area || "",
       wing:               r.Wing || "",
       flat:               r.Flat || "",
@@ -888,39 +888,16 @@ function submitOrder(body) {
   return {success: true, submissionId: submissionIds[0] || ""};
 }
 
-/** 
- * INTERNAL: Settles all outstanding "10-Day Pending" or "Pending" orders for a customer
- * logic is shared between manual pay-all and automated settlement during checkout.
- */
-function _settlePendingInternal(ss, phone, custName) {
-  const ws = ss.getSheetByName(TAB_ORDERS);
-  const rows = getAllRows(ws);
-  const hIdx = headerIndex(ws);
-  const payCol = hIdx["Payment_Status"];
-  
-  const unpaid = rows.filter(r => {
-    const rPhone = String(r.Phone || "").trim();
-    const pStat  = String(r.Payment_Status || "").trim();
-    return rPhone === phone && (pStat === "Pending" || pStat === "10-Day Pending" || !pStat);
-  });
-
-  const totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
-  if (totalDue <= 0) return;
-
-  // Log Deduction
-  const refIds = unpaid.map(r => String(r.Submission_ID || "")).filter(Boolean).join(",");
-  _appendWalletTransaction(phone, custName, "Order Deduction (Settle All)", Math.round(totalDue * 100)/100, true, refIds);
-
-  // Mark all as Paid
-  unpaid.forEach(r => { ws.getRange(r._row, payCol).setValue("Wallet Paid"); });
-}
 
 // ── UPSERT CUSTOMER ──────────────────────────────────────────
 function _upsertCustomer(ss, profile) {
-  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, []);
+  // Ensure tab exists and headers are correct before doing anything
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  SpreadsheetApp.flush(); // Lock in the headers before indexing
+
   const rows = getAllRows(ws);
   const existing = rows.find(r => String(r.Phone).trim() === String(profile.phone).trim());
-
+  
   const fullAddr = [
     profile.wing    && `Wing ${profile.wing}`,
     profile.flat    && `Flat ${profile.flat}`,
@@ -928,41 +905,55 @@ function _upsertCustomer(ss, profile) {
     profile.society, profile.area
   ].filter(Boolean).join(", ");
 
-  let rowNum;
-  const hIdx = headerIndex(ws);
-
-  // Dynamically add PIN column if missing for legacy sheets
-  if (!hIdx["PIN"]) {
-    ws.getRange(1, ws.getLastColumn() + 1).setValue("PIN");
-    hIdx["PIN"] = ws.getLastColumn();
-  }
-
   if (existing) {
-    rowNum = existing._row;
+    const rowNum = existing._row;
+    const hIdx = headerIndex(ws);
+    const update = (col, val) => {
+      if (hIdx[col] && val !== undefined && val !== null) {
+        ws.getRange(rowNum, hIdx[col]).setValue(val);
+      }
+    };
+    update("Customer_Name", profile.name || "");
+    update("Area",          profile.area || "");
+    update("Wing",          profile.wing || "");
+    update("Flat",          profile.flat || "");
+    update("Floor",         profile.floor || "");
+    update("Society",       profile.society || "");
+    update("Full_Address",  fullAddr);
+    update("Maps_Link",     profile.maps || "");
+    update("Landmark",      profile.landmark || "");
+    update("Payment_Freq",  profile.payment_preference || "Daily Payment");
+    // Only update PIN if provided (non-empty)
+    if (profile.pin) update("PIN", profile.pin);
   } else {
-    ws.appendRow([]);
-    rowNum = ws.getLastRow();
+    // For new records, construct a clean Row Array mapping directly to our schema
+    const newRow = CUSTOMERS_HEADERS.map(h => {
+      let val = "";
+      switch(h) {
+        case "Phone":           val = profile.phone || ""; break;
+        case "Customer_Name":   val = profile.name || ""; break;
+        case "Area":            val = profile.area || ""; break;
+        case "Wing":            val = profile.wing || ""; break;
+        case "Flat":            val = profile.flat || ""; break;
+        case "Floor":           val = profile.floor || ""; break;
+        case "Society":         val = profile.society || ""; break;
+        case "Full_Address":    val = fullAddr; break;
+        case "Maps_Link":       val = profile.maps || ""; break;
+        case "Landmark":        val = profile.landmark || ""; break;
+        case "Payment_Freq":    val = profile.payment_preference || "Daily Payment"; break;
+        case "Created_At":      val = getISTTimestamp(); break;
+        case "PIN":             val = profile.pin || ""; break;
+        default:                val = "";
+      }
+      // Force leading zeros to be preserved for Phone and PIN by prepending '
+      if (h === "Phone" || h === "PIN") return "'" + String(val).trim();
+      return val;
+    });
+    
+    // Safety check: Ensure we NEVER write to Row 1 (header row)
+    const nextRow = Math.max(2, ws.getLastRow() + 1);
+    ws.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
   }
-
-  const setCell = (col, val) => { if (hIdx[col] && val !== undefined && val !== null) ws.getRange(rowNum, hIdx[col]).setValue(val); };
-
-  if (!existing) {
-    setCell("Phone",      profile.phone || "");
-    setCell("Created_At", getISTTimestamp());
-    setCell("Payment_Freq", "Daily Payment");
-  }
-
-  setCell("Name",         profile.name);
-  setCell("Area",         profile.area);
-  setCell("Wing",         profile.wing);
-  setCell("Flat",         profile.flat);
-  setCell("Floor",        profile.floor);
-  setCell("Society",      profile.society);
-  setCell("Full_Address", fullAddr);
-  setCell("Maps_Link",    profile.maps);
-  setCell("Landmark",     profile.landmark);
-  setCell("Payment_Freq", profile.payment_preference);
-  setCell("PIN",          profile.pin);
 }
 
 // ── GET CUSTOMER ORDERS ──────────────────────────────────────
@@ -1243,108 +1234,7 @@ function deleteOrder(phone, rowId, refundType) {
   return {success: true, message: msg};
 }
 
-// ── PAY ALL PENDING WITH WALLET ─────────────────────────────
-function payAllPendingWithWallet(body) {
-  const phone = String(body.phone || "").trim();
-  if (!phone) return {success:false, error:"No phone"};
-  
-  const ss = getSpreadsheet();
-  const balance = _calculateWalletBalance(phone);
-  
-  const ws = ss.getSheetByName(TAB_ORDERS);
-  const rows = getAllRows(ws);
-  const unpaid = rows.filter(r => {
-    const rPhone = String(r.Phone || "").trim();
-    const pStat  = String(r.Payment_Status || "").trim();
-    return rPhone === phone && pStat !== "Paid" && pStat !== "Wallet Paid";
-  });
 
-  const totalDue = unpaid.reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
-  const roundedDue = Math.round(totalDue * 100) / 100;
-
-  if (roundedDue <= 0) return {success:false, error:"No pending balance to pay"};
-  if (balance < roundedDue) return {success:false, error: "Insufficient balance (Need ₹" + roundedDue + ", Have ₹" + balance + ")"};
-
-  _settlePendingInternal(ss, phone, unpaid[0].Customer_Name || "Customer");
-
-  return {success:true, paid_amount: roundedDue, remaining_balance: balance - roundedDue};
-}
-
-// ── GET 10-DAY RUNNING TOTAL ─────────────────────────────────
-function get10DayRunning(phone) {
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  const rows = getAllRows(ws);
-
-  const now = getISTDate();
-  const day = now.getDate();
-  const y   = now.getFullYear();
-  const m   = now.getMonth();
-  const monthName = now.toLocaleString("default", {month:"long"});
-  const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
-
-  let periodStart, periodEnd, periodLabel;
-  let prevStart, prevEnd, prevLabel;
-
-  if (day <= 10) {
-    periodStart = new Date(y, m, 1);
-    periodEnd   = new Date(y, m, 10);
-    periodLabel = `1–10 ${monthName}`;
-    // Previous period: 21st–end of last month
-    const prevMonthName = new Date(y, m - 1, 1).toLocaleString("default", {month:"long"});
-    const lastDayPrevMonth = new Date(y, m, 0).getDate();
-    prevStart = new Date(y, m - 1, 21);
-    prevEnd   = new Date(y, m, 0);
-    prevLabel = `21–${lastDayPrevMonth} ${prevMonthName}`;
-  } else if (day <= 20) {
-    periodStart = new Date(y, m, 11);
-    periodEnd   = new Date(y, m, 20);
-    periodLabel = `11–20 ${monthName}`;
-    // Previous period: 1st–10th of this month
-    prevStart = new Date(y, m, 1);
-    prevEnd   = new Date(y, m, 10);
-    prevLabel = `1–10 ${monthName}`;
-  } else {
-    periodStart = new Date(y, m, 21);
-    periodEnd   = new Date(y, m + 1, 0);
-    periodLabel = `21–${lastDayOfMonth} ${monthName}`;
-    // Previous period: 11th–20th of this month
-    prevStart = new Date(y, m, 11);
-    prevEnd   = new Date(y, m, 20);
-    prevLabel = `11–20 ${monthName}`;
-  }
-
-  const fmt = d => Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
-  const ps = fmt(periodStart), pe = fmt(periodEnd);
-  const pps = fmt(prevStart),  ppe = fmt(prevEnd);
-  const phoneStr = String(phone).trim();
-  const fmtD = function(r) {
-    return r.Order_Date instanceof Date
-      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
-      : String(r.Order_Date).trim();
-  };
-
-  const running = rows
-    .filter(r =>
-      String(r.Phone).trim() === phoneStr &&
-      fmtD(r) >= ps && fmtD(r) <= pe &&
-      r.Payment_Status !== "Paid" && r.Payment_Status !== "Wallet Paid"
-    )
-    .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
-
-  const prevDue = rows
-    .filter(r =>
-      String(r.Phone).trim() === phoneStr &&
-      fmtD(r) >= pps && fmtD(r) <= ppe &&
-      r.Payment_Status !== "Paid" && r.Payment_Status !== "Wallet Paid"
-    )
-    .reduce((s, r) => s + (Number(r.Net_Total) || 0), 0);
-
-  // isDueDate: today is 10th, 20th, or last day of month
-  const isDueDate = (day === 10 || day === 20 || day === lastDayOfMonth);
-
-  return {running, period: periodLabel, prevDue, prevLabel, isDueDate};
-}
 
 // ── ADMIN: GET ALL DATA ──────────────────────────────────────
 function getAdminData() {
@@ -1513,7 +1403,7 @@ function _getLedgerFolder(year) {
 
 function _getOrCreateCustomerLedger(ss, phone, name, year) {
   // Check if ledger ID already stored
-  const custWs  = getOrCreateTab(ss, TAB_CUSTOMERS, []);
+  const custWs  = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const custRows = getAllRows(custWs);
   const cust = custRows.find(r => String(r.Phone).trim() === String(phone).trim());
 
@@ -2159,7 +2049,7 @@ function getUnpaidCustomers(p) {
   const relevant = rows.filter(r =>
     String(r.Order_Date) >= dateFrom &&
     String(r.Order_Date) <= dateTo   &&
-    (r.Payment_Status === "10-Day Pending" ||
+    (r.Payment_Status === "Pending" ||
      r.Payment_Status === "Pending"         ||
      !r.Payment_Status)
   );
@@ -2199,7 +2089,7 @@ function markCustomersPaid(body) {
     if (phones.includes(String(r.Phone||"").trim()) &&
         String(r.Order_Date) >= dateFrom &&
         String(r.Order_Date) <= dateTo   &&
-        (r.Payment_Status === "10-Day Pending" ||
+        (r.Payment_Status === "Pending" ||
          r.Payment_Status === "Pending"         ||
          !r.Payment_Status)) {
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
@@ -2485,25 +2375,6 @@ function getChurnReport(sinceDate) {
   return {success:true,sinceDate:sinceDate,customers:churned,count:churned.length};
 }
 
-// ── PREPAID WALLET BILLING ────────────────────────────────────────────────────────────
-function get10DayBilling(p) {
-  var dateFrom=p.dateFrom, dateTo=p.dateTo;
-  if(!dateFrom||!dateTo)return{success:false,error:"dateFrom and dateTo required"};
-  var ss=getSpreadsheet(), ws=getOrCreateTab(ss,TAB_ORDERS,ORDERS_HEADERS);
-  var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
-  var rows=getAllRows(ws).filter(function(r){var d=fmtDate(r.Order_Date);return d>=dateFrom&&d<=dateTo&&String(r.Payment_Status)!=="Cancelled";});
-  var map={};
-  rows.forEach(function(r){
-    var phone=String(r.Phone||"").trim(); if(!phone)return;
-    if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),payFreq:String(r.Payment_Freq||"").trim(),orders:0,total:0,paid:0};
-    map[phone].orders++; map[phone].total+=Number(r.Net_Total)||0;
-    if(String(r.Payment_Status)==="Paid" || String(r.Payment_Status)==="Wallet Paid")map[phone].paid+=Number(r.Net_Total)||0;
-  });
-  var customers=Object.values(map).map(function(c){return Object.assign({},c,{total:Math.round(c.total),paid:Math.round(c.paid),pending:Math.round(c.total-c.paid),status:Math.round(c.total-c.paid)===0?"Paid":"Pending"});}).sort(function(a,b){return b.pending-a.pending;});
-  var gTotal=customers.reduce(function(s,c){return s+c.total;},0);
-  var gPaid=customers.reduce(function(s,c){return s+c.paid;},0);
-  return {success:true,period:{from:dateFrom,to:dateTo},customers:customers,grandTotal:gTotal,grandPaid:gPaid,grandPending:gTotal-gPaid};
-}
 
 // ── LIVE TRACKER LOGIC: En Route & Delivered ──────────────────────────────────
 function batchMarkEnRoute(body) {

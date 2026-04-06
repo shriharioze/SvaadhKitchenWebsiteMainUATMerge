@@ -11,7 +11,7 @@
 | `inventory_manager.py` | Calculates packaging costs per day |
 | `dispatch_manager.py` | Generates driver dispatch Excel |
 | `label_generator.py` | Generates PDF labels from Sheet directly |
-| `payment_summary.py` | 10-day billing period invoicing + master ledger |
+| `label_generator.py` | Generates PDF labels from Sheet directly |
 
 ---
 
@@ -77,7 +77,7 @@ My Drive/
         ├── inventory_manager.py
         ├── dispatch_manager.py
         ├── label_generator.py
-        └── payment_summary.py
+        └── label_generator.py
 ```
 
 ---
@@ -93,7 +93,6 @@ Replace with your actual Sheet ID from Step 1.
 Files to update:
 - `customer_info_manager.py`
 - `label_generator.py`
-- `payment_summary.py`
 - `auto_svaadh_summary.ipynb` (Cell 2)
 
 > `kitchen_live_manager.py`, `dispatch_manager.py`, and `inventory_manager.py`
@@ -138,9 +137,7 @@ One row per meal per customer per date.
 | Delivery_Charge | 0 or ₹10 |
 | Discount_Amount | 5% or 7.5% applied |
 | Net_Total | Final amount |
-| Payment_Method | UPI / COD / 10-Day |
-| Payment_Status | **Pending** (update manually to Paid) |
-| Payment_Freq | Daily / 10-Day |
+| Payment_Status | **Pending** (update manually to Paid or Wallet Paid) |
 | First_Time | Yes / No |
 | Source | WebApp |
 
@@ -188,10 +185,3 @@ python label_generator.py
 ```
 It will prompt for date, meal, and language.
 
----
-
-## Payment summary (end of each 10-day period)
-
-Run the payment cell in the notebook — it auto-detects the current period
-based on today's date (1–10, 11–20, or 21–end of month).
-It will ask for confirmation before writing anything.

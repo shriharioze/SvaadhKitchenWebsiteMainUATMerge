@@ -281,13 +281,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .upi-or{display:flex;align-items:center;gap:10px;margin:14px 0;color:#aaa;font-size:0.78rem;}
 .upi-or::before,.upi-or::after{content:'';flex:1;height:1px;background:#eee;}
 
-/* 10-DAY HISSAB */
-.hissab-card{background:linear-gradient(135deg,#1a5c36,#27ae60);border-radius:14px;padding:18px 20px;color:white;margin-bottom:14px;}
-.hissab-card .hissab-label{font-size:0.8rem;opacity:0.85;margin-bottom:4px;}
-.hissab-card .hissab-amount{font-size:1.9rem;font-weight:700;}
-.hissab-card .hissab-period{font-size:0.72rem;opacity:0.7;margin-top:4px;}
-.hissab-msg{background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:12px 14px;font-size:0.83rem;color:#1a5c36;line-height:1.6;margin-bottom:14px;}
-.hissab-msg .hi{font-size:1rem;}
+/* WALLET CONFIRMATION */
+.wallet-confirm-card{background:linear-gradient(135deg,#1b5e20,#2e7d32);border-radius:14px;padding:18px 20px;color:white;margin-bottom:14px;}
+.wallet-confirm-card .wc-label{font-size:0.8rem;opacity:0.85;margin-bottom:4px;}
+.wallet-confirm-card .wc-amount{font-size:1.9rem;font-weight:700;}
+.wallet-confirm-card .wc-balance{font-size:0.72rem;opacity:0.7;margin-top:4px;}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;padding:10px 14px 14px;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:100;}
@@ -420,7 +418,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .selected-dates-summary{color:#888;}
 [data-theme="dark"] .meal-cutoff-txt{color:#888;}
 [data-theme="dark"] .upi-id{color:#888;}
-[data-theme="dark"] .hissab-msg{background:#162216;border-color:#2a4830;color:#6abf8a;}
+[data-theme="dark"] .wallet-confirm-card{background:#162216;border-color:#2a4830;color:#6abf8a;}
 
 [data-theme="dark"] #quickButtonBar{background:#1e1e1e;border-color:#333;}
 [data-theme="dark"] #walletChip{background:#1a2820;border-color:#2a4830;color:#6abf8a;}
@@ -499,6 +497,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .wm-btn{background:#2a2218;border-color:#5a4020;color:#fbbf24;}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.extra-charges-bundle{cursor:pointer;margin-bottom:4px;border-radius:10px;padding:2px 0;transition:background 0.2s;}
+.extra-charges-bundle:hover{background:rgba(0,0,0,0.02);}
+.extra-toggle-icon{display:inline-block;font-size:0.7rem;margin-left:4px;transition:transform 0.2s;color:#aaa;vertical-align:middle;}
+.extra-toggle-icon.open{transform:rotate(90deg);color:#e74c3c;}
+.extra-breakdown{display:none;margin-top:2px;overflow:hidden;}
+.extra-breakdown.open{display:block;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -947,50 +951,23 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     </div>
   </div>
 
-  <div class="card" id="tenDayCard" style="display:none;">
-    <h2 data-i18n="step5_hissab_title">📒 Your Account</h2>
-
-    <!-- Previous period due (shown when unpaid dues exist) -->
-    <div id="prevDueSection" style="display:none;margin-bottom:12px;">
-      <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
-        <div style="font-size:0.75rem;font-weight:700;color:#856404;margin-bottom:4px;" data-i18n="prev_due_heading">⚠️ Previous period due</div>
-        <div style="font-size:1.3rem;font-weight:700;color:#856404;" id="prevDueAmount">₹0</div>
-        <div style="font-size:0.7rem;color:#856404;margin-top:2px;" id="prevDueLabel"></div>
-        <div style="font-size:0.68rem;color:#a07800;margin-top:6px;font-style:italic;" data-i18n="prev_due_paid_note">✅ Already paid? Ignore this — we'll update your account within 1–2 days.</div>
-      </div>
-      <!-- QR payment section - shown on due dates (10th, 20th, last day) -->
-      <div id="qrPaySection" style="display:none;background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;">
-        <div style="font-size:0.82rem;font-weight:700;color:#1a5c36;margin-bottom:8px;" data-i18n="pay_now_heading">💳 Pay now</div>
-        <div style="font-size:0.75rem;color:#1a5c36;margin-bottom:10px;" id="qrAmountLabel"></div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=9819969682@hdfc%26pn=Svaadh%20Kitchen%26am=" id="qrImage"
-          style="width:160px;height:160px;border-radius:8px;border:1px solid #ddd;" alt="UPI QR">
-        <div style="font-size:0.7rem;color:#888;margin-top:6px;">UPI ID: 9819969682@hdfc</div>
-        <div style="font-size:0.72rem;color:#555;margin-top:8px;"><span data-i18n="screenshot_whatsapp">After payment, send screenshot on WhatsApp:</span><br>
-          <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
-      </div>
+  <!-- WALLET CONFIRMATION CARD -->
+  <div class="card" id="walletConfirmCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
+    <div class="wallet-confirm-card">
+      <div class="wc-label">Total amount to be deducted</div>
+      <div class="wc-amount" id="walletDeductAmount">₹0</div>
+      <div class="wc-balance" id="walletCheckBalance">Available: ₹0</div>
     </div>
-
-    <!-- Current period running total -->
-    <div class="hissab-card">
-      <div class="hissab-label" data-i18n="hissab_card_label">Total owed this period</div>
-      <div class="hissab-amount" id="hissabAmount">₹0</div>
-      <div id="walletSettlementSection" style="display:none;"></div>
-      <div class="hissab-period" id="hissabPeriod"></div>
+    <div class="card" style="margin-top:-10px;">
+       <div style="background:#f0faf4; border:1px solid #b7e4c7; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#1a5c36; line-height:1.6;">
+          ✅ Your balance is sufficient. This order will be instantly confirmed.
+       </div>
+       <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+         <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#27ae60;">
+         <span style="font-size:0.82rem;">I confirm to pay ₹<span id="walletConfirmLabelAmt">0</span> from my Wallet</span>
+       </label>
+       <p class="mr-note" style="margin-top:4px;">मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
     </div>
-    <div class="hissab-msg" id="hissabMsgText" data-i18n-html="hissab_msg_html">
-      ✅ This order will be automatically deducted from your Prepaid Wallet balance.
-    </div>
-    <div id="hissabWarnText" style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#92400e;line-height:1.5;" data-i18n-html="tenday_warning_html">
-      ⚠️ <strong>Maintain Balance.</strong> Orders require sufficient Wallet balance to process.
-    </div>
-    <div id="hissabConfirmWrap" style="margin-top:4px;">
-      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-        <input type="checkbox" id="tenDayConfirm" style="margin-top:2px;width:auto;accent-color:#27ae60;">
-        <span style="font-size:0.82rem;" data-i18n="tenday_confirm_label">I confirm to deduct this from my Wallet</span>
-        <span class="mr-note" style="margin-top:2px;">मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो</span>
-      </label>
-    </div>
-    <div id="tenDayInsufficient" style="display:none;"></div>
   </div>
 
   <div class="card" id="successCard" style="display:none;">
@@ -1044,24 +1021,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 </div>
 <style>@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}</style>
 
-<!-- BILL MODAL (10-day balance / period-due popup) -->
-<div id="billModal" class="bill-modal-overlay" style="display:none;">
-  <div class="bill-modal-sheet">
-    <div class="bm-handle"><span></span></div>
-    <div class="bm-chip" id="bmChip"></div>
-    <h2 class="bm-title" id="bmTitle">Loading…</h2>
-    <div class="bm-amount" id="bmAmount">…</div>
-    <div class="bm-period" id="bmPeriod"></div>
-    <div id="bmRunNote" class="bm-run-note">Keep ordering, and settle up when the period finishes.</div>
-    <div id="bmQrWrap" class="bm-qr-wrap">
-      <div style="font-size:0.8rem;text-align:center;margin-bottom:8px;color:#888;">Scan to pay</div>
-      <img id="bmQrImg" class="bm-qr" src="" alt="QR">
-      <a id="bmUpiLink" href="#" class="btn btn-secondary bm-open-upi">👆 Tap to open UPI App</a>
-    </div>
-    <button class="bm-btn" id="bmGotIt" onclick="ackBillModal()">Great</button>
-    <button class="bm-later" onclick="closeBillModal()">I'll check later</button>
-  </div>
-</div>
 
 <!-- WALLET RECHARGE MODAL -->
 <div id="walletRechargeModal" class="bill-modal-overlay" style="display:none;z-index:9999;">
@@ -1380,6 +1339,13 @@ async function goNext(){
      }
      return;
   }
+  if(S.step===1){
+    // Save profile now so they don't have to finish the full order to capture their address
+    // Capture PIN during mid-flow so the user's setup is persistent
+    const pin = localStorage.getItem('sk_logged_in_pin') || S.profile.pin || "";
+    const profile = { ...S.profile, phone: S.phone, pin: pin, _action: "upsertProfile" };
+    fetch(APPS_SCRIPT_URL, {method:"POST", body:JSON.stringify(profile)});
+  }
   if(S.step===2){
     if(!S.selectedDates.length){toast(t('toast_select_date'));return;}
     $("btnNext").disabled=true;$("btnNext").textContent=t('loading_loading');$("btnNext").style.opacity="0.6";
@@ -1428,7 +1394,7 @@ function validate(step){
         payment_preference:$("payFreqSelect").value};
       S.mealAddrs={Breakfast:bf,Lunch:l,Dinner:d};
     }
-    S.is10Day=S.profile.payment_preference==="Prepaid Wallet";
+    S.is10Day=false;
   }
   return true;
 }
@@ -1510,7 +1476,7 @@ function handleLoginSuccess(profileData, isNew) {
       maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment"
     };
     S.walletBalance = wb;
-    S.is10Day = S.profile.payment_preference === "Prepaid Wallet";
+    S.walletMode = true; // Everyone is on wallet/prepaid mode now
     $("returningBadge").innerHTML = `<div class="customer-badge">
       <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
       <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
@@ -1562,8 +1528,6 @@ function updateWalletBalanceUI(wb) {
   S.walletBalance = wb; S.profile.wallet_balance = wb;
   if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
   if ($("walletBalDisplay")) $("walletBalDisplay").textContent = `₹${wb}`;
-  // Also update hissab if 10-day
-  if (S.is10Day && typeof fetchAndShowHissab === "function") fetchAndShowHissab(S.phone);
 }
 
 async function refreshWalletBalance() {
@@ -2037,7 +2001,7 @@ async function buildBillScreen(){
           : `🚚 Delivery & Extra Charges (${mealExtras.length} items)`;
         html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
           <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
-            <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon">▼</span></span>
+            <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon">▶</span></span>
             <span style="font-weight:600;color:${netTotal <= 0 ? '#27ae60' : '#7f8c8d'};">₹${netTotal}</span>
           </div>
           <div id="${exId}" class="extra-breakdown">
@@ -2074,189 +2038,42 @@ async function buildBillScreen(){
     `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
   const wb = Number(S.walletBalance) || 0;
-  // S.walletMode is true if user HAS enough balance
-  S.walletMode = (wb >= grandTotal && grandTotal > 0);
-  
-  // Default to wallet if enough balance, but allow override
-  if (S.paymentChoice === undefined) S.paymentChoice = S.walletMode ? "Wallet" : "UPI";
+  $("walletConfirmCard").style.display = "none";
+  $("paymentCard").style.display = "none";
 
-  // Debug: Ensure balance is visible if present
-  // UI Cleanup: Hide the redundant top-level wallet info banner
-  const topWb = $("walletBalMsg");
-  if (topWb) topWb.style.display = "none";
-
-  // Payment section logic: Switch between 10-Day vs Daily Wallet/UPI
-  if(S.is10Day){
-    $("walletCard").style.display="none";
-    $("paymentCard").style.display="none";
-    $("tenDayCard").style.display="block";
-    $("hissabAmount").textContent = `₹${grandTotal}`;
-    
-    if (wb < grandTotal) {
-      if ($("hissabPeriod")) $("hissabPeriod").textContent = `Insufficient balance.`;
-      if ($("btnNext")) $("btnNext").style.display = "none";
-      if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "none";
-      if ($("tenDayInsufficient")) {
-        $("tenDayInsufficient").innerHTML = `
-          <div style="background:#fff5f4; border:1px solid #ffd5d0; border-radius:10px; padding:12px; margin-bottom:12px;">
-            <div style="font-weight:700; color:#c0392b; margin-bottom:6px;">⚠️ Wallet Balance Insufficient</div>
-            <div style="font-size:0.8rem; color:#c0392b;">You need ₹${grandTotal} but only have ₹${wb}. Please recharge.</div>
-            <button class="btn btn-primary mt-12" onclick="openWalletRecharge()">💼 Add Money to Wallet</button>
-            <div style="text-align:center; font-size:0.75rem; color:#888; margin:10px 0;">OR</div>
-            <button class="btn btn-secondary" onclick="forceUpiFor10Day(${grandTotal})">💳 Pay ₹${grandTotal} via UPI now</button>
-          </div>`;
-        $("tenDayInsufficient").style.display = "block";
-      }
-    } else {
-      if ($("hissabPeriod")) $("hissabPeriod").textContent = `Available: ₹${wb}`;
-      if ($("hissabMsgText")) {
-        $("hissabMsgText").style.display = "block";
-        $("hissabMsgText").innerHTML = `✅ ₹${grandTotal} will be automatically deducted from your Wallet.`;
-      }
-      if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "block";
-      if ($("tenDayInsufficient")) $("tenDayInsufficient").style.display = "none";
-      $("btnNext").style.display = "block";
-      S.paymentChoice = "Wallet";
-    }
+  if (wb >= grandTotal && grandTotal > 0) {
+    // SUFFICIENT WALLET BALANCE
+    $("walletConfirmCard").style.display = "block";
+    $("walletDeductAmount").textContent = `₹${grandTotal}`;
+    $("walletCheckBalance").textContent = `Available Wallet Fund: ₹${wb}`;
+    $("walletConfirmLabelAmt").textContent = grandTotal;
+    $("walletConfirmCheck").checked = false;
+    S.paymentChoice = "Wallet";
   } else {
-    // DAILY PAYER logic
-    $("tenDayCard").style.display="none";
-    if (S.walletMode) {
-      $("walletCard").style.display = "block";
-      if (S.paymentChoice === "Wallet") {
-        $("paymentCard").style.display = "none";
-        $("walletCard").innerHTML = `
-          <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
-          <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:16px;text-align:center;">
-            <div style="font-size:0.88rem;color:#1a6640;font-weight:700;margin-bottom:4px;">Available Balance: ₹${wb}</div>
-            <div style="font-size:0.75rem;color:#27ae60;margin-bottom:12px;">Sufficient balance to pay <strong>₹${grandTotal}</strong> for this order.</div>
-            <button onclick="S.paymentChoice='UPI';buildBillScreen();" class="btn btn-secondary" style="font-size:0.75rem;padding:6px 12px;width:auto;margin:0 auto;display:inline-block;">💳 Use UPI instead</button>
-          </div>`;
-      } else {
-        $("paymentCard").style.display = "block";
-        setupUPI(grandTotal);
-        $("walletCard").innerHTML = `
-          <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
-          <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-size:0.80rem;color:#1a6640;font-weight:600;">Wallet Balance: ₹${wb}</div>
-            <button onclick="S.paymentChoice='Wallet';buildBillScreen();" class="btn btn-primary" style="font-size:0.7rem;padding:6px 12px;width:auto;margin:0;">Use Wallet</button>
-          </div>`;
-      }
-    } else {
-      $("walletCard").style.display = "none";
-      $("paymentCard").style.display = "block";
-      S.paymentChoice = "UPI";
-      setupUPI(grandTotal);
+    // INSUFFICIENT WALLET OR NO WALLET
+    $("paymentCard").style.display = "block";
+    S.paymentChoice = "UPI";
+    
+    // Add context if they have SOME wallet balance
+    const warnBox = $("paymentCard").querySelector(".mr-note");
+    if (wb > 0 && warnBox) {
+       const prompt = `<div style="background:#fff3cd; border:1px solid #ffd5d0; padding:10px; border-radius:10px; margin-bottom:12px; font-size:0.75rem; color:#856404;">
+         💡 Your wallet only has ₹${wb}. Please pay full ₹${grandTotal} via UPI or <a href="javascript:openWalletRecharge()" style="color:#c0392b; font-weight:700;">Recharge Wallet</a>.
+       </div>`;
+       // Avoid duplication
+       if (!warnBox.parentNode.querySelector(".wallet-shortfall")) {
+         const div = document.createElement("div");
+         div.className = "wallet-shortfall";
+         div.innerHTML = prompt;
+         warnBox.parentNode.insertBefore(div, warnBox.nextSibling);
+       }
     }
+    setupUPI(grandTotal);
   }
   $("btnNext").textContent=t('btn_place');
 }
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
-
-function toggleExtraBundle(id) {
-  const el = $(id);
-  const icon = $(`icon_${id}`);
-  if (el) el.classList.toggle('open');
-  if (icon) icon.classList.toggle('open');
-}
-
-// ── 10-DAY BILL MODAL ─────────────────────────────────────────────────────────
-function fetchAndShowHissab(phone) {
-  fetch(`${APPS_SCRIPT_URL}?action=get10DayRunning&phone=${phone}`)
-    .then(r => r.json())
-    .then(d => {
-      S.hissabData = d;
-      const wrap = document.getElementById('hissabBadgeWrap');
-      if (wrap) {
-        let btnHtml = "";
-        const totalPending = (d.prevDue || 0) + (d.running || 0);
-        const wb = S.profile?.wallet_balance || 0;
-        
-        if (d.prevDue > 0)
-          btnHtml = `<button class="bill-chip-btn due" onclick="openBillModal()">⚠️ ₹${d.prevDue} payment due · Tap to pay</button>`;
-        else if (d.running > 0)
-          btnHtml = `<button class="bill-chip-btn" onclick="openBillModal()">📊 ₹${d.running} this period</button>`;
-        else
-          btnHtml = `<button class="bill-chip-btn" onclick="openBillModal()">📊 View my bill</button>`;
-          
-        if (wb >= totalPending && totalPending > 0) {
-          btnHtml += `<button onclick="payPendingWithWallet(${totalPending})" class="btn-wallet-pay" style="margin-top:8px;">💳 Use Wallet to Pay ₹${totalPending}</button>`;
-        }
-        wrap.innerHTML = btnHtml;
-      }
-      const ackKey = `sk-bill-ack-${phone}-${d.prevLabel}`;
-      if ((d.prevDue || 0) > 0 && !localStorage.getItem(ackKey)) openBillModal();
-    })
-    .catch(() => {
-      const wrap = document.getElementById('hissabBadgeWrap');
-      if (wrap) wrap.innerHTML = `<button class="bill-chip-btn" onclick="openBillModal()">📊 View my bill</button>`;
-    });
-}
-
-async function payPendingWithWallet(amt) {
-  if (!confirm(`Clear your pending bill of ₹${amt} using your Svaadh Wallet balance?`)) return;
-  const btn = document.querySelector(".btn-wallet-pay");
-  if (btn) { btn.disabled = true; btn.textContent = "Processing..."; }
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ _action: "payAllPendingWithWallet", phone: S.phone })
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast(`Successfully paid ₹${amt} from wallet!`);
-      const nwb = data.remaining_balance || 0;
-      S.walletBalance = nwb;
-      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${nwb}`;
-      fetchAndShowHissab(S.phone);
-      loadExistingOrders(S.phone);
-    } else {
-      alert("Payment failed: " + (data.error || "Unknown error"));
-      if (btn) { btn.disabled = false; btn.textContent = `💳 Use Wallet to Pay ₹${amt}`; }
-    }
-  } catch(e) {
-    console.error(e);
-    alert("Error: " + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = `💳 Use Wallet to Pay ₹${amt}`; }
-  }
-}
-
-function openBillModal() {
-  const d = S.hissabData;
-  const prevDue = d ? (d.prevDue || 0) : 0;
-  const running = d ? (d.running || 0) : 0;
-  if (prevDue > 0) {
-    $('bmChip').className = 'bm-chip due'; $('bmChip').textContent = '⚠️ Payment Due';
-    $('bmTitle').textContent = `${d.prevLabel} bill`;
-    $('bmAmount').className = 'bm-amount due'; $('bmAmount').textContent = `₹${prevDue}`;
-    $('bmPeriod').textContent = running > 0
-      ? `${d.prevLabel} due · Also ₹${running} accumulating this period (${d.period})`
-      : `Please settle your ${d.prevLabel} balance`;
-    $('bmQrWrap').style.display = 'block'; $('bmRunNote').style.display = 'none';
-    $('bmGotIt').textContent = "Got it, I'll pay";
-    const name10 = (S.profile?.name || 'Customer').trim();
-    const note10 = `Svaadh: ${name10} - ${d.prevLabel}`.slice(0, 50);
-    const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${prevDue}&cu=INR&tn=${encodeURIComponent(note10)}`;
-    $('bmQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiData)}`;
-    $('bmUpiLink').href = upiData;
-  } else {
-    $('bmChip').className = 'bm-chip running'; $('bmChip').textContent = '📊 Current Period';
-    $('bmTitle').textContent = 'Your running total';
-    $('bmAmount').className = 'bm-amount running'; $('bmAmount').textContent = `₹${running}`;
-    $('bmPeriod').textContent = d ? `Period: ${d.period} · Pay at period end` : 'Loading…';
-    $('bmQrWrap').style.display = 'none';
-    $('bmRunNote').style.display = running === 0 ? 'block' : 'none';
-    $('bmGotIt').textContent = 'Close';
-  }
-  $('billModal').style.display = 'flex';
-}
-
-function ackBillModal() {
-  if (S.hissabData?.prevLabel && (S.hissabData?.prevDue || 0) > 0)
-    localStorage.setItem(`sk-bill-ack-${S.phone}-${S.hissabData.prevLabel}`, '1');
-  $('billModal').style.display = 'none';
-}
-function closeBillModal() { $('billModal').style.display = 'none'; }
+function toggleExtraBundle(id){const el=$(id),icon=$(`icon_${id}`);if(el)el.classList.toggle('open');if(icon)icon.classList.toggle('open');}
 
 function openWalletRecharge() {
   $('walletRechargeAmt').value = '';
@@ -2369,32 +2186,18 @@ function setupUPI(amount){
   // codBtn event handlers removed
 }
 
-window.forceUpiFor10Day = function(amt) {
-   S.tempUpiMode = true;
-   $("tenDayCard").style.display = "none";
-   $("paymentCard").style.display = "block";
-   S.paymentChoice = "UPI";
-   setupUPI(amt);
-   $("btnNext").style.display = "block";
-   $("btnNext").disabled = false;
-};
 
 // ═══════════════════════════════════════════════════════════
 // PLACE ORDER
 // ═══════════════════════════════════════════════════════════
 async function placeOrder(settleAll = false){
-  let confirmEl=null;
-  // If using wallet (either via prepaid selection OR via 10-day settle button)
-  const isWalletOrder = settleAll || S.paymentChoice === "Wallet";
-
-  if(isWalletOrder) {
-      if (S.is10Day && !S.tempUpiMode) confirmEl=$("tenDayConfirm");
-      else confirmEl = null;
-  }
-  else if(S.is10Day && !S.tempUpiMode) confirmEl=$("tenDayConfirm");
-  else confirmEl=$("paidConfirm");
+  const isWalletOrder = S.paymentChoice === "Wallet";
+  const confirmEl = isWalletOrder ? $("walletConfirmCheck") : $("paidConfirm");
   
-  if(confirmEl && !confirmEl.checked){toast((S.is10Day && !S.tempUpiMode)?t('toast_confirm_order'):t('toast_confirm_payment'));return;}
+  if(confirmEl && !confirmEl.checked){
+    toast(isWalletOrder ? "Please confirm wallet deduction" : t('toast_confirm_payment'));
+    return;
+  }
   $("btnNext").disabled=true;$("btnNext").textContent=t('loading_placing');
   const orders=[];
   for(const date of S.selectedDates){
@@ -2443,14 +2246,13 @@ async function placeOrder(settleAll = false){
 function showSuccess(id){
   $("summaryCard").style.display="block";
   $("paymentCard").style.display="none";
-  $("tenDayCard").style.display="none";
   $("walletCard").style.display="none";
   $("successCard").style.display="block";
   $("orderIdDisplay").textContent=id.toUpperCase();
   $("bottomNav").style.display="none";window.scrollTo(0,0);
   
   // Refresh wallet balance in background
-  if (S.paymentChoice === "Wallet" || S.is10Day) {
+  if (S.paymentChoice === "Wallet") {
      setTimeout(refreshWalletBalance, 2000);
   }
 }
