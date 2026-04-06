@@ -7,11 +7,12 @@
 // SECRETS & KEYS: Setup these in Google Apps Script Project Settings > Script Properties
 const SP             = PropertiesService.getScriptProperties();
 const SHEET_ID       = SP.getProperty("SHEET_ID");
-const ADMIN_PIN      = SP.getProperty("ADMIN_PIN") || "0000";
+const ADMIN_PIN      = SP.getProperty("ADMIN_PIN") || "7532";
+const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 3;   // ← bump this each deploy so you can verify version
+const CODE_VERSION   = 6;   // Secure Tiered PINs (v2)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -191,71 +192,71 @@ function doGet(e) {
     if (action === "getCustomer") return jsonRes(getCustomer(p.phone));
     if (action === "verifyLogin") return jsonRes(verifyLogin(p.phone, p.pin));
     
-    // Auth Tiers
+    // Auth Tiers (STRICTLY ISOLATED)
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (isAdmin || (pin === KITCHEN_PIN && pin !== ""));
+    const isStaff = (pin === KITCHEN_PIN && pin !== "");
 
-    // READ-ONLY STAFF ACCESS (Kitchen / Driver)
+    // KITCHEN & DRIVER ACCESS (Staff PIN ONLY)
     if (action === "getKitchenSummary") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getKitchenSummary(p.date));
     }
     if (action === "getDriverOrders") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getDriverOrders(p.date));
     }
     if (action === "getLabelOrders") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getLabelOrders(p.date, p.meal));
     }
 
-    // FULL ADMIN ACCESS
+    // FULL ADMIN ACCESS (Admin PIN ONLY)
     if (action === "getAdminData") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getAdminData());
     }
     if (action === "getUnpaidCustomers") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getUnpaidCustomers(p));
     }
     if (action === "getOrderSummary") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getOrderSummary(p.date));
     }
     if (action === "getPackagingExpenses") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getPackagingExpenses(p.date));
     }
     if (action === "getOrderHistory") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getOrderHistory(p));
     }
     if (action === "getCustomerList") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getCustomerList());
     }
     if (action === "getCustomerHistory") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getCustomerHistory(p.phone));
     }
     if (action === "getDatePayments") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getDatePayments(p.date));
     }
     if (action === "getAnalytics") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getAnalytics(p));
     }
     if (action === "getChurnReport") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getChurnReport(p.sinceDate));
     }
     if (action === "get10DayBilling") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(get10DayBilling(p));
     }
     if (action === "getPendingRefunds") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getPendingRefunds());
     }
     if (action === "getPendingRecharges") {
@@ -286,64 +287,64 @@ function doPost(e) {
     const action = body._action || "";
     const pin = body.pin || "";
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (isAdmin || (pin === KITCHEN_PIN && pin !== ""));
+    const isStaff = (pin === KITCHEN_PIN && pin !== "");
 
     // Customer actions (pinned via their own phone/PIN handled inside functions)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
     
-    // Delivery Actions (Staff + Admin)
+    // Delivery Actions (Staff PIN ONLY)
     if (action === "markDelivered") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(markDelivered(body));
     }
     if (action === "batchMarkEnRoute") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(batchMarkEnRoute(body));
     }
     if (action === "markEnRoute") {
-      if (!isStaff) return jsonRes({error:"Invalid PIN"});
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(markEnRoute(body));
     }
 
     // Admin-only write actions
     if (action === "adminCancelOrder") {
-      if (!isAdmin) return jsonRes({success:false, error: "Invalid Admin PIN"});
+      if (!isAdmin) return jsonRes({success:false, error: "STRICT ADMIN PIN REQUIRED"});
       return jsonRes(adminCancelOrder(body));
     }
     if (action === "markRefunded") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markRefunded(body.submissionId));
     }
     if (action === "approveWalletRecharge") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(approveWalletRecharge(body));
     }
     if (action === "deleteBreakfastItem") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteBreakfastItem(body.id));
     }
     if (action === "saveBreakfastItem") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveBreakfastItem(body));
     }
     if (action === "deleteSabjiItem") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteSabjiItem(body.id));
     }
     if (action === "saveSabjiItem") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveSabjiItem(body));
     }
     if (action === "saveLabels") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveLabels(body));
     }
     if (action === "saveArea") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveArea(body));
     }
     if (action === "deleteArea") {
-      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteArea(body));
     }
     if (action === "markCustomersPaid") {
