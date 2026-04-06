@@ -1,359 +1,703 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Svaadh Kitchen</title>
-<link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Segoe UI',sans-serif;background:#1a1a1a;color:#fff;min-height:100vh;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Svaadh Kitchen</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* ── LOGIN ── */
-  #loginWrap{position:fixed;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;z-index:100;}
-  .login-box{background:#2a2a2a;border-radius:16px;padding:32px 28px;width:300px;text-align:center;}
-  .login-box h1{font-size:1.3rem;margin-bottom:4px;color:#f0a500;}
-  .login-box p{font-size:0.8rem;color:#888;margin-bottom:20px;}
-  .pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
-  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #555;transition:all 0.15s;}
-  .pin-dot.filled{background:#f0a500;border-color:#f0a500;}
-  .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-  .pk{background:#333;border:none;color:#fff;font-size:1.4rem;font-weight:600;border-radius:10px;padding:14px;cursor:pointer;transition:background 0.1s;}
-  .pk:active{background:#555;}
-  .pk.del{background:#2a2a2a;color:#888;}
-  .pk.span2{grid-column:span 2;}
-  .login-err{color:#e74c3c;font-size:0.78rem;margin-top:10px;min-height:18px;}
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      min-height: 100vh;
+    }
 
-  /* ── SHELL ── */
-  #shell{display:none;}
-  #shell.on{display:block;}
+    /* ── LOGIN ── */
+    #loginWrap {
+      position: fixed;
+      inset: 0;
+      background: #f8f9fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
 
-  /* ── HEADER ── */
-  .kheader{background:#111;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;border-bottom:2px solid #f0a500;}
-  .kheader h1{font-size:1rem;color:#f0a500;font-weight:700;letter-spacing:0.05em;}
-  .kheader .controls{display:flex;gap:8px;align-items:center;}
-  .kheader input[type=date]{background:#222;border:1px solid #444;color:#fff;padding:6px 10px;border-radius:8px;font-size:0.82rem;}
-  .kheader input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
-  .load-btn{background:#f0a500;color:#111;border:none;font-weight:700;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:0.82rem;}
-  .load-btn:active{opacity:0.8;}
-  .refresh-btn{background:#333;color:#aaa;border:none;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:0.82rem;}
-  .date-label{font-size:0.75rem;color:#888;}
+    .login-box {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eee;
+    }
 
-  /* ── BODY ── */
-  .kbody{padding:16px;max-width:960px;margin:0 auto;}
+    .login-box h1 {
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+      color: #d35400;
+    }
 
-  /* ── MEAL BLOCK ── */
-  .meal-block{background:#222;border-radius:14px;margin-bottom:20px;overflow:hidden;}
-  .meal-head{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #333;}
-  .meal-icon{font-size:1.6rem;}
-  .meal-title{font-size:1.2rem;font-weight:700;letter-spacing:0.03em;}
-  .meal-count{background:#333;color:#aaa;font-size:0.72rem;padding:3px 10px;border-radius:20px;margin-left:auto;}
-  .meal-body{padding:16px 18px;}
+    .login-box p {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
 
-  /* ── SECTION LABEL ── */
-  .sec-label{font-size:0.65rem;font-weight:700;color:#666;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;margin-top:4px;}
+    .pin-dots {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
 
-  /* ── ITEM ROWS ── */
-  .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px;}
-  .item-card{background:#2c2c2c;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
-  .item-card .iname{font-size:0.82rem;color:#bbb;}
-  .item-card .inum{font-size:2rem;font-weight:800;color:#fff;}
-  .item-card.zero .inum{color:#444;}
-  .item-card.zero .iname{color:#444;}
+    .pin-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      transition: all 0.15s;
+    }
 
-  /* Sabji cooking cards — larger, prominent */
-  .sabji-cook-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:18px;}
-  .sabji-cook-card{background:#2c2c2c;border-radius:12px;padding:16px 18px;}
-  .sabji-cook-card .cook-label{font-size:0.72rem;color:#888;margin-bottom:4px;}
-  .sabji-cook-card .cook-val{font-size:2.4rem;font-weight:800;color:#f0a500;}
-  .sabji-cook-card .cook-unit{font-size:0.75rem;color:#888;margin-top:2px;}
-  .sabji-cook-card .cook-breakdown{font-size:0.7rem;color:#555;margin-top:6px;border-top:1px solid #333;padding-top:6px;}
+    .pin-dot.filled {
+      background: #d35400;
+      border-color: #d35400;
+    }
 
-  .dal-card{background:#2c2c2c;border-radius:12px;padding:16px 18px;}
-  .dal-card .cook-label{font-size:0.72rem;color:#888;margin-bottom:4px;}
-  .dal-card .cook-val{font-size:2.4rem;font-weight:800;color:#5dade2;}
-  .dal-card .cook-unit{font-size:0.75rem;color:#888;margin-top:2px;}
-  .dal-card .cook-breakdown{font-size:0.7rem;color:#555;margin-top:6px;border-top:1px solid #333;padding-top:6px;}
+    .pin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
 
-  .divider{border:none;border-top:1px solid #333;margin:14px 0;}
+    .pk {
+      background: #f1f3f5;
+      border: none;
+      color: #333;
+      font-size: 1.4rem;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
 
-  /* ── NO ORDERS ── */
-  .no-orders{text-align:center;padding:40px;color:#555;font-size:0.9rem;}
+    .pk:active {
+      background: #e9ecef;
+      transform: scale(0.96);
+    }
 
-  /* ── LOADER ── */
-  .spinner{width:32px;height:32px;border:3px solid #333;border-top-color:#f0a500;border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+    .pk.del {
+      background: #fff0f0;
+      color: #e74c3c;
+    }
 
-  /* ── LAST UPDATED ── */
-  .last-updated{text-align:center;font-size:0.7rem;color:#555;padding:10px 0 20px;}
+    .pk.span2 {
+      grid-column: span 2;
+    }
 
-  /* ── MOBILE OPTIMIZATION ── */
-  @media (max-width: 650px) {
-    .kheader { flex-direction: column; gap: 12px; height: auto; text-align: center; padding: 16px; }
-    .kheader .controls { width: 100%; justify-content: center; flex-wrap: wrap; gap: 10px; }
-    .kheader input[type=date] { flex: 1; min-width: 140px; }
-    .kbody { padding: 12px; }
-    .meal-head { padding: 12px; }
-    .meal-title { font-size: 1.1rem; }
-    .item-grid { grid-template-columns: 1fr 1fr; }
-    .sabji-cook-grid { grid-template-columns: 1fr; }
-    .sabji-cook-card .cook-val, .dal-card .cook-val { font-size: 2rem; }
-  }
-</style>
+    .login-err {
+      color: #e74c3c;
+      font-size: 0.8rem;
+      margin-top: 15px;
+      min-height: 20px;
+      font-weight: 500;
+    }
+
+    /* ── SHELL ── */
+    #shell {
+      display: none;
+    }
+
+    #shell.on {
+      display: block;
+    }
+
+    /* ── HEADER ── */
+    .kheader {
+      background: #ffffff;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      border-bottom: 3px solid #d35400;
+    }
+
+    .kheader h1 {
+      font-size: 1.1rem;
+      color: #d35400;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .kheader .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .kheader input[type=date] {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      color: #333;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+
+    .load-btn {
+      background: #d35400;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: opacity 0.15s;
+    }
+
+    .load-btn:active {
+      opacity: 0.85;
+    }
+
+    .refresh-btn {
+      background: #eee;
+      color: #555;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .date-label {
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    /* ── BODY ── */
+    .kbody {
+      padding: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* ── MEAL BLOCK ── */
+    .meal-block {
+      background: #ffffff;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      border: 1px solid #eee;
+    }
+
+    .meal-head {
+      padding: 16px 20px;
+      background: #fdfdfd;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .meal-icon {
+      font-size: 1.8rem;
+    }
+
+    .meal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    .meal-count {
+      background: #f1f3f5;
+      color: #495057;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-left: auto;
+    }
+
+    .meal-body {
+      padding: 20px;
+    }
+
+    /* ── SECTION LABEL ── */
+    .sec-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #95a5a6;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      margin-top: 4px;
+    }
+
+    /* ── ITEM ROWS ── */
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .item-card {
+      background: #f8fbff;
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #eef2f7;
+    }
+
+    .item-card .iname {
+      font-size: 0.9rem;
+      color: #5d6d7e;
+      font-weight: 500;
+    }
+
+    .item-card .inum {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #2c3e50;
+    }
+
+    .item-card.zero {
+      background: #fafafa;
+      border-color: #f0f0f0;
+      opacity: 0.5;
+    }
+
+    .item-card.zero .inum, .item-card.zero .iname {
+      color: #bdc3c7;
+    }
+
+    /* Sabji cooking cards — larger, prominent */
+    .sabji-cook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .sabji-cook-card {
+      background: #fffcf5;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid #f9ebea;
+    }
+
+    .sabji-cook-card .cook-label {
+      font-size: 0.8rem;
+      color: #7f8c8d;
+      margin-bottom: 6px;
+    }
+
+    .sabji-cook-card .cook-val {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #d35400;
+      line-height: 1;
+    }
+
+    .sabji-cook-card .cook-unit {
+      font-size: 0.8rem;
+      color: #95a5a6;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .sabji-cook-card .cook-breakdown {
+      font-size: 0.75rem;
+      color: #7f8c8d;
+      margin-top: 10px;
+      border-top: 1px dashed #edbb99;
+      padding-top: 10px;
+      font-weight: 500;
+    }
+
+    .dal-card {
+      background: #f4fbf4;
+      border-radius: 14px;
+      padding: 20px;
+      border: 1px solid #e9f7ef;
+    }
+
+    .dal-card .cook-label {
+      font-size: 0.8rem;
+      color: #7f8c8d;
+      margin-bottom: 6px;
+    }
+
+    .dal-card .cook-val {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #27ae60;
+      line-height: 1;
+    }
+
+    .dal-card .cook-unit {
+      font-size: 0.8rem;
+      color: #95a5a6;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f0;
+      margin: 18px 0;
+    }
+
+    /* ── NO ORDERS ── */
+    .no-orders {
+      text-align: center;
+      padding: 60px 40px;
+      color: #95a5a6;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    /* ── LOADER ── */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid #eee;
+      border-top-color: #d35400;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 60px auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── LAST UPDATED ── */
+    .last-updated {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #bdc3c7;
+      padding: 10px 0 30px;
+      font-weight: 500;
+    }
+
+    /* ── MOBILE OPTIMIZATION ── */
+    @media (max-width: 650px) {
+      .kheader {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+        padding: 18px;
+      }
+
+      .kheader .controls {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .kheader input[type=date] {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      .kbody {
+        padding: 15px;
+      }
+
+      .item-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .sabji-cook-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sabji-cook-card .cook-val,
+      .dal-card .cook-val {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
+
 </head>
+
 <body>
 
-<!-- LOGIN -->
-<div id="loginWrap">
-  <div class="login-box">
-    <h1>🍽 Svaadh Kitchen</h1>
-    <p>Enter PIN to view kitchen orders</p>
-    <div class="pin-dots">
-      <div class="pin-dot" id="kd0"></div>
-      <div class="pin-dot" id="kd1"></div>
-      <div class="pin-dot" id="kd2"></div>
-      <div class="pin-dot" id="kd3"></div>
-    </div>
-    <div class="pin-grid">
-      <button class="pk" onclick="kp(1)">1</button><button class="pk" onclick="kp(2)">2</button><button class="pk" onclick="kp(3)">3</button>
-      <button class="pk" onclick="kp(4)">4</button><button class="pk" onclick="kp(5)">5</button><button class="pk" onclick="kp(6)">6</button>
-      <button class="pk" onclick="kp(7)">7</button><button class="pk" onclick="kp(8)">8</button><button class="pk" onclick="kp(9)">9</button>
-      <button class="pk span2" onclick="kp(0)">0</button><button class="pk del" onclick="kd()">⌫</button>
-    </div>
-    <div class="login-err" id="kErr"></div>
-  </div>
-</div>
-
-<!-- SHELL -->
-<div id="shell">
-  <div class="kheader">
-    <h1>🍽 SVAADH KITCHEN</h1>
-    <div class="controls">
-      <input type="date" id="datePicker">
-      <button class="load-btn" onclick="loadKitchen()">Load</button>
-      <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
+  <!-- LOGIN -->
+  <div id="loginWrap">
+    <div class="login-box">
+      <h1>🍽 Svaadh Kitchen</h1>
+      <p>Enter PIN to view kitchen orders</p>
+      <div class="pin-dots">
+        <div class="pin-dot" id="kd0"></div>
+        <div class="pin-dot" id="kd1"></div>
+        <div class="pin-dot" id="kd2"></div>
+        <div class="pin-dot" id="kd3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pk" onclick="kp(1)">1</button><button class="pk" onclick="kp(2)">2</button><button class="pk"
+          onclick="kp(3)">3</button>
+        <button class="pk" onclick="kp(4)">4</button><button class="pk" onclick="kp(5)">5</button><button class="pk"
+          onclick="kp(6)">6</button>
+        <button class="pk" onclick="kp(7)">7</button><button class="pk" onclick="kp(8)">8</button><button class="pk"
+          onclick="kp(9)">9</button>
+        <button class="pk span2" onclick="kp(0)">0</button><button class="pk del" onclick="kd()">⌫</button>
+      </div>
+      <div class="login-err" id="kErr"></div>
     </div>
   </div>
-  <div class="kbody" id="kbody">
-    <div class="no-orders">Select a date and tap Load</div>
+
+  <!-- SHELL -->
+  <div id="shell">
+    <div class="kheader">
+      <h1>🍽 SVAADH KITCHEN</h1>
+      <div class="controls">
+        <input type="date" id="datePicker">
+        <button class="load-btn" onclick="loadKitchen()">Load</button>
+        <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
+      </div>
+    </div>
+    <div class="kbody" id="kbody">
+      <div class="no-orders">Select a date and tap Load</div>
+    </div>
+    <div class="last-updated" id="lastUpdated"></div>
   </div>
-  <div class="last-updated" id="lastUpdated"></div>
-</div>
 
-<script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-let K = { pin: "", sessionPin: "" };
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+    let K = { pin: "", sessionPin: "" };
 
-// ── RATE LIMITING ──
-let attempts = 0;
-let lockoutEnd = 0;
-function isLocked() {
-  if (Date.now() < lockoutEnd) {
-    const s = Math.ceil((lockoutEnd - Date.now()) / 1000);
-    document.getElementById("kErr").textContent = `Too many attempts. Wait ${s}s.`;
-    return true;
-  }
-  if (lockoutEnd !== 0) {
-    lockoutEnd = 0; attempts = 0;
-    document.getElementById("kErr").textContent = "";
-  }
-  return false;
-}
-
-// ── PIN ──
-function kp(n) {
-  if (isLocked()) return;
-  if (K.pin.length >= 4) return;
-  K.pin += String(n);
-  renderDots();
-  if (K.pin.length === 4) verifyPin();
-}
-function kd() {
-  K.pin = K.pin.slice(0,-1);
-  renderDots();
-  document.getElementById("kErr").textContent = "";
-}
-function renderDots() {
-  for (let i=0;i<4;i++) document.getElementById("kd"+i).classList.toggle("filled", i < K.pin.length);
-}
-async function verifyPin() {
-  if (isLocked()) return;
-  document.getElementById("kErr").textContent = "Checking...";
-  try {
-    const today = todayIST();
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
-    const data = await res.json();
-    if (data.error) {
-      attempts++;
-      if (attempts >= 5) {
-        lockoutEnd = Date.now() + 60000;
-        document.getElementById("kErr").textContent = "Too many attempts. Wait 60s.";
-      } else {
-        document.getElementById("kErr").textContent = "Incorrect PIN — Please try again";
+    // ── RATE LIMITING ──
+    let attempts = 0;
+    let lockoutEnd = 0;
+    function isLocked() {
+      if (Date.now() < lockoutEnd) {
+        const s = Math.ceil((lockoutEnd - Date.now()) / 1000);
+        document.getElementById("kErr").textContent = `Too many attempts. Wait ${s}s.`;
+        return true;
       }
-      K.pin = ""; renderDots();
-      return;
+      if (lockoutEnd !== 0) {
+        lockoutEnd = 0; attempts = 0;
+        document.getElementById("kErr").textContent = "";
+      }
+      return false;
     }
-    // PIN valid
-    attempts = 0;
-    K.sessionPin = K.pin;
-    K.pin = ""; renderDots();
-    document.getElementById("loginWrap").style.display = "none";
-    document.getElementById("shell").style.display = "block";
-    document.getElementById("datePicker").value = today;
-    renderKitchen(data);
-    _lastUpdated = new Date();
-    startAutoRefresh();
-  } catch(e) {
-    document.getElementById("kErr").textContent = "Error: " + e.message;
-    K.pin = ""; renderDots();
-  }
-}
 
-function todayIST() {
-  const now = new Date();
-  const ist = new Date(now.getTime() + 5.5*3600000);
-  return ist.toISOString().slice(0,10);
-}
-
-// ── LOAD ──
-async function loadKitchen() {
-  const date = document.getElementById("datePicker").value;
-  if (!date) { alert("Pick a date"); return; }
-  document.getElementById("kbody").innerHTML = `<div class="spinner"></div>`;
-  try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    renderKitchen(data);
-    _lastUpdated = new Date();
-  } catch(e) {
-    document.getElementById("kbody").innerHTML = `<div class="no-orders" style="color:#e74c3c;">${e.message}</div>`;
-  }
-}
-
-// ── Marathi display names ──
-const MR = {
-  // Rotis
-  "Chapati": "चपाती", "Without Oil Chapati": "विना तेल चपाती", "Without_Oil_Chapati": "विना तेल चपाती",
-  "Phulka": "फुलका", "Ghee Phulka": "तूप फुलका", "Ghee_Phulka": "तूप फुलका",
-  "Jowar Bhakri": "ज्वारी भाकरी", "Jowar_Bhakri": "ज्वारी भाकरी", "Bajra Bhakri": "बाजरी भाकरी", "Bajra_Bhakri": "बाजरी भाकरी",
-  "Dry Sabji": "सुकी भाजी", "Curry Sabji": "रस्सा भाजी",
-  "Sabji (Dry)": "सुकी भाजी", "Sabji (Curry)": "रस्सा भाजी",
-  "Dal": "वरण", "Rice": "भात", "Salad": "सलाड", "Curd": "दही", "Curd (50g)": "दही",
-  "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "तूप उपमा", "Upma": "उपमा", "Poha": "पोहे",
-  "orders": "ऑर्डर",
-  // Specific Sabjis
-  "Cauliflower": "फ्लॉवर", "French Beans": "फरसबी", "Cabbage": "कोबी", "Bhindi": "भेंडी",
-  "Bhendi Fry": "भेंडी", "Potato": "बटाटा", "Aloo": "बटाटा", "Matki": "मटकी",
-  "Mataki": "मटकी", "Matki (Dry)": "मटकी सुकी", "Matki (Curry)": "मटकी रस्सा",
-  "Soyabean": "सोयाबीन", "Gavari": "गवार", "Pithla": "पिठलं", "Akha Masoor": "अख्खा मसूर",
-  "Dal kanda": "डाळ कांदा", "Dal Kanda": "डाळ कांदा", "Sev tomato": "शेव टोमॅटो",
-  "Shimla Besan": "ढोबळी बेसन", "Palak corn": "पालक कॉर्न", "Green moong": "हिरवा मूग",
-  "Green Moong": "हिरवा मूग", "Kofta": "कोफ्ता", "Methi": "मेथी", "Aloo Matar": "बटाटा मटार",
-  "Batata": "बटाटा", "Shepu": "शेपू", "Tondli": "तोंडली", "Vatana": "वटाणा",
-  "Mix Veg": "मिक्सव्हेज", "Paneer": "पनीर", "Chavali": "चवळी"
-};
-function mr(name) { return MR[name] || name; }
-
-const SABJI_WEIGHTS = {
-  // Dry Sabjis
-  "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
-  "Cabbage": 75, "Bhindi": 140, "Bhendi Fry": 140, "Potato": 140, "Aloo": 140,
-  "Batata": 140, "Aloo Matar": 140, "French Beans": 140, "French_Beans": 140,
-  "Beans": 120, "Matki": 55, "Mataki": 55, "Matki (Dry)": 55, "Matki masala": 55,
-  "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
-  "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 }, "Palak corn": 140,
-  "Green Moong (Dry)": 30, "Green Moong": 30,
-
-  // Curry Sabjis
-  "Soyabean": 10, "Gavari": 42, "Matki (Curry)": 34, "Pithla": { "बेसन": 23 },
-  "Akha Masoor": 27, "Kofta": { "दुधी": 100, "कोफ्ता गोळे": 10 },
-  "Green moong (Curry)": 27, "Dudhi": 140, "Paneer": 120, "Tondli": 140,
-  "Mix Veg": 140, "Chavali": 140, "Shepu": 70, "Methi": 70, "Spinach": 70,
-
-  "default": 140
-};
-function normalizeName(n){return (n||"").trim().toLowerCase().replace(/_/g," ");}
-
-function getWeight(name, mini, full) {
-  const normalized = normalizeName(name);
-  const totalUnits = ((mini || 0) * 0.6) + ((full || 0) * 1.4);
-
-  let w = null;
-  for (let key in SABJI_WEIGHTS) {
-    if (normalizeName(key) === normalized) {
-      w = SABJI_WEIGHTS[key];
-      break;
+    // ── PIN ──
+    function kp(n) {
+      if (isLocked()) return;
+      if (K.pin.length >= 4) return;
+      K.pin += String(n);
+      renderDots();
+      if (K.pin.length === 4) verifyPin();
     }
-  }
-
-  const fmtWeight = (g) => {
-    if (g >= 1000) return (g / 1000).toFixed(2) + " kg";
-    return Math.round(g) + " g";
-  };
-
-  if (!w || w === 0) {
-    // No gram data — just show unit count so staff can manage
-    return { val: totalUnits.toFixed(1), unit: "युनिट (मोजणी)" };
-  }
-
-  if (typeof w === "number") {
-    return { val: fmtWeight(totalUnits * w), unit: "एकूण वजन (तयार करण्यासाठी)" };
-  } else {
-    // Multi-ingredient breakdown
-    let rows = [];
-    for (let ing in w) {
-      rows.push(`<span style="color:#aaa;">${ing}:</span> <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>`);
+    function kd() {
+      K.pin = K.pin.slice(0, -1);
+      renderDots();
+      document.getElementById("kErr").textContent = "";
     }
-    return { val: rows.join("<br>"), unit: "एकूण वजन (तयार करण्यासाठी)" };
-  }
-}
+    function renderDots() {
+      for (let i = 0; i < 4; i++) document.getElementById("kd" + i).classList.toggle("filled", i < K.pin.length);
+    }
+    async function verifyPin() {
+      if (isLocked()) return;
+      document.getElementById("kErr").textContent = "Checking...";
+      try {
+        const today = todayIST();
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.error) {
+          attempts++;
+          if (attempts >= 5) {
+            lockoutEnd = Date.now() + 60000;
+            document.getElementById("kErr").textContent = "Too many attempts. Wait 60s.";
+          } else {
+            document.getElementById("kErr").textContent = "Incorrect PIN — Please try again";
+          }
+          K.pin = ""; renderDots();
+          return;
+        }
+        // PIN valid
+        attempts = 0;
+        K.sessionPin = K.pin;
+        K.pin = ""; renderDots();
+        document.getElementById("loginWrap").style.display = "none";
+        document.getElementById("shell").style.display = "block";
+        document.getElementById("datePicker").value = today;
+        renderKitchen(data);
+        _lastUpdated = new Date();
+        startAutoRefresh();
+      } catch (e) {
+        document.getElementById("kErr").textContent = "Error: " + e.message;
+        K.pin = ""; renderDots();
+      }
+    }
 
-// ── RENDER ──
-function getMealOrder() {
-  const h = new Date(new Date().getTime() + 5.5 * 3600000).getUTCHours();
-  if (h < 8)  return ["Breakfast", "Lunch", "Dinner"];
-  if (h < 14) return ["Lunch", "Dinner", "Breakfast"];
-  if (h < 20) return ["Dinner", "Breakfast", "Lunch"];
-  return ["Dinner", "Breakfast", "Lunch"];
-}
+    function todayIST() {
+      const now = new Date();
+      const ist = new Date(now.getTime() + 5.5 * 3600000);
+      return ist.toISOString().slice(0, 10);
+    }
 
-function renderKitchen(data) {
-  const meals = data.meals || {};
-  let html = "";
+    // ── LOAD ──
+    async function loadKitchen() {
+      const date = document.getElementById("datePicker").value;
+      if (!date) { alert("Pick a date"); return; }
+      document.getElementById("kbody").innerHTML = `<div class="spinner"></div>`;
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        renderKitchen(data);
+        _lastUpdated = new Date();
+      } catch (e) {
+        document.getElementById("kbody").innerHTML = `<div class="no-orders" style="color:#e74c3c;">${e.message}</div>`;
+      }
+    }
 
-  if (!Object.keys(meals).length) {
-    html = `<div class="no-orders" style="display:flex;flex-direction:column;align-items:center;padding:40px;">
+    // ── Marathi display names ──
+    const MR = {
+      // Rotis
+      "Chapati": "चपाती", "Without Oil Chapati": "विना तेल चपाती", "Without_Oil_Chapati": "विना तेल चपाती",
+      "Phulka": "फुलका", "Ghee Phulka": "तूप फुलका", "Ghee_Phulka": "तूप फुलका",
+      "Jowar Bhakri": "ज्वारी भाकरी", "Jowar_Bhakri": "ज्वारी भाकरी", "Bajra Bhakri": "बाजरी भाकरी", "Bajra_Bhakri": "बाजरी भाकरी",
+      "Dry Sabji": "सुकी भाजी", "Curry Sabji": "रस्सा भाजी",
+      "Sabji (Dry)": "सुकी भाजी", "Sabji (Curry)": "रस्सा भाजी",
+      "Dal": "वरण", "Rice": "भात", "Salad": "सलाड", "Curd": "दही", "Curd (50g)": "दही",
+      "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "तूप उपमा", "Upma": "उपमा", "Poha": "पोहे",
+      "orders": "ऑर्डर",
+      // Specific Sabjis
+      "Cauliflower": "फ्लॉवर", "French Beans": "फरसबी", "Cabbage": "कोबी", "Bhindi": "भेंडी",
+      "Bhendi Fry": "भेंडी", "Potato": "बटाटा", "Aloo": "बटाटा", "Matki": "मटकी",
+      "Mataki": "मटकी", "Matki (Dry)": "मटकी सुकी", "Matki (Curry)": "मटकी रस्सा",
+      "Soyabean": "सोयाबीन", "Gavari": "गवार", "Pithla": "पिठलं", "Akha Masoor": "अख्खा मसूर",
+      "Dal kanda": "डाळ कांदा", "Dal Kanda": "डाळ कांदा", "Sev tomato": "शेव टोमॅटो",
+      "Shimla Besan": "ढोबळी बेसन", "Palak corn": "पालक कॉर्न", "Green moong": "हिरवा मूग",
+      "Green Moong": "हिरवा मूग", "Kofta": "कोफ्ता", "Methi": "मेथी", "Aloo Matar": "बटाटा मटार",
+      "Batata": "बटाटा", "Shepu": "शेपू", "Tondli": "तोंडली", "Vatana": "वटाणा",
+      "Mix Veg": "मिक्सव्हेज", "Paneer": "पनीर", "Chavali": "चवळी"
+    };
+    function mr(name) { return MR[name] || name; }
+
+    const SABJI_WEIGHTS = {
+      // Dry Sabjis
+      "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
+      "Cabbage": 75, "Bhindi": 100,
+      "French Beans": 80, "French_Beans": 80,
+      "Beans": 80, "Matki": 55, "Mataki": 55, "Matki (Dry)": 55, "Matki masala": 55,
+      "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
+      "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 },
+      "Green Moong (Dry)": 30, "Green Moong": 30,
+
+      // Curry Sabjis
+      "Soyabean": 10, "Gavari": 42, "Matki (Curry)": 34, "Pithla": { "बेसन": 23 },
+      "Akha Masoor": 27, "Kofta": { "दुधी": 100, "कोफ्ता गोळे": 10 },
+      "Green moong (Curry)": 27
+    };
+    function normalizeName(n) { return (n || "").trim().toLowerCase().replace(/_/g, " "); }
+
+    function getWeight(name, mini, full) {
+      const normalized = normalizeName(name);
+      const totalUnits = ((mini || 0) * 0.6) + ((full || 0) * 1.4);
+
+      let w = null;
+      for (let key in SABJI_WEIGHTS) {
+        if (normalizeName(key) === normalized) {
+          w = SABJI_WEIGHTS[key];
+          break;
+        }
+      }
+
+      const fmtWeight = (g) => {
+        if (g >= 1000) return (g / 1000).toFixed(2) + " kg";
+        return Math.round(g) + " g";
+      };
+
+      if (!w || w === 0) {
+        // No gram data — just show unit count so staff can manage
+        return { val: totalUnits.toFixed(1), unit: "युनिट (मोजणी)" };
+      }
+
+      if (typeof w === "number") {
+        return { val: fmtWeight(totalUnits * w), unit: "एकूण वजन (तयार करण्यासाठी)" };
+      } else {
+        // Multi-ingredient breakdown
+        let rows = [];
+        for (let ing in w) {
+          rows.push(`<span style="color:#aaa;">${ing}:</span> <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>`);
+        }
+        return { val: rows.join("<br>"), unit: "एकूण वजन (तयार करण्यासाठी)" };
+      }
+    }
+
+    // ── RENDER ──
+    function getMealOrder() {
+      const h = new Date(new Date().getTime() + 5.5 * 3600000).getUTCHours();
+      if (h < 8) return ["Breakfast", "Lunch", "Dinner"];
+      if (h < 14) return ["Lunch", "Dinner", "Breakfast"];
+      if (h < 20) return ["Dinner", "Breakfast", "Lunch"];
+      return ["Dinner", "Breakfast", "Lunch"];
+    }
+
+    function renderKitchen(data) {
+      const meals = data.meals || {};
+      let html = "";
+
+      if (!Object.keys(meals).length) {
+        html = `<div class="no-orders" style="display:flex;flex-direction:column;align-items:center;padding:40px;">
       <div style="font-size:3rem;margin-bottom:10px;">😴</div>
       No orders set for ${data.date}</div>`;
-    document.getElementById("kbody").innerHTML = html;
-    return;
-  }
+        document.getElementById("kbody").innerHTML = html;
+        return;
+      }
 
-  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
-  html += `<div style="text-align:center;font-size:0.78rem;color:#666;margin-bottom:14px;">📅 ${fmtDate(data.date)}</div>`;
+      const fmtDate = d => { const p = d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+      html += `<div style="text-align:center;font-size:0.78rem;color:#666;margin-bottom:14px;">📅 ${fmtDate(data.date)}</div>`;
 
-  // ── BREAKFAST ──
-  const MEAL_META = {
-    Breakfast: { icon:"🌅", label:"न्याहारी" },
-    Lunch:     { icon:"☀️",  label:"दुपारचे जेवण" },
-    Dinner:    { icon:"🌙", label:"रात्रीचे जेवण" },
-  };
+      // ── BREAKFAST ──
+      const MEAL_META = {
+        Breakfast: { icon: "🌅", label: "न्याहारी" },
+        Lunch: { icon: "☀️", label: "दुपारचे जेवण" },
+        Dinner: { icon: "🌙", label: "रात्रीचे जेवण" },
+      };
 
-  getMealOrder().forEach(meal => {
-    if (!meals[meal]) return;
-    const m = meals[meal];
-    const {icon, label} = MEAL_META[meal];
+      getMealOrder().forEach(meal => {
+        if (!meals[meal]) return;
+        const m = meals[meal];
+        const { icon, label } = MEAL_META[meal];
 
-    if (meal === "Breakfast") {
-      const bfEntries = Object.entries(m.items || {}).filter(([,q]) => q > 0);
-      const bfHtml = bfEntries.length
-        ? bfEntries.map(([name,qty]) =>
-            `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
-          ).join("")
-        : `<div style="color:#555;font-size:0.82rem;padding:8px;">माहिती नाही</div>`;
-      html += `<div class="meal-block">
+        if (meal === "Breakfast") {
+          const bfEntries = Object.entries(m.items || {}).filter(([, q]) => q > 0);
+          const bfHtml = bfEntries.length
+            ? bfEntries.map(([name, qty]) =>
+              `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
+            ).join("")
+            : `<div style="color:#555;font-size:0.82rem;padding:8px;">माहिती नाही</div>`;
+          html += `<div class="meal-block">
         <div class="meal-head">
           <span class="meal-icon">${icon}</span>
           <span class="meal-title">${label}</span>
@@ -363,32 +707,32 @@ function renderKitchen(data) {
           <div class="item-grid">${bfHtml}</div>
         </div>
       </div>`;
-      return;
-    }
+          return;
+        }
 
-    const s = m.sabji;
-    const rotiEntries = Object.entries(m.rotis).filter(([,q]) => q > 0);
-    const rotiHtml = rotiEntries.length
-      ? rotiEntries.map(([name,qty]) =>
-          `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
-        ).join("")
-      : `<div class="item-card zero"><span class="iname">—</span><span class="inum">0</span></div>`;
+        const s = m.sabji;
+        const rotiEntries = Object.entries(m.rotis).filter(([, q]) => q > 0);
+        const rotiHtml = rotiEntries.length
+          ? rotiEntries.map(([name, qty]) =>
+            `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
+          ).join("")
+          : `<div class="item-card zero"><span class="iname">—</span><span class="inum">0</span></div>`;
 
-    const showDry = (s.dry_name && s.dry_name !== "none") && ((s.dry_mini||0) + (s.dry_full||0) > 0);
-    const showCurry = (s.curry_name && s.curry_name !== "none") && ((s.curry_mini||0) + (s.curry_full||0) > 0);
+        const showDry = (s.dry_name && s.dry_name !== "none") && ((s.dry_mini || 0) + (s.dry_full || 0) > 0);
+        const showCurry = (s.curry_name && s.curry_name !== "none") && ((s.curry_mini || 0) + (s.curry_full || 0) > 0);
 
-    const dRes = getWeight(s.dry_name, s.dry_mini, s.dry_full);
-    const cRes = getWeight(s.curry_name, s.curry_mini, s.curry_full);
+        const dRes = getWeight(s.dry_name, s.dry_mini, s.dry_full);
+        const cRes = getWeight(s.curry_name, s.curry_mini, s.curry_full);
 
-    // Get Devanagari name: use actual sabji name if it's a real name (not a generic fallback)
-    const genericDryNames  = ["Sabji (Dry)",  "Dry Sabji",  "none", ""];
-    const genericCurryNames= ["Sabji (Curry)","Curry Sabji","none", ""];
-    const dryDisplayName   = !genericDryNames.includes(s.dry_name)   ? mr(s.dry_name)   : "सुकी भाजी";
-    const curryDisplayName = !genericCurryNames.includes(s.curry_name) ? mr(s.curry_name) : "रस्सा भाजी";
-    const dryIsGeneric     = genericDryNames.includes(s.dry_name);
-    const curryIsGeneric   = genericCurryNames.includes(s.curry_name);
+        // Get Devanagari name: use actual sabji name if it's a real name (not a generic fallback)
+        const genericDryNames = ["Sabji (Dry)", "Dry Sabji", "none", ""];
+        const genericCurryNames = ["Sabji (Curry)", "Curry Sabji", "none", ""];
+        const dryDisplayName = !genericDryNames.includes(s.dry_name) ? mr(s.dry_name) : "सुकी भाजी";
+        const curryDisplayName = !genericCurryNames.includes(s.curry_name) ? mr(s.curry_name) : "रस्सा भाजी";
+        const dryIsGeneric = genericDryNames.includes(s.dry_name);
+        const curryIsGeneric = genericCurryNames.includes(s.curry_name);
 
-    const sabjiHtml = `
+        const sabjiHtml = `
       <div class="sabji-cook-grid">
         ${showDry ? `
         <div class="sabji-cook-card">
@@ -406,21 +750,21 @@ function renderKitchen(data) {
         </div>` : ""}
       </div>`;
 
-    const dal = m.other["Dal"];
-    const otherHtml = `
-      <div class="item-card ${dal.kg===0?"zero":""}">
+        const dal = m.other["Dal"];
+        const otherHtml = `
+      <div class="item-card ${dal.kg === 0 ? "zero" : ""}">
         <span class="iname">${mr("Dal")}</span>
         <span class="inum">${dal.kg}</span>
       </div>` +
-      ["Rice","Salad","Curd"].map(name => {
-        const o = m.other[name];
-        return `<div class="item-card ${o.count===0?"zero":""}">
+          ["Rice", "Salad", "Curd"].map(name => {
+            const o = m.other[name];
+            return `<div class="item-card ${o.count === 0 ? "zero" : ""}">
           <span class="iname">${mr(name)}</span>
           <span class="inum">${o.count}</span>
         </div>`;
-      }).join("");
+          }).join("");
 
-    html += `<div class="meal-block">
+        html += `<div class="meal-block">
       <div class="meal-head">
         <span class="meal-icon">${icon}</span>
         <span class="meal-title">${label}</span>
@@ -437,60 +781,60 @@ function renderKitchen(data) {
         <div class="item-grid">${otherHtml}</div>
       </div>
     </div>`;
-  });
+      });
 
-  document.getElementById("kbody").innerHTML = html;
-}
-
-
-// ── AUTO-SET DATE ON LOAD ──
-(function() {
-  document.getElementById("datePicker").value = todayIST();
-})();
-
-// ── AUTO REFRESH ──
-let _lastUpdated = null;
-let _nextRefresh  = null;
-const REFRESH_SECS = 300; // 5 minutes
-
-function startAutoRefresh() {
-  if (window._rt) clearInterval(window._rt);
-  if (window._ct) clearInterval(window._ct);
-
-  function scheduleNext() {
-    _nextRefresh = new Date(Date.now() + REFRESH_SECS * 1000);
-  }
-
-  function doRefresh() {
-    scheduleNext();
-    loadKitchen();
-  }
-
-  scheduleNext();
-  window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
-
-  window._ct = setInterval(() => {
-    const el = document.getElementById("lastUpdated");
-    if (!el) return;
-    const secsLeft = _nextRefresh ? Math.max(0, Math.floor((_nextRefresh.getTime() - Date.now()) / 1000)) : REFRESH_SECS;
-    const m = Math.floor(secsLeft / 60);
-    const s = String(secsLeft % 60).padStart(2, "0");
-    const updStr = _lastUpdated ? _lastUpdated.toLocaleTimeString("en-IN") : "—";
-    el.textContent = `Updated: ${updStr}  ·  Refresh in ${m}:${s}`;
-  }, 1000);
-
-  // Pause when tab hidden, resume when visible
-  document.removeEventListener("visibilitychange", window._visHandler);
-  window._visHandler = () => {
-    if (document.hidden) {
-      if (window._rt) { clearInterval(window._rt); window._rt = null; }
-    } else {
-      doRefresh();
-      window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+      document.getElementById("kbody").innerHTML = html;
     }
-  };
-  document.addEventListener("visibilitychange", window._visHandler);
-}
+
+
+    // ── AUTO-SET DATE ON LOAD ──
+    (function () {
+      document.getElementById("datePicker").value = todayIST();
+    })();
+
+    // ── AUTO REFRESH ──
+    let _lastUpdated = null;
+    let _nextRefresh = null;
+    const REFRESH_SECS = 300; // 5 minutes
+
+    function startAutoRefresh() {
+      if (window._rt) clearInterval(window._rt);
+      if (window._ct) clearInterval(window._ct);
+
+      function scheduleNext() {
+        _nextRefresh = new Date(Date.now() + REFRESH_SECS * 1000);
+      }
+
+      function doRefresh() {
+        scheduleNext();
+        loadKitchen();
+      }
+
+      scheduleNext();
+      window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+
+      window._ct = setInterval(() => {
+        const el = document.getElementById("lastUpdated");
+        if (!el) return;
+        const secsLeft = _nextRefresh ? Math.max(0, Math.floor((_nextRefresh.getTime() - Date.now()) / 1000)) : REFRESH_SECS;
+        const m = Math.floor(secsLeft / 60);
+        const s = String(secsLeft % 60).padStart(2, "0");
+        const updStr = _lastUpdated ? _lastUpdated.toLocaleTimeString("en-IN") : "—";
+        el.textContent = `Updated: ${updStr}  ·  Refresh in ${m}:${s}`;
+      }, 1000);
+
+      // Pause when tab hidden, resume when visible
+      document.removeEventListener("visibilitychange", window._visHandler);
+      window._visHandler = () => {
+        if (document.hidden) {
+          if (window._rt) { clearInterval(window._rt); window._rt = null; }
+        } else {
+          doRefresh();
+          window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+        }
+      };
+      document.addEventListener("visibilitychange", window._visHandler);
+    }
 
 
 
@@ -499,6 +843,7 @@ function startAutoRefresh() {
 
 
 
-</script>
+  </script>
 </body>
+
 </html>
