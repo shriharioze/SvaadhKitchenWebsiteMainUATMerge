@@ -1016,8 +1016,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div class="bm-handle" onclick="hideManageOrders()"><span></span></div>
     <div id="walletDashWrap"></div>
     <div style="padding:4px 0 16px;">
-      <h2 style="font-size:1.15rem; color:#1a6640; border-bottom:1.5px solid #eee; padding-bottom:8px; margin-bottom:12px;" data-i18n="manage_title">📋 Your Upcoming Orders</h2>
+      <h2 style="font-size:1.1rem; color:#1a6640; border-bottom:1.5px solid #eee; padding-bottom:8px; margin-bottom:12px; font-weight:700;">📅 Upcoming Orders</h2>
       <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
+    </div>
+    <div style="padding:4px 0 16px; border-top: 1px dashed #ddd; margin-top: 12px;">
+      <h2 style="font-size:1.05rem; color:#666; padding-top:12px; margin-bottom:12px; font-weight:700;">🕒 Past Orders (Last 10)</h2>
+      <div id="pastOrdersList"></div>
     </div>
     <button class="btn btn-secondary" onclick="hideManageOrders()" style="background:#f5f5f5;border-color:#ddd;color:#555;padding:12px;font-weight:600;width:100%;" data-i18n="btn_back_manage">Close</button>
   </div>
@@ -2491,6 +2495,7 @@ const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, map
 
 async function loadExistingOrders(phone){
   $("manageOrdersList").innerHTML=`<div class="loader"><div class="spinner"></div></div>`;
+  $("pastOrdersList").innerHTML = "";
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
     const data=await res.json();
@@ -2499,7 +2504,6 @@ async function loadExistingOrders(phone){
     const wb = Number(data.wallet_balance) || 0;
     S.profile = (S.profile || {});
     S.walletBalance = wb;
-    
     if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
     
     $("walletDashWrap").innerHTML = `
@@ -2515,98 +2519,96 @@ async function loadExistingOrders(phone){
       </div>
     `;
     
-    const orders=(data.orders||[]);
     const today=todayISO();
-    
-    // 1. Group by Date + Meal
-    const groups = {};
     const MEAL_ORDER = { Breakfast: 1, Lunch: 2, Dinner: 3 };
-    
-    orders.forEach(o => {
-      if (o.date < today) return;
-      const key = `${o.date}_${o.meal}`;
-      if (!groups[key]) {
-        groups[key] = { 
-          ...o, 
-          rowIds: [o.rowId], 
-          summaryParts: [o.summary || "(items)"], 
-          totalSum: Number(o.total) || 0 
-        };
-      } else {
-        groups[key].rowIds.push(o.rowId);
-        groups[key].summaryParts.push(o.summary || "(items)");
-        groups[key].totalSum += Number(o.total) || 0;
-        if (o.enRouteAt) groups[key].enRouteAt = o.enRouteAt;
-        if (o.deliveredAt) groups[key].deliveredAt = o.deliveredAt;
-      }
-    });
 
-    // 2. Sort Groups: Date ASC, then Meal ASC
-    const upcoming = Object.values(groups).sort((a, b) => {
+    const processGroup = (orderArray) => {
+      const groups = {};
+      orderArray.forEach(o => {
+        const key = `${o.date}_${o.meal}`;
+        if (!groups[key]) {
+          groups[key] = { ...o, rowIds: [o.rowId], summaryParts: [o.summary || "(items)"], totalSum: Number(o.total) || 0 };
+        } else {
+          groups[key].rowIds.push(o.rowId);
+          groups[key].summaryParts.push(o.summary || "(items)");
+          groups[key].totalSum += Number(o.total) || 0;
+          if (o.enRouteAt && !groups[key].enRouteAt) groups[key].enRouteAt = o.enRouteAt;
+          if (o.deliveredAt && !groups[key].deliveredAt) groups[key].deliveredAt = o.deliveredAt;
+        }
+      });
+      return Object.values(groups);
+    };
+
+    // 1. Upcoming
+    const upcomingRaw = (data.orders||[]);
+    const upcoming = processGroup(upcomingRaw).sort((a,b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return (MEAL_ORDER[a.meal] || 9) - (MEAL_ORDER[b.meal] || 9);
     });
 
-    if(!upcoming.length){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">${t('no_upcoming_orders')}</p>`;return;}
-    
-    // Cache per-order data
-    upcoming.forEach(g => {
-      // For consolidated rows, we combine their totals and info
-      let totalAmountPaid = 0;
-      let isWallet = false;
-      let isSettlement = false;
-      
-      g.rowIds.forEach(rid => {
-        const o = orders.find(x => String(x.rowId) === String(rid));
-        if (o) {
-          const stat = String(o.payment_status).toLowerCase();
-          const meth = String(o.payment_method).toLowerCase();
-          if (["paid","wallet paid"].includes(stat)) {
-            totalAmountPaid += (Number(o.total) || 0);
+    if(!upcoming.length) {
+      $("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;
+    } else {
+      upcoming.forEach(g => {
+        let totalAmountPaid = 0, isWallet = false;
+        g.rowIds.forEach(rid => {
+          const o = upcomingRaw.find(x => String(x.rowId) === String(rid));
+          if (o) {
+            const stat = String(o.payment_status).toLowerCase();
+            const meth = String(o.payment_method).toLowerCase();
+            if (["paid","wallet paid"].includes(stat)) totalAmountPaid += (Number(o.total) || 0);
+            if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
           }
-          if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
-          if (meth.includes("settlement") || stat.includes("settlement")) isSettlement = true;
-        }
+        });
+        orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet };
       });
 
-      orderDataCache[g.rowId] = {
-        all_row_ids: g.rowIds,
-        original_total_paid: totalAmountPaid,
-        is_wallet: isWallet,
-        is_settlement: isSettlement
-      };
-    });
+      $("manageOrdersList").innerHTML=upcoming.map(o=>{
+        let mealAvail = true;
+        if (o.date === today) {
+          const ist = getIST(); const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
+          const cutoffMap = { Breakfast: CUTOFFS.Breakfast, Lunch: CUTOFFS.Lunch, Dinner: CUTOFFS.Dinner };
+          mealAvail = h < (cutoffMap[o.meal] ?? 23);
+        }
+        let trackHtml="";
+        if(o.deliveredAt) trackHtml=`<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>`;
+        else if(o.enRouteAt) trackHtml=`<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>`;
 
-    $("manageOrdersList").innerHTML=upcoming.map(o=>{
-      // Safe availability check: future dates are always available.
-      // For today, check cutoff based on current IST hour.
-      let mealAvail = true;
-      if (o.date === today) {
-        const ist = getIST();
-        const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
-        const cutoffMap = { Breakfast: CUTOFFS.Breakfast, Lunch: CUTOFFS.Lunch, Dinner: CUTOFFS.Dinner };
-        mealAvail = h < (cutoffMap[o.meal] ?? 23);
-      }
-      const displaySummary = o.summaryParts.join(", ");
-      
-      let trackHtml="";
-      if(o.deliveredAt) trackHtml=`<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>`;
-      else if(o.enRouteAt) trackHtml=`<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 Your driver is in your area!</div>`;
+        return `<div class="order-manage-row">
+          <div class="omr-top">
+            <div class="omr-info">
+              <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
+              <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+              ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
+              ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
+            </div>
+            <div class="omr-actions">
+              <button class="omr-del-btn" ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+    }
 
-      return `<div class="order-manage-row" id="omr_${o.rowId}">
-        <div class="omr-top">
-          <div class="omr-info">
-            <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
-            <div class="omr-sub">${displaySummary} · ₹${o.totalSum}</div>
-            ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
-            ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
+    // 2. Past Orders
+    const pastRaw = (data.past_orders||[]);
+    const past = processGroup(pastRaw).sort((a,b) => b.date.localeCompare(a.date)); // Already sorted by backend but good to be sure
+    if(!past.length) {
+      $("pastOrdersList").innerHTML=`<p style="font-size:0.8rem;color:#999;text-align:center;padding:12px;">No past orders found.</p>`;
+    } else {
+      $("pastOrdersList").innerHTML=past.map(o=>{
+        let trackHtml = o.deliveredAt ? `✅ Delivered` : `Completed`;
+        return `<div class="order-manage-row" style="opacity:0.8;">
+          <div class="omr-top">
+            <div class="omr-info">
+              <div class="omr-title" style="color:#666;">${formatDate(o.date)} — ${o.meal}</div>
+              <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+              <div style="font-size:0.7rem;color:#1b5e20;font-weight:600;margin-top:4px;">${trackHtml}</div>
+            </div>
           </div>
-          <div class="omr-actions">
-            <button class="omr-del-btn" ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
-          </div>
-        </div>
-      </div>`;
-    }).join("");
+        </div>`;
+      }).join("");
+    }
   }catch(err){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#c0392b;text-align:center;">Error: ${err.message}</p>`;}
 }
 

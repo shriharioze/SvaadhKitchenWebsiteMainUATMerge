@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 11;  // Batch Cancel Bugfix
+const CODE_VERSION   = 12;  // Past Orders Support
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -1005,7 +1005,7 @@ function getDayTotalsForDates(phone, datesParam) {
 }
 
 function getCustomerOrders(phone) {
-  if (!phone) return {orders:[]};
+  if (!phone) return {orders:[], past_orders:[], wallet_balance: 0};
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
@@ -1022,41 +1022,54 @@ function getCustomerOrders(phone) {
   if (delWs) {
     const delRows = getAllRows(delWs);
     delRows.forEach(d => {
-      if (d.Submission_ID) deliveryMap[d.Submission_ID] = {
+      const sid = String(d.Submission_ID || "");
+      if (sid) deliveryMap[sid] = {
         deliveredAt: d.Delivered_At || null,
         enRouteAt: d.EnRoute_At || null
       };
     });
   }
 
-  const upcoming = rows
-    .filter(r => String(r.Phone).trim() === String(phone).trim() && fmtD(r) >= today)
+  const allFiltered = rows.filter(r => String(r.Phone).trim() === String(phone).trim());
+  
+  const upcoming = allFiltered
+    .filter(r => fmtD(r) >= today)
+    .sort((a,b) => fmtD(a).localeCompare(fmtD(b)))
     .map(r => {
-      const delTracker = deliveryMap[r.Submission_ID] || {};
+      const delTracker = deliveryMap[String(r.Submission_ID)] || {};
       return {
         rowId:              r.Submission_ID,
         date:               fmtD(r),
         meal:               r.Meal_Type,
         summary:            _buildSummary(r),
         total:              r.Net_Total,
-        customer_name:      r.Customer_Name      || "",
-        area:               r.Area               || "",
-        wing:               r.Wing               || "",
-        flat:               r.Flat               || "",
-        floor:              r.Floor              || "",
-        society:            r.Society            || "",
-        maps:               r.Maps_Link          || "",
-        landmark:           r.Landmark           || "",
-        items_json:         r.Items_JSON         || "{}",
-        notes:              r.Special_Notes      || "",
-        payment_preference: r.Payment_Freq       || "Daily Payment",
-        payment_status:     r.Payment_Status     || "",
-        payment_method:     r.Payment_Method     || "UPI",
-        enRouteAt:          delTracker.enRouteAt || null,
-        deliveredAt:        delTracker.deliveredAt || null
+        payment_status:     r.Payment_Status,
+        payment_method:     r.Payment_Method,
+        deliveredAt:        delTracker.deliveredAt,
+        enRouteAt:          delTracker.enRouteAt
       };
     });
-  return {orders: upcoming, wallet_balance: _calculateWalletBalance(phone)};
+
+  const past = allFiltered
+    .filter(r => fmtD(r) < today)
+    .sort((a,b) => fmtD(b).localeCompare(fmtD(a))) // newest first
+    .slice(0, 10)
+    .map(r => {
+      const delTracker = deliveryMap[String(r.Submission_ID)] || {};
+      return {
+        rowId:              r.Submission_ID,
+        date:               fmtD(r),
+        meal:               r.Meal_Type,
+        summary:            _buildSummary(r),
+        total:              r.Net_Total,
+        payment_status:     r.Payment_Status,
+        payment_method:     r.Payment_Method,
+        deliveredAt:        delTracker.deliveredAt,
+        enRouteAt:          delTracker.enRouteAt
+      };
+    });
+
+  return {orders: upcoming, past_orders: past, wallet_balance: _calculateWalletBalance(phone)};
 }
 
 function _buildSummary(r) {
