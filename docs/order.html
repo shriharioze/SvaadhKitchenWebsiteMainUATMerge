@@ -422,8 +422,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .upi-id{color:#888;}
 [data-theme="dark"] .hissab-msg{background:#162216;border-color:#2a4830;color:#6abf8a;}
 
-/* BILL MODAL */
-.bill-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;display:flex;align-items:flex-end;justify-content:center;}
+[data-theme="dark"] #quickButtonBar{background:#1e1e1e;border-color:#333;}
+[data-theme="dark"] #walletChip{background:#1a2820;border-color:#2a4830;color:#6abf8a;}
+[data-theme="dark"] #authActionsWrap button{background:#2a2a2a;border-color:#444;color:#e0e0e0;}
 .bill-modal-sheet{background:white;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp 0.3s ease;}
 .bm-handle{width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 18px;}
 .bm-chip{display:inline-block;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:0.05em;margin-bottom:8px;}
@@ -612,35 +613,30 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 </div>
 
 <!-- HEADER -->
-<div class="page-header" style="position:relative;">
+<div class="page-header" style="position:relative; padding-bottom: 14px;">
   <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
   <p data-i18n="header_tagline">Home-cooked food, made for you</p>
-  <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1rem;">🌙</button>
+  <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
-  <style>
-    .discount{color:#27ae60;font-weight:600;}
-    .extra-charges-bundle{background:#fdf8f2;border:1px dashed #e8ddd7;border-radius:8px;padding:8px 10px;margin-top:6px;cursor:pointer;transition:background 0.2s;}
-    .extra-charges-bundle:hover{background:#f9f0e8;}
-    .extra-breakdown{display:none;padding-top:6px;margin-top:6px;border-top:1px solid #eee;}
-    .extra-breakdown.open{display:block;}
-    .extra-toggle-icon{font-size:0.7rem;color:#c0392b;margin-left:4px;transition:transform 0.2s;display:inline-block;}
-    .extra-toggle-icon.open{transform:rotate(180deg);}
-  </style>
-  
-  <div id="walletChip" onclick="openWalletRecharge()" style="display:none;position:absolute;top:50%;right:52px;transform:translateY(-50%);background:#fff;border:1.5px solid #2e7d32;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;color:#2e7d32;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:100;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;">
-    <span>💼 Wallet:</span>
-    <span id="headerWalletBalance">₹0</span>
-    <span style="border-left:1px solid #c8e6c9;padding-left:4px;margin-left:2px;color:#2e7d32;">➕</span>
+</div>
+
+<!-- QUICK ACTION BAR (LOGGED IN ONLY) -->
+<div id="quickButtonBar" style="display:none; background:#fff; border-bottom:1px solid #eee; padding: 12px 16px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:400; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div id="walletChip" onclick="openWalletRecharge()" style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0;">
+      <span>💼 Wallet:</span>
+      <span id="headerWalletBalance">₹0</span>
+      <span style="border-left:1px solid #c8e6c9; padding-left:4px; margin-left:2px; color:#2e7d32; font-size:0.8rem;">+</span>
+    </div>
+  </div>
+  <div id="authActionsWrap" style="display:flex; align-items:center; gap:8px;">
+    <button onclick="showManageOrders()" class="bill-chip-btn" style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋 Orders</button>
+    <button onclick="logoutCustomer()" style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
   </div>
 </div>
-<style>@keyframes slideDown{from{transform:translateY(-10px);opacity:0;}to{transform:translateY(0);opacity:1;}}</style>
 
-<!-- PROGRESS -->
-<div class="progress-wrap" style="position:relative;z-index:50;">
-  <div id="authActionsWrap" style="display:none;position:absolute;right:15px;top:50%;transform:translateY(-50%);display:flex;gap:8px;z-index:60;">
-    <button onclick="showManageOrders()" style="background:#fff;border:1.5px solid #2e7d32;color:#2e7d32;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);">📋 Orders</button>
-    <button onclick="logoutCustomer()" style="background:#fff5f4;border:1px solid #ffcdcc;color:#c0392b;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);">Log out</button>
-  </div>
+<!-- STICKY PROGRESS INDICATOR (ONLY SHOWN IF NEEDED) -->
+<div class="progress-wrap" style="position:relative; z-index:50;">
   <div class="progress-steps" id="progressSteps">
     <div class="step-dot active" id="dot0"></div>
     <div class="step-dot" id="dot1"></div>
@@ -1332,13 +1328,9 @@ function updateNav(){
   // Disable if nothing ordered yet
   if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
   
-  // Toggle Wallet Chip visibility: visible Step 2-5 (s > 0)
-  const wc = $("walletChip");
-  if (wc) wc.style.display = (s > 0) ? "flex" : "none";
-  
-  // Toggle Auth Actions (Logout/Orders) visibility: s > 0
-  const aa = $("authActionsWrap");
-  if (aa) aa.style.display = (s > 0) ? "flex" : "none";
+  // Toggle Quick Button Bar (Wallet, Orders, Logout) only after step 0
+  const qb = $("quickButtonBar");
+  if (qb) qb.style.display = (s > 0) ? "flex" : "none";
 }
 function refreshBillBtn(){
   if(S.step!==3)return;
