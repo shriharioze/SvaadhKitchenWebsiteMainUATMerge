@@ -3015,7 +3015,7 @@ async function adminCancelMealOrder(phone, date, meal) {
       body: JSON.stringify({_action:"adminCancelOrder", pin:S.sessionPin, phone, date, meal})});
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    toast(`✅ ${meal} order cancelled`);
+    toast(`✅ ${data.message || meal + " order cancelled"}`);
     loadOrderSummary(true);
   } catch(e) { toast("Error: " + e.message); }
 }

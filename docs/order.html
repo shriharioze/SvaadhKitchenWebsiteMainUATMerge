@@ -2694,13 +2694,10 @@ async function performActualDeletion(allIds, refundType) {
     );
     const results = await Promise.all(delPromises);
     if (results.every(r => r.success)) {
-      if (refundType === "wallet") {
-        toast("✅ Order cancelled! ₹" + currentDeleteData?.totalPaid + " added to your Svaadh Wallet.", 5000);
+      const respMsg = results[0]?.message || t('toast_order_deleted');
+      toast("✅ " + respMsg, 6000); // 6s for longer messages
+      if (respMsg.toLowerCase().includes("wallet")) {
         refreshWalletBalance();
-      } else if (refundType === "manual_upi") {
-        toast("✅ Cancelled! Refund sent to your UPI ID within 3 working days.", 5000);
-      } else {
-        toast(t('toast_order_deleted'));
       }
       loadExistingOrders(S.phone);
     } else {

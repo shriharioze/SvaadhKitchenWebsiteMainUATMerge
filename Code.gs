@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 8;   // Final Secure Rollout
+const CODE_VERSION   = 9;   // Mixed-Payment Refunds
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -1075,6 +1075,7 @@ function deleteOrder(phone, rowId, refundType) {
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
   const now = getISTDate();
+  let msg = "Order deleted successfully";
   const today = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
   const hourIST = now.getHours() + now.getMinutes() / 60;
   const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
@@ -1171,16 +1172,38 @@ function deleteOrder(phone, rowId, refundType) {
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
-    if (refundType === "wallet") {
-      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
+    // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid, 
+    // force this refund to Wallet too (to keep the day's bookkeeping simple).
+    const hasAnyOtherWalletPaid = sameDayRows.some(x => {
+      const typeMatch = String(x.Meal_Type).trim() === deleteMeal;
+      const statusMatch = String(x.Payment_Status).toLowerCase() === "wallet paid";
+      return typeMatch && statusMatch;
+    });
+
+    let finalType = refundType;
+    let msgSuffix = "";
+    
+    // Auto-detect wallet refund if current was wallet paid, overriding passed type
+    const currentWasWallet = (pStatStr === "wallet paid");
+    if (currentWasWallet) {
+      finalType = "wallet";
+    } else if (hasAnyOtherWalletPaid && refundType === "manual_upi") {
+      finalType = "wallet";
+      msgSuffix = " (Consolidated to Wallet since other items in this meal were Wallet Paid)";
     }
-    else if (refundType === "manual_upi") {
+
+    if (finalType === "wallet") {
+      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
+      msg = `₹${refundAmt} refunded to Wallet${msgSuffix}`;
+    }
+    else if (finalType === "manual_upi") {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
       const note = adjustment > 0
         ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
         : "";
       refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note]);
+      msg = `₹${refundAmt} refund request raised in Approvals`;
     }
   }
 
@@ -1204,7 +1227,7 @@ function deleteOrder(phone, rowId, refundType) {
     }
   } catch(e) { /* ledger cleanup is non-fatal */ }
 
-  return {success: true};
+  return {success: true, message: msg};
 }
 
 // ── PAY ALL PENDING WITH WALLET ─────────────────────────────
