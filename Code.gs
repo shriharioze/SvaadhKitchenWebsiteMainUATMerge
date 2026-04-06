@@ -25,6 +25,9 @@ const TAB_AREAS      = "SK_Areas";
 const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
 const TAB_REFUNDS    = "SK_Refunds"; // Manual refund requests
 
+// Canonical SK_Wallet column schema — NEVER reorder these
+const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Reference_ID", "Timestamp"];
+
 // ── COLUMN LAYOUT — SK_Orders ────────────────────────────────
 // A   Submission_ID
 // B   Submitted_At
@@ -274,6 +277,7 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     const action = body._action || "";
     if (action === "deleteOrder")       return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
+    if (action === "adminCancelOrder")  return jsonRes(adminCancelOrder(body));
     if (action === "markRefunded") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markRefunded(body.submissionId));
@@ -319,10 +323,6 @@ function doPost(e) {
     if (action === "markOrdersStatus") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markOrdersStatus(body));
-    }
-    if (action === "adminCancelOrder") {
-      if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
-      return jsonRes(adminCancelOrder(body));
     }
     if (action === "markEnRoute") {
       if (body.pin !== ADMIN_PIN) return jsonRes({error:"Invalid PIN"});
@@ -439,7 +439,7 @@ function initSchema() {
   ]);
   getOrCreateTab(ss, TAB_BF_MASTER, ["ID","Name","Price","Active"]);
   getOrCreateTab(ss, TAB_SABJI,     ["ID","Name","Type","Active"]);
-  getOrCreateTab(ss, TAB_WALLET,    ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   return {success: true, message: "Schema initialised"};
 }
 
@@ -507,48 +507,37 @@ function verifyLogin(phone, pin) {
 function _calculateWalletBalance(phone) {
   if (!phone) return 0;
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   const rows = getAllRows(ws);
-  
+
   let balance = 0;
   const pStr = String(phone).trim();
 
   rows.forEach(w => {
-    let rPhone = "";
-    let rType  = "";
-    let rAmt   = 0;
-    let rVer   = "";
-    
-    // Header-agnostic mapping using substring matching, ignore empty cells
-    for (let key in w) {
-      if (key === "_row") continue;
-      let kl = key.toLowerCase();
-      let val = String(w[key]).trim();
-      
-      if (val !== "") { // Crucial fix: prevents trailing empty columns from overwriting legitimate match
-        if (kl.includes("phone") || kl.includes("mobile")) rPhone = val;
-        else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = val;
-        else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
-        else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = val.toUpperCase();
-      }
-    }
-
-    // Standardize phone (remove decimals if numeric)
+    // Normalize phone (handles scientific notation from Sheets, e.g. 9.93E+9)
+    let rPhone = String(w.Phone || "").trim();
     if (rPhone.includes(".")) rPhone = rPhone.split(".")[0];
-    if (rPhone.includes("E+") && !isNaN(Number(rPhone))) {
-       rPhone = Number(rPhone).toLocaleString('fullwide', {useGrouping:false});
+    if (rPhone.toUpperCase().includes("E+") && !isNaN(Number(rPhone))) {
+      rPhone = String(Math.round(Number(rPhone)));
     }
+    if (rPhone !== pStr) return;
 
-    if (rPhone === pStr && (rVer === "TRUE" || rVer === "YES" || rVer === "VERIFIED")) {
-      let typeNorm = rType.toLowerCase();
-      if (typeNorm.includes("recharge") || typeNorm.includes("refund") || typeNorm.includes("credit")) {
-        balance += rAmt;
-      } else if (typeNorm.includes("order") || typeNorm.includes("deduct") || typeNorm.includes("payment")) {
-        balance -= rAmt;
-      }
+    // Only count verified transactions
+    const rVer = String(w.Verified || "").trim().toUpperCase();
+    if (rVer !== "TRUE" && rVer !== "YES" && rVer !== "VERIFIED") return;
+
+    const rAmt  = Number(w.Amount) || 0;
+    // Also check legacy columns where Txn_Type may have been stored in a "Balance" column
+    const rType = String(w.Txn_Type || w.Balance || w.Txn_Type || "").trim().toLowerCase();
+
+    if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")) {
+      balance += rAmt;
+    } else if (rType.includes("order") || rType.includes("deduct") || rType.includes("payment")) {
+      balance -= rAmt;
     }
   });
-  return balance;
+
+  return Math.round(balance * 100) / 100;
 }
 
 // ── GET MENU ─────────────────────────────────────────────────
@@ -646,29 +635,39 @@ function getWeeklyMenu() {
 }
 
 // ── WALLET LOGIC ───────────────────────────────────────────────
-function _appendWalletTransaction(phone, name, txnType, amount, isVerified) {
+/**
+ * Append a transaction to SK_Wallet.
+ * @param {string} phone      Customer phone number
+ * @param {string} name       Customer name
+ * @param {string} txnType    e.g. "Order Deduction", "Recharge", "Order Cancellation Refund"
+ * @param {number} amount     Absolute transaction amount (always positive)
+ * @param {boolean} isVerified TRUE = immediately counted in balance, FALSE = pending admin approval
+ * @param {string} [refId]    Reference ID: Submission_ID for orders/refunds, or a recharge txn ref
+ */
+function _appendWalletTransaction(phone, name, txnType, amount, isVerified, refId) {
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  
+  // Ensure the Reference_ID column exists (handles legacy sheets that predate this schema)
   const hIdx = headerIndex(ws);
-  const totalCols = Math.max(6, ws.getLastColumn());
+  if (!hIdx["Reference_ID"]) {
+    ws.getRange(1, ws.getLastColumn() + 1).setValue("Reference_ID")
+      .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
+    hIdx["Reference_ID"] = ws.getLastColumn();
+  }
+
+  const totalCols = ws.getLastColumn();
   const row = new Array(totalCols).fill("");
-  
-  const setBySub = (subs, val) => {
-     let colNum = null;
-     Object.keys(hIdx).forEach(th => {
-       const hl = String(th).toLowerCase();
-       if (subs.some(s => hl.includes(s))) colNum = hIdx[th];
-     });
-     if (colNum) row[colNum - 1] = val;
-  };
-  
-  setBySub(["phone", "mobile"], phone);
-  setBySub(["name", "customer"], name);
-  setBySub(["txn", "balance", "type"], txnType);
-  setBySub(["amount", "amt"], amount);
-  setBySub(["verif", "status", "approved"], isVerified ? "TRUE" : "FALSE");
-  setBySub(["time", "date", "timestamp"], getISTTimestamp());
-  
+  const set = (col, val) => { if (hIdx[col]) row[hIdx[col] - 1] = val; };
+
+  set("Phone",         phone);
+  set("Customer_Name", name);
+  set("Txn_Type",      txnType);
+  set("Amount",        amount);
+  set("Verified",      isVerified ? "TRUE" : "FALSE");
+  set("Reference_ID",  refId || "");
+  set("Timestamp",     getISTTimestamp());
+
   ws.appendRow(row);
 }
 
@@ -694,41 +693,62 @@ function submitOrder(body) {
   const FREE_THR  = 100;
 
   const submissionIds = [];
+  
+  // Fetch existing orders once for all dates in this submission to calculate combined-day fees/discounts
+  const submissionDates = orders.map(o => o.date);
+  const existingDayTotals = getDayTotalsForDates(profile.phone, submissionDates.join(',')).dayTotals || {};
 
   for (const order of orders) {
     const orderDate = order.date;
+    const existingDateInfo = (existingDayTotals[orderDate] || {});
+    
+    // Calculate total food subtotal for this specific submission's date
+    const submissionDayFoodTotal = order.meals.reduce((s, m) => s + (Number(m.subtotal) || 0), 0);
+    // Combine with already placed orders for this date
+    const prevDayFoodTotal = Object.values(existingDateInfo).reduce((s, m) => s + (Number(m.subtotal) || 0), 0);
+    const combinedDayTotal = submissionDayFoodTotal + prevDayFoodTotal;
 
-    // Calculate day-level discount once across all meals for this date
-    const dayTotal = order.meals.reduce((s, m) => s + (m.subtotal || 0), 0);
+    // Calculate day-level discount once across all meals for this date (including previous ones)
     let discRate = 0;
-    if (dayTotal >= 450) discRate = 0.075;
-    else if (dayTotal >= 300) discRate = 0.05;
-    const totalDiscAmt = Math.round(dayTotal * discRate);
-    // Pro-rate discount across meals proportionally
-    const getDisc = (sub) => dayTotal > 0 ? Math.round(totalDiscAmt * (sub / dayTotal)) : 0;
+    if (combinedDayTotal >= 450) discRate = 0.075;
+    else if (combinedDayTotal >= 300) discRate = 0.05;
+    
+    const totalDayDiscAmt = Math.round(combinedDayTotal * discRate);
+    // Find how much discount was already applied to previous orders for this date
+    const prevDayDiscAmt = Object.values(existingDateInfo).reduce((s, m) => s + (Number(m.discount_applied) || 0), 0);
+    // The discount to apply to this ENTIRE submission for this date = entitled - already_applied
+    const submissionDateDiscAmt = Math.max(0, totalDayDiscAmt - prevDayDiscAmt);
+
+    // Pro-rate the submission-level discount across meals in this submission
+    const getDisc = (sub) => submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
 
     for (const meal of order.meals) {
       const sid = generateSubmissionID();
       submissionIds.push(sid);
       meal._sid = sid; // carry sid for ledger
-
-      const items  = meal.items || [];   // [{colKey, qty}]
+      
       const mealType = meal.type;
+      const sub = Number(meal.subtotal) || 0;
+      const mealArea = meal.area || profile.area || "";
+      const items  = meal.items || [];   // [{colKey, qty}]
       const notes  = meal.notes || "";
-      const sub    = meal.subtotal || 0;
-      const mealArea  = meal.area || profile.area || "";
-
-      // Delivery charge (free areas loaded dynamically from SK_Areas sheet)
-      const delCharge = (!freeAreaNames.includes(mealArea) && sub > 0 && sub < FREE_THR) ? DELIVERY : 0;
+      
+      // Get combined totals for THIS specific meal type (prev + current)
+      const prevMealSub = (existingDateInfo[mealType] || {}).subtotal || 0;
+      const combinedMealSub = sub + prevMealSub;
+      
+      // Delivery logic (matches frontend)
+      const delCharge = (!freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
       const discAmt   = getDisc(sub);
       
       let smallOrderFee = 0;
-      if ((mealType === "Lunch" || mealType === "Dinner") && sub > 0 && sub < 50) {
+      if ((mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
-
+      
       const inflationSurcharge = Math.ceil(sub / 10);
       const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt;
+
 
       // Build items JSON
       const itemsObj = {};
@@ -792,7 +812,7 @@ function submitOrder(body) {
         let currentBalance = _calculateWalletBalance(profile.phone);
         
         if (currentBalance >= netTotal) {
-          _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true);
+          _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true, sid);
           pStat = "Wallet Paid";
         } else {
           pStat = "Pending"; // Wallet failed, fallback to pending
@@ -866,7 +886,8 @@ function _settlePendingInternal(ss, phone, custName) {
   if (totalDue <= 0) return;
 
   // Log Deduction
-  _appendWalletTransaction(phone, custName, "Order Deduction", Math.round(totalDue * 100)/100, true);
+  const refIds = unpaid.map(r => String(r.Submission_ID || "")).filter(Boolean).join(",");
+  _appendWalletTransaction(phone, custName, "Order Deduction (Settle All)", Math.round(totalDue * 100)/100, true, refIds);
 
   // Mark all as Paid
   unpaid.forEach(r => { ws.getRange(r._row, payCol).setValue("Wallet Paid"); });
@@ -938,9 +959,9 @@ function getDayTotalsForDates(phone, datesParam) {
 
   rows.filter(r => {
     const rPhone = String(r.Phone || '').trim();
-    const status = String(r.Status || '').toLowerCase();
+    const pStat  = String(r.Payment_Status || '').toLowerCase();
     if (rPhone !== String(phone).trim()) return false;
-    if (status === 'deleted' || status === 'cancelled') return false;
+    if (pStat.includes('deleted') || pStat.includes('cancelled')) return false;
     const rDate = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
       : String(r.Order_Date).trim();
@@ -1060,7 +1081,7 @@ function deleteOrder(phone, rowId, refundType) {
     const custName = r.Customer_Name || "Customer";
     const ordersWs2 = ws; // same sheet
     const deleteDate = orderDateStr;
-    const deleteMeal = r.Meal_Type;
+    const deleteMeal = String(r.Meal_Type).trim();
 
     // Get all orders for this phone+date (excluding the one being deleted)
     const sameDayRows = rows.filter(x =>
@@ -1105,7 +1126,7 @@ function deleteOrder(phone, rowId, refundType) {
     const remainingMealSub = sameMealRemaining.reduce((s,x) => s + (Number(x.Food_Subtotal)||0), 0);
     const deletedMealSub = Number(r.Food_Subtotal) || 0;
     const combinedMealSub = remainingMealSub + deletedMealSub;
-    const mealArea = r.Area || profile.area || "";
+    const mealArea = r.Area || "";
     const isNonFree = !freeAreaNames2.includes(mealArea);
 
     // Delivery was waived on remaining orders because combined total was >= FREE_THR
@@ -1129,7 +1150,7 @@ function deleteOrder(phone, rowId, refundType) {
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
     if (refundType === "wallet") {
-      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true);
+      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
     }
     else if (refundType === "manual_upi") {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note"];
@@ -2504,7 +2525,8 @@ function submitWalletRecharge(body) {
   if (!phone || isNaN(amount) || amount <= 0) return {success:false, error:"Invalid amount or phone"};
 
   // Unverified entry requiring admin to flip to TRUE
-  _appendWalletTransaction(phone, name, "Recharge", amount, false);
+  const rechargeRef = "RCH-" + Utilities.formatDate(getISTDate(), "Asia/Kolkata", "yyyyMMdd-HHmmss") + "-" + phone.slice(-4);
+  _appendWalletTransaction(phone, name, "Recharge", amount, false, rechargeRef);
   
   return {success:true};
 }
@@ -2514,37 +2536,23 @@ function submitWalletRecharge(body) {
  */
 function getPendingRecharges() {
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   const rawRows = getAllRows(ws);
   const pending = [];
-  
-  rawRows.forEach(w => {
-    let rPhone = "", rName = "", rType = "", rAmt = 0, rVer = "", rTs = "";
-    for (let key in w) {
-      if (key === "_row") continue;
-      let kl = key.toLowerCase();
-      let val = String(w[key]).trim();
-      
-      if (val !== "") {
-        if (kl.includes("phone") || kl.includes("mobile")) rPhone = val;
-        else if (kl.includes("name") || kl.includes("customer")) rName = val;
-        else if (kl.includes("txn") || kl.includes("balance") || kl.includes("type")) rType = val;
-        else if (kl.includes("amount") || kl.includes("amt")) rAmt = Number(val) || 0;
-        else if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) rVer = val.toUpperCase();
-        else if (kl.includes("time") || kl.includes("date") || kl.includes("timestamp")) {
-           rTs = (w[key] instanceof Date) ? Utilities.formatDate(w[key], "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss") : val;
-        }
-      }
-    }
 
-    if ((rVer === "FALSE" || !rVer) && rType.toLowerCase().includes("recharge")) {
-      pending.push({
-         "Phone": rPhone,
-         "Customer_Name": rName,
-         "Amount": rAmt,
-         "Date Time": rTs,
-         "_row": w._row
-      });
+  rawRows.forEach(w => {
+    const rPhone = String(w.Phone || "").trim();
+    const rName  = String(w.Customer_Name || "").trim();
+    const rType  = String(w.Txn_Type || w.Balance || "").trim().toLowerCase();
+    const rAmt   = Number(w.Amount) || 0;
+    const rVer   = String(w.Verified || "").trim().toUpperCase();
+    const rRef   = String(w.Reference_ID || "").trim();
+    let   rTs    = w.Timestamp || "";
+    if (rTs instanceof Date) rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    else rTs = String(rTs).trim();
+
+    if ((rVer === "FALSE" || !rVer) && rType.includes("recharge")) {
+      pending.push({ Phone: rPhone, Customer_Name: rName, Amount: rAmt, Timestamp: rTs, Reference_ID: rRef, _row: w._row });
     }
   });
   return pending;
@@ -2558,31 +2566,22 @@ function approveWalletRecharge(body) {
   const ts    = String(body.timestamp || "").trim();
   if (!phone || !ts) return {success:false, error:"Missing phone or timestamp"};
 
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Timestamp"]);
+  const ss   = getSpreadsheet();
+  const ws   = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   const hIdx = headerIndex(ws);
-  const rows = ws.getDataRange().getValues();
-  
-  let vCol = 0, pCol = 0, tCol = 0;
-  Object.keys(hIdx).forEach(key => {
-    let kl = key.toLowerCase();
-    if (kl.includes("verif") || kl.includes("status") || kl.includes("approved")) vCol = hIdx[key];
-    if (kl.includes("phone") || kl.includes("mobile")) pCol = hIdx[key];
-    if (kl.includes("time") || kl.includes("date") || kl.includes("timestamp")) tCol = hIdx[key];
-  });
-  
-  if (!vCol || !pCol || !tCol) return {success:false, error:"Could not find required columns in Wallet sheet"};
 
+  // Use canonical column names; fall back to scanning if legacy header exists
+  const vCol = hIdx["Verified"];
+  const pCol = hIdx["Phone"];
+  const tCol = hIdx["Timestamp"];
+  if (!vCol || !pCol || !tCol) return {success:false, error:"Wallet sheet missing required columns"};
+
+  const rows = ws.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     const rPhone = String(rows[i][pCol-1] || "").trim();
-    let rTs      = rows[i][tCol-1];
-    
-    if (rTs instanceof Date) {
-      rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
-    } else {
-      rTs = String(rTs || "").trim();
-    }
-    
+    let   rTs    = rows[i][tCol-1];
+    if (rTs instanceof Date) rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    else rTs = String(rTs || "").trim();
     const rVer = String(rows[i][vCol-1] || "").toUpperCase();
 
     if (rPhone === phone && rTs === ts && rVer !== "TRUE") {
@@ -2691,4 +2690,33 @@ function getReviews() {
   } catch(e) {
     return { error: true, message: e.message };
   }
+}
+// Audit Fix #13: Helper to cancel order from Admin Dashboard
+function adminCancelOrder(body) {
+  const pin = String(body.pin || "").trim();
+  if (pin !== "1994") return {success:false, error:"Invalid Admin PIN"}; // Basic security
+  
+  const phone = String(body.phone || "").trim();
+  const dateStr = String(body.date || "").trim();
+  const meal = String(body.meal || "").trim();
+  
+  const ss = getSpreadsheet();
+  const ws = ss.getSheetByName(TAB_ORDERS);
+  const rows = getAllRows(ws);
+  
+  // Find matching row
+  const match = rows.find(r => {
+    const rPhone = String(r.Phone || "").trim();
+    const rMeal = String(r.Meal_Type || "").trim();
+    const orderDate = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+      : String(r.Order_Date).trim();
+    const status = String(r.Payment_Status || "").toLowerCase();
+    return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && status !== 'cancelled';
+  });
+  
+  if (!match) return {success:false, error: "Order not found"};
+  
+  // Call deleteOrder with positional arguments
+  return deleteOrder(phone, match.Submission_ID, "manual_upi");
 }

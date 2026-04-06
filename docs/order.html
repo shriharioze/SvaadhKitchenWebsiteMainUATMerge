@@ -637,7 +637,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
 <!-- PROGRESS -->
 <div class="progress-wrap" style="position:relative;z-index:50;">
-  <button id="globalLogoutWrap" onclick="logoutCustomer()" style="display:none;position:absolute;right:15px;top:50%;transform:translateY(-50%);background:#fff5f4;border:1px solid #ffcdcc;color:#c0392b;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);z-index:60;">Log out</button>
+  <div id="authActionsWrap" style="display:none;position:absolute;right:15px;top:50%;transform:translateY(-50%);display:flex;gap:8px;z-index:60;">
+    <button onclick="showManageOrders()" style="background:#fff;border:1.5px solid #2e7d32;color:#2e7d32;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);">📋 Orders</button>
+    <button onclick="logoutCustomer()" style="background:#fff5f4;border:1px solid #ffcdcc;color:#c0392b;padding:5px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.05);">Log out</button>
+  </div>
   <div class="progress-steps" id="progressSteps">
     <div class="step-dot active" id="dot0"></div>
     <div class="step-dot" id="dot1"></div>
@@ -680,9 +683,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       </div>
     </div>
     <p class="text-sm" style="margin-top:8px;" data-i18n="phone_hint">We'll load your saved details if you've ordered before.</p>
-    <div style="margin-top:14px;">
-      <button class="btn btn-secondary" style="font-size:0.82rem;" onclick="showManageOrders()" data-i18n="btn_view_orders">📋 View / Edit upcoming orders</button>
-    </div>
   </div>
   <!-- FAQ for returning users -->
   <div class="card" id="faqCard">
@@ -1010,13 +1010,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   </div>
 </div>
 
-<!-- MANAGE ORDERS PANEL -->
-<div id="manageOrdersPanel" style="display:none;">
-  <div id="walletDashWrap"></div>
-  <div class="card">
-    <h2 data-i18n="manage_title">📋 Your Upcoming Orders</h2>
-    <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
-    <button class="btn btn-secondary mt-12" onclick="hideManageOrders()" data-i18n="btn_back_manage">← Back</button>
+<!-- MANAGE ORDERS PANEL (MODAL OVERLAY) -->
+<div id="manageOrdersPanel" class="bill-modal-overlay" style="display:none;z-index:10001;">
+  <div class="bill-modal-sheet" style="max-height:92vh; overflow-y:auto; padding-top:12px;">
+    <div class="bm-handle" onclick="hideManageOrders()"><span></span></div>
+    <div id="walletDashWrap"></div>
+    <div style="padding:4px 0 16px;">
+      <h2 style="font-size:1.15rem; color:#1a6640; border-bottom:1.5px solid #eee; padding-bottom:8px; margin-bottom:12px;" data-i18n="manage_title">📋 Your Upcoming Orders</h2>
+      <div id="manageOrdersList"><div class="loader"><div class="spinner"></div></div></div>
+    </div>
+    <button class="btn btn-secondary" onclick="hideManageOrders()" style="background:#f5f5f5;border-color:#ddd;color:#555;padding:12px;font-weight:600;width:100%;" data-i18n="btn_back_manage">Close</button>
   </div>
 </div>
 
@@ -1087,7 +1090,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
   </div>
 </div><!-- CANCELLATION CONFIRM MODAL -->
-<div id="cancelConfirmModal" class="bill-modal-overlay" style="display:none;z-index:10000;">
+<div id="cancelConfirmModal" class="bill-modal-overlay" style="display:none;z-index:10010;">
   <div class="bill-modal-sheet" style="max-width:400px;border-top:5px solid #c0392b;">
     <div class="bm-handle"><span></span></div>
     <div style="text-align:center;margin-bottom:12px;">
@@ -1108,7 +1111,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 </div>
 
 <!-- REFUND CHOICE MODAL -->
-<div id="refundModal" class="bill-modal-overlay" style="display:none;z-index:10001;">
+<div id="refundModal" class="bill-modal-overlay" style="display:none;z-index:10010;">
   <div class="bill-modal-sheet" style="max-width:400px;border-top:5px solid #2e7d32;">
     <div class="bm-handle"><span></span></div>
     <div style="text-align:center;margin-bottom:12px;">
@@ -1328,6 +1331,10 @@ function updateNav(){
   // Toggle Wallet Chip visibility: visible Step 2-5 (s > 0)
   const wc = $("walletChip");
   if (wc) wc.style.display = (s > 0) ? "flex" : "none";
+  
+  // Toggle Auth Actions (Logout/Orders) visibility: s > 0
+  const aa = $("authActionsWrap");
+  if (aa) aa.style.display = (s > 0) ? "flex" : "none";
 }
 function refreshBillBtn(){
   if(S.step!==3)return;
@@ -1492,7 +1499,7 @@ async function lookupCustomer(){
 }
 
 function handleLoginSuccess(profileData, isNew) {
-  if($("globalLogoutWrap")) $("globalLogoutWrap").style.display = "block";
+   if($("authActionsWrap")) $("authActionsWrap").style.display = "flex";
   if (profileData) {
     const wb = Number(profileData.wallet_balance) || 0;
     toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
@@ -1922,13 +1929,22 @@ async function buildBillScreen(){
     const existingDiscountTotal = Object.values(existDay).reduce((s,m) => s+(m.discount_applied||0), 0);
     const existingEntitledDiscount = Math.round(existingDayFoodTotal * discRate);
     const retroDiscountCredit = Math.max(0, existingEntitledDiscount - existingDiscountTotal);
-    // Current cart discount = on current food + retro credit for prev orders
-    const discAmt = Math.round(dayFoodTotal * discRate) + retroDiscountCredit;
+    // Audit Fix #4: Cap discount at current food total to prevent negative bills
+    const discAmt = Math.min(dayFoodTotal, Math.round(dayFoodTotal * discRate) + retroDiscountCredit);
+    
+    // Prepare discount note for display
+    let discNote = discLabel;
+    if(retroDiscountCredit > 0) discNote += ` (incl. ₹${retroDiscountCredit} credit for earlier orders)`;
 
     html+=`<div class="bill-date-block"><div class="bill-date-title">📅 ${formatDate(date)}</div>`;
+    
+    // UI Cleanup: Move existing order info to a more subtle line if it exists
     if(existingDayFoodTotal > 0) {
-      html+=`<div style="font-size:0.7rem;color:#7f8c8d;margin-bottom:6px;padding:5px 8px;background:#f8f9fa;border-radius:6px;line-height:1.5;">📋 Existing orders today: <strong>₹${existingDayFoodTotal}</strong> → Combined day total: <strong>₹${combinedDayTotal}</strong></div>`;
+      html+=`<div style="font-size:0.75rem;color:#7f8c8d;margin-bottom:14px;padding-left:4px;border-left:2px solid #ddd;line-height:1.2;">
+        📋 Existing orders today: ₹${existingDayFoodTotal} → Combined day total: <strong>₹${combinedDayTotal}</strong>
+      </div>`;
     }
+    
     // Discount upsell nudge based on combined day total
     if(combinedDayTotal < DISC_T1.min) {
       const diff = DISC_T1.min - combinedDayTotal;
@@ -1947,7 +1963,7 @@ async function buildBillScreen(){
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
-      html+=`<div class="bill-line" style="font-weight:600;margin-top:8px;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
+      html+=`<div class="bill-line" style="font-weight:700; color:var(--ink); padding:10px 0 6px; border-bottom: 2px solid #eee; margin-top:12px;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
       for(const[colKey,qty]of Object.entries(mObj.items||{})){
         if(qty<=0)continue;
         const p=getPrice(colKey,meal,date),n=getItemName(colKey,meal,date);
@@ -1959,14 +1975,12 @@ async function buildBillScreen(){
       const combinedMealSub = sub + existMealSub;
       const mAddr = getMealAddr(meal);
 
-      // Upsell Nudges (based on combined total)
+      // UI Cleanup: Meal-level nudges made ultra-compact text
       if (meal === "Lunch" || meal === "Dinner") {
         if (combinedMealSub > 0 && combinedMealSub < 50) {
-          const diff = 50 - combinedMealSub;
-          html += `<div style="font-size:0.72rem;color:#2980b9;background:#ebf5fb;padding:6px 10px;border-radius:6px;margin:8px 0 4px;display:flex;align-items:center;gap:6px;font-weight:500;border:1px solid #d6eaf8;"><span>💡 Order <strong>₹${diff}</strong> more to avoid the Small Order Fee!</span></div>`;
+          html += `<div style="font-size:0.65rem;color:#2980b9;margin:4px 0 6px 4px;font-style:italic;">💡 Add ₹${50 - combinedMealSub} more to skip small order fee</div>`;
         } else if (combinedMealSub >= 50 && combinedMealSub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
-          const diff = FREE_THRESHOLD - combinedMealSub;
-          html += `<div style="font-size:0.72rem;color:#27ae60;background:#f0faf4;padding:6px 10px;border-radius:6px;margin:8px 0 4px;display:flex;align-items:center;gap:6px;font-weight:500;border:1px solid #d5f5e3;"><span>✨ Order <strong>₹${diff}</strong> more for <strong>FREE delivery</strong>!</span></div>`;
+          html += `<div style="font-size:0.65rem;color:#27ae60;margin:4px 0 6px 4px;font-style:italic;">✨ Add ₹${FREE_THRESHOLD - combinedMealSub} more for Free Delivery!</div>`;
         }
       }
       
@@ -1987,7 +2001,7 @@ async function buildBillScreen(){
         ? (existDay[meal]?.small_fee_charged || 0) : 0;
       if (smallFeeCredit > 0) {
         mealExtras.push({ icon: "🏷️", name: `Small Order Fee Credit`, val: -smallFeeCredit, credit: true,
-          desc: `Your combined ${meal} total is now ₹${combinedMealSub} which is ≥₹50. We're refunding the small order fee paid on your earlier ${meal} order!` });
+          desc: `Your combined ${meal} total for today is now ₹${combinedMealSub} (over ₹50). You are getting back the ₹${smallFeeCredit} small order fee you had paid previously on this meal.` });
         mExtrasTotal -= smallFeeCredit; totalSmallOrderFee -= smallFeeCredit;
       }
 
@@ -2004,6 +2018,9 @@ async function buildBillScreen(){
         mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
         mExtrasTotal += fee; totalDelivery += fee;
       }
+      // Audit Fix #5: Ensure non-negative running totals
+      totalDelivery = Math.max(0, totalDelivery);
+      totalSmallOrderFee = Math.max(0, totalSmallOrderFee);
 
       // Market Surcharge
       const surcharge = Math.ceil(sub / 10);
@@ -2040,15 +2057,16 @@ async function buildBillScreen(){
           </div>
         </div>`;
       }
+      // Add gap after each meal block for clarity
+      html += `<div style="height:10px;"></div>`;
     });
     // Full discount line — includes retro credit for previous orders if applicable
-    if(discAmt > 0) {
-      let discNote = discLabel;
-      if(retroDiscountCredit > 0) discNote += ` (incl. ₹${retroDiscountCredit} credit for earlier orders)`;
-      html+=`<div class="bill-line discount" style="cursor:pointer;" onclick="toast('Day discount of ${discLabel} applied on combined total ₹${combinedDayTotal}. This includes a ₹${retroDiscountCredit} credit passing the savings from your earlier orders to this bill.', 6000)"><span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>`;
-    }
+    // Final day totals block with gap above it
     const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee+totalInflationSurcharge;grandTotal+=dayTotal;
-    html+=`<div class="bill-line date-total"><span>${t('day_total')}</span><span>₹${dayTotal}</span></div><hr class="bill-divider"></div>`;
+    html+=`<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">
+      ${discAmt > 0 ? `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)"><span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>` : ''}
+      <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
+    </div><hr class="bill-divider" style="margin-top:16px;"></div>`;
   }
   S.grandTotal=grandTotal;
   // Reset payment confirmation state
@@ -2057,7 +2075,7 @@ async function buildBillScreen(){
   const tenCb=$("tenDayConfirm");if(tenCb)tenCb.checked=false;
   // codBtn logic removed
   $("billSummaryContent").innerHTML=html+
-    `<div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
+    `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
   const wb = Number(S.walletBalance) || 0;
   // S.walletMode is true if user HAS enough balance
@@ -2067,95 +2085,66 @@ async function buildBillScreen(){
   if (S.paymentChoice === undefined) S.paymentChoice = S.walletMode ? "Wallet" : "UPI";
 
   // Debug: Ensure balance is visible if present
-  if (wb > 0) {
-    if ($("walletBalMsg")) {
-      $("walletBalMsg").innerHTML = `💰 <strong>Wallet Balance: ₹${wb}</strong>`;
-      $("walletBalMsg").style.display = "block";
-    }
-  }
+  // UI Cleanup: Hide the redundant top-level wallet info banner
+  const topWb = $("walletBalMsg");
+  if (topWb) topWb.style.display = "none";
 
+  // Payment section logic: Switch between 10-Day vs Daily Wallet/UPI
   if(S.is10Day){
     $("walletCard").style.display="none";
     $("paymentCard").style.display="none";
     $("tenDayCard").style.display="block";
-    
-    // Prepaid users now deduct completely from Wallet per order.
     $("hissabAmount").textContent = `₹${grandTotal}`;
-    const wb = Number(S.walletBalance) || 0;
     
     if (wb < grandTotal) {
-      $("hissabPeriod").textContent = `Insufficient balance.`;
-      if ($("hissabMsgText")) $("hissabMsgText").style.display = "none";
-      if ($("hissabWarnText")) $("hissabWarnText").style.display = "none";
+      if ($("hissabPeriod")) $("hissabPeriod").textContent = `Insufficient balance.`;
+      if ($("btnNext")) $("btnNext").style.display = "none";
       if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "none";
-      if ($("prevDueSection")) $("prevDueSection").style.display = "none";
-      if ($("walletSettlementSection")) $("walletSettlementSection").style.display = "none";
-      $("btnNext").style.display = "none";
-      S.paymentChoice = null;
-      
       if ($("tenDayInsufficient")) {
         $("tenDayInsufficient").innerHTML = `
-          <div style="background:#fff5f4; border:1px solid #ffd5d0; border-radius:10px; padding:12px; margin-top:12px; margin-bottom:12px;">
+          <div style="background:#fff5f4; border:1px solid #ffd5d0; border-radius:10px; padding:12px; margin-bottom:12px;">
             <div style="font-weight:700; color:#c0392b; margin-bottom:6px;">⚠️ Wallet Balance Insufficient</div>
-            <div style="font-size:0.8rem; color:#c0392b; margin-bottom:10px;">
-              Your prepaid account requires sufficient balance to place this order (₹${grandTotal}). Your balance is ₹${wb}.
-            </div>
-            <button class="btn btn-primary" onclick="openWalletRecharge()" style="margin-bottom:6px; padding:10px; font-size:0.85rem;">💼 Add Money to Wallet</button>
-            <div style="font-size:0.72rem; color:#c0392b; margin-bottom:14px; text-align:center; line-height:1.4;">
-              <em>Note: Wallet recharges require admin approval and may take a few hours to update.</em>
-            </div>
-            <div style="text-align:center; font-size:0.75rem; color:#888; margin-bottom:8px;">OR (To avoid waiting)</div>
-            <button class="btn btn-secondary" onclick="forceUpiFor10Day(${grandTotal})" style="padding:10px; font-size:0.85rem; border-color:#c0392b; color:#c0392b;">💳 Pay ₹${grandTotal} for this order via UPI now</button>
-          </div>
-        `;
+            <div style="font-size:0.8rem; color:#c0392b;">You need ₹${grandTotal} but only have ₹${wb}. Please recharge.</div>
+            <button class="btn btn-primary mt-12" onclick="openWalletRecharge()">💼 Add Money to Wallet</button>
+            <div style="text-align:center; font-size:0.75rem; color:#888; margin:10px 0;">OR</div>
+            <button class="btn btn-secondary" onclick="forceUpiFor10Day(${grandTotal})">💳 Pay ₹${grandTotal} via UPI now</button>
+          </div>`;
         $("tenDayInsufficient").style.display = "block";
       }
     } else {
-      S.paymentChoice = "Wallet";
-      $("hissabPeriod").textContent = `Balance after order: ₹${wb - grandTotal}`;
-      
+      if ($("hissabPeriod")) $("hissabPeriod").textContent = `Available: ₹${wb}`;
       if ($("hissabMsgText")) {
         $("hissabMsgText").style.display = "block";
-        $("hissabMsgText").innerHTML = `✅ ₹${grandTotal} will be automatically deducted from your Svaadh Wallet.`;
+        $("hissabMsgText").innerHTML = `✅ ₹${grandTotal} will be automatically deducted from your Wallet.`;
       }
       if ($("hissabConfirmWrap")) $("hissabConfirmWrap").style.display = "block";
-      if ($("tenDayConfirm")) {
-        $("tenDayConfirm").nextElementSibling.textContent = "I confirm to deduct this from my Wallet";
-        $("tenDayConfirm").nextElementSibling.nextElementSibling.textContent = "मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो";
-      }
-      if ($("hissabWarnText")) $("hissabWarnText").style.display = "none";
-      if ($("prevDueSection")) $("prevDueSection").style.display = "none";
-      if ($("walletSettlementSection")) $("walletSettlementSection").style.display = "none";
       if ($("tenDayInsufficient")) $("tenDayInsufficient").style.display = "none";
-      
       $("btnNext").style.display = "block";
-      $("btnNext").disabled = false;
+      S.paymentChoice = "Wallet";
     }
   } else {
-    // PREPAID logic (Daily Payer)
+    // DAILY PAYER logic
     $("tenDayCard").style.display="none";
     if (S.walletMode) {
       $("walletCard").style.display = "block";
       if (S.paymentChoice === "Wallet") {
-         $("paymentCard").style.display = "none";
-         $("walletCard").innerHTML = `
-           <h2 data-i18n="step5_wallet_title">${t('step5_wallet_title')}</h2>
-           <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:16px;margin-bottom:10px;text-align:center;">
-             <div style="font-size:0.9rem;color:#1a6640;font-weight:700;margin-bottom:4px;">Available Balance: ₹${wb}</div>
-             <div style="font-size:0.75rem;color:#27ae60;margin-bottom:12px;">You have sufficient balance to pay ₹${grandTotal} for this order.</div>
-             <button onclick="S.paymentChoice='UPI';buildBillScreen();" class="btn btn-secondary" style="font-size:0.78rem;padding:6px;width:auto;margin:0 auto 10px;display:inline-block;">💳 Pay via UPI instead</button>
-           </div>
-         `;
+        $("paymentCard").style.display = "none";
+        $("walletCard").innerHTML = `
+          <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
+          <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:0.88rem;color:#1a6640;font-weight:700;margin-bottom:4px;">Available Balance: ₹${wb}</div>
+            <div style="font-size:0.75rem;color:#27ae60;margin-bottom:12px;">Sufficient balance to pay <strong>₹${grandTotal}</strong> for this order.</div>
+            <button onclick="S.paymentChoice='UPI';buildBillScreen();" class="btn btn-secondary" style="font-size:0.75rem;padding:6px 12px;width:auto;margin:0 auto;display:inline-block;">💳 Use UPI instead</button>
+          </div>`;
       } else {
-         $("paymentCard").style.display = "block";
-         setupUPI(grandTotal);
-         $("walletCard").innerHTML = `
-           <h2 data-i18n="step5_wallet_title">${t('step5_wallet_title')}</h2>
-           <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
-             <div style="font-size:0.8rem;color:#1a6640;font-weight:600;">Wallet: ₹${wb}</div>
-             <button onclick="S.paymentChoice='Wallet';buildBillScreen();" class="btn btn-primary" style="font-size:0.7rem;padding:5px 10px;width:auto;margin:0;">Use Wallet</button>
-           </div>
-         `;
+        $("paymentCard").style.display = "block";
+        setupUPI(grandTotal);
+        $("walletCard").innerHTML = `
+          <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
+          <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:0.80rem;color:#1a6640;font-weight:600;">Wallet Balance: ₹${wb}</div>
+            <button onclick="S.paymentChoice='Wallet';buildBillScreen();" class="btn btn-primary" style="font-size:0.7rem;padding:6px 12px;width:auto;margin:0;">Use Wallet</button>
+          </div>`;
       }
     } else {
       $("walletCard").style.display = "none";
@@ -2463,6 +2452,11 @@ function showSuccess(id){
   $("successCard").style.display="block";
   $("orderIdDisplay").textContent=id.toUpperCase();
   $("bottomNav").style.display="none";window.scrollTo(0,0);
+  
+  // Refresh wallet balance in background
+  if (S.paymentChoice === "Wallet" || S.is10Day) {
+     setTimeout(refreshWalletBalance, 2000);
+  }
 }
 function resetForAnotherOrder(){
   S.orders = {};
@@ -2482,19 +2476,19 @@ function resetForAnotherOrder(){
 // MANAGE ORDERS — inline edit + delete
 // ═══════════════════════════════════════════════════════════
 function showManageOrders(){
-  const phone=$("phoneInput").value.trim().replace(/\D/g,"");
-  if(phone.length!==10){toast(t('toast_enter_phone_first'));return;}
+  const phone=S.phone;
+  if(!phone){toast(t('toast_enter_phone_first'));return;}
   S.phone=phone;
-  document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
-  $("manageOrdersPanel").style.display="block";
-  $("bottomNav").style.display="none";
+  $("manageOrdersPanel").style.display="flex";
   loadExistingOrders(phone);
 }
 function hideManageOrders(){
   $("manageOrdersPanel").style.display="none";
-  $("bottomNav").style.display="block";
-  $("screen0").classList.add("active");
 }
+
+// Per-order cached data (address, items, etc.) populated by loadExistingOrders
+const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, maps, landmark, items_json, notes, payment_preference, customer_name, all_row_ids, original_total_paid, is_wallet, is_settlement }
+
 async function loadExistingOrders(phone){
   $("manageOrdersList").innerHTML=`<div class="loader"><div class="spinner"></div></div>`;
   try{
@@ -2557,28 +2551,42 @@ async function loadExistingOrders(phone){
     
     // Cache per-order data
     upcoming.forEach(g => {
-      // For merged editing, we combine their items into the first rowId's cache entry
-      let combinedItems = {};
+      // For consolidated rows, we combine their totals and info
+      let totalAmountPaid = 0;
+      let isWallet = false;
+      let isSettlement = false;
+      
       g.rowIds.forEach(rid => {
-        const o = orders.find(x => x.rowId === rid);
-        if (o && o.items_json) {
-          try {
-            const parsed = JSON.parse(o.items_json);
-            Object.entries(parsed).forEach(([k, v]) => { combinedItems[k] = (combinedItems[k] || 0) + v; });
-          } catch(e) {}
+        const o = orders.find(x => String(x.rowId) === String(rid));
+        if (o) {
+          const stat = String(o.payment_status).toLowerCase();
+          const meth = String(o.payment_method).toLowerCase();
+          if (["paid","wallet paid"].includes(stat)) {
+            totalAmountPaid += (Number(o.total) || 0);
+          }
+          if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
+          if (meth.includes("settlement") || stat.includes("settlement")) isSettlement = true;
         }
       });
 
       orderDataCache[g.rowId] = {
-        area: g.area, wing: g.wing, flat: g.flat, floor: g.floor, society: g.society, maps: g.maps, landmark: g.landmark,
-        items_json: JSON.stringify(combinedItems), notes: g.notes || "",
-        payment_preference: g.payment_preference, customer_name: g.customer_name,
-        all_row_ids: g.rowIds // Store for batch cancel
+        all_row_ids: g.rowIds,
+        original_total_paid: totalAmountPaid,
+        is_wallet: isWallet,
+        is_settlement: isSettlement
       };
     });
 
     $("manageOrdersList").innerHTML=upcoming.map(o=>{
-      const mealAvail=o.date>today||getMealAvailability(o.date)[o.meal];
+      // Safe availability check: future dates are always available.
+      // For today, check cutoff based on current IST hour.
+      let mealAvail = true;
+      if (o.date === today) {
+        const ist = getIST();
+        const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
+        const cutoffMap = { Breakfast: CUTOFFS.Breakfast, Lunch: CUTOFFS.Lunch, Dinner: CUTOFFS.Dinner };
+        mealAvail = h < (cutoffMap[o.meal] ?? 23);
+      }
       const displaySummary = o.summaryParts.join(", ");
       
       let trackHtml="";
@@ -2594,15 +2602,7 @@ async function loadExistingOrders(phone){
             ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
           </div>
           <div class="omr-actions">
-            <button class="omr-edit-btn" ${!mealAvail?"disabled":""} onclick="toggleInlineEdit('${o.rowId}','${o.date}','${o.meal}')">✏️ Edit</button>
-            <button class="omr-del-btn"  ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑</button>
-          </div>
-        </div>
-        <div class="omr-inline-edit" id="ied_${o.rowId}">
-          <div id="ied_items_${o.rowId}"><div class="spinner" style="width:20px;height:20px;margin:8px auto;"></div></div>
-          <div style="margin-top:10px;display:flex;gap:8px;">
-            <button class="btn btn-primary btn-sm" onclick="resubmitOrder('${o.rowId}','${o.date}','${o.meal}')">✅ Save Changes</button>
-            <button class="btn btn-secondary btn-sm" onclick="toggleInlineEdit('${o.rowId}')">Cancel</button>
+            <button class="omr-del-btn" ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
           </div>
         </div>
       </div>`;
@@ -2610,185 +2610,22 @@ async function loadExistingOrders(phone){
   }catch(err){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#c0392b;text-align:center;">Error: ${err.message}</p>`;}
 }
 
-// Per-order inline edit state
-const editState = {};  // rowId → { colKey → qty }
-
-// Per-order cached data (address, items, etc.) populated by loadExistingOrders
-const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, maps, landmark, items_json, notes, payment_preference, customer_name }
-
-// Reverse maps: canonical Items_JSON key → frontend colKey (per meal)
-const CANONICAL_TO_LUNCH = {
-  "Chapati":"L_CHAPATI","Without_Oil_Chapati":"L_WO_CHAPATI","Phulka":"L_PHULKA",
-  "Ghee_Phulka":"L_GHEE_PHULKA","Jowar_Bhakri":"L_JOWAR","Bajra_Bhakri":"L_BAJRA",
-  "Dry_Sabji_Mini":"L_DRY_MINI","Dry_Sabji_Full":"L_DRY_FULL",
-  "Curry_Sabji_Mini":"L_CURRY_MINI","Curry_Sabji_Full":"L_CURRY_FULL",
-  "Dal":"L_DAL","Rice":"L_RICE","Salad":"L_SALAD","Curd":"L_CURD",
-};
-const CANONICAL_TO_DINNER = {
-  "Chapati":"D_CHAPATI","Without_Oil_Chapati":"D_WO_CHAPATI","Phulka":"D_PHULKA",
-  "Ghee_Phulka":"D_GHEE_PHULKA","Jowar_Bhakri":"D_JOWAR","Bajra_Bhakri":"D_BAJRA",
-  "Dry_Sabji_Mini":"D_DRY_MINI","Dry_Sabji_Full":"D_DRY_FULL",
-  "Curry_Sabji_Mini":"D_CURRY_MINI","Curry_Sabji_Full":"D_CURRY_FULL",
-  "Dal":"D_DAL","Rice":"D_RICE","Salad":"D_SALAD","Curd":"D_CURD",
-};
-
-async function toggleInlineEdit(rowId, date, meal){
-  const panel=$(`ied_${rowId}`);
-  if(panel.classList.contains("open")){panel.classList.remove("open");return;}
-  panel.classList.add("open");
-  // Load menu for that date if needed
-  if(!S.menuCache[date]){
-    try{const res=await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`);S.menuCache[date]=await res.json();}
-    catch{S.menuCache[date]={breakfast:[],lunch_dry:"",lunch_curry:"",dinner_dry:"",dinner_curry:"",cutoff_overrides:{}};}
-  }
-  // Pre-populate editState from cached order items (first open only)
-  if(!editState[rowId]){
-    editState[rowId]={};
-    const cached=orderDataCache[rowId];
-    if(cached){
-      try{
-        const itemsJson=JSON.parse(cached.items_json||"{}");
-        if(meal==="Breakfast"){
-          // Breakfast: canonical name = colKey (item name), except Curd → B_CURD
-          Object.entries(itemsJson).forEach(([key,qty])=>{
-            if(qty>0) editState[rowId][key==="Curd"?"B_CURD":key]=qty;
-          });
-        } else {
-          const revMap=meal==="Lunch"?CANONICAL_TO_LUNCH:CANONICAL_TO_DINNER;
-          Object.entries(itemsJson).forEach(([key,qty])=>{
-            const colKey=revMap[key]||key;
-            if(qty>0) editState[rowId][colKey]=qty;
-          });
-        }
-      }catch(e){}
-    }
-  }
-  renderInlineItems(rowId, date, meal);
-}
-
-function renderInlineItems(rowId, date, meal){
-  const menu=S.menuCache[date]||{};
-  let items=[];
-  if(meal==="Breakfast"){
-    items=(menu.breakfast||[]).map(it=>({name:it.name,price:it.price,colKey:it.name}));
-    items.push({name:"Curd (50g)",price:12,colKey:"B_CURD"});
-  } else {
-    (FIXED_MEAL_ITEMS[meal]||[]).forEach(g=>g.items.forEach(it=>items.push(it)));
-  }
-  const state=editState[rowId];
-  const html=items.map(it=>{
-    const qty=state[it.colKey]||0;
-    const eid=`ied_qty_${rowId}_${it.colKey}`.replace(/[^a-zA-Z0-9_]/g,"_");
-    return `<div class="omr-item-row">
-      <span>${it.name} <span style="color:#aaa;font-size:0.72rem;">₹${it.price}</span></span>
-      <div class="qty-control">
-        <button class="qty-btn" onclick="iedChange('${rowId}','${it.colKey}',${it.price},-1,'${eid}')">−</button>
-        <input class="qty-input" id="${eid}" type="number" min="0" value="${qty}"
-          oninput="iedSet('${rowId}','${it.colKey}',this.value)">
-        <button class="qty-btn" onclick="iedChange('${rowId}','${it.colKey}',${it.price},+1,'${eid}')">+</button>
-      </div>
-    </div>`;
-  }).join("");
-  $(`ied_items_${rowId}`).innerHTML=html||`<p style="font-size:0.78rem;color:#888;">${t('manage_no_items')}</p>`;
-}
-function iedChange(rowId,colKey,price,delta,eid){
-  const cur=editState[rowId][colKey]||0;
-  const nxt=Math.max(0,cur+delta);
-  editState[rowId][colKey]=nxt;
-  const el=$(eid);if(el)el.value=nxt;
-}
-function iedSet(rowId,colKey,val){
-  editState[rowId][colKey]=Math.max(0,parseInt(val)||0);
-}
-
-async function resubmitOrder(rowId, date, meal){
-  const items=Object.entries(editState[rowId]||{}).filter(([,q])=>q>0);
-  if(!items.length){toast(t('toast_add_item'));return;}
-  
-  const cached=orderDataCache[rowId]||{};
-  const allIds = cached.all_row_ids || [rowId];
-
-  // Deleting multiple old rows if this was a consolidated group
-  try{
-    const delPromises = allIds.map(rid => 
-      fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid})})
-      .then(r => r.json())
-    );
-    const results = await Promise.all(delPromises);
-    if(results.some(r => !r.success)) throw new Error("Could not clear previous records");
-  }catch(e){toast("Error: "+e.message,4000);return;}
-
-  // Calculate subtotal for this meal
-  const menu=S.menuCache[date]||{};
-  let sub=0;
-  items.forEach(([colKey,qty])=>{
-    if(meal==="Breakfast"){
-      if(colKey==="B_CURD"){sub+=12*qty;return;}
-      const bfItems=menu.breakfast||[];
-      for(const[n,ck]of Object.entries(BREAKFAST_COL_MAP)){if(ck===colKey){const f=bfItems.find(x=>x.name===n);if(f)sub+=f.price*qty;return;}}
-      const f=bfItems.find(x=>x.name===colKey);if(f)sub+=f.price*qty;
-    } else {
-      for(const g of FIXED_MEAL_ITEMS[meal]||[]){const f=g.items.find(i=>i.colKey===colKey);if(f){sub+=f.price*qty;break;}}
-    }
-  });
-  const mappedItems=items.map(([colKey,qty])=>({colKey,qty}));
-  // Use original order's address; fall back to S.profile if not cached
-  const addr={
-    wing:    cached.wing    ||S.profile.wing    ||"",
-    flat:    cached.flat    ||S.profile.flat    ||"",
-    floor:   cached.floor   ||S.profile.floor   ||"",
-    society: cached.society ||S.profile.society ||"",
-    area:    cached.area    ||S.profile.area    ||"",
-    maps:    cached.maps    ||S.profile.maps    ||"",
-    landmark:cached.landmark||S.profile.landmark||"",
-  };
-  const customerName=cached.customer_name||S.profile.name||"Customer";
-  const payPref=cached.payment_preference||S.profile.payment_preference||"Daily Payment";
-  const payload={
-    profile:{name:customerName,phone:S.phone,
-      address:buildAddr(addr.wing,addr.flat,addr.floor,addr.society,addr.area),
-      wing:addr.wing,flat:addr.flat,floor:addr.floor,
-      society:addr.society,area:addr.area,maps:addr.maps,
-      landmark:addr.landmark,payment_preference:payPref,
-      isFirstTime:false},
-    orders:[{date,meals:[{type:meal,items:mappedItems,notes:cached.notes||"",subtotal:sub,
-      address:buildAddr(addr.wing,addr.flat,addr.floor,addr.society,addr.area),
-      area:addr.area,maps:addr.maps,landmark:addr.landmark}]}],
-    payment_method:"UPI",payment_status:"Pending",
-  };
-  try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(data.success){toast(t('toast_order_updated'));loadExistingOrders(S.phone);}
-    else throw new Error(data.error||"Unknown");
-  }catch(e){toast("Error: "+e.message,4000);}
-}
-
 let currentDeleteData = null; // { rowId, date, meal, allIds, totalPaid, isWalletPaid }
 
-async function deleteOrder(rowId,date,meal){
-  const cached = orderDataCache[rowId]||{};
+async function deleteOrder(rowId, date, meal) {
+  // Use cached data — no extra API call needed
+  const cached = orderDataCache[rowId] || {};
   const allIds = cached.all_row_ids || [rowId];
-  
-  const loading = toast("Checking order status...", 5000);
-  const orders = await fetchOrdersForRefCheck(S.phone);
-  if (loading) loading.hide();
-
-  // Filter relevant orders and handle case-insensitive checks
-  const relevant = orders.filter(o => allIds.map(String).includes(String(o.rowId)));
-  const paidRows = relevant.filter(o => String(o.payment_status).toLowerCase() === "paid");
-  const totalPaid = paidRows.reduce((sum, o) => sum + (Number(o.total)||0), 0);
-  
-  // Check if paid via wallet
-  const isWalletPaid = paidRows.some(o => String(o.payment_method).toLowerCase().includes("wallet"));
+  const totalPaid = Number(cached.original_total_paid) || 0;
+  const isWalletPaid = !!cached.is_wallet;
 
   const count = allIds.length;
   currentDeleteData = { rowId, date, meal, allIds, totalPaid, isWalletPaid };
 
-  $("cancelConfirmSub").innerHTML = count > 1 
+  $("cancelConfirmSub").innerHTML = count > 1
     ? `Cancel these <strong>${count} combined</strong> ${meal} orders for <strong>${formatDate(date)}</strong>?`
     : `Cancel your ${meal} order for <strong>${formatDate(date)}</strong>?`;
-    
+
   $("cancelConfirmModal").style.display = "flex";
 }
 
@@ -2802,32 +2639,38 @@ function proceedAfterCancelConfirm() {
   if (!currentDeleteData) return;
 
   const { totalPaid, isWalletPaid, allIds } = currentDeleteData;
+
   if (totalPaid > 0) {
     $("refundModalMsg").innerHTML = `You have already paid <strong>₹${totalPaid}</strong> for this order.`;
-    
+
     if (isWalletPaid) {
-      // Wallet only logic
+      // ── Wallet paid → auto-refund back to wallet, no choice needed
       $("refundUpiSection").style.display = "none";
       $("refundWalletOnlySection").style.display = "flex";
       $("refundAmtOnly").textContent = totalPaid;
     } else {
-      // UPI / GPay logic
+      // ── UPI paid → give user two options
+      $("refundUpiSection").innerHTML = `
+        <div style="background:#fff3cd;border:1px solid #ffeeba;border-radius:12px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:#856404;line-height:1.5;">
+          💡 <strong>Tip:</strong> Transfer to Wallet for an <strong>instant refund</strong> — use it on your next order right away!
+        </div>
+        <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;margin-bottom:10px;width:100%;">
+          <div style="font-weight:700;font-size:0.95rem;">⚡ Transfer to Wallet (Instant)</div>
+          <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">₹${totalPaid} added to your Svaadh Wallet immediately</div>
+        </button>
+        <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;width:100%;">
+          <div style="font-weight:700;font-size:0.95rem;">💸 Refund to Original UPI</div>
+          <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Takes up to 3 working days</div>
+        </button>
+      `;
       $("refundUpiSection").style.display = "flex";
       $("refundWalletOnlySection").style.display = "none";
     }
     $("refundModal").style.display = "flex";
   } else {
-    // COD or Unpaid
+    // Unpaid / free order — just delete silently
     performActualDeletion(allIds, "none");
   }
-}
-
-async function fetchOrdersForRefCheck(phone) {
-  try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}&_t=${Date.now()}`);
-    const data = await res.json();
-    return data.orders || [];
-  } catch(e) { return []; }
 }
 
 function closeRefundModal() {
@@ -2838,9 +2681,6 @@ function closeRefundModal() {
 async function processRefund(type) {
   if (!currentDeleteData) return;
   const { allIds } = currentDeleteData;
-  if (type === 'manual_upi') {
-    if (!confirm("Note: UPI refunds are processed manually and take up to 24 hours. Proceed?")) return;
-  }
   $("refundModal").style.display = "none";
   performActualDeletion(allIds, type);
 }
@@ -2855,10 +2695,10 @@ async function performActualDeletion(allIds, refundType) {
     const results = await Promise.all(delPromises);
     if (results.every(r => r.success)) {
       if (refundType === "wallet") {
-        toast("Order cancelled! Amount credited back to your wallet shortly. 🍰", 5000);
+        toast("✅ Order cancelled! ₹" + currentDeleteData?.totalPaid + " added to your Svaadh Wallet.", 5000);
         refreshWalletBalance();
       } else if (refundType === "manual_upi") {
-        toast("Cancellation request sent. UPI refund will be processed within 24 hours. ✅", 5000);
+        toast("✅ Cancelled! Refund sent to your UPI ID within 3 working days.", 5000);
       } else {
         toast(t('toast_order_deleted'));
       }

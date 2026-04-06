@@ -285,6 +285,7 @@ async function loadOrders() {
     if (data.error) throw new Error(data.error);
     renderAll(data);
     setSyncBadge();
+    stopPoll(); startPoll(); // Audit Fix #12: Reset poll when changing date to prevent stale syncs
   } catch(e) {
     ["Breakfast","Lunch","Dinner"].forEach(m => {
       document.getElementById("panel_"+m).innerHTML =
@@ -378,6 +379,8 @@ function updateProgress(meal) {
 function checkAllDone(meal) {
   const orders   = _ordersData[meal] || [];
   const total    = orders.length;
+  // Audit Fix #1: Define km from _routeDists to prevent ReferenceError
+  const km = _routeDists[meal] || null;
   document.getElementById("doneStats").innerHTML = `
     <div class="done-stat"><div class="done-stat-val">${total}</div><div class="done-stat-lbl">Deliveries Completed</div></div>
     ${km ? `<div class="done-stat"><div class="done-stat-val">~${km} km</div><div class="done-stat-lbl">Estimated Route</div></div>` : ""}

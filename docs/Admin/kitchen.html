@@ -235,90 +235,76 @@ async function loadKitchen() {
 // ── Marathi display names ──
 const MR = {
   // Rotis
-  "Chapati": "चपाती",
-  "Without Oil Chapati": "विना तेल चपाती",
-  "Without_Oil_Chapati": "विना तेल चपाती",
-  "Phulka": "फुलका",
-  "Ghee Phulka": "तूप फुलका",
-  "Ghee_Phulka": "तूप फुलका",
-  "Jowar Bhakri": "ज्वारी भाकरी",
-  "Jowar_Bhakri": "ज्वारी भाकरी",
-  "Bajra Bhakri": "बाजरी भाकरी",
-  "Bajra_Bhakri": "बाजरी भाकरी",
-  // Sabji
-  "Dry Sabji": "सुकी भाजी",
-  "Curry Sabji": "रस्सा भाजी",
-  // Other
-  "Dal": "वरण",
-  "Rice": "भात",
-  "Salad": "सलाड",
-  "Curd": "दही",
-  "Curd (50g)": "दही",
-  // Breakfast items
-  "Kanda Poha": "कांदा पोहे",
-  "Sabudana Khichdi": "साबुदाणा खिचडी",
-  "Ghee Upma": "तूप उपमा",
-  "Upma": "उपमा",
-  "Poha": "पोहे",
-  // Additional
+  "Chapati": "चपाती", "Without Oil Chapati": "विना तेल चपाती", "Without_Oil_Chapati": "विना तेल चपाती",
+  "Phulka": "फुलका", "Ghee Phulka": "तूप फुलका", "Ghee_Phulka": "तूप फुलका",
+  "Jowar Bhakri": "ज्वारी भाकरी", "Jowar_Bhakri": "ज्वारी भाकरी", "Bajra Bhakri": "बाजरी भाकरी", "Bajra_Bhakri": "बाजरी भाकरी",
+  "Dry Sabji": "सुकी भाजी", "Curry Sabji": "रस्सा भाजी",
+  "Sabji (Dry)": "सुकी भाजी", "Sabji (Curry)": "रस्सा भाजी",
+  "Dal": "वरण", "Rice": "भात", "Salad": "सलाड", "Curd": "दही", "Curd (50g)": "दही",
+  "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "तूप उपमा", "Upma": "उपमा", "Poha": "पोहे",
   "orders": "ऑर्डर",
+  // Specific Sabjis
+  "Cauliflower": "फ्लॉवर", "French Beans": "फरसबी", "Cabbage": "कोबी", "Bhindi": "भेंडी",
+  "Bhendi Fry": "भेंडी", "Potato": "बटाटा", "Aloo": "बटाटा", "Matki": "मटकी",
+  "Mataki": "मटकी", "Matki (Dry)": "मटकी सुकी", "Matki (Curry)": "मटकी रस्सा",
+  "Soyabean": "सोयाबीन", "Gavari": "गवार", "Pithla": "पिठलं", "Akha Masoor": "अख्खा मसूर",
+  "Dal kanda": "डाळ कांदा", "Dal Kanda": "डाळ कांदा", "Sev tomato": "शेव टोमॅटो",
+  "Shimla Besan": "ढोबळी बेसन", "Palak corn": "पालक कॉर्न", "Green moong": "हिरवा मूग",
+  "Green Moong": "हिरवा मूग", "Kofta": "कोफ्ता", "Methi": "मेथी", "Aloo Matar": "बटाटा मटार",
+  "Batata": "बटाटा", "Shepu": "शेपू", "Tondli": "तोंडली", "Vatana": "वटाणा",
+  "Mix Veg": "मिक्सव्हेज", "Paneer": "पनीर", "Chavali": "चवळी"
 };
 function mr(name) { return MR[name] || name; }
 
 const SABJI_WEIGHTS = {
-  // Dry Sabjis (raw weights per standardized unit)
+  // Dry Sabjis
   "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
-  "French Beans": 80,
-  "French_Beans": 80,
-  "Beans": 80,
-  "Cabbage": 75,
-  "Mataki": 55,
-  "Matki (Dry)": 55,
-  "Matki masala": 55,
-  "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, 
-  "Shima besan": { "ढोबळी": 70, "बेसन": 25 },
-  "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
-  "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 },
-  "Green Moong (Dry)": 30,
-  "Green Moong": 30,
-  "Bhindi": 140,
-  "Bhendi Fry": 140,
-  "Palak corn": 140,
+  "Cabbage": 75, "Bhindi": 140, "Bhendi Fry": 140, "Potato": 140, "Aloo": 140,
+  "Batata": 140, "Aloo Matar": 140, "French Beans": 140, "French_Beans": 140,
+  "Beans": 120, "Matki": 55, "Mataki": 55, "Matki (Dry)": 55, "Matki masala": 55,
+  "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
+  "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 }, "Palak corn": 140,
+  "Green Moong (Dry)": 30, "Green Moong": 30,
 
-  // Curry Sabjis (raw weights per standardized unit)
-  "Soyabean": 10,
-  "Gavari": 42,
-  "Matki": 34,
-  "Matki (Curry)": 34,
-  "Pithla": { "बेसन": 23 },
-  "Akha Masoor": 27,
-  "Kofta": { "दुधी": 100, "कोफ्ता गोळे": 10 }, // Assuming 10 pieces Dudhi based on user msg
-  "Green moong": 27,
-  "Green moong (Curry)": 27,
+  // Curry Sabjis
+  "Soyabean": 10, "Gavari": 42, "Matki (Curry)": 34, "Pithla": { "बेसन": 23 },
+  "Akha Masoor": 27, "Kofta": { "दुधी": 100, "कोफ्ता गोळे": 10 },
+  "Green moong (Curry)": 27, "Dudhi": 140, "Paneer": 120, "Tondli": 140,
+  "Mix Veg": 140, "Chavali": 140, "Shepu": 70, "Methi": 70, "Spinach": 70,
 
   "default": 140
 };
+function normalizeName(n){return (n||"").trim().toLowerCase().replace(/_/g," ");}
 
 function getWeight(name, mini, full) {
-  // Normalize lookup keys
-  const lookup = (name || "").trim();
-  const w = SABJI_WEIGHTS[lookup] || SABJI_WEIGHTS["default"];
+  const normalized = normalizeName(name);
   const totalUnits = ((mini || 0) * 0.6) + ((full || 0) * 1.4);
-  
+
+  let w = null;
+  for (let key in SABJI_WEIGHTS) {
+    if (normalizeName(key) === normalized) {
+      w = SABJI_WEIGHTS[key];
+      break;
+    }
+  }
+
+  if (!w) {
+    return { val: totalUnits.toFixed(1), unit: "Total Units (Calculated)" };
+  }
+
   const fmtWeight = (g) => {
     if (g >= 1000) return (g/1000).toFixed(2) + " kg";
     return Math.round(g) + " g";
   };
 
   if (typeof w === "number") {
-    return fmtWeight(totalUnits * w);
+    return { val: fmtWeight(totalUnits * w), unit: "Required Weight" };
   } else {
-    // Multi-ingredient map
     let rows = [];
     for (let ing in w) {
       rows.push(`<span style="color:#aaa;">${ing}:</span> <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>`);
     }
-    return rows.join("<br>");
+    return { val: rows.join("<br>"), unit: "Required Weight" };
   }
 }
 
@@ -389,20 +375,23 @@ function renderKitchen(data) {
     const showDry = (s.dry_name && s.dry_name !== "none") && ((s.dry_mini||0) + (s.dry_full||0) > 0);
     const showCurry = (s.curry_name && s.curry_name !== "none") && ((s.curry_mini||0) + (s.curry_full||0) > 0);
 
+    const dRes = getWeight(s.dry_name, s.dry_mini, s.dry_full);
+    const cRes = getWeight(s.curry_name, s.curry_mini, s.curry_full);
+
     const sabjiHtml = `
       <div class="sabji-cook-grid">
         ${showDry ? `
         <div class="sabji-cook-card">
-          <div class="cook-label">${mr("Dry Sabji")}: <strong>${s.dry_name}</strong></div>
-          <div class="cook-val">${getWeight(s.dry_name, s.dry_mini, s.dry_full)}</div>
-          <div class="cook-unit">Required Weight</div>
+          <div class="cook-label">🍴 <strong>${mr(s.dry_name)}</strong></div>
+          <div class="cook-val">${dRes.val}</div>
+          <div class="cook-unit">${dRes.unit}</div>
           <div class="cook-breakdown">${s.dry_mini || 0} Mini + ${s.dry_full || 0} Full</div>
         </div>` : ""}
         ${showCurry ? `
         <div class="sabji-cook-card">
-          <div class="cook-label">${mr("Curry Sabji")}: <strong>${s.curry_name}</strong></div>
-          <div class="cook-val">${getWeight(s.curry_name, s.curry_mini, s.curry_full)}</div>
-          <div class="cook-unit">Required Weight</div>
+          <div class="cook-label">🍲 <strong>${mr(s.curry_name)}</strong></div>
+          <div class="cook-val">${cRes.val}</div>
+          <div class="cook-unit">${cRes.unit}</div>
           <div class="cook-breakdown">${s.curry_mini || 0} Mini + ${s.curry_full || 0} Full</div>
         </div>` : ""}
       </div>`;
