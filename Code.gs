@@ -409,6 +409,13 @@ function getOrCreateTab(ss, name, headers) {
         }
       }
     });
+
+    // CRITICAL: If headers were provided, ensure No Extra Columns exist beyond them
+    // This prevents "Timestamp" duplicates if things drifted in legacy versions
+    if (headers.length > 0 && ws.getLastColumn() > headers.length) {
+      const extra = ws.getLastColumn() - headers.length;
+      ws.deleteColumns(headers.length + 1, extra);
+    }
   }
   return ws;
 }
@@ -669,14 +676,7 @@ function getWeeklyMenu() {
 function _appendWalletTransaction(phone, name, txnType, amount, isVerified, refId) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
-  
-  // Ensure the Reference_ID column exists (handles legacy sheets that predate this schema)
   const hIdx = headerIndex(ws);
-  if (!hIdx["Reference_ID"]) {
-    ws.getRange(1, ws.getLastColumn() + 1).setValue("Reference_ID")
-      .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
-    hIdx["Reference_ID"] = ws.getLastColumn();
-  }
 
   const totalCols = ws.getLastColumn();
   const row = new Array(totalCols).fill("");
@@ -2481,7 +2481,14 @@ function getPendingRecharges() {
     else rTs = String(rTs).trim();
 
     if ((rVer === "FALSE" || !rVer) && rType.includes("recharge")) {
-      pending.push({ Phone: rPhone, Customer_Name: rName, Amount: rAmt, Timestamp: rTs, Reference_ID: rRef, _row: w._row });
+      pending.push({ 
+        Phone: rPhone, 
+        Customer_Name: rName, 
+        Amount: rAmt, 
+        Timestamp: rTs, 
+        Reference_ID: rRef, 
+        _row: w._row 
+      });
     }
   });
   return pending;
@@ -2499,7 +2506,6 @@ function approveWalletRecharge(body) {
   const ws   = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   const hIdx = headerIndex(ws);
 
-  // Use canonical column names; fall back to scanning if legacy header exists
   const vCol = hIdx["Verified"];
   const pCol = hIdx["Phone"];
   const tCol = hIdx["Timestamp"];
@@ -2509,15 +2515,25 @@ function approveWalletRecharge(body) {
   for (let i = 1; i < rows.length; i++) {
     const rPhone = String(rows[i][pCol-1] || "").trim();
     let   rTs    = rows[i][tCol-1];
-    if (rTs instanceof Date) rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
-    else rTs = String(rTs || "").trim();
+    
+    // Normalize timestamp for comparison
+    if (rTs instanceof Date) {
+      rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    } else {
+      rTs = String(rTs || "").trim();
+    }
+    
     const rVer = String(rows[i][vCol-1] || "").toUpperCase();
 
-    if (rPhone === phone && rTs === ts && rVer !== "TRUE") {
+    // Check match
+    if (rPhone === phone && rTs === ts) {
+      if (rVer === "TRUE") return {success:true, msg:"Already verified"};
       ws.getRange(i+1, vCol).setValue("TRUE");
       return {success:true};
     }
   }
+  
+  Logger.log(`Activation Failed: No match for Phone: ${phone}, TS: ${ts}. Rows scanned: ${rows.length - 1}`);
   return {success:false, error:"Recharge request not found or already verified"};
 }
 

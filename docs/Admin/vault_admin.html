@@ -452,46 +452,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .download-btn{background:#27ae60;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;margin-top:14px;display:none;}
 .download-btn:hover{background:#1e8449;}
 
-/* ═══════════════════════════════════════════════
-   RECONCILE PAGE
-═══════════════════════════════════════════════ */
-.recon-wrap{max-width:820px;}
-.recon-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow);}
-.recon-step-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px;}
-.period-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-.chip{padding:6px 16px;border-radius:99px;font-size:.8rem;font-weight:600;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;color:var(--ink2);font-family:inherit;}
-.chip:hover{border-color:var(--red);color:var(--red);}
-.chip.sel{border-color:var(--red);background:var(--red-soft);color:var(--red);}
-.recon-custom-range{display:flex;gap:8px;align-items:center;margin-top:10px;}
-.recon-custom-range input{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem;font-family:inherit;color:var(--ink);}
-.csv-hint{font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.5;}
-.csv-hint code{background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:.72rem;}
-.csv-paste{width:100%;min-height:130px;font-family:monospace;font-size:.76rem;border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;resize:vertical;color:var(--ink);background:var(--bg);}
-.csv-paste:focus{outline:none;border-color:var(--red);}
-.recon-actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
-.recon-parse-btn{background:var(--ink);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-sm);font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;}
-.recon-parse-btn:hover{background:#2d2d2d;}
-.recon-upload-label{font-size:.8rem;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;}
-.recon-upload-label input{display:none;}
-.recon-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.recon-stat{flex:1;min-width:100px;background:var(--bg);border-radius:var(--radius-sm);padding:10px 14px;text-align:center;}
-.recon-stat .sv{font-size:1.3rem;font-weight:700;color:var(--ink);}
-.recon-stat .sl{font-size:.7rem;color:var(--muted);margin-top:2px;}
-.recon-group-title{font-size:.78rem;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:6px;}
-.recon-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-radius:var(--radius-sm);margin-bottom:5px;border:1.5px solid;}
-.recon-row.r-match{background:var(--green-soft);border-color:var(--green-border);}
-.recon-row.r-review{background:var(--gold-soft);border-color:var(--gold-border);}
-.recon-row.r-none{background:var(--bg2);border-color:var(--border);opacity:.7;}
-.recon-row-info{min-width:0;}
-.recon-row-name{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.recon-row-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
-.recon-row-amt{font-size:.92rem;font-weight:700;white-space:nowrap;}
-.recon-row-amt.r-match{color:var(--green);}
-.recon-row-amt.r-review{color:var(--gold);}
-.recon-chk{width:18px;height:18px;cursor:pointer;accent-color:var(--green);}
-.apply-btn{background:var(--green);color:#fff;border:none;padding:11px 28px;border-radius:var(--radius-sm);font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit;margin-top:4px;}
-.apply-btn:hover{background:#256b42;}
-.apply-btn:disabled{background:var(--muted);cursor:not-allowed;}
 
 /* ═══════════════════════════════════════════════
    TOPBAR SCROLL (many tabs)
@@ -710,9 +670,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
       <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
-      <button class="topbar-btn" id="navReconcile" onclick="switchPage('reconcile')">💰 Reconcile</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
-      <button class="topbar-btn" id="navWallet" onclick="switchPage('wallet')">💼 Wallet Bills</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
@@ -990,67 +948,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <button class="download-btn" id="downloadLabelBtn" onclick="saveLabelsToDrive()">💾 Save to Drive</button>
       </div><!-- /pageLabels -->
 
-      <!-- PAGE: RECONCILE -->
-      <div class="page" id="pageReconcile">
-        <div class="recon-wrap">
-          <div class="page-header" style="margin-bottom:20px;">
-            <div class="page-title">💰 Payment Reconciliation
-              <small>Match bank/GPay transactions to customer payments &amp; mark as paid</small>
-            </div>
-          </div>
-
-          <!-- Step 1: Period -->
-          <div class="recon-step">
-            <div class="recon-step-title">Step 1 — Select Billing Period</div>
-            <div class="period-chips" id="reconChips"></div>
-            <div class="recon-custom-range">
-              <span style="font-size:.8rem;color:var(--muted);">Custom:</span>
-              <input type="date" id="reconFrom">
-              <span style="color:var(--muted);">to</span>
-              <input type="date" id="reconTo">
-            </div>
-          </div>
-
-          <!-- Step 2: Paste transactions -->
-          <div class="recon-step">
-            <div class="recon-step-title">Step 2 — Paste Transactions</div>
-            <div class="csv-hint">
-              Paste your bank CSV export, or simply type/paste lines as <code>Name, Amount</code> (one per line).<br>
-              Bank CSV auto-detected (looks for Credit/Deposit column + Description). GPay transactions from your bank statement work too.
-            </div>
-            <textarea class="csv-paste" id="reconCsvPaste" placeholder="Examples:&#10;Anuj Bhosale, 334&#10;Priya Sharma, 180&#10;&#10;— or paste bank CSV rows directly —&#10;09-03-2026,UPI/CR/ANUJ BHOSALE/9876543210@okhdfc,REF123,,334.00,5000.00"></textarea>
-            <div class="recon-actions">
-              <button class="recon-parse-btn" onclick="reconParseAndMatch()">🔍 Load Unpaid &amp; Match</button>
-              <label class="recon-upload-label">
-                📎 Upload CSV file
-                <input type="file" accept=".csv,.txt" onchange="reconHandleFile(this)">
-              </label>
-              <span id="reconLoadingMsg" style="font-size:.8rem;color:var(--muted);display:none;">Loading…</span>
-            </div>
-          </div>
-
-          <!-- Step 3: Results -->
-          <div class="recon-step" id="reconResultsSection" style="display:none;">
-            <div class="recon-step-title">Step 3 — Review &amp; Apply</div>
-            <div class="recon-stats" id="reconStats"></div>
-
-            <!-- Matched -->
-            <div id="reconMatchedWrap"></div>
-            <!-- Needs review -->
-            <div id="reconReviewWrap"></div>
-            <!-- No match (tx side) -->
-            <div id="reconNoTxWrap"></div>
-            <!-- Customers with no transaction found -->
-            <div id="reconNoCustomerWrap"></div>
-
-            <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <button class="apply-btn" id="reconApplyBtn" onclick="reconApply()">✅ Mark Matched as Paid</button>
-              <span id="reconApplyStatus" style="font-size:.82rem;color:var(--green);display:none;"></span>
-            </div>
-          </div>
-
-        </div>
-      </div><!-- /pageReconcile -->
 
       <!-- ════ PAGE: ANALYTICS ════ -->
       <div class="page" id="pageAnalytics">
@@ -1211,7 +1108,54 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
 <div class="toast" id="toast"></div>
 
+<!-- GLOBAL CUSTOM CONFIRM MODAL -->
+<div id="globalConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--surface); border-radius:var(--radius-lg); width:100%; max-width:400px; padding:32px 28px; box-shadow:var(--shadow-md); border-top:6px solid var(--red); animation:modalSlideUp 0.25s ease-out;">
+    <div style="text-align:center; margin-bottom:24px;">
+      <div id="gcIcon" style="font-size:3.5rem; margin-bottom:12px;">⚠️</div>
+      <h2 id="gcTitle" style="font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--ink); margin-bottom:8px;">Confirm Action</h2>
+      <p id="gcMessage" style="font-size:0.95rem; color:var(--muted); line-height:1.6;"></p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button id="gcBtnConfirm" style="width:100%; padding:14px; border:none; border-radius:var(--radius); background:var(--red); color:white; font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 12px rgba(192,57,43,0.25); transition:all 0.15s;">Confirm Action</button>
+      <button id="gcBtnCancel" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--muted); font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; transition:all 0.15s;">Cancel</button>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes modalSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+</style>
+
 <script>
+/**
+ * Modern Admin Confirmation UI (v14.1.18)
+ */
+function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("globalConfirmModal");
+    const mTitle = document.getElementById("gcTitle");
+    const mMsg = document.getElementById("gcMessage");
+    const mIcon = document.getElementById("gcIcon");
+    const btnConfirm = document.getElementById("gcBtnConfirm");
+    const btnCancel = document.getElementById("gcBtnCancel");
+
+    mTitle.textContent = title;
+    mMsg.textContent = message;
+    mIcon.textContent = icon;
+    modal.style.display = "flex";
+
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    const cleanup = () => {
+      btnConfirm.removeEventListener("click", onConfirm);
+      btnCancel.removeEventListener("click", onCancel);
+      modal.style.display = "none";
+    };
+
+    btnConfirm.addEventListener("click", onConfirm);
+    btnCancel.addEventListener("click", onCancel);
+  });
+}
 // ════════════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════════════
@@ -1628,7 +1572,7 @@ async function addBreakfastItem() {
 
 async function deleteBfItem(id) {
   const item = S.bfMaster.find(m => m.id===id); if(!item) return;
-  if (!confirm(`Delete "${item.name}" from breakfast list?`)) return;
+  if (!(await showUIConfirm(`Delete "${item.name}" from breakfast list?`, "Delete Item", "🗑️"))) return;
   try {
     const res = await fetch(APPS_SCRIPT_URL,{method:"POST",
       body:JSON.stringify({_action:"deleteBreakfastItem",pin:S.sessionPin,id})});
@@ -1706,7 +1650,7 @@ async function addSabjiItem() {
 
 async function deleteSabjiItem(id) {
   const item = S.sabjiMaster.find(m=>m.id===id); if(!item) return;
-  if (!confirm(`Delete "${item.name}" from sabji list?`)) return;
+  if (!(await showUIConfirm(`Delete "${item.name}" from sabji list?`, "Delete Item", "🗑️"))) return;
   try {
     const res  = await fetch(APPS_SCRIPT_URL,{method:"POST",
       body:JSON.stringify({_action:"deleteSabjiItem",pin:S.sessionPin,id})});
@@ -1786,10 +1730,10 @@ function setMenuDirty(dirty) {
   if (icon) icon.textContent = dirty ? "⚠️" : "💾";
 }
 
-function switchPage(page) {
+async function switchPage(page) {
   // Warn if navigating away from menu with unsaved changes
   if (page !== "menu" && S.menuDirty) {
-    if (!confirm("You have unsaved menu changes for " + S.selectedDate + ".\nLeave without saving?")) return;
+    if (!(await showUIConfirm("You have unsaved menu changes for " + S.selectedDate + ".\nLeave without saving?", "Unsaved Changes", "⚠️"))) return;
     setMenuDirty(false);
   }
   document.querySelectorAll(".page").forEach(el=>el.classList.remove("on"));
@@ -1798,7 +1742,6 @@ function switchPage(page) {
   document.getElementById("pageOrders").classList.toggle("on", page==="orders");
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
   document.getElementById("pageLabels").classList.toggle("on", page==="labels");
-  document.getElementById("pageReconcile").classList.toggle("on", page==="reconcile");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
@@ -1809,7 +1752,6 @@ function switchPage(page) {
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
   document.getElementById("navLabels").classList.toggle("active", page==="labels");
-  document.getElementById("navReconcile").classList.toggle("active", page==="reconcile");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
@@ -1833,7 +1775,6 @@ function switchPage(page) {
     const picker = document.getElementById("labelDate");
     if (!picker.value) { picker.value = toISO(getIST()); }
   }
-  if (page === "reconcile") reconInit();
   if (page === "analytics") {
     const af = document.getElementById("analyticsFrom");
     const at = document.getElementById("analyticsTo");
@@ -2339,7 +2280,7 @@ async function addAreaItem() {
 }
 
 async function deleteAreaItem(name) {
-  if (!confirm(`Delete area "${name}"? Orders already placed won't be affected.`)) return;
+  if (!(await showUIConfirm(`Delete area "${name}"? Orders already placed won't be affected.`, "Delete Area", "📍"))) return;
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {method:"POST", body: JSON.stringify({_action:"deleteArea", pin:S.sessionPin, name})});
     const data = await res.json();
@@ -2367,297 +2308,16 @@ function editAreaItem(i) {
 // ════════════════════════════════════════════════════════
 // PAYMENT RECONCILIATION
 // ════════════════════════════════════════════════════════
-let reconState = { customers:[], matches:[], dateFrom:"", dateTo:"" };
 
-function reconInit() {
-  if (document.getElementById("reconChips").childElementCount > 0) return; // already built
-  const ist = getIST();
-  const y = ist.getFullYear(), m = ist.getMonth(), d = ist.getDate();
-  const lastDay = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
-
-  const periods = [
-    { label:"1–10 " + ist.toLocaleString("en-IN",{month:"short"}), from: `${y}-${String(m+1).padStart(2,"0")}-01`, to: `${y}-${String(m+1).padStart(2,"0")}-10` },
-    { label:"11–20 " + ist.toLocaleString("en-IN",{month:"short"}), from: `${y}-${String(m+1).padStart(2,"0")}-11`, to: `${y}-${String(m+1).padStart(2,"0")}-20` },
-    { label:"21–end " + ist.toLocaleString("en-IN",{month:"short"}), from: `${y}-${String(m+1).padStart(2,"0")}-21`, to: `${y}-${String(m+1).padStart(2,"0")}-${lastDay}` },
-    { label:"All of " + ist.toLocaleString("en-IN",{month:"short"}), from: `${y}-${String(m+1).padStart(2,"0")}-01`, to: `${y}-${String(m+1).padStart(2,"0")}-${lastDay}` },
-  ];
-
-  const chips = document.getElementById("reconChips");
-  chips.innerHTML = "";
-  periods.forEach((p,i) => {
-    const btn = document.createElement("button");
-    btn.className = "chip" + (i===0?" sel":"");
-    btn.textContent = p.label;
-    btn.onclick = () => {
-      chips.querySelectorAll(".chip").forEach(c=>c.classList.remove("sel"));
-      btn.classList.add("sel");
-      document.getElementById("reconFrom").value = p.from;
-      document.getElementById("reconTo").value   = p.to;
-    };
-    chips.appendChild(btn);
-  });
-  // Select first by default
-  document.getElementById("reconFrom").value = periods[0].from;
-  document.getElementById("reconTo").value   = periods[0].to;
-}
 
 // ── CSV / TEXT PARSING ────────────────────────────────────────────────────────
-function reconHandleFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => { document.getElementById("reconCsvPaste").value = e.target.result; };
-  reader.readAsText(file);
-}
 
-function parseTransactions(raw) {
-  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return [];
 
-  // Detect if it looks like a CSV with headers
-  const first = lines[0];
-  const isCsv = (first.match(/,/g)||[]).length >= 2;
 
-  if (isCsv) return parseBankCsv(lines);
-  return parseSimpleLines(lines);
-}
 
-function parseBankCsv(lines) {
-  // Auto-detect headers
-  const headers = lines[0].split(",").map(h => h.trim().replace(/"/g,"").toLowerCase());
-  const descIdx  = headers.findIndex(h => /desc|narr|particular|remark|detail/.test(h));
-  const creditIdx = headers.findIndex(h => /credit|deposit|received|cr\./.test(h));
-  const debitIdx  = headers.findIndex(h => /debit|withdraw|dr\./.test(h));
 
-  const txs = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = splitCsvLine(lines[i]);
-    if (cols.length < 2) continue;
 
-    // Find credit amount — skip rows with no credit
-    let amount = 0;
-    if (creditIdx >= 0) {
-      amount = parseMoney(cols[creditIdx]);
-    } else {
-      // No explicit credit col — look for positive number columns
-      for (let c = 0; c < cols.length; c++) {
-        const v = parseMoney(cols[c]);
-        if (v > 0 && c !== debitIdx) { amount = v; break; }
-      }
-    }
-    if (amount <= 0) continue;
 
-    const rawDesc = descIdx >= 0 ? cols[descIdx] : cols.join(" ");
-    const name = extractNameFromDesc(rawDesc.replace(/"/g,"").trim());
-    if (name) txs.push({ name, amount, raw: rawDesc.slice(0,80) });
-  }
-  return txs;
-}
-
-function parseSimpleLines(lines) {
-  // "Name, Amount" per line
-  return lines.map(line => {
-    const parts = line.split(",");
-    if (parts.length < 2) return null;
-    const amount = parseMoney(parts[parts.length - 1]);
-    const name   = parts.slice(0, parts.length-1).join(",").trim();
-    if (!name || amount <= 0) return null;
-    return { name, amount, raw: line };
-  }).filter(Boolean);
-}
-
-function splitCsvLine(line) {
-  // Handle quoted fields
-  const result = []; let cur = ""; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    if (line[i] === '"') { inQ = !inQ; }
-    else if (line[i] === "," && !inQ) { result.push(cur); cur = ""; }
-    else cur += line[i];
-  }
-  result.push(cur);
-  return result.map(s => s.trim());
-}
-
-function parseMoney(s) {
-  const n = parseFloat(String(s).replace(/[₹,\s]/g,""));
-  return isNaN(n) ? 0 : n;
-}
-
-function extractNameFromDesc(desc) {
-  // UPI/CR/250309/ANUJ BHOSALE/HDFC/...
-  let m = desc.match(/UPI[\/\-](?:CR[\/\-])?(?:\d+[\/\-])?([A-Z][A-Z &.\-']+?)(?:[\/\-]\d|[\/\-][A-Z0-9]+@|$)/i);
-  if (m) return m[1].trim();
-  // NEFT CR ANUJ BHOSALE
-  m = desc.match(/(?:NEFT|IMPS|RTGS)\s+(?:CR\s+)?([A-Z][A-Z &.\-']+)/i);
-  if (m) return m[1].trim();
-  // Fallback: first 2–3 capitalised words that look like a name
-  const words = desc.split(/[\s\/\-_]+/).filter(w => /^[A-Z]{2,}$/.test(w)).slice(0,3);
-  return words.length >= 1 ? words.join(" ") : desc.slice(0,30);
-}
-
-// ── NAME MATCHING ─────────────────────────────────────────────────────────────
-function nameSimilarity(txName, custName) {
-  const norm  = s => s.toLowerCase().replace(/[^a-z ]/g,"").trim();
-  const tx    = norm(txName);
-  const cust  = norm(custName);
-  if (!tx || !cust) return 0;
-  if (tx === cust || tx.includes(cust) || cust.includes(tx)) return 1;
-  const txW   = tx.split(" ").filter(w => w.length > 1);
-  const custW = cust.split(" ").filter(w => w.length > 1);
-  let hits = 0;
-  for (const cw of custW) {
-    if (txW.some(tw => tw.startsWith(cw) || cw.startsWith(tw))) hits++;
-  }
-  return custW.length ? hits / custW.length : 0;
-}
-
-// ── MAIN: PARSE + MATCH ───────────────────────────────────────────────────────
-async function reconParseAndMatch() {
-  const dateFrom = document.getElementById("reconFrom").value;
-  const dateTo   = document.getElementById("reconTo").value;
-  const raw      = document.getElementById("reconCsvPaste").value.trim();
-
-  if (!dateFrom || !dateTo) { showToast("Select a period first"); return; }
-  if (!raw) { showToast("Paste your transaction data first"); return; }
-
-  document.getElementById("reconLoadingMsg").style.display = "inline";
-  document.getElementById("reconResultsSection").style.display = "none";
-
-  // 1. Fetch unpaid customers from backend
-  let customers = [];
-  try {
-    const url = `${APPS_SCRIPT_URL}?action=getUnpaidCustomers&pin=${S.sessionPin}&dateFrom=${dateFrom}&dateTo=${dateTo}&_t=${Date.now()}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (!data.success) { showToast("Error: " + data.error); return; }
-    customers = data.customers;
-  } catch(e) {
-    showToast("Failed to load customer data");
-    return;
-  } finally {
-    document.getElementById("reconLoadingMsg").style.display = "none";
-  }
-
-  // 2. Parse transactions
-  const txs = parseTransactions(raw);
-  if (!txs.length) { showToast("No valid transactions found — check format"); return; }
-
-  // 3. Match
-  const matched  = [];  // { tx, customer, score, checked:true }
-  const review   = [];  // { tx, customer, score, checked:false }
-  const noMatch  = [];  // tx with no matching customer amount
-  const unmatched = new Set(customers.map(c=>c.phone)); // customers not yet matched
-
-  for (const tx of txs) {
-    // Find customers whose period total matches within ±2 rupees
-    const amountCandidates = customers.filter(c => Math.abs(c.total - tx.amount) <= 2);
-    if (!amountCandidates.length) { noMatch.push(tx); continue; }
-
-    // Score by name among candidates
-    const scored = amountCandidates
-      .map(c => ({ c, score: nameSimilarity(tx.name, c.name) }))
-      .sort((a,b) => b.score - a.score);
-
-    const best = scored[0];
-    unmatched.delete(best.c.phone);
-    if (best.score >= 0.5) {
-      matched.push({ tx, customer: best.c, score: best.score, checked: true });
-    } else {
-      review.push({ tx, customer: best.c, score: best.score, checked: false });
-    }
-  }
-
-  // Customers with zero matching transactions
-  const noCustomer = customers.filter(c => unmatched.has(c.phone));
-
-  reconState = { customers, matches: matched, review, dateFrom, dateTo };
-  reconRenderResults(matched, review, noMatch, noCustomer, txs.length);
-}
-
-// ── RENDER RESULTS ────────────────────────────────────────────────────────────
-function reconRenderResults(matched, review, noMatch, noCustomer, totalTx) {
-  document.getElementById("reconResultsSection").style.display = "block";
-
-  // Stats
-  document.getElementById("reconStats").innerHTML = `
-    <div class="recon-stats">
-      <div class="recon-stat"><div class="sv">${totalTx}</div><div class="sl">Transactions</div></div>
-      <div class="recon-stat" style="background:var(--green-soft);"><div class="sv" style="color:var(--green);">${matched.length}</div><div class="sl">Auto-matched ✅</div></div>
-      <div class="recon-stat" style="background:var(--gold-soft);"><div class="sv" style="color:var(--gold);">${review.length}</div><div class="sl">Needs review ⚠️</div></div>
-      <div class="recon-stat"><div class="sv">${noCustomer.length}</div><div class="sl">No payment found ❓</div></div>
-    </div>`;
-
-  // Matched rows
-  let html = "";
-  if (matched.length) {
-    html += `<div class="recon-group-title"><span style="color:var(--green);">✅</span> Auto-matched — ready to mark paid</div>`;
-    matched.forEach((m,i) => {
-      html += `<div class="recon-row r-match">
-        <div class="recon-row-info">
-          <div class="recon-row-name">${m.customer.name}</div>
-          <div class="recon-row-sub">📱 ${m.customer.phone} · ${m.customer.orderCount} order(s) · Tx: "${m.tx.raw}"</div>
-        </div>
-        <div class="recon-row-amt r-match">₹${m.customer.total}</div>
-        <input type="checkbox" class="recon-chk" id="chk_m_${i}" checked onchange="reconUpdateApplyBtn()">
-      </div>`;
-    });
-  }
-  document.getElementById("reconMatchedWrap").innerHTML = html;
-
-  // Review rows
-  let rhtml = "";
-  if (review.length) {
-    rhtml += `<div class="recon-group-title"><span style="color:var(--gold);">⚠️</span> Needs review — amount matched but name unclear</div>`;
-    review.forEach((m,i) => {
-      rhtml += `<div class="recon-row r-review">
-        <div class="recon-row-info">
-          <div class="recon-row-name">${m.customer.name} <span style="font-size:.7rem;font-weight:400;color:var(--muted);">(tx name: ${m.tx.name})</span></div>
-          <div class="recon-row-sub">📱 ${m.customer.phone} · ₹${m.tx.amount} paid · Tx: "${m.tx.raw}"</div>
-        </div>
-        <div class="recon-row-amt r-review">₹${m.customer.total}</div>
-        <input type="checkbox" class="recon-chk" id="chk_r_${i}" onchange="reconUpdateApplyBtn()">
-      </div>`;
-    });
-  }
-  document.getElementById("reconReviewWrap").innerHTML = rhtml;
-
-  // No-match transactions
-  let nhtml = "";
-  if (noMatch.length) {
-    nhtml += `<div class="recon-group-title" style="color:var(--muted);">❌ Transactions with no matching customer amount</div>`;
-    noMatch.forEach(tx => {
-      nhtml += `<div class="recon-row r-none">
-        <div class="recon-row-info">
-          <div class="recon-row-name">${tx.name}</div>
-          <div class="recon-row-sub">"${tx.raw}"</div>
-        </div>
-        <div class="recon-row-amt">₹${tx.amount}</div>
-        <span style="font-size:.75rem;color:var(--muted);">skip</span>
-      </div>`;
-    });
-  }
-  document.getElementById("reconNoTxWrap").innerHTML = nhtml;
-
-  // Customers with no payment
-  let chtml = "";
-  if (noCustomer.length) {
-    chtml += `<div class="recon-group-title" style="color:var(--muted);">❓ Customers with no payment found yet</div>`;
-    noCustomer.forEach(c => {
-      chtml += `<div class="recon-row r-none">
-        <div class="recon-row-info">
-          <div class="recon-row-name">${c.name}</div>
-          <div class="recon-row-sub">📱 ${c.phone} · ${c.orderCount} order(s)</div>
-        </div>
-        <div class="recon-row-amt">₹${c.total} due</div>
-        <span style="font-size:.75rem;color:var(--muted);">pending</span>
-      </div>`;
-    });
-  }
-  document.getElementById("reconNoCustomerWrap").innerHTML = chtml;
-
-  reconUpdateApplyBtn();
-  document.getElementById("reconResultsSection").scrollIntoView({behavior:"smooth", block:"start"});
-}
 
 // ── LABELS ────────────────────────────────────────────────────────────────────
 let labelOrders = [];
@@ -2936,61 +2596,6 @@ async function saveLabelsToDrive() {
   }
 }
 
-function reconUpdateApplyBtn() {
-  const checkedCount = document.querySelectorAll(".recon-chk:checked").length;
-  const btn = document.getElementById("reconApplyBtn");
-  btn.textContent = `✅ Mark ${checkedCount} Payment${checkedCount!==1?"s":""} as Paid`;
-  btn.disabled = checkedCount === 0;
-}
-
-// ── APPLY ─────────────────────────────────────────────────────────────────────
-async function reconApply() {
-  const btn = document.getElementById("reconApplyBtn");
-  const statusEl = document.getElementById("reconApplyStatus");
-
-  // Collect checked phones
-  const phones = [];
-  reconState.matches.forEach((m,i) => {
-    if (document.getElementById(`chk_m_${i}`)?.checked) phones.push(m.customer.phone);
-  });
-  reconState.review.forEach((m,i) => {
-    if (document.getElementById(`chk_r_${i}`)?.checked) phones.push(m.customer.phone);
-  });
-
-  if (!phones.length) { showToast("No payments selected"); return; }
-
-  btn.disabled = true;
-  btn.textContent = "Marking…";
-  statusEl.style.display = "none";
-
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        _action: "markCustomersPaid",
-        pin:      S.sessionPin,
-        phones,
-        dateFrom: reconState.dateFrom,
-        dateTo:   reconState.dateTo
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      statusEl.textContent = `✅ Marked ${data.customersMarked} customer(s), ${data.updatedRows} order row(s) as Paid!`;
-      statusEl.style.display = "inline";
-      showToast(`Done! ${data.updatedRows} orders marked as Paid`);
-      btn.textContent = "✅ Done";
-    } else {
-      showToast("Error: " + data.error);
-      btn.disabled = false;
-      reconUpdateApplyBtn();
-    }
-  } catch(e) {
-    showToast("Network error — try again");
-    btn.disabled = false;
-    reconUpdateApplyBtn();
-  }
-}
 
 
 // ════════════════════════════════════════════════════════
@@ -3004,7 +2609,7 @@ function orderJumpDay(delta) {
   loadOrderSummary(true);
 }
 async function adminCancelMealOrder(phone, date, meal) {
-  if (!confirm(`Cancel ${meal} order for this customer on ${date}?\nThis cannot be undone.`)) return;
+  if (!(await showUIConfirm(`Cancel ${meal} order for this customer on ${date}?\nThis cannot be undone.`, "Cancel Order", "🗑️"))) return;
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"adminCancelOrder", pin:S.sessionPin, phone, date, meal})});
@@ -3591,7 +3196,7 @@ async function markAllPaid() {
   if (!_payDate) { toast("Load a date first"); return; }
   const pendingBtns = [...document.querySelectorAll(".pay-toggle.pending")];
   if (!pendingBtns.length) { toast("All customers already paid! ✅"); return; }
-  if (!confirm(`Mark all ${pendingBtns.length} pending customer(s) as Paid?`)) return;
+  if (!(await showUIConfirm(`Mark all ${pendingBtns.length} pending customer(s) as Paid?`, "Bulk Action", "⚡"))) return;
   const phones = pendingBtns.map(b => b.id.replace("paybtn_",""));
   try {
     await Promise.all(phones.map(ph => fetch(APPS_SCRIPT_URL, {method:"POST",
@@ -3665,7 +3270,7 @@ async function loadPendingPayments() {
 }
 
 async function approveUPIPayment(phone, date, sid) {
-  if (!confirm(`Confirm you have received payment for Order ${sid}?`)) return;
+  if (!(await showUIConfirm(`Confirm you have received payment for Order ${sid}?`, "Confirm Payment", "💰"))) return;
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"markOrdersStatus", pin:S.sessionPin, phone, date, status:"Paid"})});
@@ -3706,9 +3311,9 @@ async function loadPendingRecharges() {
           <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
         </td>
         <td style="font-weight:700;color:var(--green);">₹${r.Amount}</td>
-        <td style="font-size:0.8rem;color:var(--muted);">${r["Date Time"]}</td>
+        <td style="font-size:0.8rem;color:var(--muted);">${r.Timestamp}</td>
         <td>
-          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r["Date Time"]}', ${r.Amount})">Activate Credits</button>
+          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount})">Activate Credits</button>
         </td>
       </tr>`;
     });
@@ -3718,7 +3323,7 @@ async function loadPendingRecharges() {
 }
 
 async function activateWalletRecharge(phone, timestamp, amt) {
-  if (!confirm(`Activate ₹${amt} credits for ${phone}?`)) return;
+  if (!(await showUIConfirm(`Activate ₹${amt} credits for ${phone}?`, "Activate Credits", "💼"))) return;
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"approveWalletRecharge", pin:S.sessionPin, phone, timestamp})});
@@ -3780,7 +3385,7 @@ async function loadRefunds() {
 }
 
 async function markAsRefunded(subId) {
-  if (!confirm("Confirm you have paid this customer via UPI? This will mark it as refunded.")) return;
+  if (!(await showUIConfirm("Confirm you have paid this customer via UPI? This will mark it as refunded.", "Confirm Refund", "💸"))) return;
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
