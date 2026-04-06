@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 10;  // Batch Admin Cancellations
+const CODE_VERSION   = 11;  // Batch Cancel Bugfix
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -2789,19 +2789,18 @@ function adminCancelOrder(body) {
     let rType = "none";
     if (pStat === "wallet paid") rType = "wallet";
     else if (pStat === "paid") {
-      // Consolidate UPI to Wallet if ANY item in the batch/meal was Wallet Paid
       rType = anyWallet ? "wallet" : "manual_upi";
     }
 
     const result = deleteOrder(phone, m.Submission_ID, rType);
     if (result.success) {
-      if (result.message.includes("Wallet")) refundedToWallet = true;
-      // Extract amount from message if possible to sum up? No, too messy. 
-      // Just track that the batch happened.
+      if (typeof result.message === "string" && result.message.includes("Wallet")) refundedToWallet = true;
     }
+    // Force spreadsheet synchronization to avoid row-index/cache mismatch in the next iteration
+    SpreadsheetApp.flush();
   }
 
-  const noun = matches.length === 1 ? "order" : `${matches.length} orders`;
+  const noun = matches.length === 1 ? "order" : "orders";
   const mode = refundedToWallet ? "Wallet" : "Approvals";
   return {
     success: true, 
