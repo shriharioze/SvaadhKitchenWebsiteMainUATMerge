@@ -1204,14 +1204,25 @@ function deleteOrder(phone, rowId, refundType) {
       msg = `₹${refundAmt} refunded to Wallet${msgSuffix}`;
     }
     else if (finalType === "manual_upi") {
-      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note"];
+      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
       const note = adjustment > 0
         ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
         : "";
-      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note]);
+      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note, "upi"]);
       msg = `₹${refundAmt} refund request raised in Approvals`;
     }
+  } 
+  else if (pStatStr === "pending" && (refundType === "wallet" || refundType === "manual_upi")) {
+    const custName = r.Customer_Name || "Customer";
+    const refundAmt = Number(r.Net_Total) || 0;
+    const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
+    const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
+    const dest = refundType === "wallet" ? "Wallet" : "Original UPI";
+    const note = `UNVERIFIED REFUND CLAIM: User claims they paid. ADMIN: PLEASE VERIFY PAYMENT IN BANK FIRST.`;
+    
+    refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Verification Required", now, note, refundType]);
+    msg = `Refund request for ₹${refundAmt} created. Once Admin verifies your payment, it will be processed to your ${dest}. (1-2 days)`;
   }
 
   ws.deleteRow(r._row);
@@ -1544,22 +1555,39 @@ function deleteArea(body) {
 // ── REFUND MANAGEMENT (ADMIN) ────────────────────────────────
 function getPendingRefunds() {
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp"]);
+  const ws = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"]);
   const rows = getAllRows(ws);
-  return rows.filter(r => r.Status === "Pending");
+  return rows.filter(r => ["Pending", "Verification Required"].includes(String(r.Status)));
 }
 
 function markRefunded(submissionId) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_REFUNDS, []);
   const data = ws.getDataRange().getValues();
-  const idIdx = data[0].indexOf("Submission_ID");
-  const statusIdx = data[0].indexOf("Status");
+  const h = data[0];
+  const idIdx = h.indexOf("Submission_ID");
+  const statusIdx = h.indexOf("Status");
+  const phoneIdx = h.indexOf("Phone");
+  const nameIdx = h.indexOf("Name");
+  const amtIdx = h.indexOf("Amount");
+  const modeIdx = h.indexOf("Refund_Mode");
+
   if (idIdx === -1 || statusIdx === -1) return {success: false, error: "Sheet layout error"};
 
   const now = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm");
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][idIdx]) === String(submissionId)) {
+      const row = data[i];
+      const mode = modeIdx !== -1 ? String(row[modeIdx]).toLowerCase() : "upi";
+      const phone = phoneIdx !== -1 ? String(row[phoneIdx]) : "";
+      const name = nameIdx !== -1 ? String(row[nameIdx]) : "Customer";
+      const amt = amtIdx !== -1 ? Number(row[amtIdx]) : 0;
+
+      // Logic: If user chose Wallet refund, perform the ledger entry now
+      if (mode === "wallet" && phone && amt > 0) {
+        _appendWalletTransaction(phone, name, "Order Cancellation Refund", amt, true, String(submissionId));
+      }
+
       ws.getRange(i + 1, statusIdx + 1).setValue("Refunded (" + now + ")");
       return {success: true};
     }

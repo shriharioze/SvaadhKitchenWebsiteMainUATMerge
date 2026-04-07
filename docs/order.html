@@ -2715,11 +2715,29 @@ async function loadExistingOrders(phone){
           if (o) {
             const stat = String(o.payment_status).toLowerCase();
             const meth = String(o.payment_method).toLowerCase();
-            if (["paid","wallet paid"].includes(stat)) totalAmountPaid += (Number(o.total) || 0);
+            const rowTotal = (Number(o.total) || 0);
+            
+            if (["paid","wallet paid"].includes(stat)) totalAmountPaid += rowTotal;
             if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
+
+            // Cache details for cancellation logic
+            orderDataCache[rid] = { 
+              all_row_ids: g.rowIds, 
+              original_total_paid: totalAmountPaid, 
+              is_wallet: isWallet,
+              status: stat,
+              potential_total: rowTotal 
+            };
           }
         });
-        orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet };
+        // Ensure the primary rowId for the group has the aggregate data
+        orderDataCache[g.rowId] = { 
+          all_row_ids: g.rowIds, 
+          original_total_paid: totalAmountPaid, 
+          is_wallet: isWallet,
+          status: upcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(),
+          potential_total: g.totalSum 
+        };
       });
 
       $("manageOrdersList").innerHTML=upcoming.map(o=>{
@@ -2797,18 +2815,19 @@ function proceedAfterCancelConfirm() {
   $("cancelConfirmModal").style.display = "none";
   if (!currentDeleteData) return;
 
-  const { totalPaid, isWalletPaid, allIds } = currentDeleteData;
+  const { totalPaid, isWalletPaid, allIds, rowId } = currentDeleteData;
+  const cached = orderDataCache[rowId] || {};
+  const isPending = (cached.status === "pending");
+  const potentialAmt = cached.potential_total || 0;
 
+  // Case 1: Order is ALREADY marked as PAID or WALLET PAID
   if (totalPaid > 0) {
     $("refundModalMsg").innerHTML = `You have already paid <strong>₹${totalPaid}</strong> for this order.`;
-
     if (isWalletPaid) {
-      // ── Wallet paid → auto-refund back to wallet, no choice needed
       $("refundUpiSection").style.display = "none";
       $("refundWalletOnlySection").style.display = "flex";
       $("refundAmtOnly").textContent = totalPaid;
     } else {
-      // ── UPI paid → give user two options
       $("refundUpiSection").innerHTML = `
         <div style="background:#fff3cd;border:1px solid #ffeeba;border-radius:12px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:#856404;line-height:1.5;">
           💡 <strong>Tip:</strong> Transfer to Wallet for an <strong>instant refund</strong> — use it on your next order right away!
@@ -2826,8 +2845,35 @@ function proceedAfterCancelConfirm() {
       $("refundWalletOnlySection").style.display = "none";
     }
     $("refundModal").style.display = "flex";
-  } else {
-    // Unpaid / free order — just delete silently
+  } 
+  // Case 2: Order is PENDING (Admin hasn't approved yet)
+  else if (isPending && potentialAmt > 0 && !isWalletPaid) {
+    $("refundModalMsg").innerHTML = `
+      <div style="text-align:left;">
+        <p style="font-weight:700;color:#c0392b;margin-bottom:8px;">Have you already paid ₹${potentialAmt} via UPI?</p>
+        <p style="font-size:0.8rem;color:#666;line-height:1.4;">If <strong>YES</strong>, choose where you want your refund below. Admin will verify your payment (1-2 days) and process it.</p>
+        <p style="font-size:0.8rem;color:#666;margin-top:8px;line-height:1.4;">If <strong>NO</strong>, just click 'I Have Not Paid' to cancel.</p>
+      </div>
+    `;
+    $("refundUpiSection").innerHTML = `
+      <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;margin-bottom:10px;width:100%;">
+        <div style="font-weight:700;font-size:0.95rem;">💼 Refund to Wallet</div>
+        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Balance will be updated after Admin verification</div>
+      </button>
+      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;margin-bottom:14px;width:100%;">
+        <div style="font-weight:700;font-size:0.95rem;">💸 Refund to Original UPI</div>
+        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Processed after Admin verification</div>
+      </button>
+      <button class="btn btn-secondary" onclick="processRefund('none')" style="padding:12px;background:#f5f5f5;border:none;color:#888;width:100%;">
+        ❌ I Have Not Paid / Delete Row
+      </button>
+    `;
+    $("refundUpiSection").style.display = "flex";
+    $("refundWalletOnlySection").style.display = "none";
+    $("refundModal").style.display = "flex";
+  }
+  // Case 3: Free order or genuinely unpaid
+  else {
     performActualDeletion(allIds, "none");
   }
 }

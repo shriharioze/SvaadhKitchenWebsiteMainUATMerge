@@ -3360,8 +3360,14 @@ async function loadRefunds() {
       <tbody>`;
     
     data.forEach(r => {
+      const isUnverified = (r.Status === "Verification Required");
+      const mode = String(r.Refund_Mode || "upi").toLowerCase();
+      const modeIcon = mode === "wallet" ? "💼" : "💸";
+      const modeLabel = mode === "wallet" ? "Wallet" : "Original UPI";
+      const rowStyle = isUnverified ? 'background:#fff9c4; border-left: 4px solid #f57f17;' : '';
+      
       const ts = new Date(r.Timestamp).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
-      html += `<tr>
+      html += `<tr style="${rowStyle}">
         <td>
           <div style="font-weight:700;">${r.Name}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
@@ -3370,10 +3376,18 @@ async function loadRefunds() {
         <td>
           <div style="font-size:0.8rem;">${r.Meal} - ${r.Date}</div>
           <div style="font-size:0.65rem;color:var(--muted);">ID: ${r.Submission_ID}</div>
+          <div style="font-size:0.7rem;margin-top:5px;color:#1a6640;background:rgba(26,102,64,0.05);display:inline-block;padding:2px 6px;border-radius:4px;">
+            Target: <strong>${modeIcon} ${modeLabel}</strong>
+          </div>
+          ${r.Adjustment_Note ? `<div style="font-size:0.65rem;color:#744210;font-style:italic;margin-top:5px;line-height:1.3;">⚠️ ${r.Adjustment_Note}</div>` : ""}
         </td>
         <td style="font-size:0.75rem;color:var(--muted);">${ts}</td>
         <td>
-          <button class="btn-green" onclick="markAsRefunded('${r.Submission_ID}')">Apply Refund</button>
+          <button class="${isUnverified ? 'btn-orange':'btn-green'}" 
+                  style="${isUnverified ? 'background:#f57f17;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
+                  onclick="markAsRefunded('${r.Submission_ID}')">
+            ${isUnverified ? 'Verify & Refund' : 'Apply Refund'}
+          </button>
         </td>
       </tr>`;
     });
