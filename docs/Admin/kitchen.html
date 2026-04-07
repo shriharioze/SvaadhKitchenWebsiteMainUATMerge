@@ -463,6 +463,74 @@
       font-weight: 500;
     }
 
+    /* ── ROTI MATRIX ── */
+    .matrix-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #7f8c8d;
+      margin: 15px 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .roti-matrix-wrap {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 25px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .roti-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 500px;
+    }
+    .roti-table th, .roti-table td {
+      padding: 10px 5px;
+      text-align: center;
+      border: 1px solid #dee2e6;
+      font-size: 0.85rem;
+    }
+    .roti-table th {
+      background: #fdf2e9;
+      color: #d35400;
+      font-weight: 900;
+      font-size: 0.75rem;
+    }
+    .roti-table td.roti-name {
+      text-align: left;
+      padding-left: 12px;
+      background: #fff;
+      font-weight: 700;
+      color: #2c3e50;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      border-right: 2px solid #dee2e6;
+    }
+    .roti-row-Chapati { border-left: 4px solid #d35400; }
+    .roti-row-Without_Oil_Chapati { border-left: 4px solid #3498db; }
+    .roti-row-Phulka { border-left: 4px solid #8e44ad; }
+    .roti-row-Ghee_Phulka { border-left: 4px solid #c0392b; }
+    .roti-row-Jowar_Bhakri { border-left: 4px solid #27ae60; }
+    .roti-row-Bajra_Bhakri { border-left: 4px solid #16a085; }
+
+    .val-Chapati { color: #d35400; }
+    .val-Without_Oil_Chapati { color: #3498db; }
+    .val-Phulka { color: #8e44ad; }
+    .val-Ghee_Phulka { color: #c0392b; }
+    .val-Jowar_Bhakri { color: #27ae60; }
+    .val-Bajra_Bhakri { color: #16a085; }
+    .roti-val {
+      font-weight: 800;
+      color: #d35400;
+      font-size: 1.1rem;
+    }
+    .roti-empty {
+      color: #eee;
+      font-weight: 400;
+    }
+
     /* ── MOBILE OPTIMIZATION ── */
     @media (max-width: 650px) {
       .kheader {
@@ -901,13 +969,44 @@
           if (o.Rice && o.Rice.count > 0) packs.push({ count: o.Rice.count, name: "250ml aluminium container for rice" });
         }
 
-        if (packs.length > 0) {
+        if (packs.length > 0 || (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0)) {
           html += `<div class="meal-block">
             <div class="meal-head">
               <span class="meal-icon">${icon}</span>
               <span class="meal-title">Packing: ${label}</span>
             </div>
-            <div class="meal-body">
+            <div class="meal-body">`;
+
+          if (m.rotiMatrix) {
+            const rotis = ["Chapati", "Without_Oil_Chapati", "Phulka", "Ghee_Phulka", "Jowar_Bhakri", "Bajra_Bhakri"];
+            html += `<div class="matrix-title">Roti Preparation Matrix (Packet Sizes)</div>
+            <div class="roti-matrix-wrap">
+              <table class="roti-table">
+                <thead>
+                  <tr>
+                    <th class="roti-name">Item</th>
+                    ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<th>${n}</th>`).join("")}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rotis.map(r => {
+              const row = m.rotiMatrix[r] || {};
+              if (Object.keys(row).length === 0) return "";
+              return `<tr class="roti-row-${r}">
+                      <td class="roti-name val-${r}">${mr(r)}</td>
+                      ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => {
+                const count = row[n] || 0;
+                return count > 0 ? `<td class="roti-val val-${r}">${count}</td>` : `<td class="roti-empty">·</td>`;
+              }).join("")}
+                    </tr>`;
+            }).join("")}
+                </tbody>
+              </table>
+            </div>`;
+          }
+
+          if (packs.length > 0) {
+            html += `<div class="matrix-title">Container Checklist</div>
               ${packs.map(p => `
                 <div class="pack-row">
                   <div class="pack-count">Get ${p.count}</div>
@@ -915,9 +1014,10 @@
                     x ${p.name}
                   </div>
                 </div>
-              `).join("")}
-            </div>
-          </div>`;
+              `).join("")}`;
+          }
+
+          html += `</div></div>`;
         }
       });
 

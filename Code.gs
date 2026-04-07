@@ -1621,6 +1621,20 @@ function markRefunded(submissionId) {
   return {success: false, error: "Refund request not found"};
 }
 
+// ── ROTI PACKING UTILITY ──────────────────────────────────────
+function calculatePackets(total, max) {
+  if (total <= 0) return [];
+  if (total <= max) return [total];
+  var numPacks = Math.ceil(total / max);
+  var baseSize = Math.floor(total / numPacks);
+  var remainder = total % numPacks;
+  var packs = [];
+  for (var i = 0; i < numPacks; i++) {
+    packs.push(i < remainder ? baseSize + 1 : baseSize);
+  }
+  return packs;
+}
+
 // ── KITCHEN SUMMARY ──────────────────────────────────────────
 function getKitchenSummary(date) {
   var ss = getSpreadsheet();
@@ -1636,6 +1650,11 @@ function getKitchenSummary(date) {
 
   var meals = {};
   var ROTI_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+  var ROTI_LIMITS = {
+    "Chapati":6, "Without_Oil_Chapati":6,
+    "Phulka":12, "Ghee_Phulka":12,
+    "Jowar_Bhakri":2, "Bajra_Bhakri":2
+  };
   var menu = getMenu(date);
 
   dayRows.forEach(function(r) {
@@ -1656,9 +1675,19 @@ function getKitchenSummary(date) {
       if (curdBf > 0) m.items["Curd"] = (m.items["Curd"] || 0) + curdBf;
     } else {
       if (!m.rotis) m.rotis = {};
+      if (!m.rotiMatrix) {
+        m.rotiMatrix = {};
+        ROTI_COLS.forEach(function(c) { m.rotiMatrix[c] = {}; });
+      }
       ROTI_COLS.forEach(function(c) {
         var q = Number(r[c]) || 0;
-        if (q > 0) m.rotis[c] = (m.rotis[c] || 0) + q;
+        if (q > 0) {
+          m.rotis[c] = (m.rotis[c] || 0) + q;
+          var packs = calculatePackets(q, ROTI_LIMITS[c]);
+          packs.forEach(function(p) {
+            m.rotiMatrix[c][p] = (m.rotiMatrix[c][p] || 0) + 1;
+          });
+        }
       });
       if (!m.sabji) {
         m.sabji = {
