@@ -483,11 +483,13 @@ function renderCard(o, i, meal) {
         : ""}
     </div>
     <div style="margin-top:10px;">
-      <button class="btn-delivered${isDelivered?" done":""}" style="width:100%;margin-top:0;padding:14px;font-size:1rem;" id="dbtn_${o.submissionId}"
+      <button class="btn-delivered${isDelivered?" done":""}" 
+        style="width:100%;margin-top:0;padding:14px;font-size:1rem;${(!o.enRouteAt && !isDelivered) ? 'opacity:0.5; cursor:not-allowed;' : ''}" 
+        id="dbtn_${o.submissionId}"
         onclick="markDelivered('${o.submissionId}','${meal}',this)"
-        ${isDelivered?"disabled":""}>
+        ${(isDelivered || !o.enRouteAt) ? "disabled" : ""}>
         ${o.enRouteAt && !isDelivered ? `<span style="float:left;">🚗</span>` : ""}
-        ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : "⬜ Mark Delivered"}
+        ${isDelivered ? `✅ Delivered at ${fmtTime(o.deliveredAt)}` : (!o.enRouteAt ? "🔒 Start Delivery to Unlock" : "⬜ Mark Delivered")}
       </button>
     </div>
   </div>`;
