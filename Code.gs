@@ -1089,12 +1089,14 @@ function deleteOrder(phone, rowId, refundType) {
   const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
 
   const r = rows.find(x => {
-    const sheetId = String(x.Submission_ID || "").replace(/,/g, "").split(".")[0];
-    const targetId = String(rowId || "").replace(/,/g, "").split(".")[0];
-    return sheetId === targetId && String(x.Phone || "").trim() === String(phone || "").trim();
+    const sID = String(x.Submission_ID || "").trim();
+    const tID = String(rowId || "").trim();
+    const sPh = String(x.Phone || "").trim();
+    const tPh = String(phone || "").trim();
+    return sID === tID && sPh === tPh;
   });
   if (!r) {
-    Logger.log("Order Not Found: rowId=" + rowId + " phone=" + phone);
+    console.warn(`Order not found for ID: ${rowId} Phone: ${phone}`);
     return {success: false, error: "Order not found"};
   }
   const orderDateStr = r.Order_Date instanceof Date
