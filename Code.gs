@@ -781,7 +781,6 @@ function submitOrder(body) {
       });
 
       // Address fields handling (Sanitized for Pickup)
-      const isPickup = (mealArea === "Self Pickup");
       const wing    = isPickup ? "" : (meal.wing    || profile.wing    || "");
       const flat    = isPickup ? "" : (meal.flat    || profile.flat    || "");
       const floor   = isPickup ? "" : (meal.floor   || profile.floor   || "");
