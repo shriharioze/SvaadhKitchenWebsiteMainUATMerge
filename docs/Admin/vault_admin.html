@@ -6,6 +6,8 @@
 <title>Svaadh Kitchen — Menu Admin</title>
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../modals-svaadh.css">
+<script src="../modals-svaadh.js"></script>
 <style>
 /* ═══════════════════════════════════════════════
    TOKENS
@@ -1108,53 +1110,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
 <div class="toast" id="toast"></div>
 
-<!-- GLOBAL CUSTOM CONFIRM MODAL -->
-<div id="globalConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--surface); border-radius:var(--radius-lg); width:100%; max-width:400px; padding:32px 28px; box-shadow:var(--shadow-md); border-top:6px solid var(--red); animation:modalSlideUp 0.25s ease-out;">
-    <div style="text-align:center; margin-bottom:24px;">
-      <div id="gcIcon" style="font-size:3.5rem; margin-bottom:12px;">⚠️</div>
-      <h2 id="gcTitle" style="font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--ink); margin-bottom:8px;">Confirm Action</h2>
-      <p id="gcMessage" style="font-size:0.95rem; color:var(--muted); line-height:1.6;"></p>
-    </div>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <button id="gcBtnConfirm" style="width:100%; padding:14px; border:none; border-radius:var(--radius); background:var(--red); color:white; font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 12px rgba(192,57,43,0.25); transition:all 0.15s;">Confirm Action</button>
-      <button id="gcBtnCancel" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg); color:var(--muted); font-family:inherit; font-weight:600; font-size:0.95rem; cursor:pointer; transition:all 0.15s;">Cancel</button>
-    </div>
-  </div>
-</div>
-<style>
-@keyframes modalSlideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-</style>
+<!-- Replaced by shared modals-svaadh.js and modals-svaadh.css -->
 
 <script>
 /**
- * Modern Admin Confirmation UI (v14.1.18)
+ * Modern Admin Confirmation UI (Wrapper for sConfirm)
  */
 function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
-  return new Promise((resolve) => {
-    const modal = document.getElementById("globalConfirmModal");
-    const mTitle = document.getElementById("gcTitle");
-    const mMsg = document.getElementById("gcMessage");
-    const mIcon = document.getElementById("gcIcon");
-    const btnConfirm = document.getElementById("gcBtnConfirm");
-    const btnCancel = document.getElementById("gcBtnCancel");
-
-    mTitle.textContent = title;
-    mMsg.textContent = message;
-    mIcon.textContent = icon;
-    modal.style.display = "flex";
-
-    const onConfirm = () => { cleanup(); resolve(true); };
-    const onCancel = () => { cleanup(); resolve(false); };
-    const cleanup = () => {
-      btnConfirm.removeEventListener("click", onConfirm);
-      btnCancel.removeEventListener("click", onCancel);
-      modal.style.display = "none";
-    };
-
-    btnConfirm.addEventListener("click", onConfirm);
-    btnCancel.addEventListener("click", onCancel);
-  });
+  return sConfirm(message, title, icon);
 }
 // ════════════════════════════════════════════════════════
 // CONFIG
@@ -1219,6 +1182,7 @@ function renderPinDots() {
 async function verifyPin() {
   if (isLocked()) return;
   document.getElementById("loginErr").textContent = "";
+  sLoading(true, "Authenticating...");
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
     const data = await res.json();
@@ -1239,6 +1203,8 @@ async function verifyPin() {
       document.getElementById("loginErr").textContent = "Incorrect PIN — try again";
     }
     S.pin = ""; renderPinDots();
+  } finally {
+    sLoading(false);
   }
 }
 function logout() {
@@ -1432,9 +1398,8 @@ function selectSabji(key, name) {
 // SAVE DAILY MENU
 // ════════════════════════════════════════════════════════
 async function saveCurrentMenu() {
-  const btn  = document.getElementById("saveHeroBtn");
-  const icon = document.getElementById("saveBtnIcon");
-  btn.disabled = true; icon.textContent = "⏳";
+  const btn = document.getElementById("saveHeroBtn");
+  sBtnLoading(btn, true, "Saving");
 
   // Build breakfast array from checked items
   const breakfast = S.bfMaster
@@ -1483,15 +1448,14 @@ async function saveCurrentMenu() {
     };
     if (idx >= 0) S.menuEntries[idx] = entry; else S.menuEntries.push(entry);
 
-    icon.textContent = "✅"; toast(`✅ Menu ${data.action || "saved"} for ${S.selectedDate}`);
+    sBtnLoading(btn, false);
+    toast(`✅ Menu saved for ${S.selectedDate}`);
     setMenuDirty(false);
     selectDate(S.selectedDate); // refresh badges
     renderSidebar();
-
-    setTimeout(() => { icon.textContent = "💾"; btn.disabled = false; }, 1800);
   } catch(e) {
-    icon.textContent = "❌"; toast("Error: " + e.message, 4000);
-    btn.disabled = false;
+    sBtnLoading(btn, false);
+    toast("Error: " + e.message, 4000);
   }
 }
 
@@ -1828,7 +1792,7 @@ function toast(msg, ms=2500) {
 // ════════════════════════════════════════════════════════
 async function loadPackaging() {
   const date = document.getElementById("pkgDatePicker").value;
-  if (!date) { alert("Pick a date first"); return; }
+  if (!date) { sAlert("Please pick a date first."); return; }
   const el = document.getElementById("packagingContent");
   el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
   try {
@@ -1953,7 +1917,7 @@ async function generateLabels() {
   const date = document.getElementById("labelDate").value;
   const meal = document.getElementById("labelMeal").value;
   const lang = document.getElementById("labelLang").value;
-  if (!date) { alert("Pick a date first"); return; }
+  if (!date) { sAlert("Please pick a date first."); return; }
 
   const el = document.getElementById("labelPreview");
   el.innerHTML = `<div style="text-align:center;padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
@@ -2027,7 +1991,7 @@ async function generateLabels() {
 }
 
 async function saveLabelsToDrive() {
-  if (!_labelData.length) { alert("Generate labels first"); return; }
+  if (!_labelData.length) { sAlert("Please generate labels first."); return; }
 
   const btn  = document.getElementById("downloadLabelBtn");
   const date = btn.dataset.date;
@@ -2099,42 +2063,48 @@ async function saveLabelsToDrive() {
     }
 
     const pdfB64 = doc.output('datauristring').split(',')[1];
-    btn.textContent = "⏳ Saving to Drive…";
+    sBtnLoading(btn, true, "Saving to Drive");
 
     const res  = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ _action: 'saveLabels', pin: S.sessionPin, date, meal, lang, pdf: pdfB64 })
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    sBtnLoading(btn, false);
+    if (!data.success) throw new Error(data.error || "Failed to save");
 
     toast(`Saved to Drive ✅ — ${data.name}`, 4000);
     btn.textContent = "✅ Saved — Open in Drive";
     btn.disabled = false;
     btn.onclick = () => { window.open(data.url, '_blank'); btn.textContent = "💾 Save to Drive"; btn.onclick = saveLabelsToDrive; };
   } catch(e) {
-    alert("Error: " + e.message);
+    sBtnLoading(btn, false);
+    await sAlert("Error: " + e.message, "Upload Failed", "❌");
     btn.textContent = "💾 Save to Drive";
-    btn.disabled = false;
   }
 }
 
 
 async function loadOrderSummary(manual=false) {
-  const date = document.getElementById("orderDatePicker").value;
-  if (!date) { alert("Pick a date first"); return; }
+  const date = document.getElementById("orderDatePicker")?.value || S.selectedDate;
+  if (!date) { sAlert("Please pick a date first."); return; }
+  if (manual) sLoading(true, "Refreshing orders...");
+  
   const el = document.getElementById("orderSummaryContent");
-  el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:#aaa;margin-top:12px;font-size:0.85rem;">Loading orders…</p></div>`;
+  if (!manual) el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:#aaa;margin-top:12px;font-size:0.85rem;">Loading orders…</p></div>`;
+
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderSummary&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
+    if (manual) sLoading(false);
     if (data.error) { el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${data.error}</p>`; return; }
     el.innerHTML = renderOrderSummary(data);
-    // Reset auto-refresh timer on every load (manual or auto)
+    
     const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
     if (date === today) startOrdersAutoRefresh();
     else stopOrdersAutoRefresh();
   } catch(e) {
+    if (manual) sLoading(false);
     el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
@@ -3189,7 +3159,10 @@ async function togglePayment(phone, currentStatus) {
     btn.textContent = newStatus==="Paid" ? "✓ Paid" : "⏳ Pending";
     btn.onclick = () => togglePayment(phone, newStatus);
     toast(`${newStatus==="Paid"?"✅":"⏳"} Marked ${newStatus}`);
-  } catch(e) { toast("Error: "+e.message); btn.textContent = currentStatus==="Paid"?"✓ Paid":"⏳ Pending"; }
+  } catch(e) { 
+    toast("Error: "+e.message); 
+    btn.textContent = currentStatus==="Paid"?"✓ Paid":"⏳ Pending"; 
+  }
   btn.disabled = false;
 }
 async function markAllPaid() {
@@ -3198,12 +3171,17 @@ async function markAllPaid() {
   if (!pendingBtns.length) { toast("All customers already paid! ✅"); return; }
   if (!(await showUIConfirm(`Mark all ${pendingBtns.length} pending customer(s) as Paid?`, "Bulk Action", "⚡"))) return;
   const phones = pendingBtns.map(b => b.id.replace("paybtn_",""));
+  sLoading(true, "Updating records...");
   try {
     await Promise.all(phones.map(ph => fetch(APPS_SCRIPT_URL, {method:"POST",
       body:JSON.stringify({_action:"markOrdersStatus",pin:S.sessionPin,date:_payDate,phone:ph,status:"Paid"})}).then(r=>r.json())));
+    sLoading(false);
     toast(`✅ ${phones.length} customer(s) marked as Paid`);
     loadPayments();
-  } catch(e) { toast("Error: "+e.message); }
+  } catch(e) { 
+    sLoading(false);
+    toast("Error: "+e.message); 
+  }
 }
 
 // ── APPROVALS SUB-TABS ──
@@ -3228,8 +3206,8 @@ function switchApprovalTab(tab) {
 
 // ── UPI PAYMENTS APPROVAL ──
 async function loadPendingPayments() {
+  sLoading(true, "Fetching pending payments...");
   const wrap = document.getElementById("pendingPaymentsContent");
-  wrap.innerHTML = `<div class="loader"><div class="spinner"></div><p>Fetching pending payments...</p></div>`;
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=getPendingUPIPayments&pin=${S.sessionPin}`);
     const data = await res.json();
@@ -3276,27 +3254,32 @@ async function loadPendingPayments() {
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
-  } catch(e) { wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+    sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
 }
 
 async function approveUPIPayment(phone, date, sid, isCancelled=false) {
   const quest = isCancelled ? `Verify payment for Order ${sid} and process refund?` : `Confirm you have received payment for Order ${sid}?`;
   if (!(await showUIConfirm(quest, isCancelled ? "Verify & Refund":"Confirm Payment", isCancelled ? "💸":"💰"))) return;
+  sLoading(true, isCancelled ? "Processing refund..." : "Verifying payment...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"markOrdersStatus", pin:S.sessionPin, phone, date, sid, status:"Paid"})});
     const data = await res.json();
+    sLoading(false);
     if (data.success) {
       toast(isCancelled ? "Refund Processed ✅" : "Payment Verified ✅");
       loadPendingPayments();
     } else throw new Error(data.error);
-  } catch(e) { toast("Error: "+e.message); }
+  } catch(e) { 
+    sLoading(false);
+    toast("Error: "+e.message); 
+  }
 }
 
 // ── WALLET RECHARGE APPROVAL ──
 async function loadPendingRecharges() {
+  sLoading(true, "Fetching recharge requests...");
   const wrap = document.getElementById("pendingRechargesContent");
-  wrap.innerHTML = `<div class="loader"><div class="spinner"></div><p>Fetching recharge requests...</p></div>`;
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=getPendingRecharges&pin=${S.sessionPin}`);
     const data = await res.json();
@@ -3330,26 +3313,31 @@ async function loadPendingRecharges() {
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
-  } catch(e) { wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+    sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
 }
 
 async function activateWalletRecharge(phone, timestamp, amt) {
   if (!(await showUIConfirm(`Activate ₹${amt} credits for ${phone}?`, "Activate Credits", "💼"))) return;
+  sLoading(true, "Activating credits...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"approveWalletRecharge", pin:S.sessionPin, phone, timestamp})});
     const data = await res.json();
+    sLoading(false);
     if (data.success) {
       toast("Wallet Activated ✅");
       loadPendingRecharges();
     } else throw new Error(data.error);
-  } catch(e) { toast("Error: "+e.message); }
+  } catch(e) { 
+    sLoading(false);
+    toast("Error: "+e.message); 
+  }
 }
 
 // ── REFUND MANAGEMENT (Manual UPI) ──
 async function loadRefunds() {
+  sLoading(true, "Fetching refund requests...");
   const wrap = document.getElementById("refundsContent");
-  wrap.innerHTML = `<div class="loader"><div class="spinner"></div><p>Fetching refund requests...</p></div>`;
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=getPendingRefunds&pin=${S.sessionPin}`);
     const data = await res.json();
@@ -3404,24 +3392,31 @@ async function loadRefunds() {
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
+    sLoading(false);
   } catch(e) {
+    sLoading(false);
     wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`;
   }
 }
 
 async function markAsRefunded(subId) {
   if (!(await showUIConfirm("Confirm you have paid this customer via UPI? This will mark it as refunded.", "Confirm Refund", "💸"))) return;
+  sLoading(true, "Processing refund...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({ _action: "markRefunded", pin: S.sessionPin, submissionId: subId })
     });
     const data = await res.json();
+    sLoading(false);
     if (data.success) {
       toast("Marked as Refunded ✅");
       loadRefunds();
     } else throw new Error(data.error);
-  } catch(e) { toast("Error: " + e.message, 4000); }
+  } catch(e) { 
+    sLoading(false);
+    toast("Error: " + e.message, 4000); 
+  }
 }
 
 </script>

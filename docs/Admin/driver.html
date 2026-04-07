@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Svaadh Delivery</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="../modals-svaadh.css">
+<script src="../modals-svaadh.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;min-height:100vh;}
@@ -222,37 +224,54 @@ function isLocked() {
 }
 
 // ── PIN ────────────────────────────────────────────────────────────────────────
+let pinAuthInProgress = false;
 function dp(n) {
-  if (isLocked()) return;
+  if (isLocked() || pinAuthInProgress) return;
   if (D.pin.length >= 4) return;
   D.pin += String(n);
   renderDots();
   if (D.pin.length === 4) verifyPin();
 }
-function dx() { D.pin = D.pin.slice(0,-1); renderDots(); document.getElementById("dErr").textContent = ""; }
+function dx() { 
+  if (pinAuthInProgress) return;
+  D.pin = D.pin.slice(0,-1); 
+  renderDots(); 
+  document.getElementById("dErr").textContent = ""; 
+}
 function renderDots() {
   for (let i=0;i<4;i++) document.getElementById("dd"+i).classList.toggle("filled", i < D.pin.length);
 }
 
-async function verifyPin() {
+async function verifyPin(autoPin) {
   if (isLocked()) return;
-  document.getElementById("dErr").textContent = "Checking...";
+  if (!autoPin) {
+     document.getElementById("dErr").textContent = "Checking...";
+     pinAuthInProgress = true;
+     sLoading(true, "Authenticating...");
+  }
+  
+  const pinToVerify = autoPin || D.pin;
   try {
     const today = todayIST();
-    const res   = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${D.pin}&_t=${Date.now()}`);
+    const res   = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${pinToVerify}&_t=${Date.now()}`);
     const data  = await res.json();
     if (data.error) {
-      attempts++;
-      if (attempts >= 5) {
-        lockoutEnd = Date.now() + 60000;
-        document.getElementById("dErr").textContent = "Too many attempts. Wait 60s.";
+      if (!autoPin) {
+        attempts++;
+        if (attempts >= 5) {
+          lockoutEnd = Date.now() + 60000;
+          document.getElementById("dErr").textContent = "Too many attempts. Wait 60s.";
+        } else {
+          document.getElementById("dErr").textContent = "Incorrect PIN — Please try again";
+        }
+        D.pin = ""; renderDots();
       } else {
-        document.getElementById("dErr").textContent = "Incorrect PIN — Please try again";
+        localStorage.removeItem('sk-driver-pin');
       }
-      D.pin = ""; renderDots(); return;
+      return;
     }
     attempts = 0;
-    D.sessionPin = D.pin || pin; // pin from autoLogin or D.pin from manual
+    D.sessionPin = pinToVerify;
     localStorage.setItem('sk-driver-pin', D.sessionPin); 
     D.pin = ""; renderDots();
     document.getElementById("loginWrap").style.display = "none";
@@ -262,14 +281,16 @@ async function verifyPin() {
     autoSwitchMeal();
     startPoll();
   } catch(e) {
-    document.getElementById("dErr").textContent = "Error: " + e.message;
     D.pin = ""; renderDots();
-    localStorage.removeItem('sk-driver-pin'); // clear if corrupted
+    localStorage.removeItem('sk-driver-pin');
+  } finally {
+    pinAuthInProgress = false;
+    sLoading(false);
   }
 }
 
-function logout() {
-  if (!confirm("Are you sure you want to logout?")) return;
+async function logout() {
+  if (!await sConfirm("Are you sure you want to logout?", "Logout", "🔐")) return;
   localStorage.removeItem('sk-driver-pin');
   window.location.reload();
 }
@@ -288,6 +309,7 @@ function autoSwitchMeal() {
 async function loadOrders() {
   const date = document.getElementById("datePicker").value;
   if (!date) return;
+  sLoading(true, "Fetching data...");
   ["Breakfast","Lunch","Dinner"].forEach(m => {
     document.getElementById("panel_"+m).innerHTML = `<div class="spinner"></div>`;
   });
@@ -297,12 +319,14 @@ async function loadOrders() {
     if (data.error) throw new Error(data.error);
     renderAll(data);
     setSyncBadge();
-    stopPoll(); startPoll(); // Audit Fix #12: Reset poll when changing date to prevent stale syncs
+    stopPoll(); startPoll();
   } catch(e) {
     ["Breakfast","Lunch","Dinner"].forEach(m => {
       document.getElementById("panel_"+m).innerHTML =
         `<div class="empty"><div class="empty-icon">⚠️</div>${e.message}</div>`;
     });
+  } finally {
+    sLoading(false);
   }
 }
 
@@ -498,7 +522,7 @@ function renderCard(o, i, meal) {
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
 async function markDelivered(submissionId, meal, btn) {
   if (!submissionId || btn.classList.contains("done")) return;
-  btn.innerHTML = "⏳ Marking…"; btn.disabled = true;
+  sBtnLoading(btn, true, "Marking");
   const deliveredAt = new Date().toISOString(); // proper UTC — fmtTime adds +5:30 for display
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
@@ -527,8 +551,8 @@ async function markDelivered(submissionId, meal, btn) {
     // Refresh progress strip
     updateProgress(meal);
   } catch(e) {
-    btn.innerHTML = "⬜ Mark Delivered"; btn.disabled = false;
-    alert("Error: " + e.message);
+    sBtnLoading(btn, false);
+    await sAlert("Error: " + e.message, "Update Failed", "❌");
   }
 }
 
@@ -536,12 +560,12 @@ async function markAllEnRoute(meal) {
   const orders = _ordersData[meal] || [];
   if (!orders.length) return;
   const count = orders.filter(o => !o.enRouteAt && !o.deliveredAt).length;
-  if (count === 0) { alert("All orders for " + meal + " are already marked as out for delivery!"); return; }
+  if (count === 0) { await sAlert("All orders for " + meal + " are already marked as out for delivery!", "Notice", "ℹ️"); return; }
 
-  if (!confirm(`Mark all ${count} ${meal} orders as 'Out for Delivery'?\n\nThis will notify customers that their food is on the way!`)) return;
+  if (!await sConfirm(`Mark all ${count} ${meal} orders as 'Out for Delivery'?\n\nThis will notify customers that their food is on the way!`, "Start Delivery", "🚀")) return;
 
   const btn = document.getElementById("startBtn_" + meal);
-  btn.disabled = true; btn.innerHTML = "⏳ Sending notifications...";
+  sBtnLoading(btn, true, "Sending notifications");
   
   const enRouteAt = new Date().toISOString();
   const submissionIds = orders.filter(o => !o.enRouteAt && !o.deliveredAt).map(o => o.submissionId);
@@ -569,10 +593,10 @@ async function markAllEnRoute(meal) {
     
     // Refresh the UI cards to show the car emoji
     switchTab(meal);
-    alert(`Success! ${submissionIds.length} orders marked as Out for Delivery.`);
+    await sAlert(`Success! ${submissionIds.length} orders marked as Out for Delivery.`, "Delivery Started", "✅");
   } catch (err) {
-    alert("Error: " + err.message);
-    btn.disabled = false; btn.innerHTML = `🚀 Start ${meal} Delivery`;
+    sBtnLoading(btn, false);
+    await sAlert("Error: " + err.message, "Batch Update Failed", "❌");
   }
 }
 

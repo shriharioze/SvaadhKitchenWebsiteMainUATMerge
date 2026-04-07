@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Svaadh Kitchen</title>
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../modals-svaadh.css">
+  <script src="../modals-svaadh.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -486,50 +488,64 @@
       min-width: 500px;
     }
     .roti-table th, .roti-table td {
-      padding: 10px 5px;
+      padding: 12px 6px;
       text-align: center;
-      border: 1px solid #dee2e6;
-      font-size: 0.85rem;
+      border: 1px solid #ddd;
+      font-size: 0.9rem;
     }
     .roti-table th {
-      background: #fdf2e9;
-      color: #d35400;
-      font-weight: 900;
+      background: #f8f9fa;
+      color: #333;
+      font-weight: 800;
       font-size: 0.75rem;
     }
     .roti-table td.roti-name {
       text-align: left;
-      padding-left: 12px;
-      background: #fff;
-      font-weight: 700;
-      color: #2c3e50;
+      padding-left: 15px;
+      font-weight: 800;
       position: sticky;
       left: 0;
       z-index: 2;
-      border-right: 2px solid #dee2e6;
+      border-right: 2px solid rgba(0,0,0,0.1);
+      box-shadow: 2px 0 5px rgba(0,0,0,0.05);
     }
-    .roti-row-Chapati { border-left: 4px solid #d35400; }
-    .roti-row-Without_Oil_Chapati { border-left: 4px solid #3498db; }
-    .roti-row-Phulka { border-left: 4px solid #8e44ad; }
-    .roti-row-Ghee_Phulka { border-left: 4px solid #c0392b; }
-    .roti-row-Jowar_Bhakri { border-left: 4px solid #27ae60; }
-    .roti-row-Bajra_Bhakri { border-left: 4px solid #16a085; }
 
-    .val-Chapati { color: #d35400; }
-    .val-Without_Oil_Chapati { color: #3498db; }
-    .val-Phulka { color: #8e44ad; }
-    .val-Ghee_Phulka { color: #c0392b; }
-    .val-Jowar_Bhakri { color: #27ae60; }
-    .val-Bajra_Bhakri { color: #16a085; }
+    /* Full Row Colors */
+    .roti-row-Chapati { background: #d35400 !important; color: #fff !important; }
+    .roti-row-Without_Oil_Chapati { background: #2980b9 !important; color: #fff !important; }
+    .roti-row-Phulka { background: #8e44ad !important; color: #fff !important; }
+    .roti-row-Ghee_Phulka { background: #c0392b !important; color: #fff !important; }
+    .roti-row-Jowar_Bhakri { background: #27ae60 !important; color: #fff !important; }
+    .roti-row-Bajra_Bhakri { background: #16a085 !important; color: #fff !important; }
+
     .roti-val {
-      font-weight: 800;
-      color: #d35400;
-      font-size: 1.1rem;
+      font-weight: 900;
+      font-size: 1.2rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     .roti-empty {
-      color: #eee;
+      color: rgba(255,255,255,0.3);
       font-weight: 400;
     }
+    .roti-name.val-Chapati, .roti-name.val-Without_Oil_Chapati, .roti-name.val-Phulka,
+    .roti-name.val-Ghee_Phulka, .roti-name.val-Jowar_Bhakri, .roti-name.val-Bajra_Bhakri {
+       color: #fff !important;
+    }
+
+    .logout-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.25); }
 
     /* ── MOBILE OPTIMIZATION ── */
     @media (max-width: 650px) {
@@ -602,7 +618,10 @@
   <!-- SHELL -->
   <div id="shell">
     <div class="kheader">
-      <h1>🍽 SVAADH KITCHEN</h1>
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:12px;">
+        <h1 style="margin:0;">🍽 SVAADH KITCHEN</h1>
+        <button class="logout-btn" onclick="logout()" title="Logout">🔐 Logout</button>
+      </div>
       <div class="controls">
         <input type="date" id="datePicker">
         <button class="load-btn" onclick="loadKitchen()">Load</button>
@@ -642,14 +661,16 @@
     }
 
     // ── PIN ──
+    let pinAuthInProgress = false;
     function kp(n) {
-      if (isLocked()) return;
+      if (isLocked() || pinAuthInProgress) return;
       if (K.pin.length >= 4) return;
       K.pin += String(n);
       renderDots();
       if (K.pin.length === 4) verifyPin();
     }
     function kd() {
+      if (pinAuthInProgress) return;
       K.pin = K.pin.slice(0, -1);
       renderDots();
       document.getElementById("kErr").textContent = "";
@@ -657,20 +678,40 @@
     function renderDots() {
       for (let i = 0; i < 4; i++) document.getElementById("kd" + i).classList.toggle("filled", i < K.pin.length);
     }
-    async function verifyPin() {
+
+    async function logout() {
+      if (!await sConfirm("Are you sure you want to logout?", "Logout", "🔐")) return;
+      localStorage.removeItem('sk-kitchen-pin');
+      window.location.reload();
+    }
+
+    async function verifyPin(autoPin) {
       if (isLocked()) return;
-      document.getElementById("kErr").textContent = "Checking...";
+      if (!autoPin) {
+        document.getElementById("kErr").textContent = "Checking...";
+        pinAuthInProgress = true;
+        sLoading(true, "Authenticating...");
+      }
+      
+      const pinToVerify = autoPin || K.pin;
       try {
         const today = todayIST();
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${pinToVerify}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.error) {
-          K.pin = ""; renderDots();
+          if (!autoPin) {
+            K.pin = ""; renderDots();
+            document.getElementById("kErr").textContent = "Incorrect PIN";
+          } else {
+            localStorage.removeItem('sk-kitchen-pin');
+          }
           return;
         }
         // PIN valid
         attempts = 0;
-        K.sessionPin = K.pin;
+        K.sessionPin = pinToVerify;
+        localStorage.setItem('sk-kitchen-pin', pinToVerify);
+        
         K.pin = ""; renderDots();
         document.getElementById("loginWrap").style.display = "none";
         document.getElementById("shell").style.display = "block";
@@ -682,6 +723,9 @@
       } catch (e) {
         document.getElementById("kErr").textContent = "Error: " + e.message;
         K.pin = ""; renderDots();
+      } finally {
+        pinAuthInProgress = false;
+        sLoading(false);
       }
     }
 
@@ -691,11 +735,10 @@
       return ist.toISOString().slice(0, 10);
     }
 
-    // ── LOAD ──
     async function loadKitchen() {
       const date = document.getElementById("datePicker").value;
-      if (!date) { alert("Pick a date"); return; }
-      document.getElementById("kbody").innerHTML = `<div class="spinner"></div>`;
+      if (!date) { await sAlert("Please select a date first.", "Date Required", "📅"); return; }
+      sLoading(true, "Fetching data...");
       try {
         const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
         const data = await res.json();
@@ -705,6 +748,8 @@
         _lastUpdated = new Date();
       } catch (e) {
         document.getElementById("kbody").innerHTML = `<div class="no-orders" style="color:#e74c3c;">${e.message}</div>`;
+      } finally {
+        sLoading(false);
       }
     }
 
@@ -1029,6 +1074,12 @@
     // ── AUTO-SET DATE ON LOAD ──
     (function () {
       document.getElementById("datePicker").value = todayIST();
+      
+      // Auto-Login
+      const saved = localStorage.getItem('sk-kitchen-pin');
+      if (saved && saved.length === 4) {
+        verifyPin(saved);
+      }
     })();
 
     // ── AUTO REFRESH ──

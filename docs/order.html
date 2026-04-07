@@ -34,6 +34,8 @@
 <!-- Favicon -->
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/x-icon" href="images/svaadh-kitchen-hero.PNG">
+<link rel="stylesheet" href="modals-svaadh.css">
+<script src="modals-svaadh.js"></script>
 
 <!-- Structured Data: FoodEstablishment -->
 <script type="application/ld+json">
@@ -803,7 +805,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         💡 <strong>Hint:</strong> Use your birthday (DDMM) so it's easy to remember!
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;">
+        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="if(this.value.length===4) goNext();">
       </div>
       <div id="forgotPinWrap" style="margin-top:14px;display:none;">
         <a href="https://wa.me/919930748908?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
@@ -1236,128 +1238,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <button class="btn btn-primary" id="btnSubmitWallet" style="margin-top:16px;" onclick="submitWalletRecharge()">✅ I have completed the payment</button>
     <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
   </div>
-</div><!-- CANCELLATION CONFIRM MODAL -->
-<div id="cancelConfirmModal" class="bill-modal-overlay" style="display:none;z-index:10010;">
-  <div class="bill-modal-sheet" style="max-width:400px;border-top:5px solid #c0392b;">
-    <div class="bm-handle"><span></span></div>
-    <div style="text-align:center;margin-bottom:12px;">
-      <div style="font-size:2.5rem;margin-bottom:8px;">🗑️</div>
-      <h2 class="bm-title" style="margin-bottom:4px;">Cancel Order?</h2>
-      <p id="cancelConfirmSub" style="font-size:0.85rem;color:#777;"></p>
-    </div>
-    
-    <div style="background:#fff5f4;border:1px solid #f9d6d2;border-radius:12px;padding:12px;margin-bottom:20px;font-size:0.8rem;color:#851a0f;line-height:1.4;">
-      ⚠️ Since we procure fresh ingredients daily, cancellations should ideally be done before the cutoff time. Proceed?
-    </div>
-    
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-primary" onclick="proceedAfterCancelConfirm()" style="background:#c0392b;border-color:#a83122;padding:14px;font-weight:700;">Yes, Cancel Order</button>
-      <button class="bm-later" onclick="closeCancelModal()" style="padding:12px;">Keep Order</button>
-    </div>
-  </div>
-</div>
-
-<!-- REFUND CHOICE MODAL -->
-<div id="refundModal" class="bill-modal-overlay" style="display:none;z-index:10010;">
-  <div class="bill-modal-sheet" style="max-width:400px;border-top:5px solid #2e7d32;">
-    <div class="bm-handle"><span></span></div>
-    <div style="text-align:center;margin-bottom:12px;">
-      <div style="font-size:2.5rem;margin-bottom:8px;">💰</div>
-      <h2 class="bm-title" style="margin-bottom:4px;">Refund Method</h2>
-      <p id="refundModalMsg" style="font-size:0.85rem;color:#555;line-height:1.4;"></p>
-    </div>
-    
-    <div id="refundUpiSection" style="display:flex;flex-direction:column;gap:12px;">
-      <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;">
-        <div style="font-weight:700;font-size:0.95rem;">⚡ Instant Wallet Credit</div>
-        <div style="font-size:0.75rem;opacity:0.9;margin-top:2px;">Get refund immediately to your Svaadh Wallet</div>
-      </button>
-      
-      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;">
-        <div style="font-weight:700;font-size:0.95rem;">💸 Original UPI Refund</div>
-        <div style="font-size:0.75rem;opacity:0.9;margin-top:2px;">Sent to your UPI ID (Takes ~24 hours)</div>
-      </button>
-    </div>
-
-    <div id="refundWalletOnlySection" style="display:none;flex-direction:column;gap:12px;">
-       <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:12px;padding:12px;font-size:0.85rem;color:#2e7d32;text-align:center;">
-          Since you paid via <strong>Svaadh Wallet</strong>, the amount will be automatically credited back to your balance.
-       </div>
-       <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;">Confirm & Refund ₹<span id="refundAmtOnly"></span></button>
-    </div>
-    
-    <button class="bm-later" onclick="closeRefundModal()" style="margin-top:8px;">Don't Cancel Order</button>
-  </div>
-</div>
+</div><!-- Replaced by shared modals-svaadh.js sConfirm and sAlert logic -->
 
 
-<!-- GLOBAL CUSTOM CONFIRM MODAL -->
-<div id="globalConfirmModal" class="bill-modal-overlay" style="display:none;z-index:10100;">
-  <div class="bill-modal-sheet" id="gcModalSheet" style="max-width:400px; padding:24px 20px; border-top:6px solid #c0392b; border-radius: 20px 20px 0 0;">
-    <div class="bm-handle"><span></span></div>
-    <div style="text-align:center;margin-bottom:24px;">
-      <div id="gcIcon" style="font-size:3.2rem;margin-bottom:12px;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.1));">⚠️</div>
-      <h2 id="gcTitle" class="bm-title" style="margin-bottom:8px;font-weight:700;color:#2d2d2d;">Confirm Action</h2>
-      <p id="gcMessage" style="font-size:0.95rem;color:#444;line-height:1.5;margin-bottom:6px;"></p>
-      <p id="gcMarathi" style="font-size:0.75rem;color:#888;font-style:italic;line-height:1.3;"></p>
-    </div>
-    
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <button id="gcBtnConfirm" class="btn btn-primary" style="padding:16px;font-size:1rem;font-weight:700;box-shadow:0 4px 12px rgba(192,57,43,0.3);">Confirm</button>
-      <button id="gcBtnCancel" class="btn btn-secondary" style="padding:14px;background:#f8f9fa;border:1.5px solid #eee;color:#666;font-weight:600;">Cancel</button>
-    </div>
-  </div>
-</div>
+<!-- Global Svaadh Modals linked via modals-svaadh.js -->
 
 <div class="toast" id="toast"></div>
 
 <script>
 
-/**
- * Modern Custom Confirmation Modal (v14.1.18)
- * Replaces native browser confirm() with an async/await interface.
- */
-function showUIConfirm(message, title = "Confirm Action", icon = "⚠️", marathi = "") {
-  return new Promise((resolve) => {
-    const modal = $("globalConfirmModal");
-    const mTitle = $("gcTitle");
-    const mMsg = $("gcMessage");
-    const mIcon = $("gcIcon");
-    const mMarathi = $("gcMarathi");
-    const btnConfirm = $("gcBtnConfirm");
-    const btnCancel = $("gcBtnCancel");
-
-    // Set content
-    mTitle.textContent = title;
-    mMsg.textContent = message;
-    mIcon.textContent = icon;
-    mMarathi.textContent = marathi;
-
-    // Show modal
-    modal.style.display = "flex";
-
-    // Handle Confirm
-    const onConfirm = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    // Handle Cancel
-    const onCancel = () => {
-      cleanup();
-      resolve(false);
-    };
-
-    const cleanup = () => {
-      btnConfirm.removeEventListener("click", onConfirm);
-      btnCancel.removeEventListener("click", onCancel);
-      modal.style.display = "none";
-    };
-
-    btnConfirm.addEventListener("click", onConfirm);
-    btnCancel.addEventListener("click", onCancel);
-  });
-}
+// Replaced with shared modals-svaadh.js logic
 
 // ═══════════════════════════════════════════════════════════
 // CONFIG
@@ -1464,11 +1354,7 @@ async function syncWalletValue() {
     const data = await res.json();
     if (data.wallet_balance !== undefined) {
       const wb = Number(data.wallet_balance) || 0;
-      S.walletBalance = wb;
-      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
-      // Update manage orders dash if it exists
-      const dBal = document.querySelector("#walletDashWrap div div div div:nth-child(2)");
-      if (dBal && dBal.textContent.includes("₹")) dBal.textContent = `₹${wb}`;
+      updateWalletBalanceUI(wb);
     }
   } catch(e) { console.warn("Wallet sync skipped", e); }
 }
@@ -1522,7 +1408,7 @@ const FAQ_ITEMS = [
   {q:"How do discounts work?", a:"If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen."},
   {q:"What is Prepaid Wallet Billing?", a:"Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!"},
   {q:"Can I edit or cancel an order?", a:"Yes, before the cutoff time. Tap 'View / Edit upcoming orders' on the home screen to delete or modify upcoming orders. Any UPI payments for cancelled orders will be manually refunded via GPay or adjusted in your next bill."},
-  {q:"Do you offer self-pickup?", a:"Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the ₹10 delivery charge and the ₹10 small order fee are <strong>completely waived</strong> for pickup orders."},
+  {q:"Do you offer self-pickup?", a:"Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small order fee are <strong>completely waived</strong> for pickup orders. Free delivery also applies to 🏠 Bhosale Garden and 📍 Triveni Nagar."},
 ];
 
 function buildFAQ(){
@@ -1554,8 +1440,9 @@ function updateNav(){
   if(s>0)$("btnBack").textContent=t('btn_back_nav');
   $("btnNext").style.display="block";
   $("btnNext").disabled=false;$("btnNext").style.opacity="1";
+  const btn = $("btnNext");
   const labels=[t('btn_continue'),t('btn_continue'),t('btn_continue'),t('btn_review'),t('btn_place')];
-  $("btnNext").textContent=labels[s];
+  btn.innerHTML = labels[s];
   // Disable if nothing ordered yet
   if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
   
@@ -1579,33 +1466,40 @@ async function goNext(){
      if (enteredPin.length !== 4) { toast("Please enter a 4-digit PIN."); return; }
      
      if (S.authMode === "verify") {
-       $("btnNext").textContent = "Verifying..."; $("btnNext").disabled = true;
+       sBtnLoading($("btnNext"), true, "Verifying");
        try {
          const res = await fetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
          const verData = await res.json();
+         sBtnLoading($("btnNext"), false);
          if (verData.success) {
            localStorage.setItem('sk_logged_in_phone', S.phone);
            localStorage.setItem('sk_logged_in_pin', enteredPin);
            handleLoginSuccess(verData.profile, false);
          } else {
            toast(verData.error || "Incorrect PIN");
-           $("btnNext").textContent = "Verify PIN & Continue"; $("btnNext").disabled = false;
+           $("pinInput").value = ""; $("pinInput").focus();
          }
-       } catch(e) { toast("Server error, please try again."); $("btnNext").textContent = "Verify PIN & Continue"; $("btnNext").disabled = false; }
+       } catch(e) { 
+         sBtnLoading($("btnNext"), false);
+         toast("Server error, please try again."); 
+       }
      } else if (S.authMode === "create") {
        const forbidden_pins = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999","1234","4321","9876","2580"];
        if(forbidden_pins.includes(enteredPin)){toast("Please choose a stronger PIN.", 3000);return;}
        S.profile.pin = enteredPin;
        localStorage.setItem('sk_logged_in_phone', S.phone);
        localStorage.setItem('sk_logged_in_pin', enteredPin);
-       $("btnNext").textContent = "Setting PIN..."; $("btnNext").disabled = true;
+       sBtnLoading($("btnNext"), true, "Setting PIN");
        
        fetch(`${APPS_SCRIPT_URL}?action=setPin&phone=${S.phone}&pin=${enteredPin}`)
          .then(res => res.json())
-         .then(data => { handleLoginSuccess(S.tempProfileData, !S.tempProfileData); })
+         .then(data => { 
+           sBtnLoading($("btnNext"), false);
+           handleLoginSuccess(S.tempProfileData, !S.tempProfileData); 
+         })
          .catch(e => {
+            sBtnLoading($("btnNext"), false);
             toast("Network error while setting PIN.");
-            $("btnNext").textContent = "Set PIN & Continue"; $("btnNext").disabled = false;
          });
        return;
      }
@@ -1620,8 +1514,9 @@ async function goNext(){
   }
   if(S.step===2){
     if(!S.selectedDates.length){toast(t('toast_select_date'));return;}
-    $("btnNext").disabled=true;$("btnNext").textContent=t('loading_loading');$("btnNext").style.opacity="0.6";
+    sBtnLoading($("btnNext"), true, t('loading_loading'));
     await loadMealScreen();
+    sBtnLoading($("btnNext"), false);
   }
   if(S.step===3){
     if (S.selectedDates.length === 0) { toast("Please select at least one date"); return; }
@@ -1630,16 +1525,18 @@ async function goNext(){
     if (emptyDates.length > 0) {
       const names = emptyDates.map(d => formatDate(d)).join(", ");
       const confirmMsg = t('empty_dates_warn', { n: emptyDates.length, dates: names });
-      if (!(await showUIConfirm(confirmMsg, "No Menu Found", "📅", "निवडलेल्या तारखांसाठी मेनू उपलब्ध नाही. सुरू ठेवायचे?"))) return;
+      if (!(await sConfirm(confirmMsg, "No Menu Found", "📅", "निवडलेल्या तारखांसाठी मेनू उपलब्ध नाही. सुरू ठेवायचे?"))) return;
     }
-    if(!hasAnyOrder()){toast(t('toast_select_item'));return;}
-    $("btnNext").disabled=true;$("btnNext").textContent=t('loading_building');$("btnNext").style.opacity="0.6";
-    S.step++;updateNav();window.scrollTo(0,0);
+    if(!hasAnyOrder()){toast(t('toast_select_item')); return;}
+    
+    sBtnLoading($("btnNext"), true, t('loading_building'));
+    S.step++; updateNav(); window.scrollTo(0,0);
     buildBillScreen();
+    sBtnLoading($("btnNext"), false);
     return;
   }
-  if(S.step===4){await placeOrder();return;}
-  S.step++;updateNav();window.scrollTo(0,0);
+  if(S.step===4){ await placeOrder(); return; }
+  S.step++; updateNav(); window.scrollTo(0,0);
 }
 async function validate(step){
   if(step===0){const p=$("phoneInput").value.trim().replace(/\D/g,"");if(p.length!==10){toast(t('toast_valid_phone'));return false;}if(!/^[6-9]/.test(p)){toast(t('toast_indian_phone'));return false;}S.phone=p;}
@@ -1696,7 +1593,7 @@ async function validate(step){
 // CUSTOMER LOOKUP
 // ═══════════════════════════════════════════════════════════
 async function lookupCustomer(){
-  $("btnNext").textContent=t('loading_checking');$("btnNext").disabled=true;
+  sLoading(true, t('loading_checking'));
   if ($("pinAuthSection")) $("pinAuthSection").style.display = "none";
   const _lCtrl=new AbortController();const _lTid=setTimeout(()=>_lCtrl.abort(),15000);
   try{
@@ -2047,7 +1944,7 @@ async function copyMealsToAllDates(){
   }
   const others=S.selectedDates.filter(d=>d!==activeDate);
   const confirmMsg = t('copy_confirm', { date: formatDate(activeDate), n: others.length });
-  if (!(await showUIConfirm(confirmMsg, "Duplicate Meals", "📋", "हा मेनू इतर सर्व तारखांवर कॉपी करायचा?"))) return;
+  if (!(await sConfirm(confirmMsg, "Duplicate Meals", "📋", "हा मेनू इतर सर्व तारखांवर कॉपी करायचा?"))) return;
   let skipped = 0;
   others.forEach(d=>{
     const avail = getMealAvailability(d);
@@ -2501,8 +2398,8 @@ async function submitWalletRecharge() {
   const amt = parseInt($('walletRechargeAmt').value, 10);
   if (isNaN(amt) || amt < 100) { toast("Minimum recharge amount is ₹100."); return; }
   
-  $('btnSubmitWallet').disabled = true;
-  $('btnSubmitWallet').textContent = "⏳ Submitting...";
+  const btn = $('btnSubmitWallet');
+  sBtnLoading(btn, true, "Submitting");
   
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -2515,16 +2412,15 @@ async function submitWalletRecharge() {
       })
     });
     const data = await res.json();
+    sBtnLoading(btn, false);
     if (!data.success) throw new Error(data.error || "Failed");
 
-    toast(t('toast_recharge_submitted'), 7000);
+    await sAlert(t('toast_recharge_submitted'), "Recharge Submitted", "✅");
     closeWalletRecharge();
     syncWalletValue(); // Refresh UI balance after recharge request
   } catch(err) {
-    toast("Error: " + err.message);
-  } finally {
-    $('btnSubmitWallet').disabled = false;
-    $('btnSubmitWallet').textContent = "✅ I have completed the payment";
+    sBtnLoading(btn, false);
+    await sAlert("Error: " + err.message, "Submission Failed", "❌");
   }
 }
 
@@ -2593,7 +2489,8 @@ async function placeOrder(settleAll = false){
     toast(isWalletOrder ? "Please confirm wallet deduction" : t('toast_confirm_payment'));
     return;
   }
-  $("btnNext").disabled=true;$("btnNext").textContent=t('loading_placing');
+  
+  sBtnLoading($("btnNext"), true, t('loading_placing'));
   const orders=[];
   for(const date of S.selectedDates){
     const meals=[];
@@ -2627,18 +2524,22 @@ async function placeOrder(settleAll = false){
     const res=await fetch(APPS_SCRIPT_URL,{method:"POST",body:JSON.stringify(payload),signal:_pCtrl.signal});
     clearTimeout(_pTid);
     const data=await res.json();
+    sBtnLoading($("btnNext"), false);
     if(data.success) {
+      S.isPlaced=true;
       if (payload.payment_status === "Pending") {
-        toast(t('toast_payment_submitted'), 7000);
+        await sAlert(t('toast_payment_submitted'), "Order Placed", "💸");
+      } else {
+        await sAlert("Your order has been placed successfully!", "Order Success", "✅");
       }
       showSuccess(data.submissionId);
     }
     else throw new Error(data.error||"Unknown error");
   }catch(err){
     clearTimeout(_pTid);
+    sBtnLoading($("btnNext"), false);
     if(err.name==="AbortError"){toast(t('toast_server_timeout'),6000);}
-    else{toast(`Error: ${err.message}. WhatsApp us if this persists!`,5000);}
-    $("btnNext").disabled=false;$("btnNext").textContent=t('btn_place');
+    else { await sAlert("Error: " + err.message, "Placement Failed", "❌"); }
   }
 }
 function showSuccess(id){
@@ -2945,121 +2846,60 @@ function toggleOrders(type, event) {
 let currentDeleteData = null; // { rowId, date, meal, allIds, totalPaid, isWalletPaid }
 
 async function deleteOrder(rowId, date, meal) {
-  // Use cached data — no extra API call needed
   const cached = orderDataCache[rowId] || {};
   const allIds = cached.all_row_ids || [rowId];
   const totalPaid = Number(cached.original_total_paid) || 0;
+  const potentialAmt = Number(cached.potential_total) || 0;
   const isWalletPaid = !!cached.is_wallet;
-
-  const count = allIds.length;
-  currentDeleteData = { rowId, date, meal, allIds, totalPaid, isWalletPaid };
-
-  $("cancelConfirmSub").innerHTML = count > 1
-    ? `Cancel these <strong>${count} combined</strong> ${meal} orders for <strong>${formatDate(date)}</strong>?`
-    : `Cancel your ${meal} order for <strong>${formatDate(date)}</strong>?`;
-
-  $("cancelConfirmModal").style.display = "flex";
-}
-
-function closeCancelModal() {
-  $("cancelConfirmModal").style.display = "none";
-  currentDeleteData = null;
-}
-
-function proceedAfterCancelConfirm() {
-  $("cancelConfirmModal").style.display = "none";
-  if (!currentDeleteData) return;
-
-  const { totalPaid, isWalletPaid, allIds, rowId } = currentDeleteData;
-  const cached = orderDataCache[rowId] || {};
   const isPending = String(cached.status || "").toLowerCase().trim() === "pending";
-  console.log("Proceeding with cancellation. rowId:", rowId, "isPending:", isPending, "status:", cached.status);
-  const potentialAmt = cached.potential_total || 0;
+  const count = allIds.length;
 
-  // Case 1: Order is ALREADY marked as PAID or WALLET PAID
+  const quest = count > 1 
+    ? `Cancel these <b>${count} combined</b> ${meal} orders for <b>${formatDate(date)}</b>?`
+    : `Cancel your ${meal} order for <b>${formatDate(date)}</b>?`;
+  
+  const confirmed = await sConfirm(quest, "Cancel Order", "🗑️", "काय तुम्ही तुमची ऑर्डर रद्द करू इच्छिता?");
+  if (!confirmed) return;
+
+  let refundType = "none";
   if (totalPaid > 0) {
-    $("refundModalMsg").innerHTML = `You have already paid <strong>₹${totalPaid}</strong> for this order.`;
     if (isWalletPaid) {
-      $("refundUpiSection").style.display = "none";
-      $("refundWalletOnlySection").style.display = "flex";
-      $("refundAmtOnly").textContent = totalPaid;
+      await sAlert(`Adding ₹${totalPaid} back to your Svaadh Wallet balance.`, "Refund Info", "💼");
+      refundType = "wallet";
     } else {
-      $("refundUpiSection").innerHTML = `
-        <div style="background:#fff3cd;border:1px solid #ffeeba;border-radius:12px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:#856404;line-height:1.5;">
-          💡 <strong>Tip:</strong> Transfer to Wallet for an <strong>instant refund</strong> — use it on your next order right away!
-        </div>
-        <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;margin-bottom:10px;width:100%;">
-          <div style="font-weight:700;font-size:0.95rem;">⚡ Transfer to Wallet (Instant)</div>
-          <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">₹${totalPaid} added to your Svaadh Wallet immediately</div>
-        </button>
-        <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;width:100%;">
-          <div style="font-weight:700;font-size:0.95rem;">💸 Refund to Original UPI</div>
-          <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Takes up to 3 working days</div>
-        </button>
-      `;
-      $("refundUpiSection").style.display = "flex";
-      $("refundWalletOnlySection").style.display = "none";
+      const choice = await sConfirm(`You paid ₹${totalPaid}. Refund to Wallet (Instant)? Select 'No' for UPI refund (2-3 days).`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?");
+      refundType = choice ? "wallet" : "manual_upi";
     }
-    $("refundModal").style.display = "flex";
-  } 
-  // Case 2: Order is PENDING (Admin hasn't approved yet)
-  else if (isPending && potentialAmt > 0 && !isWalletPaid) {
-    $("refundModalMsg").innerHTML = `
-      <div style="text-align:left;">
-        <p style="font-weight:700;color:#c0392b;margin-bottom:8px;">Choose your refund preference for ₹${potentialAmt}</p>
-        <p style="font-size:0.8rem;color:#666;line-height:1.4;">Admin will verify the payment before processing the refund. This process typically takes 1-2 working days.</p>
-      </div>
-    `;
-    $("refundUpiSection").innerHTML = `
-      <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;margin-bottom:10px;width:100%;">
-        <div style="font-weight:700;font-size:0.95rem;">💼 Refund to Wallet</div>
-        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Balance updated after verification</div>
-      </button>
-      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;width:100%;">
-        <div style="font-weight:700;font-size:0.95rem;">💸 Refund to Original UPI</div>
-        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Processed after verification</div>
-      </button>
-    `;
-    $("refundUpiSection").style.display = "flex";
-    $("refundWalletOnlySection").style.display = "none";
-    $("refundModal").style.display = "flex";
+  } else if (isPending && potentialAmt > 0 && !isWalletPaid) {
+    const choice = await sConfirm(`Admin will verify ₹${potentialAmt} payment and process refund. Wallet (Instant) or UPI?`, "Refund Policy", "⏳", "रीफंड कुठे हवा आहे?");
+    refundType = choice ? "wallet" : "manual_upi";
   }
-  // Case 3: Free order or genuinely unpaid
-  else {
-    performActualDeletion(allIds, "none");
-  }
-}
 
-function closeRefundModal() {
-  $("refundModal").style.display = "none";
-  currentDeleteData = null;
-}
-
-async function processRefund(type) {
-  if (!currentDeleteData) return;
-  const { allIds } = currentDeleteData;
-  $("refundModal").style.display = "none";
-  performActualDeletion(allIds, type);
-}
-
-async function performActualDeletion(allIds, refundType) {
-  const loadingToast = toast("Processing cancellation...", 10000);
-  try{
-    const delPromises = allIds.map(rid => 
+  sLoading(true, "Processing cancellation...");
+  try {
+    const results = await Promise.all(allIds.map(rid => 
       fetch(APPS_SCRIPT_URL,{method:"POST", body:JSON.stringify({_action:"deleteOrder",phone:S.phone,rowId:rid, refundType: refundType})})
       .then(r => r.json())
-    );
-    const results = await Promise.all(delPromises);
-    if (results.every(r => r.success)) {
-      const respMsg = results[0]?.message || t('toast_order_deleted');
-      toast("✅ " + respMsg, 6000); 
-      syncWalletValue(); // Sync main balance after any cancellation or refund
-      loadExistingOrders(S.phone);
+    ));
+    
+    sLoading(false);
+    const success = results.every(res => res.success);
+    if (success) {
+      if (refundType === "wallet") {
+        await sAlert("Cancellation successful! Refund added to your Svaadh Wallet.", "Done", "💼");
+      } else if (refundType !== "none") {
+        await sAlert("Cancellation successful! Refund request submitted.", "Done", "💸");
+      } else {
+        await sAlert("Order cancelled successfully.", "Done", "✅");
+      }
+      syncWalletValue(); // Update main UI balance
+      loadExistingOrders(S.phone); // Refresh upcoming list
     } else {
-      throw new Error("One or more orders could not be cancelled.");
+      throw new Error("Action failed for one or more items.");
     }
-  } catch(err) { 
-    toast("Error: " + err.message, 4000); 
+  } catch(e) {
+    sLoading(false);
+    await sAlert("Error: " + e.message, "Failure", "❌");
   } finally {
     currentDeleteData = null;
   }
@@ -3109,7 +2949,7 @@ async function openWeeklyMenu() {
   document.body.style.overflow = "hidden";
   
   if (!wmLoaded) {
-    $("wmBody").innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="border-top-color:#e74c3c;"></div><p style="font-size:0.78rem;color:#c0392b;margin-top:12px;font-weight:600;">Fetching the freshest menus...</p></div>`;
+    $("wmBody").innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="border-top-color:#e74c3c;margin:0 auto;"></div><p style="font-size:0.75rem;color:var(--muted);margin-top:12px;">Fetching the freshest menus…</p></div>`;
     try {
       const res = await fetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
       const data = await res.json();
@@ -3122,7 +2962,8 @@ async function openWeeklyMenu() {
         throw new Error(data.error);
       }
     } catch(err) {
-      $("wmBody").innerHTML = `<div style="text-align:center;padding:30px;color:#e74c3c;">Failed to load weekly menu. Please try again later.</div>`;
+      $("wmBody").innerHTML = `<div style="text-align:center;padding:30px;color:var(--red);">Failed to load weekly menu. Please try again later.</div>`;
+      await sAlert("Failed to load official menu. Please check your data connection.", "Failed to Fetch", "🌐");
     }
   }
 }

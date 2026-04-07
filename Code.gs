@@ -123,13 +123,13 @@ const BUSINESS_CONTEXT = {
   name: "Svaadh Kitchen",
   type: "Cloud Kitchen",
   tagline: "Wholesome homemade vegetarian meals, straight from our kitchen to your plate.",
-  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals for over 2.5 years. We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We serve Bhosale Garden (free delivery), Magarpatta, Amanora Township, and DP Road areas. Our meals are cooked fresh daily using quality ingredients and traditional recipes.",
+  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals since August 2023 (over 2.5 years). We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We deliver to Bhosale Garden, Magarpatta, Amanora, DP Road, Triveni Nagar, and 10 other nearby areas. Customers can also opt for Self Pickup to waive all fees.",
   vision: "To make homemade vegetarian meals easily accessible and affordable for everyone, while maintaining taste, quality, and consistency.",
-  locations_served: ["Bhosale Garden (free delivery)", "Magarpatta", "Amanora Township", "DP Road"],
+  locations_served: ["Bhosale Garden", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar", "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", "Vaiduwadi", "Pune-Solapur Road", "Vihar Chowk", "Mandai", "Gadital", "Self Pickup"],
   order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:30 AM", dinner: "before 5:00 PM", closed_on: "Sunday" },
   delivery: {
-    free_area: "Bhosale Garden",
-    charge: "₹10 per meal for Magarpatta/Amanora/DP Road, only if that meal's subtotal is below ₹100. Free for Bhosale Garden always.",
+    free_area: "Bhosale Garden, Triveni Nagar, Self Pickup",
+    charge: "₹10 per meal for others if subtotal is below ₹100. Free for Bhosale Garden, Triveni Nagar and Self Pickup always.",
     per_meal_address: "Each meal can go to a different address — breakfast at home, lunch at office, dinner back home."
   },
   menu: {
@@ -1522,10 +1522,22 @@ function _updateLedger(ss, profile, orders) {
 const AREAS_HEADERS = ["Area_Name", "Area_Label", "Free_Delivery"];
 
 const DEFAULT_AREAS = [
-  ["Bhosale Garden", "🏠 Bhosale Garden (Free Delivery)", "TRUE"],
-  ["Magarpatta",     "🏙️ Magarpatta",                    "FALSE"],
-  ["Amanora",        "🏢 Amanora Township",               "FALSE"],
-  ["DP Road",        "🛣️ DP Road",                        "FALSE"]
+  ["Bhosale Garden",  "🏠 Bhosale Garden (Free Delivery)",            "TRUE"],
+  ["Triveni Nagar",   "📍 Triveni Nagar (Free Delivery)",             "TRUE"],
+  ["Magarpatta",      "🏙️ Magarpatta",                               "FALSE"],
+  ["Amanora",         "🏢 Amanora Town",                              "FALSE"],
+  ["DP Road",         "🛣️ DP Road",                                   "FALSE"],
+  ["Malwadi",         "📍 Malwadi",                                   "FALSE"],
+  ["SadeSatraNali",   "📍 SadeSatraNali",                             "FALSE"],
+  ["Kirtane Baug",    "📍 Kirtane Baug",                              "FALSE"],
+  ["Tupe Patil Road", "🛣️ Tupe Patil Road",                          "FALSE"],
+  ["BG Shirke Road",  "🏢 BG Shirke Road",                            "FALSE"],
+  ["Vaiduwadi",       "📍 Vaiduwadi (Till Yash Honda Only)",          "FALSE"],
+  ["Solapur Road",    "🛣️ Pune-Solapur Road (Till Gadital Only)",     "FALSE"],
+  ["Vihar Chowk",     "📍 Vihar Chowk",                               "FALSE"],
+  ["Mandai",          "📍 Hadapsar Mandai",                           "FALSE"],
+  ["Gadital",         "📍 Gadital",                                   "FALSE"],
+  ["Pickup",          "📦 Self Pickup (Waives all fees)",             "TRUE"]
 ];
 
 function getAreas() {
@@ -2065,8 +2077,8 @@ function buildSystemPrompt() {
   } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
   return "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
-    +" Closed Sundays. Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
-    +" Areas: Bhosale Garden(free), Magarpatta/Amanora/DP Road(₹10/meal if subtotal<₹100).\n"
+    +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
+    +" Areas: Bhosale Garden/Triveni Nagar(free), others(₹10/meal if subtotal<₹100), Self Pickup available.\n"
     + todayLine
     +"MEAL MODEL: Make Your Own Meal (not a fixed thali). Customers pick items individually.\n"
     +"Lunch/Dinner — Breads:"+breads+" | Sabji:"+sabji+" | Basics:"+basics+"\n"

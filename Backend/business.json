@@ -4,9 +4,9 @@
   "tagline": "Wholesome homemade vegetarian meals, straight from our kitchen to your plate.",
   "about": {
     "summary": "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals for over 2.5 years.",
-    "description": "We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We serve Bhosale Garden (free delivery), Magarpatta, Amanora Township, and DP Road areas. Our meals are cooked fresh daily using quality ingredients and traditional recipes."
+    "description": "We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. Our delivery network covers 15 major areas in Hadapsar, with Free Delivery for Bhosale Garden, Triveni Nagar, and all Self Pickup orders. We serve Magarpatta, Amanora, DP Road, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi, Pune-Solapur Road, Vihar Chowk, Mandai, and Gadital. Our meals are cooked fresh daily using quality ingredients and traditional recipes."
   },
-  "locations_served": ["Bhosale Garden (free delivery)", "Magarpatta", "Amanora Township", "DP Road"],
+  "locations_served": ["Bhosale Garden (Free)", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar (Free)", "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", "Vaiduwadi", "Pune-Solapur Road", "Vihar Chowk", "Mandai", "Gadital", "Self Pickup (Free)"],
   "order_cutoffs": {
     "breakfast": "before 7:00 AM",
     "lunch": "before 9:30 AM",
@@ -14,8 +14,8 @@
     "closed_on": "Sunday"
   },
   "delivery": {
-    "free_area": "Bhosale Garden",
-    "delivery_charge": "₹10 per meal for Magarpatta / Amanora / DP Road, only if that meal's subtotal is below ₹100. Free for Bhosale Garden always.",
+    "free_area": "Bhosale Garden, Triveni Nagar, Self Pickup",
+    "delivery_charge": "₹10 per meal for non-free areas only if that meal's subtotal is below ₹100. Free for Bhosale Garden, Triveni Nagar, and Self Pickup always.",
     "per_meal_address": "Each meal can go to a different address — breakfast at home, lunch at office, dinner back home."
   },
   "menu": {
