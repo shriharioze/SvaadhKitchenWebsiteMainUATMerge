@@ -1232,7 +1232,19 @@ function deleteOrder(phone, rowId, refundType) {
   // Also remove from customer ledger if it exists (10-day billing)
   try {
     const custWs = ss.getSheetByName("SK_Customers");
-    if (custWs) { ... }
+    if (custWs) {
+      const custRows = getAllRows(custWs);
+      const cust = custRows.find(c => String(c.Phone).trim() === String(phone).trim());
+      if (cust && cust.Ledger_Sheet_ID) {
+        const ledger = SpreadsheetApp.openById(cust.Ledger_Sheet_ID);
+        ledger.getSheets().forEach(function(tab) {
+          const data = tab.getDataRange().getValues();
+          for (var i = data.length - 1; i >= 0; i--) {
+            if (String(data[i][0]) === String(rowId)) { tab.deleteRow(i + 1); break; }
+          }
+        });
+      }
+    }
   } catch(e) { /* ledger cleanup is non-fatal */ }
 
   return {success: true, message: msg};
