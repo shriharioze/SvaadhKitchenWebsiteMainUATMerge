@@ -151,7 +151,10 @@
   <div class="topbar">
     <div class="topbar-row1">
       <div class="topbar-title">🛵 Svaadh Delivery</div>
-      <span class="sync-badge" id="syncBadge">—</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="sync-badge" id="syncBadge">—</span>
+        <button onclick="logout()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;opacity:0.8;" title="Logout">🔐</button>
+      </div>
     </div>
     <div class="topbar-date">
       <input type="date" id="datePicker" onchange="loadOrders()">
@@ -249,7 +252,9 @@ async function verifyPin() {
       D.pin = ""; renderDots(); return;
     }
     attempts = 0;
-    D.sessionPin = D.pin; D.pin = ""; renderDots();
+    D.sessionPin = D.pin || pin; // pin from autoLogin or D.pin from manual
+    localStorage.setItem('sk-driver-pin', D.sessionPin); 
+    D.pin = ""; renderDots();
     document.getElementById("loginWrap").style.display = "none";
     document.getElementById("shell").classList.add("on");
     document.getElementById("datePicker").value = today;
@@ -259,7 +264,14 @@ async function verifyPin() {
   } catch(e) {
     document.getElementById("dErr").textContent = "Error: " + e.message;
     D.pin = ""; renderDots();
+    localStorage.removeItem('sk-driver-pin'); // clear if corrupted
   }
+}
+
+function logout() {
+  if (!confirm("Are you sure you want to logout?")) return;
+  localStorage.removeItem('sk-driver-pin');
+  window.location.reload();
 }
 
 function todayIST() {
@@ -342,9 +354,12 @@ function setSyncBadge() {
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll(data) {
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
-    const raw    = (data.meals || {})[meal] || [];
-    // Undelivered first, delivered at bottom
-    const orders = [...raw.filter(o=>!o.deliveredAt), ...raw.filter(o=>o.deliveredAt)];
+    const raw = (data.meals || {})[meal] || [];
+    // Sort: Undelivered first, then Delivered (sorted by delivery time)
+    const orders = [
+      ...raw.filter(o => !o.deliveredAt),
+      ...raw.filter(o => o.deliveredAt).sort((a,b) => new Date(a.deliveredAt) - new Date(b.deliveredAt))
+    ];
     _ordersData[meal] = orders;
     document.getElementById("cnt_"+meal).textContent = orders.length;
     document.getElementById("panel_"+meal).innerHTML = renderMealPanel(orders, meal);
@@ -397,8 +412,32 @@ function renderMealPanel(orders, meal) {
   // Count geocodable orders for route button
   const canOptimize = orders.some(o => extractCoords(o));
 
+  const selectedDate = document.getElementById("datePicker").value;
+  const today = todayIST();
+  const nowRaw = new Date(new Date().getTime() + 5.5*3600000);
+  const hour = nowRaw.getUTCHours() + nowRaw.getUTCMinutes()/60;
+  
+  const SLOT_TIMES = { Breakfast: 7.5, Lunch: 10, Dinner: 17.5 }; // 07:30, 10:00, 17:30
+  const isToday = (selectedDate === today);
+  const timeReached = hour >= (SLOT_TIMES[meal] || 0);
+  const canStart = isToday && timeReached;
+  
+  const fmtSlotTime = (t) => {
+    const h = Math.floor(t), m = (t % 1) * 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+  };
+
+  const statusMsg = !isToday ? "Future delivery cannot be started" : 
+                    (!timeReached ? `Opening at ${fmtSlotTime(SLOT_TIMES[meal])}` : "");
+
   const routeBar = `<div class="route-bar" id="routeBar_${meal}" style="border-bottom:2.5px solid #c0392b;">
-    <button class="route-btn green" onclick="markAllEnRoute('${meal}')" id="startBtn_${meal}" style="padding:10px 14px;font-size:0.85rem;box-shadow:0 3px 10px rgba(39,174,96,0.3);">🚀 Start ${meal} Delivery</button>
+    <button class="route-btn ${canStart ? 'green' : ''}" 
+            onclick="markAllEnRoute('${meal}')" 
+            id="startBtn_${meal}" 
+            ${!canStart ? 'disabled style="background:#888;box-shadow:none;opacity:0.6;"' : 'style="padding:10px 14px;font-size:0.85rem;box-shadow:0 3px 10px rgba(39,174,96,0.3);"'}>
+      ${canStart ? `🚀 Start ${meal} Delivery` : `🔒 ${meal} Locked`}
+    </button>
+    ${statusMsg ? `<span style="font-size:0.7rem;color:#c0392b;font-weight:700;margin-left:4px;">${statusMsg}</span>` : ""}
     ${canOptimize
       ? `<button class="route-btn" onclick="optimizeRoute('${meal}')">🗺 Optimize Route</button>`
       : ""}
@@ -572,7 +611,10 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 function nearestNeighbor(orders) {
-  const withC = orders.map(o => ({...o, _c: extractCoords(o)}));
+  const undelivered = orders.filter(o => !o.deliveredAt);
+  const delivered   = orders.filter(o => o.deliveredAt);
+  
+  const withC = undelivered.map(o => ({...o, _c: extractCoords(o)}));
   const geo   = withC.filter(o => o._c);
   const noGeo = withC.filter(o => !o._c);
   if (!geo.length) return { route: orders, dist: null };
@@ -595,7 +637,7 @@ function nearestNeighbor(orders) {
   result.forEach(o => { dist += haversine(prev.lat, prev.lng, o._c.lat, o._c.lng); prev = o._c; });
   dist += haversine(prev.lat, prev.lng, KITCHEN.lat, KITCHEN.lng);
 
-  return { route: [...result, ...noGeo], dist: Math.round(dist*10)/10 };
+  return { route: [...result, ...noGeo, ...delivered], dist: Math.round(dist*10)/10 };
 }
 
 function buildMapsUrl(orders) {
@@ -642,6 +684,14 @@ function switchTab(meal) {
 }
 
 document.getElementById("datePicker").value = todayIST();
+
+// Auto-Login
+window.onload = () => {
+  const saved = localStorage.getItem('sk-driver-pin');
+  if (saved && saved.length === 4) {
+    verifyPin(saved);
+  }
+};
 </script>
 </body>
 </html>
