@@ -1565,14 +1565,24 @@ async function validate(step){
     if(!lastName){toast(t('toast_last_name'));return false;}
     const name = `${firstName} ${lastName}`;
     if(S.sameAddr){
-      const flat=$("flatInput").value.trim(),society=$("societyInput").value.trim(),area=$("areaSelect").value;
+      const area=$("areaSelect").value;
       if(!area){toast(t('toast_area'));return false;}
-      if(area !== "Self Pickup") {
+      const isPickup = (area === "Self Pickup");
+      const flat = isPickup ? "" : $("flatInput").value.trim();
+      const society = isPickup ? "" : $("societyInput").value.trim();
+      
+      if(!isPickup) {
         if(!flat){toast(t('toast_flat'));return false;}
         if(!society){toast(t('toast_society'));return false;}
       }
-      S.profile={name,first_name:firstName,last_name:lastName,area,wing:$("wingInput").value.trim(),flat,floor:$("floorInput").value.trim(),
-        society,maps:$("mapsInput").value.trim(),landmark:$("landmarkInput").value.trim(),
+      
+      S.profile={name,first_name:firstName,last_name:lastName,area,
+        wing:isPickup ? "" : $("wingInput").value.trim(),
+        flat,
+        floor:isPickup ? "" : $("floorInput").value.trim(),
+        society,
+        maps:isPickup ? "" : $("mapsInput").value.trim(),
+        landmark:isPickup ? "" : $("landmarkInput").value.trim(),
         payment_preference:$("payFreqSelect").value};
     } else {
       const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
@@ -1582,10 +1592,15 @@ async function validate(step){
       if(!hasAnyValid){toast("Please provide a delivery address or select Self Pickup for at least one meal.");return false;}
       
       const primary = (l.flat || l.area === "Self Pickup") ? l : ((bf.flat || bf.area === "Self Pickup") ? bf : d);
-      S.profile={name,first_name:firstName,last_name:lastName,area:primary.area,wing:primary.wing,flat:primary.flat,floor:primary.floor,
-        society:primary.society,maps:primary.maps,landmark:primary.landmark,
+      
+      // Sanitize primary if it's pickup
+      const clean = (a) => (a.area === "Self Pickup") ? { ...a, wing:"", flat:"", floor:"", society:"", maps:"", landmark:"" } : a;
+      const cBf = clean(bf), cL = clean(l), cD = clean(d), cP = clean(primary);
+
+      S.profile={name,first_name:firstName,last_name:lastName,area:cP.area,wing:cP.wing,flat:cP.flat,floor:cP.floor,
+        society:cP.society,maps:cP.maps,landmark:cP.landmark,
         payment_preference:$("payFreqSelect").value};
-      S.mealAddrs={Breakfast:bf,Lunch:l,Dinner:d};
+      S.mealAddrs={Breakfast:cBf,Lunch:cL,Dinner:cD};
     }
     S.is10Day=false;
   }
@@ -1772,14 +1787,37 @@ function togglePickupUI(pfx, area) {
 }
 
 function setDeliveryMode(pfx, mode) {
+  const isPickup = (mode === 'pickup');
   const areaSel = $(pfx === 'single' ? 'areaSelect' : `${pfx}_areaSelect`);
-  if (mode === 'pickup') {
-    if (areaSel) areaSel.value = "Self Pickup";
+  
+  if (isPickup) {
+    if (areaSel) {
+      // Ensure "Self Pickup" exists as an option or find the one that includes "Pickup"
+      let found = false;
+      for (let i=0; i<areaSel.options.length; i++) {
+        if (areaSel.options[i].value === "Self Pickup") { areaSel.selectedIndex = i; found = true; break; }
+      }
+      if (!found) {
+        const opt = document.createElement("option");
+        opt.value = "Self Pickup"; opt.text = "📦 Self Pickup";
+        areaSel.add(opt); areaSel.value = "Self Pickup";
+      }
+    }
+    // Clear delivery fields visually
+    const fields = ["wing","flat","floor","society","maps","landmark"];
+    fields.forEach(f => {
+      const id = (pfx === 'single') ? `${f}Input` : `${pfx}_${f}Input`;
+      if ($(id)) $(id).value = "";
+    });
   } else {
-    if (areaSel && areaSel.value === "Self Pickup") areaSel.value = "";
+    // Delivery: reset area if it was Pickup
+    if (areaSel && (areaSel.value === "Self Pickup" || areaSel.value === "")) {
+      areaSel.value = "";
+    }
   }
+  
   if (pfx === 'single') syncSingleAddr();
-  togglePickupUI(pfx, mode === 'pickup' ? "Self Pickup" : "");
+  togglePickupUI(pfx, isPickup ? "Self Pickup" : "");
 }
 
 function toggleAddressMode(){

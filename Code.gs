@@ -760,11 +760,12 @@ function submitOrder(body) {
       const combinedMealSub = sub + prevMealSub;
       
       // Delivery logic (matches frontend)
-      const delCharge = (mealArea !== "Self Pickup" && !freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
+      const isPickup  = (mealArea === "Self Pickup");
+      const delCharge = (!isPickup && !freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
       const discAmt   = getDisc(sub);
       
       let smallOrderFee = 0;
-      if (mealArea !== "Self Pickup" && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (!isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
       
@@ -780,17 +781,18 @@ function submitOrder(body) {
       });
 
       // Address
-      const wing    = meal.wing    || profile.wing    || "";
-      const flat    = meal.flat    || profile.flat    || "";
-      const floor   = meal.floor   || profile.floor   || "";
-      const society = meal.society || profile.society || "";
       const area    = mealArea;
       const fullAddr = (area === "Self Pickup")
                         ? "Self Pickup (A 104, Shree laxmi vihar society)"
-                        : [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area]
-                          .filter(Boolean).join(", ");
-      const mapsLink = meal.maps || profile.maps || "";
-      const landmark = meal.landmark || profile.landmark || "";
+                        : [
+                            (meal.wing || profile.wing) && `Wing ${meal.wing || profile.wing}`,
+                            (meal.flat || profile.flat) && `Flat ${meal.flat || profile.flat}`,
+                            (meal.floor || profile.floor) && `${meal.floor || profile.floor} Floor`,
+                            (meal.society || profile.society),
+                            area
+                          ].filter(Boolean).join(", ");
+      const mapsLink = isPickup ? "" : (meal.maps || profile.maps || "");
+      const landmark = isPickup ? "" : (meal.landmark || profile.landmark || "");
 
       // Build row array aligned to ORDERS_HEADERS
       const row = new Array(ORDERS_HEADERS.length).fill("");
