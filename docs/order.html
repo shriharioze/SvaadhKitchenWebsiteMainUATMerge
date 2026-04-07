@@ -2850,22 +2850,18 @@ function proceedAfterCancelConfirm() {
   else if (isPending && potentialAmt > 0 && !isWalletPaid) {
     $("refundModalMsg").innerHTML = `
       <div style="text-align:left;">
-        <p style="font-weight:700;color:#c0392b;margin-bottom:8px;">Have you already paid ₹${potentialAmt} via UPI?</p>
-        <p style="font-size:0.8rem;color:#666;line-height:1.4;">If <strong>YES</strong>, choose where you want your refund below. Admin will verify your payment (1-2 days) and process it.</p>
-        <p style="font-size:0.8rem;color:#666;margin-top:8px;line-height:1.4;">If <strong>NO</strong>, just click 'I Have Not Paid' to cancel.</p>
+        <p style="font-weight:700;color:#c0392b;margin-bottom:8px;">Choose your refund preference for ₹${potentialAmt}</p>
+        <p style="font-size:0.8rem;color:#666;line-height:1.4;">Admin will verify the payment before processing the refund. This process typically takes 1-2 working days.</p>
       </div>
     `;
     $("refundUpiSection").innerHTML = `
       <button class="btn btn-primary" onclick="processRefund('wallet')" style="padding:16px;background:#2e7d32;border-color:#1b5e20;margin-bottom:10px;width:100%;">
         <div style="font-weight:700;font-size:0.95rem;">💼 Refund to Wallet</div>
-        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Balance will be updated after Admin verification</div>
+        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Balance updated after verification</div>
       </button>
-      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;margin-bottom:14px;width:100%;">
+      <button class="btn btn-secondary" onclick="processRefund('manual_upi')" style="padding:16px;border-color:#ccc;color:#555;width:100%;">
         <div style="font-weight:700;font-size:0.95rem;">💸 Refund to Original UPI</div>
-        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Processed after Admin verification</div>
-      </button>
-      <button class="btn btn-secondary" onclick="processRefund('none')" style="padding:12px;background:#f5f5f5;border:none;color:#888;width:100%;">
-        ❌ I Have Not Paid / Delete Row
+        <div style="font-size:0.75rem;opacity:0.85;margin-top:3px;">Processed after verification</div>
       </button>
     `;
     $("refundUpiSection").style.display = "flex";
