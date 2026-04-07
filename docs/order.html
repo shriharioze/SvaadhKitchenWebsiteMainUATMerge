@@ -2652,9 +2652,15 @@ function hideManageOrders(){
 // Per-order cached data (address, items, etc.) populated by loadExistingOrders
 const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, maps, landmark, items_json, notes, payment_preference, customer_name, all_row_ids, original_total_paid, is_wallet, is_settlement }
 
+// Track which sections are open (initial state: Upcoming open, Past closed)
+window.orderViewState = { upcoming: true, past: false };
+
 async function loadExistingOrders(phone){
-  $("manageOrdersList").innerHTML=`<div class="loader"><div class="spinner"></div></div>`;
-  $("pastOrdersList").innerHTML = "";
+  const upcomingWrap = $("manageOrdersList");
+  const pastWrap = $("pastOrdersList");
+  
+  upcomingWrap.innerHTML = `<div class="loader"><div class="spinner"></div></div>`;
+  pastWrap.innerHTML = "";
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
     const data=await res.json();
@@ -2678,7 +2684,9 @@ async function loadExistingOrders(phone){
       </div>
     `;
     
-    const today=todayISO();
+    const today = todayISO();
+    const istNow = getIST(); 
+    const hNow = istNow.getUTCHours() + istNow.getUTCMinutes() / 60;
     const MEAL_ORDER = { Breakfast: 1, Lunch: 2, Dinner: 3 };
 
     const processGroup = (orderArray) => {
@@ -2698,58 +2706,66 @@ async function loadExistingOrders(phone){
       return Object.values(groups);
     };
 
-    // 1. Upcoming
-    const upcomingRaw = (data.orders||[]);
-    const upcoming = processGroup(upcomingRaw).sort((a,b) => {
+    // 1. Separate Upcoming vs Past with Smart Bucketing
+    const allUpcoming = (data.orders || []);
+    const allPast = (data.past_orders || []);
+    
+    // Smart Bucketing: Move 'today cutoff' orders to past
+    const upcomingFiltered = [];
+    const extraPast = [];
+    
+    allUpcoming.forEach(o => {
+      if (o.date === today) {
+        const cutoff = CUTOFFS[o.meal] ?? 23;
+        if (hNow >= cutoff) { extraPast.push(o); } 
+        else { upcomingFiltered.push(o); }
+      } else {
+        upcomingFiltered.push(o);
+      }
+    });
+
+    const upcoming = processGroup(upcomingFiltered).sort((a,b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return (MEAL_ORDER[a.meal] || 9) - (MEAL_ORDER[b.meal] || 9);
     });
 
-    if(!upcoming.length) {
-      $("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;
-    } else {
-      upcoming.forEach(g => {
-        let totalAmountPaid = 0, isWallet = false;
-        g.rowIds.forEach(rid => {
-          const o = upcomingRaw.find(x => String(x.rowId) === String(rid));
-          if (o) {
-            const stat = String(o.payment_status).toLowerCase();
-            const meth = String(o.payment_method).toLowerCase();
-            const rowTotal = (Number(o.total) || 0);
-            
-            if (["paid","wallet paid"].includes(stat)) totalAmountPaid += rowTotal;
-            if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
+    const pastCombined = [...extraPast, ...allPast];
+    const past = processGroup(pastCombined).sort((a,b) => b.date.localeCompare(a.date));
 
-            // Cache details for cancellation logic
-            orderDataCache[rid] = { 
-              all_row_ids: g.rowIds, 
-              original_total_paid: totalAmountPaid, 
-              is_wallet: isWallet,
-              status: stat,
-              potential_total: rowTotal 
-            };
-          }
-        });
-        // Ensure the primary rowId for the group has the aggregate data
-        orderDataCache[g.rowId] = { 
-          all_row_ids: g.rowIds, 
-          original_total_paid: totalAmountPaid, 
-          is_wallet: isWallet,
-          status: upcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(),
-          potential_total: g.totalSum 
-        };
-      });
-
-      $("manageOrdersList").innerHTML=upcoming.map(o=>{
-        let mealAvail = true;
-        if (o.date === today) {
-          const ist = getIST(); const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
-          const cutoffMap = { Breakfast: CUTOFFS.Breakfast, Lunch: CUTOFFS.Lunch, Dinner: CUTOFFS.Dinner };
-          mealAvail = h < (cutoffMap[o.meal] ?? 23);
+    // Cache logic for cancellation
+    const fullUpcomingRaw = [...upcomingFiltered, ...extraPast];
+    upcoming.forEach(g => {
+      let totalAmountPaid = 0, isWallet = false;
+      g.rowIds.forEach(rid => {
+        const o = fullUpcomingRaw.find(x => String(x.rowId) === String(rid));
+        if (o) {
+          const stat = String(o.payment_status).toLowerCase();
+          const meth = String(o.payment_method).toLowerCase();
+          const rowTotal = (Number(o.total) || 0);
+          if (["paid","wallet paid"].includes(stat)) totalAmountPaid += rowTotal;
+          if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
+          orderDataCache[rid] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: stat, potential_total: rowTotal };
         }
-        let trackHtml="";
-        if(o.deliveredAt) trackHtml=`<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>`;
-        else if(o.enRouteAt) trackHtml=`<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>`;
+      });
+      orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(), potential_total: g.totalSum };
+    });
+
+    // ── RENDER UPCOMING ──
+    const upcomingContainerId = "collapsibleUpcoming";
+    const upcomingHeaderHtml = `
+      <div class="collapsible-header ${window.orderViewState.upcoming ? "open":""}" onclick="toggleOrders('upcoming')">
+        <h3 class="collapsible-title">📅 Upcoming Orders (${upcoming.length})</h3>
+        <div class="collapsible-arrow">▼</div>
+      </div>
+    `;
+
+    let upcomingRowsHtml = "";
+    if(!upcoming.length) {
+      upcomingRowsHtml = `<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;
+    } else {
+      upcomingRowsHtml = upcoming.map(o => {
+        let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
+                       (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
 
         return `<div class="order-manage-row">
           <div class="omr-top">
@@ -2757,34 +2773,56 @@ async function loadExistingOrders(phone){
               <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
               ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
-              ${!mealAvail?`<div class="omr-locked">${t('cutoff_passed_edit')}</div>`:""}
             </div>
             <div class="omr-actions">
-              <button class="omr-del-btn" ${!mealAvail?"disabled":""} onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
+              <button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
             </div>
           </div>
         </div>`;
       }).join("");
     }
+    upcomingWrap.innerHTML = upcomingHeaderHtml + `<div id="upcomingContent" class="collapsible-content ${window.orderViewState.upcoming?"open":""}">${upcomingRowsHtml}</div>`;
 
-    // 2. Past Orders
-    const pastRaw = (data.past_orders||[]);
-    const past = processGroup(pastRaw).sort((a,b) => b.date.localeCompare(a.date)); // Already sorted by backend but good to be sure
+    // ── RENDER PAST ──
+    const pastHeaderHtml = `
+      <div class="collapsible-header ${window.orderViewState.past ? "open":""}" onclick="toggleOrders('past')" style="margin-top:20px;">
+        <h3 class="collapsible-title">⌛ Past Orders (${past.length})</h3>
+        <div class="collapsible-arrow">▼</div>
+      </div>
+    `;
+    
+    let pastRowsHtml = "";
     if(!past.length) {
-      $("pastOrdersList").innerHTML=`<p style="font-size:0.8rem;color:#999;text-align:center;padding:12px;">No past orders found.</p>`;
+      pastRowsHtml = `<p style="font-size:0.8rem;color:#999;text-align:center;padding:12px;">No past orders found.</p>`;
     } else {
-      $("pastOrdersList").innerHTML=past.map(o=>{
-        return `<div class="order-manage-row" style="opacity:0.8;">
+      pastRowsHtml = past.map(o => {
+        const isCutoffToday = (o.date === today);
+        return `<div class="order-manage-row" style="opacity:${isCutoffToday ? '1' : '0.7'};">
           <div class="omr-top">
             <div class="omr-info">
               <div class="omr-title" style="color:#666;">${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+              ${isCutoffToday ? `<div class="omr-locked" style="margin-top:4px;">⏰ Cutoff passed — cannot edit</div>` : ""}
             </div>
           </div>
         </div>`;
       }).join("");
     }
-  }catch(err){$("manageOrdersList").innerHTML=`<p style="font-size:0.82rem;color:#c0392b;text-align:center;">Error: ${err.message}</p>`;}
+    pastWrap.innerHTML = pastHeaderHtml + `<div id="pastContent" class="collapsible-content ${window.orderViewState.past?"open":""}">${pastRowsHtml}</div>`;
+  }catch(err){ upcomingWrap.innerHTML=`<p style="font-size:0.82rem;color:#c0392b;text-align:center;">Error: ${err.message}</p>`;}
+}
+
+function toggleOrders(type) {
+  window.orderViewState[type] = !window.orderViewState[type];
+  const content = document.getElementById(type + "Content");
+  const header = content.previousElementSibling;
+  if (window.orderViewState[type]) {
+    content.classList.add("open");
+    header.classList.add("open");
+  } else {
+    content.classList.remove("open");
+    header.classList.remove("open");
+  }
 }
 
 let currentDeleteData = null; // { rowId, date, meal, allIds, totalPaid, isWalletPaid }
