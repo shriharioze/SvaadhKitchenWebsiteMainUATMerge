@@ -94,6 +94,7 @@
     // ── Success screen ────────────────────────────────────
     success_title: "Order Placed!",
     success_msg: "Your order is confirmed. Fresh food, on time, every time.",
+    order_id_label: "Order ID:",
     success_whatsapp_hint: "Questions? WhatsApp us:",
     btn_another_order: "Place another order →",
     btn_back_website: "🏠 Back to main website",
@@ -161,6 +162,7 @@
     cutoff_default: "Cutoff {time}",
     cutoff_extended: "Extended to {time}",
     day_total: "Day Total",
+    bill_grand_total: "Grand Total",
     grand_total: "Grand Total",
     all_dates_label: "All dates",
     period_label: "Period: {p} · Includes this order (₹{amt})",

@@ -561,6 +561,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .dm-btn span{font-size:1rem;}
 [data-theme="dark"] .delivery-mode-toggle{background:#2a2624;border-color:#3f3834;}
 [data-theme="dark"] .dm-btn.active{background:#c0392b;color:white;}
+
+/* SUCCESS SUMMARY */
+.success-summary-box{background:#fcfaf8;border:1.5px dashed #e8ddd7;border-radius:12px;padding:16px;margin:20px 0;text-align:left;animation:fadeIn 0.5s ease;}
+.success-summary-date{font-size:0.82rem;font-weight:700;color:#c0392b;margin-bottom:8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid rgba(192,57,43,0.1);padding-bottom:4px;}
+.success-summary-meal{font-size:0.75rem;font-weight:600;color:var(--ink);margin:6px 0 2px 4px;display:flex;align-items:center;gap:6px;}
+.success-summary-item{font-size:0.72rem;color:#666;margin-left:24px;line-height:1.4;display:flex;justify-content:space-between;}
+.success-summary-total{border-top:1px solid #e8ddd7;margin-top:12px;padding-top:8px;font-weight:700;font-size:0.85rem;color:#1a1a1a;display:flex;justify-content:space-between;align-items:center;}
+[data-theme="dark"] .success-summary-box{background:#2a2624;border-color:#3f3834;}
+[data-theme="dark"] .success-summary-item{color:#aaa;}
+[data-theme="dark"] .success-summary-total{border-color:#3f3834;color:white;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -1096,6 +1106,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <h2 data-i18n="success_title">Order Placed!</h2>
       <p data-i18n="success_msg">Your order is confirmed. Fresh food, on time, every time.</p>
       <div class="order-ref"><span data-i18n="order_id_label">Order ID:</span> <strong id="orderIdDisplay">—</strong></div>
+      
+      <div id="successSummary" class="success-summary-box"></div>
+
       <p class="text-sm" style="margin-top:8px;"><span data-i18n="success_whatsapp_hint">Questions? WhatsApp us:</span> <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></p>
       <button class="btn btn-secondary mt-12" onclick="resetForAnotherOrder()" data-i18n="btn_another_order">Place another order →</button>
       <a href="https://www.svaadhkitchen.in" class="btn btn-secondary" style="text-decoration:none;display:block;text-align:center;margin-top:10px;" data-i18n="btn_back_website">🏠 Back to main website</a>
@@ -2548,6 +2561,9 @@ async function placeOrder(settleAll = false){
   }
 }
 function showSuccess(id){
+  // Render the uneditable order summary BEFORE we potentially clear S.orders
+  renderSuccessSummary();
+
   // HIDE all billing and payment details to show ONLY the success screen
   $("summaryCard").style.display="none";
   $("paymentCard").style.display="none";
@@ -2570,6 +2586,40 @@ function showSuccess(id){
      // Even for UPI, refresh balance just in case
      setTimeout(refreshWalletBalance, 500);
   }
+}
+
+function renderSuccessSummary() {
+  let html = "";
+  let totalSaved = S.grandTotal;
+  
+  for (const date of S.selectedDates) {
+    const dayOrders = S.orders[date] || {};
+    let dayHasMeals = false;
+    let dayHtml = `<div class="success-summary-date">📅 ${formatDate(date)}</div>`;
+    
+    ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
+      const mObj = dayOrders[meal];
+      const sub = mObj?.subtotal || 0;
+      if (sub <= 0) return;
+      dayHasMeals = true;
+      const icons = { Breakfast: "🌅", Lunch: "☀️", Dinner: "🌙" };
+      dayHtml += `<div class="success-summary-meal">${icons[meal]} ${meal}</div>`;
+      for (const [colKey, qty] of Object.entries(mObj.items || {})) {
+        if (qty <= 0) continue;
+        const n = getItemName(colKey, meal, date);
+        dayHtml += `<div class="success-summary-item"><span>${qty} × ${n}</span><span>₹${getPrice(colKey, meal, date) * qty}</span></div>`;
+      }
+    });
+
+    if (dayHasMeals) html += `<div style="margin-bottom:16px;">${dayHtml}</div>`;
+  }
+  
+  html += `<div class="success-summary-total">
+    <span>${t('bill_grand_total') || 'Grand Total'}</span>
+    <span>₹${totalSaved}</span>
+  </div>`;
+  
+  $("successSummary").innerHTML = html;
 }
 function resetForAnotherOrder(){
   S.orders = {};
