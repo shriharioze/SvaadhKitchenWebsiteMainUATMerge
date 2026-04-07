@@ -1051,12 +1051,23 @@
           }
 
           if (packs.length > 0) {
-            html += `<div class="matrix-title">Container Checklist</div>
+            const packMR = {
+              "100ml plastic container for mini dry": "100ml प्लास्टिक कंटेनर (सुकी भाजी)",
+              "100ml plastic container for mini curry": "100ml प्लास्टिक कंटेनर (रस्सा भाजी)",
+              "250ml plastic container for large dry": "250ml प्लास्टिक कंटेनर (सुकी भाजी)",
+              "250ml plastic container for large curry": "250ml प्लास्टिक कंटेनर (रस्सा भाजी)",
+              "250ml plastic container for Dal": "250ml प्लास्टिक कंटेनर (वरण)",
+              "50ml plastic container for curd": "50ml प्लास्टिक कंटेनर (दही)",
+              "250ml aluminium container for rice": "250ml अल्युमिनियम कंटेनर (भात)"
+            };
+
+            html += `<div class="matrix-title">Container Checklist / पॅकिंग लिस्ट</div>
               ${packs.map(p => `
                 <div class="pack-row">
                   <div class="pack-count">Get ${p.count}</div>
                   <div class="pack-desc">
-                    x ${p.name}
+                    ${p.name}<br>
+                    <span style="color:#7f8c8d; font-size:0.85rem; font-weight:700;">${packMR[p.name] || ""}</span>
                   </div>
                 </div>
               `).join("")}`;
