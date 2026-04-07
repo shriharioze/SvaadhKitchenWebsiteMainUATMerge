@@ -760,11 +760,11 @@ function submitOrder(body) {
       const combinedMealSub = sub + prevMealSub;
       
       // Delivery logic (matches frontend)
-      const delCharge = (!freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
+      const delCharge = (mealArea !== "Self Pickup" && !freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
       const discAmt   = getDisc(sub);
       
       let smallOrderFee = 0;
-      if ((mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (mealArea !== "Self Pickup" && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
       
@@ -785,8 +785,10 @@ function submitOrder(body) {
       const floor   = meal.floor   || profile.floor   || "";
       const society = meal.society || profile.society || "";
       const area    = mealArea;
-      const fullAddr = [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area]
-                        .filter(Boolean).join(", ");
+      const fullAddr = (area === "Self Pickup")
+                        ? "Self Pickup (A 104, Shree laxmi vihar society)"
+                        : [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area]
+                          .filter(Boolean).join(", ");
       const mapsLink = meal.maps || profile.maps || "";
       const landmark = meal.landmark || profile.landmark || "";
 

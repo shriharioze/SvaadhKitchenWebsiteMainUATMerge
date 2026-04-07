@@ -544,6 +544,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .extra-toggle-icon.open{transform:rotate(90deg);color:#e74c3c;}
 .extra-breakdown{display:none;margin-top:2px;overflow:hidden;}
 .extra-breakdown.open{display:block;}
+.pickup-info-card{background:#fff8f0;border:1.5px solid #fde2c8;border-radius:12px;padding:16px;margin:12px 0;text-align:left;animation:fadeIn 0.3s ease;}
+.pickup-info-card h4{font-size:0.85rem;color:#b45309;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.pickup-info-card p{font-size:0.82rem;color:#5d4037;line-height:1.5;margin-bottom:10px;}
+.pickup-link{display:inline-flex;align-items:center;gap:6px;background:#b45309;color:white;padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:600;text-decoration:none;transition:opacity 0.2s;}
+.pickup-link:hover{opacity:0.9;}
+[data-theme="dark"] .pickup-info-card{background:#2a2218;border-color:#5a4020;color:#fbbf24;}
+[data-theme="dark"] .pickup-info-card h4{color:#fbbf24;}
+[data-theme="dark"] .pickup-info-card p{color:#d4b88a;}
+.hidden{display:none !important;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -789,33 +798,42 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           <option value="Magarpatta">🏙️ Magarpatta</option>
           <option value="Amanora">🏢 Amanora Township</option>
           <option value="DP Road">🛣️ DP Road</option>
+          <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
         </select>
+      <div id="pickupCard_single" class="pickup-info-card hidden">
+        <h4>📍 Pickup your order from</h4>
+        <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
+        <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
+          🗺️ View on Google Maps
+        </a>
       </div>
-      <div class="input-row3" style="margin-bottom:10px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label data-i18n="label_wing">Wing / Block</label>
-          <input type="text" id="wingInput" placeholder="A / B1" oninput="syncSingleAddr()">
+      <div id="deliveryFields_single">
+        <div class="input-row3" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label data-i18n="label_wing">Wing / Block</label>
+            <input type="text" id="wingInput" placeholder="A / B1" oninput="syncSingleAddr()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label data-i18n="label_flat">Flat No. *</label>
+            <input type="text" id="flatInput" placeholder="301" oninput="syncSingleAddr()">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label data-i18n="label_floor">Floor</label>
+            <input type="text" id="floorInput" placeholder="3rd" oninput="syncSingleAddr()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="label_society">Society / Building *</label>
+          <input type="text" id="societyInput" placeholder="e.g. Amanora Park Town" oninput="syncSingleAddr()">
+        </div>
+        <div class="form-group">
+          <label><span data-i18n="label_maps">📍 Google Maps Pin Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
+          <input type="url" id="mapsInput" placeholder="Paste your Google Maps link here…" oninput="syncSingleAddr()">
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label data-i18n="label_flat">Flat No. *</label>
-          <input type="text" id="flatInput" placeholder="301" oninput="syncSingleAddr()">
+          <label><span data-i18n="label_landmark">🏷️ Landmark / Directions</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
+          <input type="text" id="landmarkInput" placeholder="e.g. Opposite Reliance Fresh, Gate no. 2" oninput="syncSingleAddr()">
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label data-i18n="label_floor">Floor</label>
-          <input type="text" id="floorInput" placeholder="3rd" oninput="syncSingleAddr()">
-        </div>
-      </div>
-      <div class="form-group">
-        <label data-i18n="label_society">Society / Building *</label>
-        <input type="text" id="societyInput" placeholder="e.g. Amanora Park Town" oninput="syncSingleAddr()">
-      </div>
-      <div class="form-group">
-        <label><span data-i18n="label_maps">📍 Google Maps Pin Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
-        <input type="url" id="mapsInput" placeholder="Paste your Google Maps link here…" oninput="syncSingleAddr()">
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label><span data-i18n="label_landmark">🏷️ Landmark / Directions</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
-        <input type="text" id="landmarkInput" placeholder="e.g. Opposite Reliance Fresh, Gate no. 2" oninput="syncSingleAddr()">
       </div>
     </div>
 
@@ -832,22 +850,32 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
-          <select id="bf_areaSelect">
+          <select id="bf_areaSelect" onchange="togglePickupUI('bf', this.value)">
             <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
             <option value="DP Road">🛣️ DP Road</option>
+            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
           </select>
         </div>
-        <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
+        <div id="pickupCard_bf" class="pickup-info-card hidden">
+          <h4>📍 Pickup your order from</h4>
+          <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
+          <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
+            🗺️ View on Google Maps
+          </a>
         </div>
-        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
+        <div id="deliveryFields_bf">
+          <div class="input-row3" style="margin-bottom:10px;">
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
+          </div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
+          <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
+        </div>
       </div>
 
       <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
@@ -860,22 +888,32 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
-          <select id="l_areaSelect">
+          <select id="l_areaSelect" onchange="togglePickupUI('l', this.value)">
             <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
             <option value="DP Road">🛣️ DP Road</option>
+            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
           </select>
         </div>
-        <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
+        <div id="pickupCard_l" class="pickup-info-card hidden">
+          <h4>📍 Pickup your order from</h4>
+          <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
+          <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
+            🗺️ View on Google Maps
+          </a>
         </div>
-        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
+        <div id="deliveryFields_l">
+          <div class="input-row3" style="margin-bottom:10px;">
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
+          </div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
+          <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
+        </div>
       </div>
 
       <hr style="border:none;border-top:1px dashed #e8ddd7;margin:16px 0;">
@@ -888,22 +926,32 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         </div>
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
-          <select id="d_areaSelect">
+          <select id="d_areaSelect" onchange="togglePickupUI('d', this.value)">
             <option value="" data-i18n="select_area_ph">— Select area —</option>
             <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
             <option value="Magarpatta">🏙️ Magarpatta</option>
             <option value="Amanora">🏢 Amanora Township</option>
             <option value="DP Road">🛣️ DP Road</option>
+            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
           </select>
         </div>
-        <div class="input-row3" style="margin-bottom:10px;">
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
-          <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
+        <div id="pickupCard_d" class="pickup-info-card hidden">
+          <h4>📍 Pickup your order from</h4>
+          <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
+          <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
+            🗺️ View on Google Maps
+          </a>
         </div>
-        <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
-        <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
-        <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
+        <div id="deliveryFields_d">
+          <div class="input-row3" style="margin-bottom:10px;">
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
+          </div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
+          <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1341,8 +1389,8 @@ function showHowModal(){
       <strong>🔐 Security:</strong> 4-digit PIN to secure your wallet<br>
       <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ','')}</strong>: Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
       <strong>💰 ${t('how_discounts_label').replace('💰 ','')}</strong>: 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
-      <strong>🚚 ${t('how_delivery_label').replace('🚚 ','')}</strong>: Free in Bhosale Garden · ₹10/meal elsewhere if &lt;₹100<br>
-      <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50<br>
+      <strong>🚚 ${t('how_delivery_label').replace('🚚 ','')}</strong>: Free in Bhosale Garden · ₹10/meal elsewhere (Waived if Self Pickup)<br>
+      <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50 (Waived if Self Pickup)<br>
       <strong>📈 Market Surcharge:</strong> ₹1 per ₹10 of food bill<br>
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
       <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
@@ -1365,6 +1413,7 @@ const FAQ_ITEMS = [
   {q:"How do discounts work?", a:"If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen."},
   {q:"What is Prepaid Wallet Billing?", a:"Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!"},
   {q:"Can I edit or cancel an order?", a:"Yes, before the cutoff time. Tap 'View / Edit upcoming orders' on the home screen to delete or modify upcoming orders. Any UPI payments for cancelled orders will be manually refunded via GPay or adjusted in your next bill."},
+  {q:"Do you offer self-pickup?", a:"Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the ₹10 delivery charge and the ₹10 small order fee are <strong>completely waived</strong> for pickup orders."},
 ];
 
 function buildFAQ(){
@@ -1492,16 +1541,22 @@ async function validate(step){
     const name = `${firstName} ${lastName}`;
     if(S.sameAddr){
       const flat=$("flatInput").value.trim(),society=$("societyInput").value.trim(),area=$("areaSelect").value;
-      if(!flat){toast(t('toast_flat'));return false;}
-      if(!society){toast(t('toast_society'));return false;}
       if(!area){toast(t('toast_area'));return false;}
+      if(area !== "Self Pickup") {
+        if(!flat){toast(t('toast_flat'));return false;}
+        if(!society){toast(t('toast_society'));return false;}
+      }
       S.profile={name,first_name:firstName,last_name:lastName,area,wing:$("wingInput").value.trim(),flat,floor:$("floorInput").value.trim(),
         society,maps:$("mapsInput").value.trim(),landmark:$("landmarkInput").value.trim(),
         payment_preference:$("payFreqSelect").value};
     } else {
       const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
-      if(!bf.flat&&!l.flat&&!d.flat){toast(t('toast_at_least_one_addr'));return false;}
-      const primary=l.flat?l:(bf.flat?bf:d);
+      const hasAnyValid = (bf.area && (bf.flat || bf.area === "Self Pickup")) || 
+                          (l.area && (l.flat || l.area === "Self Pickup")) || 
+                          (d.area && (d.flat || d.area === "Self Pickup"));
+      if(!hasAnyValid){toast("Please provide a delivery address or select Self Pickup for at least one meal.");return false;}
+      
+      const primary = (l.flat || l.area === "Self Pickup") ? l : ((bf.flat || bf.area === "Self Pickup") ? bf : d);
       S.profile={name,first_name:firstName,last_name:lastName,area:primary.area,wing:primary.wing,flat:primary.flat,floor:primary.floor,
         society:primary.society,maps:primary.maps,landmark:primary.landmark,
         payment_preference:$("payFreqSelect").value};
@@ -1664,6 +1719,21 @@ async function refreshWalletBalance() {
 // ═══════════════════════════════════════════════════════════
 // ADDRESS MODE — Step 2 per-meal vs single
 // ═══════════════════════════════════════════════════════════
+function togglePickupUI(pfx, area) {
+  const isPickup = (area === "Self Pickup");
+  const pickupCard = $(`pickupCard_${pfx}`);
+  const deliveryFields = $(`deliveryFields_${pfx}`);
+  if (pickupCard && deliveryFields) {
+    if (isPickup) {
+      pickupCard.classList.remove("hidden");
+      deliveryFields.classList.add("hidden");
+    } else {
+      pickupCard.classList.add("hidden");
+      deliveryFields.classList.remove("hidden");
+    }
+  }
+}
+
 function toggleAddressMode(){
   S.sameAddr=$("sameAddrCheck").checked;
   $("singleAddrBlock").style.display=S.sameAddr?"block":"none";
@@ -1682,19 +1752,24 @@ function toggleAddressMode(){
       if(s&&!s.value) s.value=p.society||"";
       if(m&&!m.value) m.value=p.maps||"";
       if(lm&&!lm.value) lm.value=p.landmark||"";
+      if(a) togglePickupUI(pfx, a.value);
     });
+  } else {
+    togglePickupUI("single", $("areaSelect").value);
   }
 }
 
 function syncSingleAddr(){
   // Keep S.profile in sync as user types in single-address mode
-  S.profile.area    = $("areaSelect").value;
+  const area = $("areaSelect").value;
+  S.profile.area    = area;
   S.profile.wing    = $("wingInput").value.trim();
   S.profile.flat    = $("flatInput").value.trim();
   S.profile.floor   = $("floorInput").value.trim();
   S.profile.society = $("societyInput").value.trim();
   S.profile.maps    = $("mapsInput").value.trim();
   S.profile.landmark= $("landmarkInput").value.trim();
+  togglePickupUI("single", area);
 }
 
 function readPerMealAddr(pfx){
@@ -2056,7 +2131,7 @@ async function buildBillScreen(){
       const mAddr = getMealAddr(meal);
 
       // UI Cleanup: Meal-level nudges made ultra-compact text
-      if (meal === "Lunch" || meal === "Dinner") {
+      if (mAddr.area !== "Self Pickup" && (meal === "Lunch" || meal === "Dinner")) {
         if (combinedMealSub > 0 && combinedMealSub < 50) {
           html += `<div style="font-size:0.65rem;color:#2980b9;margin:4px 0 6px 4px;font-style:italic;">💡 Add ₹${50 - combinedMealSub} more to skip small order fee</div>`;
         } else if (combinedMealSub >= 50 && combinedMealSub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
@@ -2067,8 +2142,8 @@ async function buildBillScreen(){
       let mealExtras = [];
       let mExtrasTotal = 0;
 
-      // Delivery Credit: if existing orders paid delivery but combined meal now crosses FREE_THRESHOLD
-      const deliveryCredit = (combinedMealSub >= FREE_THRESHOLD && existMealSub > 0 && !FREE_AREAS.includes(mAddr.area))
+      // Delivery Credit: if existing orders paid delivery but combined meal now crosses FREE_THRESHOLD or switched to Pickup
+      const deliveryCredit = ((mAddr.area === "Self Pickup" || combinedMealSub >= FREE_THRESHOLD) && existMealSub > 0 && !FREE_AREAS.includes(mAddr.area))
         ? (existDay[meal]?.delivery_charged || 0) : 0;
       if (deliveryCredit > 0) {
         mealExtras.push({ icon: "🏷️", name: `Free Delivery Upgrade`, val: -deliveryCredit, credit: true,
@@ -2076,8 +2151,8 @@ async function buildBillScreen(){
         mExtrasTotal -= deliveryCredit; totalDelivery -= deliveryCredit;
       }
 
-      // Small Order Fee Credit: if existing orders paid small fee but combined meal now >= 50
-      const smallFeeCredit = ((meal === 'Lunch' || meal === 'Dinner') && combinedMealSub >= 50 && existMealSub > 0)
+      // Small Order Fee Credit: if existing orders paid small fee but combined meal now >= 50 or switched to Pickup
+      const smallFeeCredit = (((mAddr.area === "Self Pickup" || combinedMealSub >= 50)) && (meal === 'Lunch' || meal === 'Dinner') && existMealSub > 0)
         ? (existDay[meal]?.small_fee_charged || 0) : 0;
       if (smallFeeCredit > 0) {
         mealExtras.push({ icon: "🏷️", name: `Small Order Fee Credit`, val: -smallFeeCredit, credit: true,
@@ -2086,14 +2161,14 @@ async function buildBillScreen(){
       }
 
       // Small Order Fee — based on combined meal total
-      if ((meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (mAddr.area !== "Self Pickup" && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
         const fee = 10;
         mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
         mExtrasTotal += fee; totalSmallOrderFee += fee;
       }
 
-      // Delivery — waived if combined meal total >= FREE_THRESHOLD
-      if (!FREE_AREAS.includes(mAddr.area) && sub > 0 && combinedMealSub < FREE_THRESHOLD) {
+      // Delivery — waived if combined meal total >= FREE_THRESHOLD or Pickup
+      if (mAddr.area !== "Self Pickup" && !FREE_AREAS.includes(mAddr.area) && sub > 0 && combinedMealSub < FREE_THRESHOLD) {
         const fee = DELIVERY_CHARGE;
         mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
         mExtrasTotal += fee; totalDelivery += fee;
