@@ -1088,11 +1088,15 @@ function deleteOrder(phone, rowId, refundType) {
   const hourIST = now.getHours() + now.getMinutes() / 60;
   const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
 
-  const r = rows.find(x =>
-    String(x.Submission_ID) === String(rowId) &&
-    String(x.Phone).trim() === String(phone).trim()
-  );
-  if (!r) return {success: false, error: "Order not found"};
+  const r = rows.find(x => {
+    const sheetId = String(x.Submission_ID || "").replace(/,/g, "").split(".")[0];
+    const targetId = String(rowId || "").replace(/,/g, "").split(".")[0];
+    return sheetId === targetId && String(x.Phone || "").trim() === String(phone || "").trim();
+  });
+  if (!r) {
+    Logger.log("Order Not Found: rowId=" + rowId + " phone=" + phone);
+    return {success: false, error: "Order not found"};
+  }
   const orderDateStr = r.Order_Date instanceof Date
     ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
     : String(r.Order_Date).trim();
@@ -1214,27 +1218,31 @@ function deleteOrder(phone, rowId, refundType) {
       msg = `₹${refundAmt} refund request raised in Approvals`;
     }
   } 
-  else if (pStatStr === "pending" && (refundType === "wallet" || refundType === "manual_upi")) {
+  else if (pStatStr.indexOf("pending") !== -1 && (refundType === "wallet" || refundType === "manual_upi")) {
     let hIdx = headerIndex(ws);
     
-    // Defensive: Ensure Refund_Preference column exists
+    // Defensive: Check both underscores and spaces
+    const statusHeader = hIdx["Payment_Status"] ? "Payment_Status" : "Payment Status";
+    const statusCol = hIdx[statusHeader];
+
     if (!hIdx["Refund_Preference"]) {
-      const lastCol = ws.getLastColumn();
-      ws.getRange(1, lastCol + 1).setValue("Refund_Preference")
+      const col = ws.getLastColumn() + 1;
+      ws.getRange(1, col).setValue("Refund_Preference")
         .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
-      hIdx = headerIndex(ws); // Re-index
+      hIdx = headerIndex(ws);
     }
-    
     const prefCol = hIdx["Refund_Preference"];
-    const statusCol = hIdx["Payment_Status"];
     
     if (statusCol && prefCol) {
       ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
       ws.getRange(r._row, prefCol).setValue(refundType);
+      Logger.log("Soft Cancel Update Success: row=" + r._row);
       return {
         success: true, 
         message: "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅"
       };
+    } else {
+      Logger.log("Soft Cancel Update Failed: Missing cols status=" + statusCol + " pref=" + prefCol);
     }
   }
 

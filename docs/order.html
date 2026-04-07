@@ -2905,7 +2905,8 @@ function proceedAfterCancelConfirm() {
 
   const { totalPaid, isWalletPaid, allIds, rowId } = currentDeleteData;
   const cached = orderDataCache[rowId] || {};
-  const isPending = (cached.status === "pending");
+  const isPending = String(cached.status || "").toLowerCase().trim() === "pending";
+  console.log("Proceeding with cancellation. rowId:", rowId, "isPending:", isPending, "status:", cached.status);
   const potentialAmt = cached.potential_total || 0;
 
   // Case 1: Order is ALREADY marked as PAID or WALLET PAID
