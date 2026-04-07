@@ -780,17 +780,17 @@ function submitOrder(body) {
         itemsObj[canonical] = qty;
       });
 
-      // Address
+      // Address fields handling (Sanitized for Pickup)
+      const isPickup = (mealArea === "Self Pickup");
+      const wing    = isPickup ? "" : (meal.wing    || profile.wing    || "");
+      const flat    = isPickup ? "" : (meal.flat    || profile.flat    || "");
+      const floor   = isPickup ? "" : (meal.floor   || profile.floor   || "");
+      const society = isPickup ? "" : (meal.society || profile.society || "");
       const area    = mealArea;
+
       const fullAddr = (area === "Self Pickup")
                         ? "Self Pickup (A 104, Shree laxmi vihar society)"
-                        : [
-                            (meal.wing || profile.wing) && `Wing ${meal.wing || profile.wing}`,
-                            (meal.flat || profile.flat) && `Flat ${meal.flat || profile.flat}`,
-                            (meal.floor || profile.floor) && `${meal.floor || profile.floor} Floor`,
-                            (meal.society || profile.society),
-                            area
-                          ].filter(Boolean).join(", ");
+                        : [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area].filter(Boolean).join(", ");
       const mapsLink = isPickup ? "" : (meal.maps || profile.maps || "");
       const landmark = isPickup ? "" : (meal.landmark || profile.landmark || "");
 
