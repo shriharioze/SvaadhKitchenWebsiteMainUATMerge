@@ -1215,16 +1215,26 @@ function deleteOrder(phone, rowId, refundType) {
     }
   } 
   else if (pStatStr === "pending" && (refundType === "wallet" || refundType === "manual_upi")) {
-    const hIdx = headerIndex(ws);
+    let hIdx = headerIndex(ws);
+    
+    // Defensive: Ensure Refund_Preference column exists
+    if (!hIdx["Refund_Preference"]) {
+      const lastCol = ws.getLastColumn();
+      ws.getRange(1, lastCol + 1).setValue("Refund_Preference")
+        .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
+      hIdx = headerIndex(ws); // Re-index
+    }
+    
     const prefCol = hIdx["Refund_Preference"];
     const statusCol = hIdx["Payment_Status"];
     
-    // ── Soft Cancellation: Change status instead of deleting.
     if (statusCol && prefCol) {
       ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
       ws.getRange(r._row, prefCol).setValue(refundType);
-      msg = `Cancellation request received. Admin will verify your payment and process the refund (1-2 days).`;
-      return {success: true, message: msg};
+      return {
+        success: true, 
+        message: "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅"
+      };
     }
   }
 
