@@ -273,6 +273,7 @@ function doGet(e) {
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
+    if (action === "getWalletValue") return jsonRes({wallet_balance: _calculateWalletBalance(p.phone)});
     if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
 
     return jsonRes({error:"Unknown action or Access Denied"});

@@ -1402,6 +1402,22 @@ const todayISO = () => {
 const formatDate = ds => new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
 function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
 
+async function syncWalletValue() {
+  if (!S.phone) return;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
+    const data = await res.json();
+    if (data.wallet_balance !== undefined) {
+      const wb = Number(data.wallet_balance) || 0;
+      S.walletBalance = wb;
+      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
+      // Update manage orders dash if it exists
+      const dBal = document.querySelector("#walletDashWrap div div div div:nth-child(2)");
+      if (dBal && dBal.textContent.includes("₹")) dBal.textContent = `₹${wb}`;
+    }
+  } catch(e) { console.warn("Wallet sync skipped", e); }
+}
+
 function getMealAvailability(dateStr){
   const today=todayISO();
   if(dateStr>today) return {Breakfast:true,Lunch:true,Dinner:true};
@@ -1475,6 +1491,7 @@ function toggleFaqItem(i){$(`faq${i}`).classList.toggle("open");}
 function updateNav(){
   const s=S.step;
   const STEPS=t('steps');
+  if (s > 0) syncWalletValue(); // Refresh balance on navigation to ensure accuracy
   document.querySelectorAll(".screen").forEach((el,i)=>el.classList.toggle("active",i===s));
   document.querySelectorAll(".step-dot").forEach((d,i)=>{d.classList.remove("active","done");if(i===s)d.classList.add("active");else if(i<s)d.classList.add("done");});
   $("stepLabel").textContent=`Step ${s+1} of 5 — ${STEPS[s]}`;
@@ -2442,6 +2459,7 @@ async function submitWalletRecharge() {
 
     toast(t('toast_recharge_submitted'), 7000);
     closeWalletRecharge();
+    syncWalletValue(); // Refresh UI balance after recharge request
   } catch(err) {
     toast("Error: " + err.message);
   } finally {
@@ -2647,6 +2665,7 @@ function showManageOrders(){
 }
 function hideManageOrders(){
   $("manageOrdersPanel").style.display="none";
+  syncWalletValue(); // Refresh main chip balance when closing manage orders
 }
 
 // Per-order cached data (address, items, etc.) populated by loadExistingOrders
@@ -2965,10 +2984,8 @@ async function performActualDeletion(allIds, refundType) {
     const results = await Promise.all(delPromises);
     if (results.every(r => r.success)) {
       const respMsg = results[0]?.message || t('toast_order_deleted');
-      toast("✅ " + respMsg, 6000); // 6s for longer messages
-      if (respMsg.toLowerCase().includes("wallet")) {
-        refreshWalletBalance();
-      }
+      toast("✅ " + respMsg, 6000); 
+      syncWalletValue(); // Sync main balance after any cancellation or refund
       loadExistingOrders(S.phone);
     } else {
       throw new Error("One or more orders could not be cancelled.");
