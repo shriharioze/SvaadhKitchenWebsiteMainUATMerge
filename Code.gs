@@ -93,7 +93,7 @@ const ORDERS_HEADERS = [
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Net_Total",
-  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source"
+  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference"
 ];
 
 // Item colKey → Orders column name mapping (for quick lookup)
@@ -1214,15 +1214,17 @@ function deleteOrder(phone, rowId, refundType) {
     }
   } 
   else if (pStatStr === "pending" && (refundType === "wallet" || refundType === "manual_upi")) {
-    const custName = r.Customer_Name || "Customer";
-    const refundAmt = Number(r.Net_Total) || 0;
-    const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
-    const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
-    const dest = refundType === "wallet" ? "Wallet" : "Original UPI";
-    const note = `UNVERIFIED REFUND CLAIM: User claims they paid. ADMIN: PLEASE VERIFY PAYMENT IN BANK FIRST.`;
+    const hIdx = headerIndex(ws);
+    const prefCol = hIdx["Refund_Preference"];
+    const statusCol = hIdx["Payment_Status"];
     
-    refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Verification Required", now, note, refundType]);
-    msg = `Refund request for ₹${refundAmt} created. Once Admin verifies your payment, it will be processed to your ${dest}. (1-2 days)`;
+    // ── Soft Cancellation: Change status instead of deleting.
+    if (statusCol && prefCol) {
+      ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
+      ws.getRange(r._row, prefCol).setValue(refundType);
+      msg = `Cancellation request received. Admin will verify your payment and process the refund (1-2 days).`;
+      return {success: true, message: msg};
+    }
   }
 
   ws.deleteRow(r._row);
@@ -1230,19 +1232,7 @@ function deleteOrder(phone, rowId, refundType) {
   // Also remove from customer ledger if it exists (10-day billing)
   try {
     const custWs = ss.getSheetByName("SK_Customers");
-    if (custWs) {
-      const custRows = getAllRows(custWs);
-      const cust = custRows.find(c => String(c.Phone).trim() === String(phone).trim());
-      if (cust && cust.Ledger_Sheet_ID) {
-        const ledger = SpreadsheetApp.openById(cust.Ledger_Sheet_ID);
-        ledger.getSheets().forEach(function(tab) {
-          const data = tab.getDataRange().getValues();
-          for (var i = data.length - 1; i >= 0; i--) {
-            if (String(data[i][0]) === String(rowId)) { tab.deleteRow(i + 1); break; }
-          }
-        });
-      }
-    }
+    if (custWs) { ... }
   } catch(e) { /* ledger cleanup is non-fatal */ }
 
   return {success: true, message: msg};
@@ -2297,6 +2287,7 @@ function getDatePayments(date) {
 function markOrdersStatus(body) {
   var date   = body.date;
   var phone  = body.phone;
+  var sid    = body.sid; // Submission ID for precision
   var status = body.status || "Paid";
   if (!date || !phone) return {success:false, error:"date and phone required"};
 
@@ -2304,17 +2295,40 @@ function markOrdersStatus(body) {
   var ws    = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   var hIdx  = headerIndex(ws);
   var rows  = getAllRows(ws);
-  var updated = 0;
-  var fmtDate = function(v) {
-    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
-  };
-
-  rows.forEach(function(r) {
-    if (fmtDate(r.Order_Date)===date && String(r.Phone||"").trim()===phone) {
-      ws.getRange(r._row, hIdx["Payment_Status"]).setValue(status);
-      updated++;
-    }
+  
+  var matches = rows.filter(function(r) {
+    const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(r.Order_Date).trim();
+    return d === date && String(r.Phone||"").trim() === phone && (!sid || String(r.Submission_ID) === String(sid));
   });
+
+  if (!matches.length) return {success: false, error: "No matching orders found"};
+
+  var updated = 0;
+  var now = getISTDate();
+  
+  // Sort descending by row index to allow safe deletion
+  matches.sort((a,b) => b._row - a._row).forEach(function(r) {
+    const currentStatus = String(r.Payment_Status || "").trim();
+    if (currentStatus === "Cancelled (Verify UPI)") {
+      // ── Process Refund Logic based on preference
+      const pref = String(r.Refund_Preference || "upi").toLowerCase();
+      const amt = Number(r.Net_Total) || 0;
+      const custName = r.Customer_Name || "Customer";
+      
+      if (pref === "wallet" && amt > 0) {
+        _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
+      } else if (pref === "manual_upi" && amt > 0) {
+        const refWs = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"]);
+        refWs.appendRow([r.Submission_ID, phone, custName, amt, r.Meal_Type, date, "Pending", now, "Verified Soft Cancellation", "upi"]);
+      }
+      ws.deleteRow(r._row); // Final delete after verification
+    } else {
+      // ── Standard Payment Approval
+      ws.getRange(r._row, hIdx["Payment_Status"]).setValue(status);
+    }
+    updated++;
+  });
+
   return {success:true, updatedRows:updated};
 }
 
@@ -2575,8 +2589,11 @@ function getPendingUPIPayments() {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
-  // We want Payment_Status == "Pending" (NOT 10-Day Pending)
-  return rows.filter(r => String(r.Payment_Status).trim() === "Pending")
+  // Return Payment_Status == "Pending" OR "Cancelled (Verify UPI)"
+  return rows.filter(r => {
+    const s = String(r.Payment_Status).trim();
+    return s === "Pending" || s === "Cancelled (Verify UPI)";
+  })
              .map(r => ({
                id: r.Submission_ID,
                date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
@@ -2584,7 +2601,9 @@ function getPendingUPIPayments() {
                phone: r.Phone,
                amount: r.Net_Total,
                meal: r.Meal_Type,
-               timestamp: r.Submitted_At
+               timestamp: r.Submitted_At,
+               status: r.Payment_Status,
+               refund_preference: r.Refund_Preference || ""
              }));
 }
 

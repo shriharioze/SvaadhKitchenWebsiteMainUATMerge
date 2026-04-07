@@ -3249,7 +3249,12 @@ async function loadPendingPayments() {
       </tr></thead>
       <tbody>`;
     data.forEach(p => {
-      html += `<tr>
+      const isCancelled = p.status === "Cancelled (Verify UPI)";
+      const rowStyle = isCancelled ? 'background:#fff3e0; border-left: 4px solid #f57c00;' : '';
+      const pref = String(p.refund_preference || "upi").toLowerCase();
+      const prefLabel = pref === "wallet" ? "💼 Wallet" : "💸 UPI";
+      
+      html += `<tr style="${rowStyle}">
         <td>
           <div style="font-weight:700;">${p.customer}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${p.phone}</div>
@@ -3257,10 +3262,15 @@ async function loadPendingPayments() {
         <td>
           <div style="font-size:0.8rem;">${p.meal} - ${p.date}</div>
           <div style="font-size:0.65rem;color:var(--muted);">${p.id}</div>
+          ${isCancelled ? `<div style="font-size:0.7rem;color:#e65100;font-weight:600;margin-top:4px;">⚠️ CANCELLED - Refund to ${prefLabel}</div>` : ''}
         </td>
         <td style="font-weight:700;">₹${p.amount}</td>
         <td>
-          <button class="btn-green" onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}')">Confirm Paid</button>
+          <button class="${isCancelled ? 'btn-orange':'btn-green'}" 
+                  style="${isCancelled ? 'background:#f57c00;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
+                  onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled})">
+            ${isCancelled ? 'Verify & Refund' : 'Confirm Paid'}
+          </button>
         </td>
       </tr>`;
     });
@@ -3269,14 +3279,15 @@ async function loadPendingPayments() {
   } catch(e) { wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
 }
 
-async function approveUPIPayment(phone, date, sid) {
-  if (!(await showUIConfirm(`Confirm you have received payment for Order ${sid}?`, "Confirm Payment", "💰"))) return;
+async function approveUPIPayment(phone, date, sid, isCancelled=false) {
+  const quest = isCancelled ? `Verify payment for Order ${sid} and process refund?` : `Confirm you have received payment for Order ${sid}?`;
+  if (!(await showUIConfirm(quest, isCancelled ? "Verify & Refund":"Confirm Payment", isCancelled ? "💸":"💰"))) return;
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
-      body: JSON.stringify({_action:"markOrdersStatus", pin:S.sessionPin, phone, date, status:"Paid"})});
+      body: JSON.stringify({_action:"markOrdersStatus", pin:S.sessionPin, phone, date, sid, status:"Paid"})});
     const data = await res.json();
     if (data.success) {
-      toast("Payment Verified ✅");
+      toast(isCancelled ? "Refund Processed ✅" : "Payment Verified ✅");
       loadPendingPayments();
     } else throw new Error(data.error);
   } catch(e) { toast("Error: "+e.message); }
