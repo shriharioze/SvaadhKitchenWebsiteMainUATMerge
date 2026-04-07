@@ -2764,19 +2764,37 @@ async function loadExistingOrders(phone){
       upcomingRowsHtml = `<p style="font-size:0.82rem;color:#888;text-align:center;padding:20px;">No upcoming orders found.</p>`;
     } else {
       upcomingRowsHtml = upcoming.map(o => {
+        const firstRow = fullUpcomingRaw.find(x => String(x.rowId) === String(o.rowId));
+        const stat = String(firstRow?.payment_status || "").trim();
+        const isCancelled = (stat === "Cancelled (Verify UPI)");
+        const pref = String(firstRow?.refund_preference || "upi").toLowerCase();
+        const prefLabel = pref === "wallet" ? "Svaadh Wallet" : "Original UPI";
+
         let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
                        (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
 
-        return `<div class="order-manage-row">
+        const cancelledHtml = isCancelled ? `
+          <div style="margin-top:10px;background:#fff3e0;border:1px solid #ffe0b2;padding:10px 14px;border-radius:12px;font-size:0.75rem;color:#e65100;line-height:1.5;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+               <span style="font-size:1rem;">🚫</span> <strong>Cancelled</strong>
+            </div>
+            Refund will be credited back to your <strong>${prefLabel}</strong> once Admin verifies the payment (typically 1-2 working days).
+          </div>
+        ` : "";
+
+        return `<div class="order-manage-row" ${isCancelled ? 'style="border-left: 4px solid #f57c00; background:#fffaf5;"' : ''}>
           <div class="omr-top">
             <div class="omr-info">
-              <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
-              <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+              <div class="omr-title" ${isCancelled ? 'style="color:#888;"' : ''}>${formatDate(o.date)} — ${o.meal}</div>
+              <div class="omr-sub" ${isCancelled ? 'style="color:#999;"' : ''}>${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
               ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
+              ${cancelledHtml}
             </div>
+            ${!isCancelled ? `
             <div class="omr-actions">
               <button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>
             </div>
+            ` : ""}
           </div>
         </div>`;
       }).join("");
