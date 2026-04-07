@@ -41,7 +41,7 @@ def generate_dispatch_file(date_str: str, orders_df: pd.DataFrame):
                 # Write empty sheet so all 3 tabs always exist
                 pd.DataFrame(columns=[
                     "Customer Name", "Phone", "Full Address",
-                    "Area", "Landmark", "Maps Link", "Special Notes"
+                    "Area", "Landmark", "Maps Link", "Delivery Notes"
                 ]).to_excel(writer, index=False, sheet_name=meal)
                 continue
 
@@ -52,12 +52,12 @@ def generate_dispatch_file(date_str: str, orders_df: pd.DataFrame):
 
             dispatch = meal_df[[
                 "Customer_Name", "Phone", "Full_Address",
-                "Area", "Landmark", "Maps_Link", "Special_Notes"
+                "Area", "Landmark", "Maps_Link", "Special_Notes_Delivery"
             ]].copy()
 
             dispatch.columns = [
                 "Customer Name", "Phone", "Full Address",
-                "Area", "Landmark", "Maps Link", "Special Notes"
+                "Area", "Landmark", "Maps Link", "Delivery Notes"
             ]
 
             # Flag missing critical info

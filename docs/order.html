@@ -2141,9 +2141,14 @@ function buildMealBody(date,meal,menu){
     });
   }
   html+=`<div class="form-group" style="margin-top:10px;">
-    <label>${t('special_instructions_label')}</label>
-    <textarea rows="1" placeholder="" style="font-size:0.78rem;"
-      oninput="S.orders['${date}']['${meal}'].notes=this.value">${S.orders[date]?.[meal]?.notes||""}</textarea>
+    <label>${t('label_notes_kitchen')}</label>
+    <textarea rows="1" placeholder="${t('ph_notes_kitchen')}" style="font-size:0.75rem; margin-bottom:8px;"
+      oninput="S.orders['${date}']['${meal}'].notesKitchen=this.value">${S.orders[date]?.[meal]?.notesKitchen||""}</textarea>
+  </div>`;
+  html+=`<div class="form-group" style="margin-top:2px;">
+    <label>${t('label_notes_delivery')}</label>
+    <textarea rows="1" placeholder="${t('ph_notes_delivery')}" style="font-size:0.75rem;"
+      oninput="S.orders['${date}']['${meal}'].notesDelivery=this.value">${S.orders[date]?.[meal]?.notesDelivery||""}</textarea>
   </div>`;
   return html;
 }
@@ -2597,7 +2602,10 @@ async function placeOrder(settleAll = false){
       const items=Object.entries(mObj.items).filter(([,q])=>q>0)
         .map(([colKey,qty])=>({colKey,qty}));
       const mAddr=getMealAddr(meal);
-      meals.push({type:meal,items,notes:mObj.notes||"",subtotal:mObj.subtotal,
+      meals.push({type:meal,items,
+        notesKitchen:mObj.notesKitchen||"",
+        notesDelivery:mObj.notesDelivery||"",
+        subtotal:mObj.subtotal,
         address:buildAddr(mAddr.wing,mAddr.flat,mAddr.floor,mAddr.society,mAddr.area),
         area:mAddr.area,maps:mAddr.maps||"",landmark:mAddr.landmark||""});
     });

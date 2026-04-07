@@ -316,7 +316,8 @@
       font-size: 2.8rem;
       font-weight: 900;
       color: #d35400;
-      line-height: 1;
+      line-height: 1.1;
+      word-break: break-word;
     }
 
     .sabji-cook-card .cook-unit {
@@ -403,6 +404,65 @@
       font-weight: 500;
     }
 
+    /* ── TABS ── */
+    .ktabs {
+      display: flex;
+      background: #fff;
+      padding: 5px;
+      margin: 10px 20px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      gap: 5px;
+      border: 1px solid #eee;
+    }
+    .ktab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-weight: 700;
+      color: #7f8c8d;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ktab.active {
+      background: #d35400;
+      color: #fff;
+    }
+
+    /* ── PACKING LIST ── */
+    .pack-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #fff;
+      margin-bottom: 10px;
+      padding: 15px 20px;
+      border-radius: 12px;
+      border: 1px solid #eee;
+    }
+    .pack-count {
+      background: #d35400;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 900;
+      min-width: 45px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .pack-desc {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .pack-type {
+      font-size: 0.75rem;
+      color: #95a5a6;
+      font-weight: 500;
+    }
+
     /* ── MOBILE OPTIMIZATION ── */
     @media (max-width: 650px) {
       .kheader {
@@ -481,6 +541,10 @@
         <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
       </div>
     </div>
+    <div class="ktabs">
+      <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
+      <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
+    </div>
     <div class="kbody" id="kbody">
       <div class="no-orders">Select a date and tap Load</div>
     </div>
@@ -490,6 +554,8 @@
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
     let K = { pin: "", sessionPin: "" };
+    let _lastData = null;
+    let _currentTab = "Summary";
 
     // ── RATE LIMITING ──
     let attempts = 0;
@@ -531,13 +597,6 @@
         const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${K.pin}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.error) {
-          attempts++;
-          if (attempts >= 5) {
-            lockoutEnd = Date.now() + 60000;
-            document.getElementById("kErr").textContent = "Too many attempts. Wait 60s.";
-          } else {
-            document.getElementById("kErr").textContent = "Incorrect PIN — Please try again";
-          }
           K.pin = ""; renderDots();
           return;
         }
@@ -548,7 +607,8 @@
         document.getElementById("loginWrap").style.display = "none";
         document.getElementById("shell").style.display = "block";
         document.getElementById("datePicker").value = today;
-        renderKitchen(data);
+        _lastData = data;
+        renderView();
         _lastUpdated = new Date();
         startAutoRefresh();
       } catch (e) {
@@ -572,7 +632,8 @@
         const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        renderKitchen(data);
+        _lastData = data;
+        renderView();
         _lastUpdated = new Date();
       } catch (e) {
         document.getElementById("kbody").innerHTML = `<div class="no-orders" style="color:#e74c3c;">${e.message}</div>`;
@@ -648,9 +709,12 @@
         // Multi-ingredient breakdown
         let rows = [];
         for (let ing in w) {
-          rows.push(`<span style="color:#aaa;">${ing}:</span> <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>`);
+          rows.push(`<div style="font-size:1.6rem; line-height:1.2; margin-bottom:4px; white-space:nowrap;">
+            <span style="color:#aaa; font-size:1.1rem; display:block; margin-bottom:-5px;">${ing}:</span>
+            <span style="font-weight:700;">${fmtWeight(totalUnits * w[ing])}</span>
+          </div>`);
         }
-        return { val: rows.join("<br>"), unit: "एकूण वजन (तयार करण्यासाठी)" };
+        return { val: rows.join(""), unit: "एकूण वजन (तयार करण्यासाठी)" };
       }
     }
 
@@ -661,6 +725,19 @@
       if (h < 14) return ["Lunch", "Dinner", "Breakfast"];
       if (h < 20) return ["Dinner", "Breakfast", "Lunch"];
       return ["Dinner", "Breakfast", "Lunch"];
+    }
+
+    function switchKTab(t) {
+      _currentTab = t;
+      document.querySelectorAll(".ktab").forEach(el => el.classList.remove("active"));
+      document.getElementById("tab_" + t).classList.add("active");
+      renderView();
+    }
+
+    function renderView() {
+      if (!_lastData) return;
+      if (_currentTab === "Summary") renderKitchen(_lastData);
+      else renderPacking(_lastData);
     }
 
     function renderKitchen(data) {
@@ -783,6 +860,68 @@
     </div>`;
       });
 
+      document.getElementById("kbody").innerHTML = html;
+    }
+
+    function renderPacking(data) {
+      const meals = data.meals || {};
+      let html = "";
+
+      if (!Object.keys(meals).length) {
+        html = `<div class="no-orders">No orders set for ${data.date}</div>`;
+        document.getElementById("kbody").innerHTML = html;
+        return;
+      }
+
+      const MEAL_META = {
+        Breakfast: { icon: "🌅", label: "न्याहारी" },
+        Lunch: { icon: "☀️", label: "दुपारचे जेवण" },
+        Dinner: { icon: "🌙", label: "रात्रीचे जेवण" },
+      };
+
+      getMealOrder().forEach(meal => {
+        if (!meals[meal]) return;
+        const m = meals[meal];
+        const { icon, label } = MEAL_META[meal];
+
+        const packs = [];
+        if (meal === "Breakfast") {
+          const curd = (m.items || {})["Curd"] || 0;
+          if (curd > 0) packs.push({ count: curd, name: "50ml plastic container for curd" });
+        } else {
+          const s = m.sabji || { dry_mini: 0, curry_mini: 0, dry_full: 0, curry_full: 0 };
+          const o = m.other || { Dal: { count: 0 }, Curd: { count: 0 }, Rice: { count: 0 } };
+
+          if (s.dry_mini > 0) packs.push({ count: s.dry_mini, name: "100ml plastic container for mini dry" });
+          if (s.curry_mini > 0) packs.push({ count: s.curry_mini, name: "100ml plastic container for mini curry" });
+          if (s.dry_full > 0) packs.push({ count: s.dry_full, name: "250ml plastic container for large dry" });
+          if (s.curry_full > 0) packs.push({ count: s.curry_full, name: "250ml plastic container for large curry" });
+          if (o.Dal && o.Dal.count > 0) packs.push({ count: o.Dal.count, name: "250ml plastic container for Dal" });
+          if (o.Curd && o.Curd.count > 0) packs.push({ count: o.Curd.count, name: "50ml plastic container for curd" });
+          if (o.Rice && o.Rice.count > 0) packs.push({ count: o.Rice.count, name: "250ml aluminium container for rice" });
+        }
+
+        if (packs.length > 0) {
+          html += `<div class="meal-block">
+            <div class="meal-head">
+              <span class="meal-icon">${icon}</span>
+              <span class="meal-title">Packing: ${label}</span>
+            </div>
+            <div class="meal-body">
+              ${packs.map(p => `
+                <div class="pack-row">
+                  <div class="pack-count">Get ${p.count}</div>
+                  <div class="pack-desc">
+                    x ${p.name}
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>`;
+        }
+      });
+
+      if (!html) html = `<div class="no-orders">No packing items needed for this date.</div>`;
       document.getElementById("kbody").innerHTML = html;
     }
 

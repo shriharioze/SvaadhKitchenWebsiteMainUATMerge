@@ -91,7 +91,7 @@ const ORDERS_HEADERS = [
   "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full",
   "Dal","Rice","Salad","Curd",
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
-  "Special_Notes",
+  "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Net_Total",
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference"
 ];
@@ -754,7 +754,8 @@ function submitOrder(body) {
       const sub = Number(meal.subtotal) || 0;
       const mealArea = meal.area || profile.area || "";
       const items  = meal.items || [];   // [{colKey, qty}]
-      const notes  = meal.notes || "";
+      const nKitchen = meal.notesKitchen || "";
+      const nDelivery = meal.notesDelivery || "";
       
       // Get combined totals for THIS specific meal type (prev + current)
       const prevMealSub = (existingDateInfo[mealType] || {}).subtotal || 0;
@@ -824,7 +825,8 @@ function submitOrder(body) {
         hIdx["Inflation_Surcharge"] = ordersWs.getLastColumn();
       }
       set("Items_JSON",          JSON.stringify(itemsObj));
-      set("Special_Notes",       notes);
+      set("Special_Notes_Kitchen",  nKitchen);
+      set("Special_Notes_Delivery", nDelivery);
       set("Food_Subtotal",       sub);
       set("Small_Order_Fee",     smallOrderFee);
       set("Inflation_Surcharge", inflationSurcharge);
@@ -1671,8 +1673,9 @@ function getKitchenSummary(date) {
       m.sabji.curry_mini += (Number(r.Curry_Sabji_Mini)||0);
       m.sabji.curry_full += (Number(r.Curry_Sabji_Full)||0);
 
-      if (!m.other) m.other = {Dal:{kg:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
+      if (!m.other) m.other = {Dal:{kg:0, count:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
       m.other.Dal.kg      += (Number(r.Dal)   || 0) * 1.33;
+      m.other.Dal.count   += (Number(r.Dal)   || 0);
       m.other.Rice.count  += (Number(r.Rice)  || 0);
       m.other.Salad.count += (Number(r.Salad) || 0);
       m.other.Curd.count  += (Number(r.Curd)  || 0);
@@ -1726,7 +1729,7 @@ function getDriverOrders(date) {
       address:       String(r.Full_Address || ""),
       landmark:      String(r.Landmark || ""),
       maps:          String(r.Maps_Link || ""),
-      notes:         String(r.Special_Notes || ""),
+      notes:         String(r.Special_Notes_Delivery || ""),
       deliveredAt:   delMap[sid] || "",
       amount:        Number(r.Net_Total || r.Food_Subtotal || 0),
       paymentStatus: String(r.Payment_Status || "")
@@ -1837,7 +1840,7 @@ function getOrderSummary(date) {
       address:   String(r.Full_Address || r.Flat || ""),
       total:     net,
       payStatus: payStatus,
-      notes:     String(r.Special_Notes || "")
+      notes:     String(r.Special_Notes_Kitchen || "")
     });
 
     totals.orders++;

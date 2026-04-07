@@ -156,7 +156,7 @@ def process_data(df: pd.DataFrame) -> dict:
                 "Meal Type":        meal,
                 "Customer Name":    name,
                 "Order Summary":    summary,
-                "Special Notes":    str(row.get("Special_Notes","")).strip(),
+                "Special Notes":    str(row.get("Special_Notes_Kitchen","")).strip(),
                 "Full Address":     str(row.get("Full_Address","")).strip(),
                 "Phone":            str(row.get("Phone","")).strip(),
             })

@@ -280,7 +280,7 @@ def generate_labels_for_date(
 
     for _, row in df.iterrows():
         name    = str(row.get("Customer_Name", "")).strip().title()
-        notes   = str(row.get("Special_Notes", "")).strip()
+        notes   = ""  # User requested removal from labels
         summary = build_label_text(row, meal_type, abbr_dict)
 
         if not name or name.lower() == "nan":
