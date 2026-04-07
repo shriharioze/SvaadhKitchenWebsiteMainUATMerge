@@ -462,6 +462,65 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] #quickButtonBar{background:#1e1e1e;border-color:#333;}
 [data-theme="dark"] #walletChip{background:#1a2820;border-color:#2a4830;color:#6abf8a;}
 [data-theme="dark"] #authActionsWrap button{background:#2a2a2a;border-color:#444;color:#e0e0e0;}
+/* ═══════════════════════════════════════════
+   COLLAPSIBLE SECTIONS (MANAGE ORDERS)
+   ═══════════════════════════════════════════ */
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #fdfaf8;
+  border: 1px solid #f0ebe6;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  margin-bottom: 2px;
+}
+.collapsible-header:hover { background: #f9f0e8; }
+.collapsible-header.open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: #fff5f2;
+}
+.collapsible-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a6640;
+  margin: 0;
+}
+.collapsible-arrow {
+  font-size: 0.8rem;
+  color: #aaa;
+  transition: transform 0.3s ease;
+}
+.collapsible-header.open .collapsible-arrow {
+  transform: rotate(180deg);
+  color: #e74c3c;
+}
+.collapsible-content {
+  display: none;
+  border: 1px solid #f0ebe6;
+  border-top: none;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  padding: 4px 16px 12px;
+  background: #fff;
+  animation: slideDown 0.3s ease-out;
+}
+.collapsible-content.open { display: block; }
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+[data-theme="dark"] .collapsible-header { background: #242424; border-color: #333; }
+[data-theme="dark"] .collapsible-header.open { background: #2a1a1a; }
+[data-theme="dark"] .collapsible-title { color: #8ab68a; }
+[data-theme="dark"] .collapsible-content { background: #1e1e1e; border-color: #333; }
+
 .bill-modal-sheet{background:white;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp 0.3s ease;}
 .bm-handle{width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 18px;}
 .bm-chip{display:inline-block;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:0.05em;margin-bottom:8px;}
@@ -2794,7 +2853,7 @@ async function loadExistingOrders(phone){
       upcomingRowsHtml = upcoming.map(o => {
         const firstRow = fullUpcomingRaw.find(x => String(x.rowId) === String(o.rowId));
         const stat = String(firstRow?.payment_status || "").trim();
-        const isCancelled = (stat === "Cancelled (Verify UPI)");
+        const isCancelled = stat.toLowerCase().includes("cancelled");
         const pref = String(firstRow?.refund_preference || "upi").toLowerCase();
         const prefLabel = pref === "wallet" ? "Svaadh Wallet" : "Original UPI";
 

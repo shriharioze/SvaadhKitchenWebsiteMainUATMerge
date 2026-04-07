@@ -1089,15 +1089,16 @@ function deleteOrder(phone, rowId, refundType) {
   const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
 
   const r = rows.find(x => {
-    const sID = String(x.Submission_ID || "").trim();
-    const tID = String(rowId || "").trim();
-    const sPh = String(x.Phone || "").trim();
-    const tPh = String(phone || "").trim();
-    return sID === tID && sPh === tPh;
+    // Deep Normalization: Keep only digits to handle commas, decimals (123.0), or scientific notation
+    const cleanSheetId = String(x.Submission_ID || "").replace(/\D/g, "");
+    const cleanTargetId = String(rowId || "").replace(/\D/g, "");
+    const sheetPhone = String(x.Phone || "").trim();
+    const targetPhone = String(phone || "").trim();
+    return cleanSheetId === cleanTargetId && sheetPhone === targetPhone;
   });
   if (!r) {
-    console.warn(`Order not found for ID: ${rowId} Phone: ${phone}`);
-    return {success: false, error: "Order not found"};
+    console.error(`CANCELLATION FAILED: Submission ID ${rowId} (Clean: ${String(rowId).replace(/\D/g,"")}) not found for phone ${phone}.`);
+    return {success: false, error: "Order record not found in system."};
   }
   const orderDateStr = r.Order_Date instanceof Date
     ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
@@ -1220,13 +1221,13 @@ function deleteOrder(phone, rowId, refundType) {
       msg = `₹${refundAmt} refund request raised in Approvals`;
     }
   } 
-  else if (pStatStr.indexOf("pending") !== -1 && (refundType === "wallet" || refundType === "manual_upi")) {
+  // ── SOFT CANCELLATION FOR UPI ── (Turn 47 feature)
+  if (String(r.Payment_Status || "").toLowerCase().includes("pending") && (refundType === "wallet" || refundType === "manual_upi")) {
     let hIdx = headerIndex(ws);
     
-    // Defensive: Check both underscores and spaces
-    const statusHeader = hIdx["Payment_Status"] ? "Payment_Status" : "Payment Status";
-    const statusCol = hIdx[statusHeader];
-
+    // Robust header detection (support both underscores and spaces)
+    const statusCol = hIdx["Payment_Status"] || hIdx["Payment Status"];
+    
     if (!hIdx["Refund_Preference"]) {
       const col = ws.getLastColumn() + 1;
       ws.getRange(1, col).setValue("Refund_Preference")
@@ -1238,13 +1239,13 @@ function deleteOrder(phone, rowId, refundType) {
     if (statusCol && prefCol) {
       ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
       ws.getRange(r._row, prefCol).setValue(refundType);
-      Logger.log("Soft Cancel Update Success: row=" + r._row);
+      console.info(`SUCCESS: Soft-cancelled row ${r._row} with preference ${refundType}`);
       return {
         success: true, 
         message: "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅"
       };
     } else {
-      Logger.log("Soft Cancel Update Failed: Missing cols status=" + statusCol + " pref=" + prefCol);
+      console.error(`FAILED: Missing columns for soft-cancel. StatusCol:${statusCol}, PrefCol:${prefCol}`);
     }
   }
 
