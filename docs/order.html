@@ -553,6 +553,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .pickup-info-card h4{color:#fbbf24;}
 [data-theme="dark"] .pickup-info-card p{color:#d4b88a;}
 .hidden{display:none !important;}
+
+/* DELIVERY MODE TOGGLE (SEGMENTED CONTROL) */
+.delivery-mode-toggle{display:flex;background:#f5f0eb;border:1.5px solid #e8ddd7;border-radius:10px;padding:3px;margin-bottom:12px;gap:3px;}
+.dm-btn{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:#888;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;}
+.dm-btn.active{background:white;color:#c0392b;box-shadow:0 2px 6px rgba(0,0,0,0.06);}
+.dm-btn span{font-size:1rem;}
+[data-theme="dark"] .delivery-mode-toggle{background:#2a2624;border-color:#3f3834;}
+[data-theme="dark"] .dm-btn.active{background:#c0392b;color:white;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -790,16 +798,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
     <!-- SINGLE ADDRESS (shown when sameAddr=true) -->
     <div id="singleAddrBlock">
-      <div class="form-group">
-        <label data-i18n="label_area">Delivery Area *</label>
-        <select id="areaSelect" onchange="syncSingleAddr()">
-          <option value="" data-i18n="select_area_ph">— Select area —</option>
-          <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-          <option value="Magarpatta">🏙️ Magarpatta</option>
-          <option value="Amanora">🏢 Amanora Township</option>
-          <option value="DP Road">🛣️ DP Road</option>
-          <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
-        </select>
+      <div class="delivery-mode-toggle">
+        <button type="button" class="dm-btn active" id="dm_delivery_single" onclick="setDeliveryMode('single','delivery')"><span>🚚</span> Delivery</button>
+        <button type="button" class="dm-btn" id="dm_pickup_single" onclick="setDeliveryMode('single','pickup')"><span>📦</span> Self Pickup</button>
+      </div>
       <div id="pickupCard_single" class="pickup-info-card hidden">
         <h4>📍 Pickup your order from</h4>
         <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
@@ -808,6 +810,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         </a>
       </div>
       <div id="deliveryFields_single">
+        <div class="form-group">
+          <label data-i18n="label_area">Delivery Area *</label>
+          <select id="areaSelect" onchange="syncSingleAddr()">
+            <option value="" data-i18n="select_area_ph">— Select area —</option>
+            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+            <option value="Magarpatta">🏙️ Magarpatta</option>
+            <option value="Amanora">🏢 Amanora Township</option>
+            <option value="DP Road">🛣️ DP Road</option>
+            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
+          </select>
+        </div>
         <div class="input-row3" style="margin-bottom:10px;">
           <div class="form-group" style="margin-bottom:0;">
             <label data-i18n="label_wing">Wing / Block</label>
@@ -846,8 +859,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="font-size:1rem;">🌅</span>
-          <span class="addr-section-title" data-i18n="bf_addr_title">Breakfast Delivery Address</span>
-        </div>
+        <div class="addr-section-title" data-i18n="bf_addr_title">Breakfast Delivery Address</div>
+      </div>
+      <div class="delivery-mode-toggle">
+        <button type="button" class="dm-btn active" id="dm_delivery_bf" onclick="setDeliveryMode('bf','delivery')"><span>🚚</span> Delivery</button>
+        <button type="button" class="dm-btn" id="dm_pickup_bf" onclick="setDeliveryMode('bf','pickup')"><span>📦</span> Self Pickup</button>
+      </div>
+      <div id="pickupCard_bf" class="pickup-info-card hidden">
+        <h4>📍 Pickup your order from</h4>
+        <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
+        <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
+          🗺️ View on Google Maps
+        </a>
+      </div>
+      <div id="deliveryFields_bf">
         <div class="form-group">
           <label data-i18n="label_area_simple">Area</label>
           <select id="bf_areaSelect" onchange="togglePickupUI('bf', this.value)">
@@ -859,14 +884,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
           </select>
         </div>
-        <div id="pickupCard_bf" class="pickup-info-card hidden">
-          <h4>📍 Pickup your order from</h4>
-          <p><strong>Address:</strong> A 104, Shree laxmi vihar society</p>
-          <a href="https://maps.app.goo.gl/FnkeWh9KbaQkstrW8" target="_blank" class="pickup-link">
-            🗺️ View on Google Maps
-          </a>
-        </div>
-        <div id="deliveryFields_bf">
           <div class="input-row3" style="margin-bottom:10px;">
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
@@ -886,16 +903,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           <span style="font-size:1rem;">☀️</span>
           <span class="addr-section-title" data-i18n="l_addr_title">Lunch Delivery Address</span>
         </div>
-        <div class="form-group">
-          <label data-i18n="label_area_simple">Area</label>
-          <select id="l_areaSelect" onchange="togglePickupUI('l', this.value)">
-            <option value="" data-i18n="select_area_ph">— Select area —</option>
-            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-            <option value="Magarpatta">🏙️ Magarpatta</option>
-            <option value="Amanora">🏢 Amanora Township</option>
-            <option value="DP Road">🛣️ DP Road</option>
-            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
-          </select>
+        <div class="delivery-mode-toggle">
+          <button type="button" class="dm-btn active" id="dm_delivery_l" onclick="setDeliveryMode('l','delivery')"><span>🚚</span> Delivery</button>
+          <button type="button" class="dm-btn" id="dm_pickup_l" onclick="setDeliveryMode('l','pickup')"><span>📦</span> Self Pickup</button>
         </div>
         <div id="pickupCard_l" class="pickup-info-card hidden">
           <h4>📍 Pickup your order from</h4>
@@ -905,6 +915,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </a>
         </div>
         <div id="deliveryFields_l">
+          <div class="form-group">
+            <label data-i18n="label_area_simple">Area</label>
+            <select id="l_areaSelect" onchange="togglePickupUI('l', this.value)">
+              <option value="" data-i18n="select_area_ph">— Select area —</option>
+              <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+              <option value="Magarpatta">🏙️ Magarpatta</option>
+              <option value="Amanora">🏢 Amanora Township</option>
+              <option value="DP Road">🛣️ DP Road</option>
+              <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
+            </select>
+          </div>
           <div class="input-row3" style="margin-bottom:10px;">
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
@@ -924,16 +945,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           <span style="font-size:1rem;">🌙</span>
           <span class="addr-section-title" data-i18n="d_addr_title">Dinner Delivery Address</span>
         </div>
-        <div class="form-group">
-          <label data-i18n="label_area_simple">Area</label>
-          <select id="d_areaSelect" onchange="togglePickupUI('d', this.value)">
-            <option value="" data-i18n="select_area_ph">— Select area —</option>
-            <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-            <option value="Magarpatta">🏙️ Magarpatta</option>
-            <option value="Amanora">🏢 Amanora Township</option>
-            <option value="DP Road">🛣️ DP Road</option>
-            <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
-          </select>
+        <div class="delivery-mode-toggle">
+          <button type="button" class="dm-btn active" id="dm_delivery_d" onclick="setDeliveryMode('d','delivery')"><span>🚚</span> Delivery</button>
+          <button type="button" class="dm-btn" id="dm_pickup_d" onclick="setDeliveryMode('d','pickup')"><span>📦</span> Self Pickup</button>
         </div>
         <div id="pickupCard_d" class="pickup-info-card hidden">
           <h4>📍 Pickup your order from</h4>
@@ -943,6 +957,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </a>
         </div>
         <div id="deliveryFields_d">
+          <div class="form-group">
+            <label data-i18n="label_area_simple">Area</label>
+            <select id="d_areaSelect" onchange="togglePickupUI('d', this.value)">
+              <option value="" data-i18n="select_area_ph">— Select area —</option>
+              <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
+              <option value="Magarpatta">🏙️ Magarpatta</option>
+              <option value="Amanora">🏢 Amanora Township</option>
+              <option value="DP Road">🛣️ DP Road</option>
+              <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
+            </select>
+          </div>
           <div class="input-row3" style="margin-bottom:10px;">
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
@@ -1732,6 +1757,29 @@ function togglePickupUI(pfx, area) {
       deliveryFields.classList.remove("hidden");
     }
   }
+  // Sync toggle buttons
+  const dBtn = $(`dm_delivery_${pfx}`);
+  const pBtn = $(`dm_pickup_${pfx}`);
+  if (dBtn && pBtn) {
+    if (isPickup) {
+      dBtn.classList.remove("active");
+      pBtn.classList.add("active");
+    } else {
+      dBtn.classList.add("active");
+      pBtn.classList.remove("active");
+    }
+  }
+}
+
+function setDeliveryMode(pfx, mode) {
+  const areaSel = $(pfx === 'single' ? 'areaSelect' : `${pfx}_areaSelect`);
+  if (mode === 'pickup') {
+    if (areaSel) areaSel.value = "Self Pickup";
+  } else {
+    if (areaSel && areaSel.value === "Self Pickup") areaSel.value = "";
+  }
+  if (pfx === 'single') syncSingleAddr();
+  togglePickupUI(pfx, mode === 'pickup' ? "Self Pickup" : "");
 }
 
 function toggleAddressMode(){
