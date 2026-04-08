@@ -942,6 +942,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
               <option value="Devanagari">देवनागरी (MR)</option>
             </select>
           </div>
+          <div class="ctrl-group">
+            <label>Gap (mm)</label>
+            <input type="number" id="labelGap" step="0.1" value="2.7" style="width:70px; padding:8px; border:1.5px solid #ddd; border-radius:8px;">
+          </div>
+          <div class="ctrl-group">
+            <label>Mode</label>
+            <select id="labelMode" style="width:100px;">
+              <option value="Full">Real</option>
+              <option value="Test">Test (5)</option>
+            </select>
+          </div>
           <button class="gen-btn" onclick="generateLabels()">⚡ Generate Labels</button>
         </div>
         <div class="label-preview" id="labelPreview">
@@ -1742,6 +1753,13 @@ async function switchPage(page) {
   if (page === "labels") {
     const picker = document.getElementById("labelDate");
     if (!picker.value) { picker.value = toISO(getIST()); }
+    // Restore gap
+    const savedGap = localStorage.getItem('sk-label-gap');
+    if (savedGap) document.getElementById('labelGap').value = savedGap;
+    // Save gap on change
+    document.getElementById('labelGap').addEventListener('change', (e) => {
+      localStorage.setItem('sk-label-gap', e.target.value);
+    });
   }
   if (page === "analytics") {
     const af = document.getElementById("analyticsFrom");
@@ -2433,20 +2451,26 @@ async function saveLabelsToDrive() {
     const { jsPDF } = window.jspdf;
     const W   = 50;            // label width mm
     const LH  = 25;            // label height mm
-    const GAP = 2.8;           // gap between labels mm (matches Colab)
-    const BLOCK = LH + GAP;    // 27.8mm per label block
-    const n   = labelOrders.length;
+    const customGap = parseFloat(document.getElementById('labelGap').value) || 2.7;
+    const GAP = customGap;     // dynamic gap between labels mm
+    const isTest = document.getElementById('labelMode').value === "Test";
+    
+    // Test mode: print top 5 labels
+    const currentLabels = isTest ? labelOrders.slice(0, 5) : labelOrders;
+    
+    const BLOCK = LH + GAP;    
+    const n     = currentLabels.length;
     const totalH = n * BLOCK;  // single tall page — all labels stacked
     const isMR   = lang === "Devanagari";
     const TW = W - 4, LM = 2;  // 46mm text width, 2mm left margin
 
-    // Single page, portrait for tall stacks (height > width when n ≥ 2)
+    // Single page, portrait for tall stacks
     const orient = totalH >= W ? "portrait" : "landscape";
     const doc = new jsPDF({ unit:"mm", format:[W, totalH], orientation: orient });
 
     if (!isMR) {
       // ── English: jsPDF native text per label block ──
-      labelOrders.forEach((order, idx) => {
+      currentLabels.forEach((order, idx) => {
         const BY = idx * BLOCK;   // block top y
         const summary = getItemSummary(order, meal, lang);
 
@@ -2511,7 +2535,7 @@ async function saveLabelsToDrive() {
         return cy;
       }
 
-      labelOrders.forEach((order, idx) => {
+      currentLabels.forEach((order, idx) => {
         const BY = mm(idx * BLOCK);
         const summary = getItemSummary(order, meal, lang);
 
