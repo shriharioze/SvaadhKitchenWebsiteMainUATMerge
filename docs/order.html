@@ -2897,15 +2897,15 @@ async function deleteOrder(rowId, date, meal) {
   let refundType = "none";
   if (totalPaid > 0) {
     if (isWalletPaid) {
-      await sAlert(`Adding ₹${totalPaid} back to your Svaadh Wallet balance.`, "Refund Info", "💼");
+      await sAlert(`₹${totalPaid} will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💼");
       refundType = "wallet";
     } else {
-      const choice = await sPromptRefund(`You paid ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?");
+      const choice = await sPromptRefund(`You paid ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?", {wallet: "Wallet (Instant)"});
       if (choice === "exit") return;
       refundType = (choice === "wallet") ? "wallet" : "manual_upi";
     }
   } else if (isPending && potentialAmt > 0 && !isWalletPaid) {
-    const choice = await sPromptRefund(`Your payment of ₹${potentialAmt} is currently <b>Pending Admin Verification</b>. Once the admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?");
+    const choice = await sPromptRefund(`Your payment of ₹${potentialAmt} is currently <b>Pending Admin Verification</b>. Once the admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?", {wallet: "Svaadh Wallet (Upto 3 working days)"});
     if (choice === "exit") return;
     refundType = (choice === "wallet") ? "wallet" : "manual_upi";
   }
@@ -2921,7 +2921,10 @@ async function deleteOrder(rowId, date, meal) {
     const success = results.every(res => res.success);
     if (success) {
       if (refundType === "wallet") {
-        await sAlert("Cancellation successful! Refund added to your Svaadh Wallet.", "Done", "💼");
+        const msg = isPending 
+          ? "Cancellation successful! Refund will be added to your Svaadh Wallet within 3 working days after Admin verification."
+          : "Cancellation successful! Refund added to your Svaadh Wallet.";
+        await sAlert(msg, "Done", "💼");
       } else if (refundType !== "none") {
         await sAlert("Cancellation successful! Refund request submitted.", "Done", "💸");
       } else {

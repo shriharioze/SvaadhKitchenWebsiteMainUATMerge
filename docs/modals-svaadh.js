@@ -106,8 +106,11 @@ const sBtnLoading = (btn, isLoading, loadingText = "") => {
  * @param {string} title - Modal title
  * @param {string} icon - Icon emoji
  * @param {string} subtitle - Marathi subtitle
+ * @param {object} customLabels - Optional overrides {wallet, upi}
  */
-const sPromptRefund = (msg, title = "Refund Method", icon = "💰", subtitle = "") => {
+const sPromptRefund = (msg, title = "Refund Method", icon = "💰", subtitle = "", customLabels = {}) => {
+  const lblWallet = customLabels.wallet || "Svaadh Wallet";
+  const lblUPI = customLabels.upi || "UPI (Upto 3 working days)";
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 's-modal-overlay';
@@ -119,8 +122,8 @@ const sPromptRefund = (msg, title = "Refund Method", icon = "💰", subtitle = "
         <div class="s-modal-msg">${msg}</div>
         ${subtitle ? `<div style="font-size:0.75rem; color:#888; font-style:italic; margin-top:-15px; margin-bottom:20px;">${subtitle}</div>` : ''}
         <div class="s-modal-footer" style="flex-direction: column; gap: 8px;">
-          <button class="s-btn s-btn-primary" id="sRefundWallet" style="width: 100%; border-radius:14px; padding:14px;">Wallet (Instant)</button>
-          <button class="s-btn s-btn-secondary" id="sRefundUPI" style="width: 100%; border-radius:14px; padding:14px;">UPI (2-3 days)</button>
+          <button class="s-btn s-btn-primary" id="sRefundWallet" style="width: 100%; border-radius:14px; padding:14px;">${lblWallet}</button>
+          <button class="s-btn s-btn-secondary" id="sRefundUPI" style="width: 100%; border-radius:14px; padding:14px;">${lblUPI}</button>
           <button class="s-btn s-btn-secondary" id="sRefundExit" style="width: 100%; opacity: 0.6; border: 1px dashed #ccc; margin-top:4px; font-size:0.8rem;">Don't Cancel</button>
         </div>
       </div>
