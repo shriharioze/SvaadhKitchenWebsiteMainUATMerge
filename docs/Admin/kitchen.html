@@ -688,9 +688,9 @@
     async function verifyPin(autoPin) {
       if (isLocked()) return;
       if (!autoPin) {
-        document.getElementById("kErr").textContent = "Checking...";
+        document.getElementById("kErr").textContent = "Logging you in...";
         pinAuthInProgress = true;
-        sLoading(true, "Authenticating...");
+        sLoading(true, "Logging you in...");
       }
       
       const pinToVerify = autoPin || K.pin;

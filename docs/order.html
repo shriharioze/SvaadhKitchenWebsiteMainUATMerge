@@ -179,7 +179,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .phone-wrap input{padding-left:40px;font-size:1rem;letter-spacing:1px;}
 
 /* BUTTONS */
-.btn{display:block;width:100%;padding:13px;border:none;border-radius:12px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;transition:transform 0.1s,box-shadow 0.2s;text-align:center;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:none;border-radius:12px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;transition:transform 0.1s,box-shadow 0.2s;text-align:center;}
 .btn:active{transform:scale(0.98);}
 .btn-primary{background:linear-gradient(135deg,#c0392b,#e74c3c);color:white;box-shadow:0 4px 14px rgba(231,76,60,0.4);}
 .btn-secondary{background:#f5f0eb;color:#c0392b;border:1.5px solid #e8ddd7;}
@@ -329,7 +329,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .wallet-confirm-card .wc-balance{font-size:0.72rem;opacity:0.7;margin-top:4px;}
 
 /* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;padding:10px 14px 14px;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:100;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #eee;padding:12px 14px;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:100;}
 .bottom-nav-inner{max-width:520px;margin:0 auto;display:flex;gap:10px;}
 
 /* LOADER / TOAST */
@@ -1593,7 +1593,7 @@ async function validate(step){
 // CUSTOMER LOOKUP
 // ═══════════════════════════════════════════════════════════
 async function lookupCustomer(){
-  sLoading(true, t('loading_checking'));
+  sLoading(true, t('loading_logging_in'));
   if ($("pinAuthSection")) $("pinAuthSection").style.display = "none";
   const _lCtrl=new AbortController();const _lTid=setTimeout(()=>_lCtrl.abort(),15000);
   try{
@@ -1616,6 +1616,9 @@ async function lookupCustomer(){
           localStorage.removeItem('sk_logged_in_pin');
        }
     }
+    
+    // Transition to PIN entry
+    sLoading(false); 
     
     if (data.hasPin) {
        S.authMode = "verify";
@@ -1643,14 +1646,15 @@ async function lookupCustomer(){
     }
   }catch(err){
     clearTimeout(_lTid);
+    sLoading(false);
     if(err.name==="AbortError"){toast(t('toast_server_slow'),4000);}
     $("btnNext").textContent=t('btn_continue');$("btnNext").disabled=false;
-    // Let them proceed without auth if server timeouts? No, block them.
     S.authMode = null;
   }
 }
 
 function handleLoginSuccess(profileData, isNew) {
+   sLoading(false); // Hide any active "Logging you in" loader
    if($("authActionsWrap")) $("authActionsWrap").style.display = "flex";
   if (profileData) {
     const wb = Number(profileData.wallet_balance) || 0;

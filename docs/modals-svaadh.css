@@ -118,7 +118,7 @@
   animation: sSpin 0.8s linear infinite;
 }
 
-.s-btn .s-spinner {
+.s-btn .s-spinner, .btn .s-spinner {
   width: 16px;
   height: 16px;
   border-width: 2px;

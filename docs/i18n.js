@@ -143,6 +143,7 @@
 
     // ── Dynamic UI strings ───────────────────────────────
     loading_checking: "Checking…",
+    loading_logging_in: "Logging you in…",
     loading_loading: "Loading…",
     loading_building: "Building summary…",
     loading_placing: "Placing order…",
@@ -160,7 +161,7 @@
     special_instructions_label: "Special instructions (optional)",
     special_instructions_ph: "Jain, less spicy, no onion…",
     label_notes_kitchen: "Special instructions for kitchen staff (optional)",
-    ph_notes_kitchen: "No onion, less spicy, extra salt...",
+    ph_notes_kitchen: "",
     label_notes_delivery: "Special instructions for delivery staff (optional)",
     ph_notes_delivery: "Leave at gate, ring doorbell, call on arrival...",
     cutoff_default: "Cutoff {time}",

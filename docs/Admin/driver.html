@@ -245,9 +245,9 @@ function renderDots() {
 async function verifyPin(autoPin) {
   if (isLocked()) return;
   if (!autoPin) {
-     document.getElementById("dErr").textContent = "Checking...";
+     document.getElementById("dErr").textContent = "Logging you in...";
      pinAuthInProgress = true;
-     sLoading(true, "Authenticating...");
+     sLoading(true, "Logging you in...");
   }
   
   const pinToVerify = autoPin || D.pin;

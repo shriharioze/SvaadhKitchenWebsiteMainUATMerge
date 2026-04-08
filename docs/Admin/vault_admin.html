@@ -1181,8 +1181,8 @@ function renderPinDots() {
 }
 async function verifyPin() {
   if (isLocked()) return;
-  document.getElementById("loginErr").textContent = "";
-  sLoading(true, "Authenticating...");
+  document.getElementById("loginErr").textContent = "Logging you in...";
+  sLoading(true, "Logging you in...");
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
     const data = await res.json();
@@ -3215,6 +3215,7 @@ async function loadPendingPayments() {
 
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending UPI payments to verify. ✅</div>`;
+      sLoading(false);
       return;
     }
 
@@ -3287,6 +3288,7 @@ async function loadPendingRecharges() {
 
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending wallet recharges. ✅</div>`;
+      sLoading(false);
       return;
     }
 
@@ -3345,6 +3347,7 @@ async function loadRefunds() {
     
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending UPI refund requests. ✅</div>`;
+      sLoading(false);
       return;
     }
 
