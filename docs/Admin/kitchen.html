@@ -735,6 +735,10 @@
     function todayIST() {
       const now = new Date();
       const ist = new Date(now.getTime() + 5.5 * 3600000);
+      const h = ist.getUTCHours();
+      if (h >= 21) {
+          ist.setUTCDate(ist.getUTCDate() + 1);
+      }
       return ist.toISOString().slice(0, 10);
     }
 
