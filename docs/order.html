@@ -336,7 +336,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .loader{text-align:center;padding:28px;}
 .spinner{width:30px;height:30px;border:3px solid #f0e8e5;border-top-color:#e74c3c;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 8px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#2d2d2d;color:white;padding:9px 18px;border-radius:99px;font-size:0.8rem;font-weight:500;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#2d2d2d;color:white;padding:10px 20px;border-radius:12px;font-size:0.8rem;font-weight:500;z-index:35000;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:normal;max-width:85vw;text-align:center;line-height:1.4;box-shadow:0 10px 20px rgba(0,0,0,0.3);}
 .toast.show{opacity:1;}
 
 /* SUCCESS */
@@ -2900,12 +2900,14 @@ async function deleteOrder(rowId, date, meal) {
       await sAlert(`Adding ₹${totalPaid} back to your Svaadh Wallet balance.`, "Refund Info", "💼");
       refundType = "wallet";
     } else {
-      const choice = await sConfirm(`You paid ₹${totalPaid}. Refund to Wallet (Instant)? Select 'No' for UPI refund (2-3 days).`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?");
-      refundType = choice ? "wallet" : "manual_upi";
+      const choice = await sPromptRefund(`You paid ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?");
+      if (choice === "exit") return;
+      refundType = (choice === "wallet") ? "wallet" : "manual_upi";
     }
   } else if (isPending && potentialAmt > 0 && !isWalletPaid) {
-    const choice = await sConfirm(`Admin will verify ₹${potentialAmt} payment and process refund. Wallet (Instant) or UPI?`, "Refund Policy", "⏳", "रीफंड कुठे हवा आहे?");
-    refundType = choice ? "wallet" : "manual_upi";
+    const choice = await sPromptRefund(`Your payment of ₹${potentialAmt} is currently <b>Pending Admin Verification</b>. Once the admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?");
+    if (choice === "exit") return;
+    refundType = (choice === "wallet") ? "wallet" : "manual_upi";
   }
 
   sLoading(true, "Processing cancellation...");

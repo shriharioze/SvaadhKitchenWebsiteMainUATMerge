@@ -100,6 +100,39 @@ const sBtnLoading = (btn, isLoading, loadingText = "") => {
   }
 };
 
+/**
+ * 3-Way Refund Confirmation Modal
+ * @param {string} msg - Main message
+ * @param {string} title - Modal title
+ * @param {string} icon - Icon emoji
+ * @param {string} subtitle - Marathi subtitle
+ */
+const sPromptRefund = (msg, title = "Refund Method", icon = "💰", subtitle = "") => {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 's-modal-overlay';
+    overlay.style.zIndex = "40000"; // Absolute top
+    overlay.innerHTML = `
+      <div class="s-modal">
+        <div class="s-modal-icon">${icon}</div>
+        <div class="s-modal-title">${title}</div>
+        <div class="s-modal-msg">${msg}</div>
+        ${subtitle ? `<div style="font-size:0.75rem; color:#888; font-style:italic; margin-top:-15px; margin-bottom:20px;">${subtitle}</div>` : ''}
+        <div class="s-modal-footer" style="flex-direction: column; gap: 8px;">
+          <button class="s-btn s-btn-primary" id="sRefundWallet" style="width: 100%; border-radius:14px; padding:14px;">Wallet (Instant)</button>
+          <button class="s-btn s-btn-secondary" id="sRefundUPI" style="width: 100%; border-radius:14px; padding:14px;">UPI (2-3 days)</button>
+          <button class="s-btn s-btn-secondary" id="sRefundExit" style="width: 100%; opacity: 0.6; border: 1px dashed #ccc; margin-top:4px; font-size:0.8rem;">Don't Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('sRefundWallet').onclick = () => { document.body.removeChild(overlay); resolve("wallet"); };
+    document.getElementById('sRefundUPI').onclick = () => { document.body.removeChild(overlay); resolve("upi"); };
+    document.getElementById('sRefundExit').onclick = () => { document.body.removeChild(overlay); resolve("exit"); };
+  });
+};
+
 // Also expose as window globals if needed immediately
 window.sAlert = sAlert;
 window.sConfirm = sConfirm;
+window.sPromptRefund = sPromptRefund;
