@@ -268,6 +268,14 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(getPendingUPIPayments());
     }
+    if (action === "getPendingCounts") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes({
+        refunds: getPendingRefunds().length,
+        wallet: getPendingRecharges().length,
+        payments: getPendingUPIPayments().length
+      });
+    }
     
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));

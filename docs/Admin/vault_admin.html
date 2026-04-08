@@ -1231,6 +1231,7 @@ function bootApp() {
   selectDate(toISO(ist));
   renderBfMasterTable();
   renderSabjiMasterTable();
+  refreshApprovalCounts();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1722,7 +1723,10 @@ async function switchPage(page) {
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navApprovals").classList.toggle("active", page==="approvals");
   
-  if (page==="approvals") switchApprovalTab('refunds');
+  if (page==="approvals") {
+    refreshApprovalCounts();
+    switchApprovalTab('refunds');
+  }
   // Stop orders timer when leaving orders tab
   if (page !== "orders") stopOrdersAutoRefresh();
   if (page === "orders") {
@@ -3185,6 +3189,22 @@ async function markAllPaid() {
 }
 
 // ── APPROVALS SUB-TABS ──
+async function refreshApprovalCounts() {
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getPendingCounts&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.error) return;
+    
+    const r = document.getElementById("tabRefunds");
+    const p = document.getElementById("tabPayments");
+    const w = document.getElementById("tabWallet");
+    
+    if (r) r.innerHTML = `💸 Refunds ${data.refunds > 0 ? `[${data.refunds}]` : ''}`;
+    if (p) p.innerHTML = `💳 UPI Payments ${data.payments > 0 ? `[${data.payments}]` : ''}`;
+    if (w) w.innerHTML = `💼 Wallet Recharges ${data.wallet > 0 ? `[${data.wallet}]` : ''}`;
+  } catch(e) { console.warn("Count refresh failed", e); }
+}
+
 function switchApprovalTab(tab) {
   document.querySelectorAll(".approvals-tab").forEach(el=>el.classList.remove("active"));
   document.querySelectorAll(".approval-panel").forEach(el=>el.classList.remove("active"));
@@ -3271,6 +3291,7 @@ async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", a
     if (data.success) {
       toast(isCancelled ? "Refund Processed ✅" : "Payment Verified ✅");
       await loadPendingPayments();
+      refreshApprovalCounts();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
@@ -3329,6 +3350,7 @@ async function activateWalletRecharge(phone, timestamp, amt, name) {
     if (data.success) {
       toast("Wallet Activated ✅");
       await loadPendingRecharges();
+      refreshApprovalCounts();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
@@ -3414,6 +3436,7 @@ async function markAsRefunded(subId, name, amt) {
     if (data.success) {
       toast("Marked as Refunded ✅");
       await loadRefunds();
+      refreshApprovalCounts();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
