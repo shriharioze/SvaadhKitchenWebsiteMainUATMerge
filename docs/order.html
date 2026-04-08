@@ -2192,6 +2192,14 @@ async function buildBillScreen(){
     let totalDelivery=0;
     let totalSmallOrderFee=0;
     let totalInflationSurcharge=0;
+
+    // Svaadh Logic: Breakfast delivery is free if Lunch/Dinner is ordered for same day
+    const hasMajorInCart = (dayOrders["Lunch"]?.subtotal > 0) || (dayOrders["Dinner"]?.subtotal > 0);
+    const hasMajorExisting = (existDay["Lunch"]?.subtotal > 0) || (existDay["Dinner"]?.subtotal > 0);
+    const hasAnyMajorOnDate = hasMajorInCart || hasMajorExisting;
+    const hasExistBfCharge = (existDay["Breakfast"]?.delivery_charged || 0) > 0;
+    let bfCreditApplied = false;
+
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
@@ -2246,9 +2254,27 @@ async function buildBillScreen(){
 
       // Delivery — waived if combined meal total >= FREE_THRESHOLD or Pickup
       if (mAddr.area !== "Self Pickup" && !FREE_AREAS.includes(mAddr.area) && sub > 0 && combinedMealSub < FREE_THRESHOLD) {
-        const fee = DELIVERY_CHARGE;
-        mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
-        mExtrasTotal += fee; totalDelivery += fee;
+        let fee = DELIVERY_CHARGE;
+        // Special Rule: Breakfast delivery is free if combined with Lunch/Dinner
+        if (meal === "Breakfast" && hasAnyMajorOnDate) fee = 0;
+
+        if (fee > 0) {
+          mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
+          mExtrasTotal += fee; totalDelivery += fee;
+        }
+      }
+
+      // Breakfast Delivery Credit: If Lunch/Dinner is added to a day where BF was already paid
+      if ((meal === "Lunch" || meal === "Dinner") && hasExistBfCharge && !bfCreditApplied) {
+        mealExtras.push({ 
+           icon: "🏷️", 
+           name: "Breakfast Combo Refund", 
+           val: -10, 
+           credit: true,
+           desc: "Bonus: Since you are now ordering Lunch/Dinner for today, your earlier Breakfast delivery fee of ₹10 is being refunded!" 
+        });
+        mExtrasTotal -= 10; totalDelivery -= 10;
+        bfCreditApplied = true;
       }
       // Audit Fix #5: Ensure non-negative running totals
       totalDelivery = Math.max(0, totalDelivery);
@@ -2307,6 +2333,9 @@ async function buildBillScreen(){
   const tenCb=$("tenDayConfirm");if(tenCb)tenCb.checked=false;
   // codBtn logic removed
   $("billSummaryContent").innerHTML=html+
+    `<div style="margin:12px 4px; padding:12px; background:#fff9e6; border:1px solid #ffe0b2; border-radius:12px; font-size:0.7rem; color:#856404; line-height:1.4;">
+      💡 <strong>Delivery Note:</strong> Breakfast delivery is <strong>FREE</strong> if Lunch or Dinner is ordered for the same day (Automatically adjusted if ordered separately).
+    </div>` +
     `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
   const wb = Number(S.walletBalance) || 0;
