@@ -628,10 +628,11 @@
         <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
       </div>
     </div>
-    <div class="ktabs">
-      <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
-      <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
-    </div>
+     <div class="ktabs">
+       <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
+       <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
+       <div class="ktab" id="tab_Labels" onclick="switchKTab('Labels')">Labels</div>
+     </div>
     <div class="kbody" id="kbody">
       <div class="no-orders">Select a date and tap Load</div>
     </div>
@@ -641,8 +642,8 @@
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
     let K = { pin: "", sessionPin: "" };
-    let _lastData = null;
-    let _currentTab = "Summary";
+     let _lastData = null;
+     let _currentTab = "Summary";
 
     // ── RATE LIMITING ──
     let attempts = 0;
@@ -850,7 +851,8 @@
     function renderView() {
       if (!_lastData) return;
       if (_currentTab === "Summary") renderKitchen(_lastData);
-      else renderPacking(_lastData);
+      else if (_currentTab === "Packing") renderPacking(_lastData);
+      else if (_currentTab === "Labels") renderLabelsTab();
     }
 
     function renderKitchen(data) {
@@ -985,6 +987,78 @@
         document.getElementById("kbody").innerHTML = html;
         return;
       }
+      // ... existing renderPacking code ...
+    }
+
+    function renderLabelsTab() {
+      const body = document.getElementById("kbody");
+      if (!_lastData || !_lastData.orders || _lastData.orders.length === 0) {
+        body.innerHTML = '<div class="no-orders" style="padding:40px; text-align:center; color:#888;">No orders to label</div>';
+        return;
+      }
+
+      const activeOrders = _lastData.orders.filter(o => !o.Packed);
+      
+      if (activeOrders.length === 0) {
+        body.innerHTML = '<div class="no-orders" style="color:var(--green); font-weight:bold; padding:40px; text-align:center;">🎉 All orders packed!</div>';
+        return;
+      }
+
+      const fmtDate = d => { const p = d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+      let html = `<div style="text-align:center;font-size:0.75rem;color:#666;margin-bottom:14px;">📦 Labeled Packing - \${fmtDate(_lastData.date)}</div>`;
+      
+      html += '<div style="display:flex; flex-direction:column; gap:12px; padding:10px;">';
+      html += activeOrders.map(o => `
+        <div class="label-block" id="label_\${o.Submission_ID}" style="background:white; border-radius:12px; border:1px solid #eee; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid var(--red);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-weight:700; color:#1e293b; font-size:1.1rem;">\${o.Customer_Name}</div>
+            <div style="font-size:0.7rem; color:#94a3b8;">#\${o.Submission_ID}</div>
+          </div>
+          <div style="background:#f8fafc; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:10px; color:#334155; line-height:1.4;">
+            \${o.summary || "Standard Tiffin"}
+          </div>
+          \${o.Special_Notes_Kitchen ? \`<div style="font-size:0.9rem; color:#dc2626; font-weight:700; margin-bottom:12px; padding:0 4px;">सूचविले: \${o.marathiNotes || o.Special_Notes_Kitchen}</div>\` : ''}
+          <div style="display:flex; justify-content:flex-end;">
+            <button onclick="markOrderPacked('\${o.Submission_ID}')" style="background:#059669; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">Mark as Packed</button>
+          </div>
+        </div>
+      `).join('');
+      html += '</div>';
+      
+      body.innerHTML = html;
+    }
+
+    async function markOrderPacked(id) {
+      const block = document.getElementById('label_' + id);
+      if (block) block.style.opacity = '0.5';
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                _action: "markOrderPacked",
+                pin: K.sessionPin,
+                submissionId: id
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (block) block.remove();
+            // Update cache
+            const order = _lastData.orders.find(o => o.Submission_ID === id);
+            if (order) order.Packed = true;
+            
+            if (_lastData.orders.filter(o => !o.Packed).length === 0) {
+                renderLabelsTab();
+            }
+        } else {
+            throw new Error(data.error);
+        }
+      } catch (e) {
+        if (block) block.style.opacity = '1';
+        alert("Error: " + e.message);
+      }
+    }
 
       const MEAL_META = {
         Breakfast: { icon: "🌅", label: "न्याहारी" },

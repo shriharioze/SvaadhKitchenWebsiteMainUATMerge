@@ -310,10 +310,14 @@ function doPost(e) {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(batchMarkEnRoute(body));
     }
-    if (action === "markEnRoute") {
-      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
-      return jsonRes(markEnRoute(body));
-    }
+     if (action === "markEnRoute") {
+       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+       return jsonRes(markEnRoute(body));
+     }
+     if (action === "markOrderPacked") {
+       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+       return jsonRes(markOrderPacked(body));
+     }
 
     // Admin-only write actions
     if (action === "adminCancelOrder") {
