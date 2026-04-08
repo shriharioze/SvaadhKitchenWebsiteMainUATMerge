@@ -1695,6 +1695,8 @@ function getKitchenSummary(date) {
   };
   var menu = getMenu(date);
 
+  var orders = [];
+
   dayRows.forEach(function(r) {
     var meal = String(r.Meal_Type || "");
     if (!meal) return;
@@ -1702,15 +1704,23 @@ function getKitchenSummary(date) {
     var m = meals[meal];
     m.count++;
 
+    // For Labels Tab
+    var summaryParts = [];
     if (meal === "Breakfast") {
       if (!m.items) m.items = {};
       for (var n = 1; n <= 4; n++) {
         var item = String(r["BF_Item_"+n] || "").trim();
         var qty  = Number(r["BF_Qty_"+n]) || 0;
-        if (item && qty > 0) m.items[item] = (m.items[item] || 0) + qty;
+        if (item && qty > 0) {
+          m.items[item] = (m.items[item] || 0) + qty;
+          summaryParts.push(qty + " " + item);
+        }
       }
       var curdBf = Number(r.Curd) || 0;
-      if (curdBf > 0) m.items["Curd"] = (m.items["Curd"] || 0) + curdBf;
+      if (curdBf > 0) {
+        m.items["Curd"] = (m.items["Curd"] || 0) + curdBf;
+        summaryParts.push(curdBf + " Curd");
+      }
     } else {
       if (!m.rotis) m.rotis = {};
       if (!m.rotiMatrix) {
@@ -1721,6 +1731,7 @@ function getKitchenSummary(date) {
         var q = Number(r[c]) || 0;
         if (q > 0) {
           m.rotis[c] = (m.rotis[c] || 0) + q;
+          summaryParts.push(q + " " + c.replace(/_/g, " "));
           var packs = calculatePackets(q, ROTI_LIMITS[c]);
           packs.forEach(function(p) {
             m.rotiMatrix[c][p] = (m.rotiMatrix[c][p] || 0) + 1;
@@ -1735,29 +1746,56 @@ function getKitchenSummary(date) {
           dry_mini: 0, dry_full: 0, curry_mini: 0, curry_full: 0
         };
       }
-      m.sabji.dry_mini  += (Number(r.Dry_Sabji_Mini)||0);
-      m.sabji.dry_full  += (Number(r.Dry_Sabji_Full)||0);
-      m.sabji.curry_mini += (Number(r.Curry_Sabji_Mini)||0);
-      m.sabji.curry_full += (Number(r.Curry_Sabji_Full)||0);
+      var dMini = Number(r.Dry_Sabji_Mini)||0;
+      var dFull = Number(r.Dry_Sabji_Full)||0;
+      var cMini = Number(r.Curry_Sabji_Mini)||0;
+      var cFull = Number(r.Curry_Sabji_Full)||0;
+      m.sabji.dry_mini  += dMini;
+      m.sabji.dry_full  += dFull;
+      m.sabji.curry_mini += cMini;
+      m.sabji.curry_full += cFull;
+      
+      if (dMini > 0) summaryParts.push(dMini + " Mini Dry");
+      if (dFull > 0) summaryParts.push(dFull + " Full Dry");
+      if (cMini > 0) summaryParts.push(cMini + " Mini Curry");
+      if (cFull > 0) summaryParts.push(cFull + " Full Curry");
 
       if (!m.other) m.other = {Dal:{kg:0, count:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
-      m.other.Dal.kg      += (Number(r.Dal)   || 0) * 1.33;
-      m.other.Dal.count   += (Number(r.Dal)   || 0);
-      m.other.Rice.count  += (Number(r.Rice)  || 0);
-      m.other.Salad.count += (Number(r.Salad) || 0);
-      m.other.Curd.count  += (Number(r.Curd)  || 0);
+      var dalQ = Number(r.Dal)   || 0;
+      var riceQ = Number(r.Rice)  || 0;
+      var saladQ = Number(r.Salad) || 0;
+      var curdQ = Number(r.Curd)  || 0;
+      
+      m.other.Dal.kg      += dalQ * 1.33;
+      m.other.Dal.count   += dalQ;
+      m.other.Rice.count  += riceQ;
+      m.other.Salad.count += saladQ;
+      m.other.Curd.count  += curdQ;
+
+      if (dalQ > 0) summaryParts.push(dalQ + " Dal");
+      if (riceQ > 0) summaryParts.push(riceQ + " Rice");
+      if (saladQ > 0) summaryParts.push(saladQ + " Salad");
+      if (curdQ > 0) summaryParts.push(curdQ + " Curd");
     }
+
+    orders.push({
+      Submission_ID: String(r.Submission_ID || ""),
+      Customer_Name: String(r.Customer_Name || ""),
+      Meal_Type: meal,
+      summary: summaryParts.join(", "),
+      Special_Notes_Kitchen: String(r.Special_Notes_Kitchen || ""),
+      marathiNotes: String(r.marathiNotes || ""),
+      Packed: r.Packed === true || String(r.Packed).toLowerCase() === "true"
+    });
   });
 
   ["Lunch","Dinner"].forEach(function(meal) {
     if (!meals[meal]) return;
     var m = meals[meal];
-    m.other.Dal.kg   = Math.round(m.other.Dal.kg   * 100) / 100;
-    // Calculate final KG based on mini=0.4 and full=1.0 "portions" (multiplied in frontend later)
-    // Actually we keep counts and calculate in frontend now
+    if (m.other && m.other.Dal) m.other.Dal.kg = Math.round(m.other.Dal.kg * 100) / 100;
   });
 
-  return {date: date, meals: meals};
+  return {date: date, meals: meals, orders: orders};
 }
 
 // ── DRIVER ORDERS ─────────────────────────────────────────────
