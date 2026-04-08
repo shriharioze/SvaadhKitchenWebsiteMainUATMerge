@@ -1184,8 +1184,22 @@ function deleteOrder(phone, rowId, refundType) {
       smallFeeOwed = sameMealRemaining.filter(x => (Number(x.Small_Order_Fee)||0) === 0).length * 10;
     }
 
+    // Special Svaadh Logic: BF delivery is free only if Lunch/Dinner is ordered for same day.
+    // If Lunch/Dinner is deleted, but only BF remains -> customer may owe ₹10 back to Svaadh.
+    let bfDeliveryOwed = 0;
+    if ((deleteMeal === "Lunch" || deleteMeal === "Dinner") && !sameDayRows.some(x => ["Lunch","Dinner"].includes(String(x.Meal_Type).trim()))) {
+      const bfRem = sameDayRows.find(x => String(x.Meal_Type).trim() === "Breakfast");
+      if (bfRem) {
+        const bfArea = bfRem.Area || "";
+        // If remaining breakfast was charged ₹0 for delivery, and it's NOT a free area, then charge ₹10 back.
+        if (!freeAreaNames2.includes(bfArea) && (Number(bfRem.Delivery_Charge)||0) === 0) {
+          bfDeliveryOwed = 10;
+        }
+      }
+    }
+
     // Actual refund = what was charged on deleted row minus any amount now owed back
-    const adjustment = overDiscount + deliveryOwed + smallFeeOwed;
+    const adjustment = overDiscount + deliveryOwed + smallFeeOwed + bfDeliveryOwed;
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
@@ -1217,7 +1231,7 @@ function deleteOrder(phone, rowId, refundType) {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
       const note = adjustment > 0
-        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
+        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed}, bfDeliveryOwed:${bfDeliveryOwed})`
         : "";
       refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note, "upi"]);
       msg = `₹${refundAmt} refund request raised in Approvals`;
