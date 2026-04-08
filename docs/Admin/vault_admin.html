@@ -3247,7 +3247,7 @@ async function loadPendingPayments() {
         <td>
           <button class="${isCancelled ? 'btn-orange':'btn-green'}" 
                   style="${isCancelled ? 'background:#f57c00;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
-                  onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled})">
+                  onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled}, '${p.customer}', ${p.amount})">
             ${isCancelled ? 'Verify & Refund' : 'Confirm Paid'}
           </button>
         </td>
@@ -3258,22 +3258,23 @@ async function loadPendingPayments() {
     sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
 }
 
-async function approveUPIPayment(phone, date, sid, isCancelled=false) {
-  const quest = isCancelled ? `Verify payment for Order ${sid} and process refund?` : `Confirm you have received payment for Order ${sid}?`;
-  if (!(await showUIConfirm(quest, isCancelled ? "Verify & Refund":"Confirm Payment", isCancelled ? "💸":"💰"))) return;
+async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", amt=0) {
+  const quest = isCancelled 
+    ? `Verify payment of ₹${amt} for ${name} (Order ${sid}) and process refund?` 
+    : `Confirm you have received ₹${amt} from ${name} for Order ${sid}?`;
+  if (!(await showUIConfirm(quest, isCancelled ? "Verify & Refund" : "Confirm Payment", isCancelled ? "💸" : "💰"))) return;
   sLoading(true, isCancelled ? "Processing refund..." : "Verifying payment...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"markOrdersStatus", pin:S.sessionPin, phone, date, sid, status:"Paid"})});
     const data = await res.json();
-    sLoading(false);
     if (data.success) {
       toast(isCancelled ? "Refund Processed ✅" : "Payment Verified ✅");
-      loadPendingPayments();
+      await loadPendingPayments();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
-    toast("Error: "+e.message); 
+    toast("Error: " + e.message); 
   }
 }
 
@@ -3309,7 +3310,7 @@ async function loadPendingRecharges() {
         <td style="font-weight:700;color:var(--green);">₹${r.Amount}</td>
         <td style="font-size:0.8rem;color:var(--muted);">${r.Timestamp}</td>
         <td>
-          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount})">Activate Credits</button>
+          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount}, '${r.Customer_Name}')">Activate Credits</button>
         </td>
       </tr>`;
     });
@@ -3318,21 +3319,20 @@ async function loadPendingRecharges() {
     sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
 }
 
-async function activateWalletRecharge(phone, timestamp, amt) {
-  if (!(await showUIConfirm(`Activate ₹${amt} credits for ${phone}?`, "Activate Credits", "💼"))) return;
+async function activateWalletRecharge(phone, timestamp, amt, name) {
+  if (!(await showUIConfirm(`Activate ₹${amt} credits for ${name || phone}?`, "Activate Credits", "💼"))) return;
   sLoading(true, "Activating credits...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"approveWalletRecharge", pin:S.sessionPin, phone, timestamp})});
     const data = await res.json();
-    sLoading(false);
     if (data.success) {
       toast("Wallet Activated ✅");
-      loadPendingRecharges();
+      await loadPendingRecharges();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
-    toast("Error: "+e.message); 
+    toast("Error: " + e.message); 
   }
 }
 
@@ -3387,7 +3387,7 @@ async function loadRefunds() {
         <td>
           <button class="${isUnverified ? 'btn-orange':'btn-green'}" 
                   style="${isUnverified ? 'background:#f57f17;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
-                  onclick="markAsRefunded('${r.Submission_ID}')">
+                  onclick="markAsRefunded('${r.Submission_ID}', '${r.Name}', ${r.Amount})">
             ${isUnverified ? 'Verify & Refund' : 'Apply Refund'}
           </button>
         </td>
@@ -3402,8 +3402,8 @@ async function loadRefunds() {
   }
 }
 
-async function markAsRefunded(subId) {
-  if (!(await showUIConfirm("Confirm you have paid this customer via UPI? This will mark it as refunded.", "Confirm Refund", "💸"))) return;
+async function markAsRefunded(subId, name, amt) {
+  if (!(await showUIConfirm(`Confirm you have paid ₹${amt} to ${name} via UPI? This will mark it as refunded.`, "Confirm Refund", "💸"))) return;
   sLoading(true, "Processing refund...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -3411,10 +3411,9 @@ async function markAsRefunded(subId) {
       body: JSON.stringify({ _action: "markRefunded", pin: S.sessionPin, submissionId: subId })
     });
     const data = await res.json();
-    sLoading(false);
     if (data.success) {
       toast("Marked as Refunded ✅");
-      loadRefunds();
+      await loadRefunds();
     } else throw new Error(data.error);
   } catch(e) { 
     sLoading(false);
