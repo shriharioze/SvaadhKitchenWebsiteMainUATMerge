@@ -93,7 +93,7 @@ const ORDERS_HEADERS = [
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Net_Total",
-  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference"
+  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed"
 ];
 
 // Item colKey → Orders column name mapping (for quick lookup)
