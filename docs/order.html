@@ -2997,6 +2997,9 @@ async function loadExistingOrders(phone){
       upcomingRowsHtml = upcoming.map(o => {
         const firstRow = fullUpcomingRaw.find(x => String(x.rowId) === String(o.rowId));
         const stat = String(firstRow?.payment_status || "").trim();
+        const isCancelled = stat.toLowerCase().includes("cancelled");
+        let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
+                       (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
         const payMeth = String(firstRow?.payment_method || "").toLowerCase();
         const isWalletPay = payMeth.includes("wallet") || stat.toLowerCase().includes("wallet");
         const payChip = isWalletPay ? 
