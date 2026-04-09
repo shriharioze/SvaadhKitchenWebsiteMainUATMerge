@@ -1407,7 +1407,7 @@ const FAQ_ITEMS = [
   {q:"Can I order for multiple days at once?", a:"Yes! On the date selection screen, tap as many dates as you want. You'll set meals for each date individually."},
   {q:"How do discounts work?", a:"If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen."},
   {q:"What is Prepaid Wallet Billing?", a:"Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!"},
-  {q:"Can I edit or cancel an order?", a:"Yes, before the cutoff time. Tap 'View / Edit upcoming orders' on the home screen to delete or modify upcoming orders. Any UPI payments for cancelled orders will be manually refunded via GPay or adjusted in your next bill."},
+  {q:"Can I edit or delete my order?", a:"Directly editing an order is not possible. If you need to make changes before the cutoff time, please delete your existing order via the 'Upcoming Orders' dashboard and place a new one with your corrected items. Any credits from deletions will be automatically refunded to your Svaadh Wallet or UPI as per your preference."},
   {q:"Do you offer self-pickup?", a:"Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small order fee are <strong>completely waived</strong> for pickup orders. Free delivery also applies to 🏠 Bhosale Garden and 📍 Triveni Nagar."},
 ];
 
@@ -1622,7 +1622,9 @@ async function lookupCustomer(){
     
     if (data.hasPin) {
        S.authMode = "verify";
-       $("pinAuthTitle").innerHTML = "🔒 Welcome back";
+       const parts = (data.name || "").trim().split(" ");
+       const firstName = parts[0] || "";
+       $("pinAuthTitle").innerHTML = firstName ? `🔒 Welcome back, ${firstName}` : "🔒 Welcome back";
        $("pinAuthDesc").innerHTML = "Please enter your 4-digit PIN to access your account.";
        if($("pinHint")) $("pinHint").style.display = "none";
        $("forgotPinWrap").style.display = "block";
@@ -2648,6 +2650,12 @@ function resetForAnotherOrder(){
   document.querySelectorAll(".date-btn").forEach(el => el.classList.remove("selected"));
   updateNav();
   window.scrollTo(0,0);
+}
+
+function logoutCustomer() {
+  localStorage.removeItem('sk_logged_in_phone');
+  localStorage.removeItem('sk_logged_in_pin');
+  location.reload();
 }
 
 // ═══════════════════════════════════════════════════════════
