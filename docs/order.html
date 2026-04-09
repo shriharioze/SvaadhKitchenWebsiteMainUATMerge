@@ -1729,7 +1729,18 @@ function handleLoginSuccess(profileData, isNew) {
   } else {
     S.isFirstTime = true;
     $("returningBadge").innerHTML = "";
-    if (!localStorage.getItem("sk_seen_how")) showHowScreen();
+    
+    // For new users, show onboarding screens
+    if (!localStorage.getItem("sk_seen_how")) {
+        showHowScreen();
+    }
+    
+    // Always advance to Step 1 (Profile Details) for new signups
+    if (S.step === 0) {
+        S.step = 1;
+        updateNav();
+        window.scrollTo(0, 0);
+    }
   }
 
   // Pre-fill form
