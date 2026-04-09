@@ -1983,6 +1983,8 @@ function toggleAddressMode(){
   if(!S.sameAddr){
     // Pre-fill per-meal blocks with whatever is in the single block
     const p=S.profile;
+    ["bf","l","d"].forEach(pfx=>{
+      const a=$(pfx+"_areaSelect"),w=$(pfx+"_wingInput"),f=$(pfx+"_flatInput"),
             fl=$(pfx+"_floorInput"),s=$(pfx+"_societyInput"),
             dp=$(pfx+"_deliveryPointSelection"),
             m=$(pfx+"_mapsInput"),lm=$(pfx+"_landmarkInput");
