@@ -1319,8 +1319,13 @@ function selectDate(iso) {
   S.dinnerDry    = "";
   S.dinnerCurry  = "";
 
+  // 1. First, check all Master items that are "default_on"
+  S.bfMaster.forEach(m => {
+    if (m.default_on) S.checkedBf[m.id] = true;
+  });
+
   if (existing) {
-    // Mark checked breakfast items
+    // 2. Then, layer on whatever was actually saved (in case of manual changes)
     (existing.breakfast || []).forEach(item => {
       const master = S.bfMaster.find(m => m.name === item.name);
       if (master) S.checkedBf[master.id] = true;
@@ -1791,7 +1796,7 @@ async function switchPage(page) {
     loadPayments();
   }
   if (page === "customers") loadCustomers();
-  document.getElementById("sidebar").style.display = page==="menu" ? "flex" : "none";
+  document.getElementById("sidebar").style.setProperty("display", (page==="menu" ? "flex" : "none"), "important");
 }
 
 // ════════════════════════════════════════════════════════
