@@ -935,6 +935,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           <label data-i18n="label_delivery_point">Deliver to</label>
           <select id="deliveryPointSelection" onchange="syncSingleAddr()">
             <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+            <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
             <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
             <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
             <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
@@ -998,6 +999,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="bf_deliveryPointSelection">
               <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
               <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
               <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
               <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
@@ -1052,6 +1054,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="l_deliveryPointSelection">
               <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
               <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
               <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
               <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
@@ -1106,6 +1109,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="d_deliveryPointSelection">
               <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
               <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
               <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
               <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
@@ -1444,6 +1448,7 @@ function buildAddr(wing,flat,floor,society,area,point){
   let addr = parts.join(", ");
   const optLabels = {
     door: "", // Default, no suffix
+    bell_keep: t('opt_point_bell_keep'),
     lobby_handoff: t('opt_point_lobby_handoff'),
     lobby_keep: t('opt_point_lobby_keep'),
     gate_handoff: t('opt_point_gate_handoff'),

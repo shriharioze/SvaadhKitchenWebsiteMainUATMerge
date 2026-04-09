@@ -54,6 +54,7 @@
     label_society: "Society / Building / Office Park *",
     label_delivery_point: "Deliver to",
     opt_point_door: "Doorstep / Office Door (Default)",
+    opt_point_bell_keep: "Keep outside & Ring bell",
     opt_point_lobby_handoff: "Handover at Lobby / Reception",
     opt_point_lobby_keep: "Keep at Lobby / Reception",
     opt_point_gate_handoff: "Handover at Security Gate",
