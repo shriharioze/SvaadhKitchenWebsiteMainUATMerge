@@ -177,8 +177,8 @@ const BUSINESS_CONTEXT = {
   contact: {
     phone_primary: "9930748908",
     phone_alt: "9819969682",
-    whatsapp: "+91 99307 48908",
-    whatsapp_link: "https://wa.me/919930748908",
+    whatsapp: "+91 93222 46765",
+    whatsapp_link: "https://wa.me/919322246765",
     whatsapp_group: "https://chat.whatsapp.com/EpLv7mtYipm61ScKjbOiuk",
     email: "svaadh.kitchen@gmail.com",
     google_page: "https://share.google/UnZM2xcLOF2QVO9cj"
@@ -196,6 +196,12 @@ function doGet(e) {
     if (action === "getAreas") return jsonRes(getAreas());
     if (action === "getCustomer") return jsonRes(getCustomer(p.phone));
     if (action === "verifyLogin") return jsonRes(verifyLogin(p.phone, p.pin));
+    if (action === "setPin") {
+      const profile = { phone: p.phone, pin: p.pin };
+      _upsertCustomer(getSpreadsheet(), profile);
+      return jsonRes({success:true});
+    }
+    if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     
     // Auth Tiers (STRICTLY ISOLATED)
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
@@ -372,6 +378,17 @@ function doPost(e) {
     if (action === "chat") return jsonRes(handleChat(body));
     if (action === "submitWalletRecharge") return jsonRes(submitWalletRecharge(body));
     if (action === "payAllPendingWithWallet") return jsonRes(payAllPendingWithWallet(body));
+
+    if (action === "setPin") {
+      const profile = { phone: body.phone, pin: body.pin };
+      _upsertCustomer(getSpreadsheet(), profile);
+      return jsonRes({success:true});
+    }
+
+    if (action === "saveMenu") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveMenu(body));
+    }
 
     if (action === "upsertProfile") {
       // Capture PIN if provided during mid-flow profile upserts
@@ -583,6 +600,54 @@ function _calculateWalletBalance(phone) {
 
   return Math.round(balance * 100) / 100;
 }
+
+function saveMenu(body) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_MENU, [
+    "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
+    "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner"
+  ]);
+  const rows = ws.getDataRange().getValues();
+  const headers = rows[0];
+  const dIdx = headers.indexOf("Date");
+  
+  if (dIdx === -1) return {success:false, error:"Date column missing in SK_Daily_Menu"};
+
+  const dateStr = body.date;
+  let existingRow = -1;
+  for (let i = 1; i < rows.length; i++) {
+    let rDate = rows[i][dIdx];
+    if (rDate instanceof Date) rDate = Utilities.formatDate(rDate, "Asia/Kolkata", "yyyy-MM-dd");
+    if (String(rDate).trim() === dateStr) {
+      existingRow = i + 1;
+      break;
+    }
+  }
+
+  const newRow = new Array(headers.length).fill("");
+  const setVal = (h, val) => {
+    const idx = headers.indexOf(h);
+    if (idx >= 0) newRow[idx] = val;
+  };
+
+  setVal("Date", dateStr);
+  setVal("Breakfast_JSON", JSON.stringify(body.breakfast || []));
+  setVal("Lunch_Dry", body.lunch_dry || "");
+  setVal("Lunch_Curry", body.lunch_curry || "");
+  setVal("Dinner_Dry", body.dinner_dry || "");
+  setVal("Dinner_Curry", body.dinner_curry || "");
+  setVal("Cutoff_Breakfast", body.cutoff_breakfast || "");
+  setVal("Cutoff_Lunch", body.cutoff_lunch || "");
+  setVal("Cutoff_Dinner", body.cutoff_dinner || "");
+
+  if (existingRow >= 0) {
+    ws.getRange(existingRow, 1, 1, newRow.length).setValues([newRow]);
+  } else {
+    ws.appendRow(newRow);
+  }
+  return {success:true};
+}
+
 
 // ── GET MENU ─────────────────────────────────────────────────
 function getMenu(dateStr) {

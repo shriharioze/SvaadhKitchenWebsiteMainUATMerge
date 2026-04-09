@@ -174,9 +174,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .input-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 
 /* PHONE */
-.phone-wrap{position:relative;}
-.phone-wrap .prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.88rem;color:#888;pointer-events:none;}
-.phone-wrap input{padding-left:40px;font-size:1rem;letter-spacing:1px;}
+.phone-wrap{display:flex;gap:4px;}
+.phone-wrap select{width:auto;min-width:90px;padding-left:8px;padding-right:4px;border-radius:10px 0 0 10px;border-right:none;border:1.5px solid #ddd;font-family:inherit;font-size:0.88rem;background:#fafafa;}
+.phone-wrap input{border-radius:0 10px 10px 0;letter-spacing:1px;font-size:1rem;border:1.5px solid #ddd;}
 
 /* BUTTONS */
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;border:none;border-radius:12px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;transition:transform 0.1s,box-shadow 0.2s;text-align:center;}
@@ -719,7 +719,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       </div>
       <div class="how-info-box">
         <div class="hi-label" data-i18n="how_help_label">❓ Help</div>
-        <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></div>
+        <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a><br>Call: 9930748908 / 9819969682</div>
       </div>
     </div>
   </div>
@@ -792,8 +792,32 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <div class="form-group">
       <label data-i18n="phone_label">Mobile Number</label>
       <div class="phone-wrap">
-        <span class="prefix">+91</span>
-        <input type="tel" id="phoneInput" maxlength="10" placeholder="9876543210" inputmode="numeric" oninput="if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
+        <select id="countryCode">
+          <option value="+91">🇮🇳 +91 (India)</option>
+          <option value="+971">🇦🇪 +971 (UAE)</option>
+          <option value="+965">🇰🇼 +965 (Kuwait)</option>
+          <option value="+966">🇸🇦 +966 (Saudi)</option>
+          <option value="+968">🇴🇲 +968 (Oman)</option>
+          <option value="+974">🇶🇦 +974 (Qatar)</option>
+          <option value="+973">🇧🇭 +973 (Bahrain)</option>
+          <option value="+65">🇸🇬 +65 (Singapore)</option>
+          <option value="+1">🇺🇸 +1 (USA)</option>
+          <option value="+44">🇬🇧 +44 (UK)</option>
+          <option value="+61">🇦🇺 +61 (Australia)</option>
+          <option value="+1">🇨🇦 +1 (Canada)</option>
+          <option value="+49">🇩🇪 +49 (Germany)</option>
+          <option value="+33">🇫🇷 +33 (France)</option>
+          <option value="+353">🇮🇪 +353 (Ireland)</option>
+          <option value="+41">🇨🇭 +41 (Switzerland)</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+61">🇦🇺 +61</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+        </select>
+        <input type="tel" id="phoneInput" maxlength="15" placeholder="9876543210" inputmode="numeric" oninput="if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
       </div>
     </div>
     
@@ -808,7 +832,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="if(this.value.length===4) goNext();">
       </div>
       <div id="forgotPinWrap" style="margin-top:14px;display:none;">
-        <a href="https://wa.me/919930748908?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
+        <a href="https://wa.me/919322246765?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
       </div>
     </div>
     <p class="text-sm" style="margin-top:8px;" data-i18n="phone_hint">We'll load your saved details if you've ordered before.</p>
@@ -1390,7 +1414,7 @@ function showHowModal(){
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
       <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
       <strong>${t('how_help_label')}</strong><br>
-      WhatsApp: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a>
+      WhatsApp: <a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a>
     </div>`;
   $("howModal").style.display="flex";
 }
@@ -1407,7 +1431,7 @@ const FAQ_ITEMS = [
   {q:"Can I order for multiple days at once?", a:"Yes! On the date selection screen, tap as many dates as you want. You'll set meals for each date individually."},
   {q:"How do discounts work?", a:"If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen."},
   {q:"What is Prepaid Wallet Billing?", a:"Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!"},
-  {q:"Can I edit or delete my order?", a:"Directly editing an order is not possible. If you need to make changes before the cutoff time, please delete your existing order via the 'Upcoming Orders' dashboard and place a new one with your corrected items. Any credits from deletions will be automatically refunded to your Svaadh Wallet or UPI as per your preference."},
+  {q:"Can I edit or delete my order?", a:"Editing an existing order is not possible. If you need to make corrections, please <strong>delete</strong> the existing order and place a <strong>new</strong> one with the correct items. This ensures total accuracy in our kitchen. Credits from deletions will be automatically refunded to your Svaadh Wallet or UPI as per your preference."},
   {q:"Do you offer self-pickup?", a:"Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small order fee are <strong>completely waived</strong> for pickup orders. Free delivery also applies to 🏠 Bhosale Garden and 📍 Triveni Nagar."},
 ];
 
@@ -1458,7 +1482,7 @@ function refreshBillBtn(){
 function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
 async function goNext(){
   if($("btnNext").disabled)return;
-  if(!validate(S.step)) return;
+  if(!(await validate(S.step))) return;
   if(S.step===0){
      if (!S.authMode) { await lookupCustomer(); return; }
      
@@ -1486,21 +1510,27 @@ async function goNext(){
      } else if (S.authMode === "create") {
        const forbidden_pins = ["0000","1111","2222","3333","4444","5555","6666","7777","8888","9999","1234","4321","9876","2580"];
        if(forbidden_pins.includes(enteredPin)){toast("Please choose a stronger PIN.", 3000);return;}
+       
        S.profile.pin = enteredPin;
        localStorage.setItem('sk_logged_in_phone', S.phone);
        localStorage.setItem('sk_logged_in_pin', enteredPin);
-       sBtnLoading($("btnNext"), true, "Setting PIN");
-       
-       fetch(`${APPS_SCRIPT_URL}?action=setPin&phone=${S.phone}&pin=${enteredPin}`)
-         .then(res => res.json())
-         .then(data => { 
-           sBtnLoading($("btnNext"), false);
-           handleLoginSuccess(S.tempProfileData, !S.tempProfileData); 
-         })
-         .catch(e => {
-            sBtnLoading($("btnNext"), false);
-            toast("Network error while setting PIN.");
-         });
+
+       // If existing user resetting PIN -> Save immediately
+       if (S.tempProfileData && !S.tempProfileData._newAccount && S.tempProfileData.found) {
+         sBtnLoading($("btnNext"), true, "Saving PIN");
+         fetch(`${APPS_SCRIPT_URL}?action=setPin&phone=${S.phone}&pin=${enteredPin}`)
+           .then(() => { 
+             sBtnLoading($("btnNext"), false);
+             handleLoginSuccess(S.tempProfileData, false); 
+           })
+           .catch(() => { 
+             sBtnLoading($("btnNext"), false); 
+             handleLoginSuccess(S.tempProfileData, false); 
+           });
+       } else {
+         // New user -> Postpone saving until Page 2 continue
+         handleLoginSuccess(null, true); 
+       }
        return;
      }
      return;
@@ -1545,7 +1575,12 @@ async function goNext(){
   S.step++; updateNav(); window.scrollTo(0,0);
 }
 async function validate(step){
-  if(step===0){const p=$("phoneInput").value.trim().replace(/\D/g,"");if(p.length!==10){toast(t('toast_valid_phone'));return false;}if(!/^[6-9]/.test(p)){toast(t('toast_indian_phone'));return false;}S.phone=p;}
+  if(step===0){
+    const p=$("phoneInput").value.trim().replace(/\D/g,"");
+    const code = $("countryCode").value;
+    if(p.length < 10){toast(t('toast_valid_phone'));return false;}
+    S.phone = (code === "+91" && p.length === 10) ? p : code + p;
+  }
   if(step===1){
     const firstName=$("firstNameInput").value.trim();
     const lastName=$("lastNameInput").value.trim();
@@ -1648,7 +1683,17 @@ async function lookupCustomer(){
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Set PIN & Continue";
        $("btnNext").disabled = false;
-       S.tempProfileData = data.found ? data : null;
+       if (data.found) {
+          const parts = (data.name || "").trim().split(" ");
+          const firstName = parts[0] || "";
+          $("pinAuthTitle").innerHTML = firstName ? `🔒 Welcome back, ${firstName}` : "🔒 Welcome back";
+          $("pinAuthDesc").innerHTML = "Please set a <strong>new</strong> 4-digit secure PIN.";
+          S.tempProfileData = data;
+       } else {
+          $("pinAuthTitle").innerHTML = "🔒 Protect your account";
+          $("pinAuthDesc").innerHTML = "Please set a 4-digit secure PIN for your Wallet.";
+          S.tempProfileData = { _newAccount: true };
+       }
        setTimeout(()=>$("pinInput").focus(), 100);
        return;
     }
@@ -1665,13 +1710,14 @@ function handleLoginSuccess(profileData, isNew) {
    sLoading(false); // Hide any active "Logging you in" loader
    if($("authActionsWrap")) $("authActionsWrap").style.display = "flex";
   if (profileData) {
-    const wb = Number(profileData.wallet_balance) || 0;
-    toast(`Welcome back! Wallet balance: ₹${wb}`, 3000);
-    updateWalletBalanceUI(wb);
-    S.isFirstTime = false;
     const parts = (profileData.name || "").trim().split(" ");
     const fn = parts[0] || "";
     const ln = parts.slice(1).join(" ") || "";
+    const wb = Number(profileData.wallet_balance) || 0;
+    
+    toast(`Welcome back, ${fn}! Wallet balance: ₹${wb}`, 3000);
+    updateWalletBalanceUI(wb);
+    S.isFirstTime = false;
     S.profile = {...S.profile, name: profileData.name || "", first_name: fn, last_name: ln,
       area: profileData.area || "", wing: profileData.wing || "",
       flat: profileData.flat || "", floor: profileData.floor || "", society: profileData.society || "",
@@ -1684,9 +1730,8 @@ function handleLoginSuccess(profileData, isNew) {
       <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
       <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
       <div class="csub">${t('welcome_back_hint')}</div></div></div>
-    <div style="background:#f0faf4;border:1px solid #6fcf97;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.78rem;color:#1a6640;">
-      ${t('no_changes_hint')}
     </div>`;
+    if (S.step === 0) goNext();
   } else {
     S.isFirstTime = true;
     $("returningBadge").innerHTML = "";
@@ -3019,6 +3064,12 @@ async function deleteOrder(rowId, date, meal) {
   } finally {
     currentDeleteData = null;
   }
+}
+
+function logoutCustomer() {
+  localStorage.removeItem('sk_logged_in_phone');
+  localStorage.removeItem('sk_logged_in_pin');
+  window.location.reload();
 }
 
 // ═══════════════════════════════════════════════════════════
