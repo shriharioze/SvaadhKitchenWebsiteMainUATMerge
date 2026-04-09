@@ -3065,8 +3065,10 @@ function seedTestData() {
       if (d.meal === "Breakfast") {
         let bIdx = 0;
         for (const [key, val] of Object.entries(d.items)) {
-           if (bIdx === 0) { row[30] = key; row[31] = val; }
-           if (bIdx === 1) { row[32] = key; row[33] = val; }
+           if (bIdx === 0) { row[29] = key; row[30] = val; }
+           if (bIdx === 1) { row[31] = key; row[32] = val; }
+           if (bIdx === 2) { row[33] = key; row[34] = val; }
+           if (bIdx === 3) { row[35] = key; row[36] = val; }
            bIdx++;
         }
       }
