@@ -814,7 +814,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           <option value="+971">🇦🇪 +971 (UAE)</option>
           <option value="+973">🇧🇭 +973 (Bahrain)</option>
           <option value="+974">🇶🇦 +974 (Qatar)</option></select>
-        <input type="tel" id="phoneInput" maxlength="15" placeholder="9876543210" inputmode="numeric" oninput="if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
+        <input type="tel" id="phoneInput" maxlength="15" placeholder="9876543210" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,''); if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
       </div>
     </div>
     
@@ -826,7 +826,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         💡 <strong>Hint:</strong> Use your birthday (DDMM) so it's easy to remember!
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="if(this.value.length===4) goNext();">
+        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="this.value=this.value.replace(/\D/g,''); if(this.value.length===4) goNext();">
       </div>
       <div id="forgotPinWrap" style="margin-top:14px;display:none;">
         <a href="https://wa.me/919322246765?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
@@ -1648,7 +1648,7 @@ async function validate(step){
   if(step===0){
     const p=$("phoneInput").value.trim().replace(/\D/g,"");
     const code = $("countryCode").value;
-    if(p.length < 10){toast(t('toast_valid_phone'));return false;}
+    if(p.length < 10 || (code === "+91" && !/^[6-9]/.test(p))){toast(t('toast_indian_phone'));return false;}
     S.phone = (code === "+91" && p.length === 10) ? p : code + p;
   }
   if(step===1){
@@ -1661,6 +1661,7 @@ async function validate(step){
       const area=$("areaSelect").value;
       if(!area){toast(t('toast_area'));return false;}
       const isPickup = (area === "Self Pickup");
+      const society=$("societyInput").value.trim();
       if(!isPickup) {
         if(!society){toast(t('toast_society'));return false;}
       }
@@ -1675,11 +1676,45 @@ async function validate(step){
         landmark:isPickup ? "" : $("landmarkInput").value.trim(),
         payment_preference:$("payFreqSelect").value};
     } else {
-      const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
-      const hasAnyValid = (bf.area && (bf.society || bf.area === "Self Pickup")) || 
-                          (l.area && (l.society || l.area === "Self Pickup")) || 
-                          (d.area && (d.society || d.area === "Self Pickup"));
-      if(!hasAnyValid){toast("Please provide a delivery address (Society/Building name) or select Self Pickup for at least one meal.");return false;}
+      const bf=readPerMealAddr("bf"), l=readPerMealAddr("l"), d=readPerMealAddr("d");
+      
+      let validCount = 0;
+      let errorMsg = "";
+      
+      const mealsData = [ {name:"Breakfast", addr:bf}, {name:"Lunch", addr:l}, {name:"Dinner", addr:d} ];
+      
+      mealsData.forEach(meal => {
+        if (meal.addr.area) {
+          if (meal.addr.area === "Self Pickup" || meal.addr.society) {
+            validCount++;
+          } else {
+            errorMsg = `Please provide a Society / Building name for your ${meal.name} address.`;
+          }
+        }
+      });
+
+      if (errorMsg) { 
+        toast(errorMsg); 
+        return false; 
+      }
+      if (validCount === 0) {
+        toast("Please configure a delivery address or select Self Pickup for at least one meal.");
+        return false;
+      }
+
+      if (validCount > 0 && validCount < 3) {
+        const recorded = mealsData.filter(m => m.addr.area).map(m => m.name);
+        const blank = mealsData.filter(m => !m.addr.area).map(m => m.name);
+        
+        const msg = `<div style="text-align:left; font-size:0.85rem; line-height:1.5;">
+          ✅ <b>Recorded:</b> ${recorded.join(", ")}<br>
+          ⚪ <b>Left Blank:</b> ${blank.join(" & ")}<br><br>
+          <span style="color:#555;">It's completely fine to leave meals blank! You can always configure them later from your profile.</span>
+        </div>`;
+        
+        const confirmed = await sConfirm(msg, "Address Confirmation", "📍", "काही पत्त्यांची माहिती रिकामी आहे. पुढे जायचे?");
+        if (!confirmed) return false;
+      }
       
       const primary = (l.society || l.area === "Self Pickup") ? l : ((bf.society || bf.area === "Self Pickup") ? bf : d);
       
@@ -2463,9 +2498,6 @@ async function buildBillScreen(){
         mExtrasTotal -= 10; totalDelivery -= 10;
         bfCreditApplied = true;
       }
-      // Audit Fix #5: Ensure non-negative running totals
-      totalDelivery = Math.max(0, totalDelivery);
-      totalSmallOrderFee = Math.max(0, totalSmallOrderFee);
 
       // Market Surcharge
       const surcharge = Math.ceil(sub / 10);
@@ -2494,7 +2526,7 @@ async function buildBillScreen(){
               <div class="bill-line indent delivery-line" style="margin-top:5px;font-size:0.75rem;color:${ex.credit ? '#27ae60' : '#95a5a6'};">
                 <span style="display:flex;align-items:center;gap:5px;">
                   ${ex.icon} ${ex.name}
-                  ${ex.desc ? `<span class="info-icon" onclick="event.stopPropagation();toast('${ex.desc}',6000)" style="background:#eee;color:#7f8c8d;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;font-weight:700;">?</span>` : ''}
+                  ${ex.desc ? `<span class="info-icon" onclick="event.stopPropagation();toast('${ex.desc.replace(/'/g, "\\\\'").replace(/"/g, "&quot;")}',6000)" style="background:#eee;color:#7f8c8d;border-radius:50%;width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;cursor:pointer;font-weight:700;">?</span>` : ''}
                 </span>
                 <span>${ex.credit ? '−' : ''}₹${Math.abs(ex.val)}</span>
               </div>
@@ -2722,6 +2754,19 @@ async function placeOrder(settleAll = false){
     toast(isWalletOrder ? "Please confirm wallet deduction" : t('toast_confirm_payment'));
     return;
   }
+
+  // Pre-submit Order Review Modal
+  let reviewMsg = `<div style="text-align:left; font-size:0.85rem; margin-top:8px; line-height:1.5;">`;
+  S.selectedDates.forEach(date => {
+     const dayMeals = ["Breakfast", "Lunch", "Dinner"].filter(m => (S.orders[date] && S.orders[date][m] && S.orders[date][m].subtotal > 0));
+     if (dayMeals.length > 0) {
+       reviewMsg += `<b>${formatDate(date)}</b>: ${dayMeals.join(", ")}<br>`;
+     }
+  });
+  reviewMsg += `</div><div style="font-size:1rem; font-weight:bold; margin-top:12px; color:#c0392b;">Grand Total: ₹${S.grandTotal}</div>`;
+  
+  const placeConfirmed = await sConfirm(reviewMsg, "Review Your Bill", "🧾", "कृपया तुमची ऑर्डर तपासा आणि पुष्टी करा.");
+  if (!placeConfirmed) return;
   
   sBtnLoading($("btnNext"), true, t('loading_placing'));
   const orders=[];
@@ -3191,10 +3236,15 @@ async function loadAreas() {
     const apiFree = areas.filter(a => a.free).map(a => a.name);
     if (apiFree.length > 0) FREE_AREAS = [...new Set([...FREE_AREAS, ...apiFree])];
     const opts = `<option value="">${t('select_area_ph')}</option>`
-      + areas.map(a => `<option value="${a.name}">${a.label}</option>`).join("");
+      + areas.map(a => `<option value="${a.name}">${a.label}</option>`).join("")
+      + `<option value="Self Pickup">📦 Self Pickup (No Charges)</option>`;
     ["areaSelect","bf_areaSelect","l_areaSelect","d_areaSelect"].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = opts;
+      if (el) {
+        const currentVal = el.value;
+        el.innerHTML = opts;
+        if (currentVal) el.value = currentVal;
+      }
     });
   } catch(e) { /* keep hardcoded fallback options if API fails */ }
 }
@@ -3368,6 +3418,15 @@ document.addEventListener("DOMContentLoaded",()=>{
   window.addEventListener('appinstalled', (event) => {
     console.log('PWA was installed');
     if (pwaInstallWrap) pwaInstallWrap.style.display = 'none';
+  });
+
+  // Session Auto-Refresher: reload if date changes (avoid stale cuts)
+  const INIT_DAY = typeof todayISO === 'function' ? todayISO() : new Date().toISOString().split('T')[0];
+  window.addEventListener('focus', () => {
+    const currentDay = typeof todayISO === 'function' ? todayISO() : new Date().toISOString().split('T')[0];
+    if (currentDay !== INIT_DAY) {
+      location.reload();
+    }
   });
 </script>
 </body>
