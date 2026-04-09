@@ -768,7 +768,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     </div>
   </div>
   <div id="authActionsWrap" style="display:flex; align-items:center; gap:8px;">
-    <button onclick="showManageOrders()" class="bill-chip-btn" style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋 Orders</button>
+    <button onclick="showManageOrders()" class="bill-chip-btn" style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋 Manage Orders</button>
     <button onclick="logoutCustomer()" style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
   </div>
 </div>
@@ -2989,12 +2989,11 @@ async function loadExistingOrders(phone){
       upcomingRowsHtml = upcoming.map(o => {
         const firstRow = fullUpcomingRaw.find(x => String(x.rowId) === String(o.rowId));
         const stat = String(firstRow?.payment_status || "").trim();
-        const isCancelled = stat.toLowerCase().includes("cancelled");
-        const pref = String(firstRow?.refund_preference || "upi").toLowerCase();
-        const prefLabel = pref === "wallet" ? "Svaadh Wallet" : "Original UPI";
-
-        let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
-                       (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
+        const payMeth = String(firstRow?.payment_method || "").toLowerCase();
+        const isWalletPay = payMeth.includes("wallet") || stat.toLowerCase().includes("wallet");
+        const payChip = isWalletPay ? 
+          `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>` :
+          `<div style="display:inline-block;background:#f3e5f5;color:#6a1b9a;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1c4e9;margin-top:5px;vertical-align:middle;">📱 UPI</div>`;
 
         const cancelledHtml = isCancelled ? `
           <div style="margin-top:10px;background:#fff3e0;border:1px solid #ffe0b2;padding:10px 14px;border-radius:12px;font-size:0.75rem;color:#e65100;line-height:1.5;">
@@ -3010,7 +3009,10 @@ async function loadExistingOrders(phone){
             <div class="omr-info">
               <div class="omr-title" ${isCancelled ? 'style="color:#888;"' : ''}>${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub" ${isCancelled ? 'style="color:#999;"' : ''}>${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
-              ${trackHtml ? `<div style="margin-top:6px;">${trackHtml}</div>` : ""}
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${trackHtml ? trackHtml : ""}
+                ${payChip}
+              </div>
               ${cancelledHtml}
             </div>
             ${!isCancelled ? `
@@ -3043,6 +3045,11 @@ async function loadExistingOrders(phone){
             <div class="omr-info">
               <div class="omr-title" style="color:#666;">${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+              <div style="margin-top:5px;">
+                ${o.payment_method?.toLowerCase().includes("wallet") ? 
+                  `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;vertical-align:middle;">💳 Wallet</div>` :
+                  `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;vertical-align:middle;">📱 UPI</div>`}
+              </div>
               ${isCutoffToday ? `<div class="omr-locked" style="margin-top:4px;">⏰ Cutoff passed — cannot edit</div>` : ""}
             </div>
           </div>
