@@ -502,13 +502,27 @@ function initSchema() {
   return {success: true, message: "Schema initialised"};
 }
 
+/**
+ * Normalizes phone numbers for reliable comparison across Google Sheets.
+ * Handles scientific notation (e.g., 9.87E+9) and trailing decimals (.0).
+ */
+function _normalizePhone(phone) {
+  let p = String(phone || "").trim();
+  if (p.includes(".")) p = p.split(".")[0];
+  if (p.toUpperCase().includes("E+") && !isNaN(Number(p))) {
+    p = String(Math.round(Number(p)));
+  }
+  return p;
+}
+
 // ── GET CUSTOMER ─────────────────────────────────────────────
 function getCustomer(phone) {
   if (!phone) return {found: false};
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const rows = getAllRows(ws);
-  const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
+  const pStr = _normalizePhone(phone);
+  const r = rows.find(x => _normalizePhone(x.Phone) === pStr);
   if (!r) return {found: false, hasPin: false, wallet_balance: 0};
   
   const hasPin = (String(r.PIN || "").trim() !== "");
@@ -541,7 +555,8 @@ function verifyLogin(phone, pin) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const rows = getAllRows(ws);
-  const r = rows.find(x => String(x.Phone).trim() === String(phone).trim());
+  const pStr = _normalizePhone(phone);
+  const r = rows.find(x => _normalizePhone(x.Phone) === pStr);
   
   if (!r) return {success: false, error: "Account not found."};
   if (String(r.PIN).trim() !== String(pin).trim()) return {success: false, error: "Incorrect PIN."};
@@ -572,15 +587,10 @@ function _calculateWalletBalance(phone) {
   const rows = getAllRows(ws);
 
   let balance = 0;
-  const pStr = String(phone).trim();
+  const pStr = _normalizePhone(phone);
 
   rows.forEach(w => {
-    // Normalize phone (handles scientific notation from Sheets, e.g. 9.93E+9)
-    let rPhone = String(w.Phone || "").trim();
-    if (rPhone.includes(".")) rPhone = rPhone.split(".")[0];
-    if (rPhone.toUpperCase().includes("E+") && !isNaN(Number(rPhone))) {
-      rPhone = String(Math.round(Number(rPhone)));
-    }
+    const rPhone = _normalizePhone(w.Phone);
     if (rPhone !== pStr) return;
 
     // Only count verified transactions
@@ -981,7 +991,8 @@ function _upsertCustomer(ss, profile) {
   SpreadsheetApp.flush(); // Lock in the headers before indexing
 
   const rows = getAllRows(ws);
-  const existing = rows.find(r => String(r.Phone).trim() === String(profile.phone).trim());
+  const pStr = _normalizePhone(profile.phone);
+  const existing = rows.find(r => _normalizePhone(r.Phone) === pStr);
   
   const fullAddr = [
     profile.wing    && `Wing ${profile.wing}`,

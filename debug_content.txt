@@ -404,8 +404,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .card h2{color:#e97060;}
 [data-theme="dark"] .progress-wrap{background:#1e1e1e;border-color:#333;}
 [data-theme="dark"] .step-dot{background:#3a3a3a;}
-[data-theme="dark"] .step-dot.active{background:#e97060;}
-[data-theme="dark"] .step-dot.done{background:#6abf8a;}
 [data-theme="dark"] .step-label{color:#888;}
 [data-theme="dark"] label{color:#aaa;}
 [data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#2a2a2a;border-color:#444;color:#e0e0e0;}
@@ -721,7 +719,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       </div>
       <div class="how-info-box">
         <div class="hi-label" data-i18n="how_help_label">❓ Help</div>
-        <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a><br>Call: 9930748908 / 9819969682</div>
+        <div class="hi-val">WhatsApp:<br><a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a><br>Call: 9930748908 / 981996982</div>
       </div>
     </div>
   </div>
@@ -795,22 +793,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <label data-i18n="phone_label">Mobile Number</label>
       <div class="phone-wrap">
         <select id="countryCode">
-          <option value="+91" selected>🇮🇳 +91 (India)</option>
-          <option value="+1">🇺🇸 +1 (USA)</option>
-          <option value="+1">🇨🇦 +1 (Canada)</option>
-          <option value="+33">🇫🇷 +33 (France)</option>
-          <option value="+41">🇨🇭 +41 (Switzerland)</option>
-          <option value="+44">🇬🇧 +44 (UK)</option>
-          <option value="+49">🇩🇪 +49 (Germany)</option>
-          <option value="+61">🇦🇺 +61 (Australia)</option>
-          <option value="+65">🇸🇬 +65 (Singapore)</option>
-          <option value="+353">🇮🇪 +353 (Ireland)</option>
-          <option value="+965">🇰🇼 +965 (Kuwait)</option>
-          <option value="+966">🇸🇦 +966 (Saudi)</option>
-          <option value="+968">🇴🇲 +968 (Oman)</option>
-          <option value="+971">🇦🇪 +971 (UAE)</option>
-          <option value="+973">🇧🇭 +973 (Bahrain)</option>
-          <option value="+974">🇶🇦 +974 (Qatar)</option></select>
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+61">🇦🇺 +61</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+        </select>
         <input type="tel" id="phoneInput" maxlength="15" placeholder="9876543210" inputmode="numeric" oninput="if(S.authMode) { S.authMode=null; document.getElementById('pinAuthSection').style.display='none'; document.getElementById('btnNext').textContent=t('btn_continue'); }">
       </div>
     </div>
@@ -1408,7 +1399,7 @@ function showHowModal(){
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
       <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
       <strong>${t('how_help_label')}</strong><br>
-      WhatsApp: <a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a>
+      WhatsApp: <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a>
     </div>`;
   $("howModal").style.display="flex";
 }
@@ -1476,7 +1467,7 @@ function refreshBillBtn(){
 function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
 async function goNext(){
   if($("btnNext").disabled)return;
-  if(!(await validate(S.step))) return;
+  if(!validate(S.step)) return;
   if(S.step===0){
      if (!S.authMode) { await lookupCustomer(); return; }
      
@@ -1677,17 +1668,7 @@ async function lookupCustomer(){
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Set PIN & Continue";
        $("btnNext").disabled = false;
-       if (data.found) {
-          const parts = (data.name || "").trim().split(" ");
-          const firstName = parts[0] || "";
-          $("pinAuthTitle").innerHTML = firstName ? `🔒 Welcome back, ${firstName}` : "🔒 Welcome back";
-          $("pinAuthDesc").innerHTML = "Please set a <strong>new</strong> 4-digit secure PIN.";
-          S.tempProfileData = data;
-       } else {
-          $("pinAuthTitle").innerHTML = "🔒 Protect your account";
-          $("pinAuthDesc").innerHTML = "Please set a 4-digit secure PIN for your Wallet.";
-          S.tempProfileData = { _newAccount: true };
-       }
+       S.tempProfileData = data.found ? data : null;
        setTimeout(()=>$("pinInput").focus(), 100);
        return;
     }
