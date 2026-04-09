@@ -1791,17 +1791,36 @@ function setDeliveryMode(pfx, mode) {
         areaSel.add(opt); areaSel.value = "Self Pickup";
       }
     }
-    // Clear delivery fields visually
+    // Visually clear delivery fields, but DO NOT erase the values in S.profile/S.mealAddrs
     const fields = ["wing","flat","floor","society","maps","landmark"];
     fields.forEach(f => {
       const id = (pfx === 'single') ? `${f}Input` : `${pfx}_${f}Input`;
       if ($(id)) $(id).value = "";
     });
   } else {
-    // Delivery: reset area if it was Pickup
+    // Delivery: Restore values from state if they exist
     if (areaSel && (areaSel.value === "Self Pickup" || areaSel.value === "")) {
-      areaSel.value = "";
+      if (pfx === 'single') {
+        areaSel.value = S.profile.area && S.profile.area !== "Self Pickup" ? S.profile.area : "";
+      } else {
+        const meal = (pfx==='bf')?'Breakfast':((pfx==='l')?'Lunch':'Dinner');
+        areaSel.value = S.mealAddrs[meal].area && S.mealAddrs[meal].area !== "Self Pickup" ? S.mealAddrs[meal].area : "";
+      }
     }
+    
+    // Restore other fields from state
+    const fields = ["wing","flat","floor","society","maps","landmark"];
+    fields.forEach(f => {
+      const id = (pfx === 'single') ? `${f}Input` : `${pfx}_${f}Input`;
+      if ($(id)) {
+        if (pfx === 'single') {
+          $(id).value = S.profile[f] || "";
+        } else {
+          const meal = (pfx==='bf')?'Breakfast':((pfx==='l')?'Lunch':'Dinner');
+          $(id).value = S.mealAddrs[meal][f] || "";
+        }
+      }
+    });
   }
   
   if (pfx === 'single') syncSingleAddr();
@@ -2481,6 +2500,19 @@ function setupUPI(amount){
   const upiStr=`upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR`;
   $("qrcode").innerHTML="";
   new QRCode($("qrcode"),{text:upiStr,width:176,height:176,correctLevel:QRCode.CorrectLevel.M});
+
+  // Make the QR code clickable
+  $("qrcode").style.cursor = "pointer";
+  $("qrcode").title = "Tap to pay via any UPI app";
+  $("qrcode").onclick = () => {
+    if (isIOS()) {
+      // For iOS, the deep link usually works better when triggered via <a> tag, 
+      // but if deepLinkBtn.onclick has specific logic (like copy for iOS), we trigger that.
+      $("upiDeepLink").click();
+    } else {
+      window.location.href = upiStr;
+    }
+  };
 
   // iOS: upi:// deep link doesn't work — show copy button instead
   const deepLinkBtn=$("upiDeepLink");
