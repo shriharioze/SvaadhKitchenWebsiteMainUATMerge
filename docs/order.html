@@ -32,8 +32,9 @@
 <meta name="twitter:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
 
 <!-- Favicon -->
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/x-icon" href="images/svaadh-kitchen-hero.PNG">
+<link rel="shortcut icon" href="images/svaadh-kitchen-hero.PNG">
+<link rel="apple-touch-icon" href="images/svaadh-kitchen-hero.PNG">
 <link rel="stylesheet" href="modals-svaadh.css">
 <script src="modals-svaadh.js"></script>
 
@@ -369,7 +370,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .how-screen{position:fixed;inset:0;background:white;z-index:400;overflow-y:auto;animation:fadeIn 0.3s ease;}
 .how-screen.hidden{display:none;}
 .how-hero{background:linear-gradient(135deg,#c0392b,#e74c3c);padding:32px 24px 28px;color:white;text-align:center;}
-.how-hero .logo{font-size:2.5rem;margin-bottom:8px;}
+.how-hero .logo{margin-bottom:12px;}
+.how-hero .logo img{width:120px;height:120px;object-fit:contain;border-radius:10px;}
+.header-logo-img{width:32px;height:32px;vertical-align:middle;margin-right:8px;border-radius:6px;}
 .how-hero h1{font-size:1.2rem;font-weight:700;}
 .how-hero p{font-size:0.82rem;opacity:0.88;margin-top:6px;}
 .how-body{padding:20px 20px 100px;max-width:520px;margin:0 auto;}
@@ -651,7 +654,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- HOW IT WORKS — FULL SCREEN (shown for new users only) -->
 <div class="how-screen hidden" id="howScreen">
   <div class="how-hero">
-    <div class="logo">🍛</div>
+    <div class="logo"><img src="images/svaadh-kitchen-hero.PNG" alt="Svaadh Kitchen logo"></div>
     <h1 data-i18n="how_welcome">Welcome to Svaadh Kitchen</h1>
     <p data-i18n="how_tagline">Fresh home-cooked food, delivered to your door</p>
   </div>
@@ -749,7 +752,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 
 <!-- HEADER -->
 <div class="page-header" style="position:relative; padding-bottom: 14px;">
-  <h1>🍛 Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
+  <h1><img src="images/svaadh-kitchen-hero.PNG" class="header-logo-img" alt="logo">Svaadh Kitchen <span class="beta-badge">BETA</span></h1>
   <p data-i18n="header_tagline">Home-cooked food, made for you</p>
   <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode" style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
   <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
