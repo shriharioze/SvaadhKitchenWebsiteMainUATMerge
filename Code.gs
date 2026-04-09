@@ -350,6 +350,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteSabjiItem(body.id));
     }
+    if (action === "seedTestData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes({success:true, message: seedTestData()});
+    }
     if (action === "saveSabjiItem") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveSabjiItem(body));
