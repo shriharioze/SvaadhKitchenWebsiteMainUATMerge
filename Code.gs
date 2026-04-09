@@ -3005,101 +3005,93 @@ function adminCancelOrder(body) {
  * dummy orders for Today and Tomorrow for testing prints/labels.
  */
 function seedTestData() {
-  const ss = getSpreadsheet();
-  const ws = ss.getSheetByName(TAB_ORDERS);
-  if (!ws) return "Error: TAB_ORDERS sheet not found";
-
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-
-  const getDayStr = (d) => Utilities.formatDate(d, 'Asia/Kolkata', 'yyyy-MM-dd');
-  const tStr = getDayStr(today);
-  const mStr = getDayStr(tomorrow);
-
-  // Sample data rows
-  const testData = [
-    // TODAY - Breakfast
-    { date: tStr, meal: "Breakfast", name: "Rahul Deshpande", area: "Magarpatta", society: "Pentagon 1", wing: "B", flat: "402", items: {"Kanda Poha": 2}, total: 70, notes: "Less spicy please" },
-    { date: tStr, meal: "Breakfast", name: "Anjali Singh", area: "Amanora", society: "Tower 13", wing: "C", flat: "1805", items: {"Ghee Upma": 1, "Thalipeeth": 1}, total: 90, notes: "Extra chutney" },
+  try {
+    Logger.log("Starting seedTestData...");
+    const ss = getSpreadsheet();
+    if (!ss) throw new Error("Could not open spreadsheet. Check SHEET_ID in Script Properties.");
     
-    // TODAY - Lunch
-    { date: tStr, meal: "Lunch", name: "Amit Kulkarni", area: "Bhosale Garden", society: "Laxmi Vihar", wing: "A", flat: "104", items: {"Chapati": 3, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 71, notes: "Deliver at gate" },
-    { date: tStr, meal: "Lunch", name: "Sneha Patil", area: "Magarpatta", society: "Cosmos", wing: "E", flat: "P-5", items: {"Phulka": 2, "Curry_Sabji_Full": 1, "Rice": 1}, total: 77, notes: "" },
+    const ws = ss.getSheetByName(TAB_ORDERS);
+    if (!ws) throw new Error("Sheet tab '" + TAB_ORDERS + "' not found.");
 
-    // TODAY - Dinner
-    { date: tStr, meal: "Dinner", name: "Mayur Joshi", area: "DP Road", society: "Riverview", wing: "F", flat: "901", items: {"Jowar_Bhakri": 2, "Curry_Sabji_Mini": 1}, total: 62, notes: "Ring bell and leave" },
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
 
-    // TOMORROW - Breakfast
-    { date: mStr, meal: "Breakfast", name: "Priya Rao", area: "Magarpatta", society: "Pentagon 3", wing: "A", flat: "610", items: {"Sabudana Khichdi": 1}, total: 40, notes: "" },
-    
-    // TOMORROW - Lunch
-    { date: mStr, meal: "Lunch", name: "Vikram Shah", area: "Amanora", society: "Adreno", wing: "1", flat: "1502", items: {"Ghee_Phulka": 4, "Dry_Sabji_Full": 1, "Salad": 1}, total: 100, notes: "Call on arrival" },
-    { date: mStr, meal: "Dinner", name: "Svaadh Test", area: "Bhosale Garden", society: "Self Pickup", wing: "-", flat: "-", items: {"Chapati": 2, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 62, notes: "I will pick up" }
-  ];
+    const getDayStr = (d) => Utilities.formatDate(d, 'Asia/Kolkata', 'yyyy-MM-dd');
+    const tStr = getDayStr(today);
+    const mStr = getDayStr(tomorrow);
 
-  testData.forEach(d => {
-    // Build row based on ORDERS_HEADERS
-    const row = new Array(ORDERS_HEADERS.length).fill(""); 
-    
-    row[0] = "TEST-" + Math.floor(Math.random() * 100000); // Submission_ID
-    row[1] = new Date(); // Submitted_At
-    row[2] = d.date; // Order_Date
-    row[3] = d.meal; // Meal_Type
-    row[4] = d.name; // Customer_Name
-    row[5] = "9999999999"; // Phone
-    row[6] = d.area; // Area
-    row[7] = d.wing; // Wing
-    row[8] = d.flat; // Flat
-    row[9] = "1"; // Floor
-    row[10] = d.society; // Society
-    row[11] = `${d.wing}-${d.flat}, ${d.society}`; // Full_Address
-    row[14] = JSON.stringify(d.items); // Items_JSON
-    
-    // Spread Items into columns if they exist in mapping
-    Object.keys(d.items).forEach(itemName => {
-       const colIdx = ORDERS_HEADERS.indexOf(itemName); 
-       if (colIdx >= 0) row[colIdx] = d.items[itemName];
-       else {
-         // try underscore version
-         const colKey = itemName.replace(/ /g,"_");
-         const altIdx = ORDERS_HEADERS.indexOf(colKey);
-         if (altIdx >= 0) row[altIdx] = d.items[itemName];
-       }
+    Logger.log("Generating data for " + tStr + " and " + mStr);
+
+    const testData = [
+      { date: tStr, meal: "Breakfast", name: "Rahul Deshpande", area: "Magarpatta", society: "Pentagon 1", wing: "B", flat: "402", items: {"Kanda Poha": 2}, total: 70, notes: "Less spicy please" },
+      { date: tStr, meal: "Breakfast", name: "Anjali Singh", area: "Amanora", society: "Tower 13", wing: "C", flat: "1805", items: {"Ghee Upma": 1, "Thalipeeth": 1}, total: 90, notes: "Extra chutney" },
+      { date: tStr, meal: "Lunch", name: "Amit Kulkarni", area: "Bhosale Garden", society: "Laxmi Vihar", wing: "A", flat: "104", items: {"Chapati": 3, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 71, notes: "Deliver at gate" },
+      { date: tStr, meal: "Lunch", name: "Sneha Patil", area: "Magarpatta", society: "Cosmos", wing: "E", flat: "P-5", items: {"Phulka": 2, "Curry_Sabji_Full": 1, "Rice": 1}, total: 77, notes: "" },
+      { date: tStr, meal: "Dinner", name: "Mayur Joshi", area: "DP Road", society: "Riverview", wing: "F", flat: "901", items: {"Jowar_Bhakri": 2, "Curry_Sabji_Mini": 1}, total: 62, notes: "Ring bell and leave" },
+      { date: mStr, meal: "Breakfast", name: "Priya Rao", area: "Magarpatta", society: "Pentagon 3", wing: "A", flat: "610", items: {"Sabudana Khichdi": 1}, total: 40, notes: "" },
+      { date: mStr, meal: "Lunch", name: "Vikram Shah", area: "Amanora", society: "Adreno", wing: "1", flat: "1502", items: {"Ghee_Phulka": 4, "Dry_Sabji_Full": 1, "Salad": 1}, total: 100, notes: "Call on arrival" },
+      { date: mStr, meal: "Dinner", name: "Svaadh Test", area: "Bhosale Garden", society: "Self Pickup", wing: "-", flat: "-", items: {"Chapati": 2, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 62, notes: "I will pick up" }
+    ];
+
+    testData.forEach((d, idx) => {
+      Logger.log("Processing row " + (idx + 1) + ": " + d.name);
+      const row = new Array(ORDERS_HEADERS.length).fill(""); 
+      
+      row[0] = "TEST-" + Math.floor(Math.random() * 100000); 
+      row[1] = new Date(); 
+      row[2] = d.date; 
+      row[3] = d.meal; 
+      row[4] = d.name; 
+      row[5] = "9999999999"; 
+      row[6] = d.area; 
+      row[7] = d.wing; 
+      row[8] = d.flat; 
+      row[9] = "1"; 
+      row[10] = d.society; 
+      row[11] = d.wing + "-" + d.flat + ", " + d.society; 
+      row[14] = JSON.stringify(d.items); 
+      
+      Object.keys(d.items).forEach(itemName => {
+         const colIdx = ORDERS_HEADERS.indexOf(itemName); 
+         if (colIdx >= 0) row[colIdx] = d.items[itemName];
+         else {
+           const colKey = itemName.replace(/ /g,"_");
+           const altIdx = ORDERS_HEADERS.indexOf(colKey);
+           if (altIdx >= 0) row[altIdx] = d.items[itemName];
+         }
+      });
+
+      if (d.meal === "Breakfast") {
+        let bIdx = 0;
+        for (const [key, val] of Object.entries(d.items)) {
+           if (bIdx === 0) { row[30] = key; row[31] = val; }
+           if (bIdx === 1) { row[32] = key; row[33] = val; }
+           bIdx++;
+        }
+      }
+
+      const fieldMap = {
+        "Special_Notes_Kitchen": d.notes,
+        "Food_Subtotal": d.total,
+        "Net_Total": d.total,
+        "Payment_Method": "UPI",
+        "Payment_Status": "Paid",
+        "Payment_Freq": "Daily Payment"
+      };
+
+      Object.keys(fieldMap).forEach(key => {
+        const i = ORDERS_HEADERS.indexOf(key);
+        if (i >= 0) row[i] = fieldMap[key];
+      });
+
+      ws.appendRow(row);
     });
 
-    // Special handling for Breakfast columns
-    if (d.meal === "Breakfast") {
-      let i = 0;
-      for (const [key, val] of Object.entries(d.items)) {
-         if (i === 0) { row[28] = key; row[29] = val; }
-         if (i === 1) { row[30] = key; row[31] = val; }
-         i++;
-      }
-    }
-
-    row[34] = d.notes; // Special_Notes_Kitchen (check index based on ORDERS_HEADERS)
-    // Recalculate index based on ORDERS_HEADERS to be safe
-    let kitchenIdx = ORDERS_HEADERS.indexOf("Special_Notes_Kitchen");
-    if (kitchenIdx >= 0) row[kitchenIdx] = d.notes;
-
-    let subTotalIdx = ORDERS_HEADERS.indexOf("Food_Subtotal");
-    if (subTotalIdx >= 0) row[subTotalIdx] = d.total;
-
-    let netTotalIdx = ORDERS_HEADERS.indexOf("Net_Total");
-    if (netTotalIdx >= 0) row[netTotalIdx] = d.total;
-
-    let methodIdx = ORDERS_HEADERS.indexOf("Payment_Method");
-    if (methodIdx >= 0) row[methodIdx] = "UPI";
-
-    let statusIdx = ORDERS_HEADERS.indexOf("Payment_Status");
-    if (statusIdx >= 0) row[statusIdx] = "Paid";
-
-    let freqIdx = ORDERS_HEADERS.indexOf("Payment_Freq");
-    if (freqIdx >= 0) row[freqIdx] = "Daily Payment";
-
-    ws.appendRow(row);
-  });
-
-  return "Success: 8 test orders added to sheet.";
+    Logger.log("Seed successful.");
+    return "Success: 8 test orders added to sheet.";
+  } catch(err) {
+    Logger.log("ERROR in seedTestData: " + err.message);
+    return "Error: " + err.message;
+  }
 }
