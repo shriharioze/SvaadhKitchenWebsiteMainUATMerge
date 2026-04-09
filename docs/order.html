@@ -1509,7 +1509,13 @@ async function goNext(){
     // Save profile now so they don't have to finish the full order to capture their address
     // Capture PIN during mid-flow so the user's setup is persistent
     const pin = localStorage.getItem('sk_logged_in_pin') || S.profile.pin || "";
-    const profile = { ...S.profile, phone: S.phone, pin: pin, _action: "upsertProfile" };
+    const profile = { 
+      ...S.profile, 
+      phone: S.phone, 
+      pin: pin, 
+      meal_addresses: S.sameAddr ? "" : JSON.stringify(S.mealAddrs),
+      _action: "upsertProfile" 
+    };
     fetch(APPS_SCRIPT_URL, {method:"POST", body:JSON.stringify(profile)});
   }
   if(S.step===2){
@@ -1669,7 +1675,8 @@ function handleLoginSuccess(profileData, isNew) {
     S.profile = {...S.profile, name: profileData.name || "", first_name: fn, last_name: ln,
       area: profileData.area || "", wing: profileData.wing || "",
       flat: profileData.flat || "", floor: profileData.floor || "", society: profileData.society || "",
-      maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment"
+      maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
+      meal_addresses: profileData.meal_addresses || ""
     };
     S.walletBalance = wb;
     S.walletMode = true; // Everyone is on wallet/prepaid mode now
@@ -1699,10 +1706,41 @@ function handleLoginSuccess(profileData, isNew) {
   $("payFreqSelect").value = S.profile.payment_preference;
   
   if (!S.isFirstTime) {
-    S.sameAddr = true;
-    $("sameAddrCheck").checked = true;
-    $("singleAddrBlock").style.display = "block";
-    $("perMealAddrBlock").style.display = "none";
+    let same = true;
+    if (S.profile.meal_addresses) {
+      try {
+        const ma = JSON.parse(S.profile.meal_addresses);
+        S.mealAddrs = ma;
+        // If any meal has a different area than primary, it's not "same address"
+        if ((ma.Breakfast && ma.Breakfast.area !== S.profile.area) || 
+            (ma.Lunch && ma.Lunch.area !== S.profile.area) || 
+            (ma.Dinner && ma.Dinner.area !== S.profile.area)) {
+          same = false;
+        }
+      } catch(e) { console.warn("Error parsing meal_addresses", e); }
+    }
+    S.sameAddr = same;
+    $("sameAddrCheck").checked = same;
+    $("singleAddrBlock").style.display = same ? "block" : "none";
+    $("perMealAddrBlock").style.display = same ? "none" : "block";
+    
+    if (!same && S.mealAddrs) {
+      // Pre-fill per-meal fields if they exist
+      ["bf","l","d"].forEach(pfx => {
+        const m = (pfx==='bf')?'Breakfast':((pfx==='l')?'Lunch':'Dinner');
+        const ad = S.mealAddrs[m];
+        if (ad) {
+          if ($(`${pfx}_areaSelect`)) $(`${pfx}_areaSelect`).value = ad.area || "";
+          if ($(`${pfx}_wingInput`)) $(`${pfx}_wingInput`).value = ad.wing || "";
+          if ($(`${pfx}_flatInput`)) $(`${pfx}_flatInput`).value = ad.flat || "";
+          if ($(`${pfx}_floorInput`)) $(`${pfx}_floorInput`).value = ad.floor || "";
+          if ($(`${pfx}_societyInput`)) $(`${pfx}_societyInput`).value = ad.society || "";
+          if ($(`${pfx}_mapsInput`)) $(`${pfx}_mapsInput`).value = ad.maps || "";
+          if ($(`${pfx}_landmarkInput`)) $(`${pfx}_landmarkInput`).value = ad.landmark || "";
+          togglePickupUI(pfx, ad.area);
+        }
+      });
+    }
   }
   
   if (!S.mealAddrs) {
@@ -1817,7 +1855,7 @@ function setDeliveryMode(pfx, mode) {
           $(id).value = S.profile[f] || "";
         } else {
           const meal = (pfx==='bf')?'Breakfast':((pfx==='l')?'Lunch':'Dinner');
-          $(id).value = S.mealAddrs[meal][f] || "";
+          if (S.mealAddrs[meal]) $(id).value = S.mealAddrs[meal][f] || "";
         }
       }
     });

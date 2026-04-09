@@ -80,7 +80,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
-  "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN"
+  "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses"
 ];
 
 const ORDERS_HEADERS = [
@@ -513,6 +513,7 @@ function getCustomer(phone) {
     maps:               r.Maps_Link || "",
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
+    meal_addresses:     r.Meal_Addresses || "",
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -540,6 +541,7 @@ function verifyLogin(phone, pin) {
       maps:               r.Maps_Link || "",
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
+      meal_addresses:     r.Meal_Addresses || "",
       wallet_balance:     _calculateWalletBalance(phone)
     }
   };
@@ -943,6 +945,7 @@ function _upsertCustomer(ss, profile) {
     update("Payment_Freq",  profile.payment_preference || "Daily Payment");
     // Only update PIN if provided (non-empty)
     if (profile.pin) update("PIN", profile.pin);
+    if (profile.meal_addresses) update("Meal_Addresses", profile.meal_addresses);
   } else {
     // For new records, construct a clean Row Array mapping directly to our schema
     const newRow = CUSTOMERS_HEADERS.map(h => {
@@ -961,6 +964,7 @@ function _upsertCustomer(ss, profile) {
         case "Payment_Freq":    val = profile.payment_preference || "Daily Payment"; break;
         case "Created_At":      val = getISTTimestamp(); break;
         case "PIN":             val = profile.pin || ""; break;
+        case "Meal_Addresses":  val = profile.meal_addresses || ""; break;
         default:                val = "";
       }
       // Force leading zeros to be preserved for Phone and PIN by prepending '
