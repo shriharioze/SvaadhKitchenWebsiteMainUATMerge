@@ -205,7 +205,7 @@ function doGet(e) {
     
     // Auth Tiers (STRICTLY ISOLATED)
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (pin === KITCHEN_PIN && pin !== "");
+    const isStaff = (pin === KITCHEN_PIN || pin === ADMIN_PIN) && pin !== "";
 
     // KITCHEN & DRIVER ACCESS (Staff PIN ONLY)
     if (action === "getKitchenSummary") {
@@ -302,7 +302,7 @@ function doPost(e) {
     const action = body._action || "";
     const pin = body.pin || "";
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (pin === KITCHEN_PIN && pin !== "");
+    const isStaff = (pin === KITCHEN_PIN || pin === ADMIN_PIN) && pin !== "";
 
     // Customer actions (pinned via their own phone/PIN handled inside functions)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
