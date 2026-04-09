@@ -682,12 +682,9 @@ function getMenu(dateStr) {
   };
 
   const co = {};
-  if (r.Cutoff_Breakfast) co.Breakfast = Number(r.Cutoff_Breakfast);
-  if (r.Cutoff_Lunch)     co.Lunch     = Number(r.Cutoff_Lunch);
-  if (r.Cutoff_Dinner)    co.Dinner    = Number(r.Cutoff_Dinner);
-
-    cutoff_overrides: co
-  };
+  if (r && r.Cutoff_Breakfast) co.Breakfast = Number(r.Cutoff_Breakfast);
+  if (r && r.Cutoff_Lunch)     co.Lunch     = Number(r.Cutoff_Lunch);
+  if (r && r.Cutoff_Dinner)    co.Dinner    = Number(r.Cutoff_Dinner);
 
   // MERGE LOGIC: Start with master active items, then merge daily overrides
   const masterActive = breakfast;
