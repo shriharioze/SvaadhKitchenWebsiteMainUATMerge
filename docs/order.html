@@ -929,15 +929,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         </div>
         <div class="form-group">
           <label data-i18n="label_society">Society / Building / Office Park *</label>
-          <input type="text" id="societyInput" placeholder="e.g. Pentagon 1, Amanora Park Town" oninput="syncSingleAddr()">
+          <input type="text" id="societyInput" placeholder="e.g. Pentagon 1, Magarpatta" oninput="syncSingleAddr()">
         </div>
         <div class="form-group">
           <label data-i18n="label_delivery_point">Deliver to</label>
           <select id="deliveryPointSelection" onchange="syncSingleAddr()">
-            <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
-            <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
-            <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
-            <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+            <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+            <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
+            <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
+            <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
+            <option value="gate_keep" data-i18n="opt_point_gate_keep">Keep at security cabin</option>
+            <option value="comedown" data-i18n="opt_point_comedown">I will come down</option>
             <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
           </select>
         </div>
@@ -991,14 +993,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="bf_flatInput" placeholder="e.g. 104"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="bf_societyInput" placeholder="e.g. Pentagon 1"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="bf_societyInput" placeholder="e.g. Pentagon 1, Magarpatta"></div>
           <div class="form-group">
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="bf_deliveryPointSelection">
-              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
-              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
-              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
-              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
+              <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
+              <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
+              <option value="gate_keep" data-i18n="opt_point_gate_keep">Keep at security cabin</option>
+              <option value="comedown" data-i18n="opt_point_comedown">I will come down</option>
               <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
             </select>
           </div>
@@ -1043,14 +1047,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="l_flatInput" placeholder="e.g. Office 5"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="l_societyInput" placeholder="e.g. Amanora"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="l_societyInput" placeholder="e.g. Magarpatta"></div>
           <div class="form-group">
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="l_deliveryPointSelection">
-              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
-              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
-              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
-              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
+              <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
+              <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
+              <option value="gate_keep" data-i18n="opt_point_gate_keep">Keep at security cabin</option>
+              <option value="comedown" data-i18n="opt_point_comedown">I will come down</option>
               <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
             </select>
           </div>
@@ -1095,14 +1101,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="d_flatInput" placeholder="e.g. 501"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="d_societyInput" placeholder="e.g. Magarpatta"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="d_societyInput" placeholder="e.g. Pentagon 1, Magarpatta"></div>
           <div class="form-group">
             <label data-i18n="label_delpoint_simple">Deliver to</label>
             <select id="d_deliveryPointSelection">
-              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
-              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
-              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
-              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="door" data-i18n="opt_point_door">Doorstep / Office Door (Default)</option>
+              <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
+              <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
+              <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
+              <option value="gate_keep" data-i18n="opt_point_gate_keep">Keep at security cabin</option>
+              <option value="comedown" data-i18n="opt_point_comedown">I will come down</option>
               <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
             </select>
           </div>
@@ -1436,9 +1444,11 @@ function buildAddr(wing,flat,floor,society,area,point){
   let addr = parts.join(", ");
   const optLabels = {
     door: "", // Default, no suffix
-    bell: t('opt_point_bell'),
-    lobby: t('opt_point_lobby'),
-    gate: t('opt_point_gate'),
+    lobby_handoff: t('opt_point_lobby_handoff'),
+    lobby_keep: t('opt_point_lobby_keep'),
+    gate_handoff: t('opt_point_gate_handoff'),
+    gate_keep: t('opt_point_gate_keep'),
+    comedown: t('opt_point_comedown'),
     other: t('opt_point_other')
   };
   const suffix = optLabels[point || "door"];
@@ -1787,13 +1797,6 @@ function handleLoginSuccess(profileData, isNew) {
     // For new users, show onboarding screens
     if (!localStorage.getItem("sk_seen_how")) {
         showHowScreen();
-    }
-    
-    // Always advance to Step 1 (Profile Details) for new signups
-    if (S.step === 0) {
-        S.step = 1;
-        updateNav();
-        window.scrollTo(0, 0);
     }
   }
 
