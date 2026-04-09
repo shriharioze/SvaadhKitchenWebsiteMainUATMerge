@@ -108,13 +108,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 @media (max-width: 768px) {
   .shell { height: auto; min-height: 100vh; overflow-x: hidden; }
   .topbar { padding: 0 12px; height: auto; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
-  .topbar-nav { margin-left: 0; width: 100%; order: 3; justify-content: center; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
-  .topbar-btn { padding: 6px 10px; font-size: 0.75rem; white-space: nowrap; }
+  .topbar-nav { 
+    margin-left: 0; width: 100%; order: 3; 
+    justify-content: flex-start; /* Fix for horizontal scroll cutting off left items */
+    margin-top: 8px; overflow-x: auto; padding-bottom: 8px; 
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: none; /* Hide scrollbar but keep capability */
+    padding-left: 12px; padding-right: 12px;
+  }
+  .topbar-nav::-webkit-scrollbar { display: none; }
+  .topbar-btn { padding: 6px 12px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0; }
   .topbar-right { order: 2; margin-left: auto; }
   
-  .body-wrap { flex-direction: column; overflow: visible; height: auto; }
-  .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
-  .main { height: auto; overflow: visible; }
+  .body-wrap { flex-direction: column; overflow: visible !important; height: auto !important; }
+  .sidebar { width: 100%; height: auto !important; border-right: none; border-bottom: 1px solid var(--border); max-height: none; overflow: visible !important; }
+  .main { height: auto !important; overflow: visible !important; padding: 16px 16px 40px; }
   
   .panel-head { padding: 16px; flex-wrap: wrap; gap: 12px; }
   .panel-body { padding: 12px; }
@@ -122,6 +130,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   .order-card { padding: 12px; }
   .order-card-row1 { flex-wrap: wrap; gap: 8px; }
   .item-pill { font-size: 0.7rem; padding: 2px 6px; }
+
+  /* Grid & Table responsiveness */
+  .sabji-columns { grid-template-columns: 1fr !important; gap: 12px; }
+  .bf-grid { grid-template-columns: 1fr 1fr !important; }
+  .mt-head.bf-cols, .mt-row.bf-cols { grid-template-columns: 2fr 1fr 1fr 1fr 1fr !important; font-size: 0.65rem; }
+  .mt-head.sabji-cols, .mt-row.sabji-cols { grid-template-columns: 2fr 1fr 1fr 1fr !important; font-size: 0.65rem; }
+  .manage-table { overflow-x: auto; }
+  .manage-tab { padding: 6px 10px; font-size: 0.75rem; flex: 1; text-align: center; }
+  .manage-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 6px; }
 }
 
 /* ═══════════════════════════════════════════════
