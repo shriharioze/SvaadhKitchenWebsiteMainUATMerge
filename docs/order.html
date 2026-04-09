@@ -919,8 +919,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             <input type="text" id="wingInput" placeholder="A / B1" oninput="syncSingleAddr()">
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label data-i18n="label_flat">Flat No. *</label>
-            <input type="text" id="flatInput" placeholder="301" oninput="syncSingleAddr()">
+            <label data-i18n="label_flat">Flat / Office No.</label>
+            <input type="text" id="flatInput" placeholder="e.g. 104, Office 5" oninput="syncSingleAddr()">
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label data-i18n="label_floor">Floor</label>
@@ -928,8 +928,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </div>
         </div>
         <div class="form-group">
-          <label data-i18n="label_society">Society / Building *</label>
-          <input type="text" id="societyInput" placeholder="e.g. Amanora Park Town" oninput="syncSingleAddr()">
+          <label data-i18n="label_society">Society / Building / Office Park *</label>
+          <input type="text" id="societyInput" placeholder="e.g. Pentagon 1, Amanora Park Town" oninput="syncSingleAddr()">
+        </div>
+        <div class="form-group">
+          <label data-i18n="label_delivery_point">Deliver to</label>
+          <select id="deliveryPointSelection" onchange="syncSingleAddr()">
+            <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
+            <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
+            <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
+            <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+            <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
+          </select>
         </div>
         <div class="form-group">
           <label><span data-i18n="label_maps">📍 Google Maps Pin Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label>
@@ -977,11 +987,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           </select>
         </div>
           <div class="input-row3" style="margin-bottom:10px;">
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="bf_wingInput" placeholder="A"></div>
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="bf_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing / Tower</label><input type="text" id="bf_wingInput" placeholder="e.g. A"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="bf_flatInput" placeholder="e.g. 104"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="bf_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="bf_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="bf_societyInput" placeholder="e.g. Pentagon 1"></div>
+          <div class="form-group">
+            <label data-i18n="label_delpoint_simple">Deliver to</label>
+            <select id="bf_deliveryPointSelection">
+              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
+              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
+              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
+              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
+            </select>
+          </div>
           <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="bf_mapsInput" placeholder="Google Maps link"></div>
           <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="bf_landmarkInput" placeholder="e.g. Gate no. 2"></div>
         </div>
@@ -1019,11 +1039,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             </select>
           </div>
           <div class="input-row3" style="margin-bottom:10px;">
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="l_wingInput" placeholder="A"></div>
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="l_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing / Tower</label><input type="text" id="l_wingInput" placeholder="e.g. Tower 13"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="l_flatInput" placeholder="e.g. Office 5"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="l_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="l_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="l_societyInput" placeholder="e.g. Amanora"></div>
+          <div class="form-group">
+            <label data-i18n="label_delpoint_simple">Deliver to</label>
+            <select id="l_deliveryPointSelection">
+              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
+              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
+              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
+              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
+            </select>
+          </div>
           <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="l_mapsInput" placeholder="Google Maps link"></div>
           <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="l_landmarkInput" placeholder="e.g. Office entrance, 2nd floor"></div>
         </div>
@@ -1061,11 +1091,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
             </select>
           </div>
           <div class="input-row3" style="margin-bottom:10px;">
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing</label><input type="text" id="d_wingInput" placeholder="A"></div>
-            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat No.</label><input type="text" id="d_flatInput" placeholder="301"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_wing">Wing / Tower</label><input type="text" id="d_wingInput" placeholder="e.g. Wing B"></div>
+            <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_flat">Flat / Office</label><input type="text" id="d_flatInput" placeholder="e.g. 501"></div>
             <div class="form-group" style="margin-bottom:0;"><label data-i18n="label_floor">Floor</label><input type="text" id="d_floorInput" placeholder="3rd"></div>
           </div>
-          <div class="form-group"><label data-i18n="label_society">Society / Building</label><input type="text" id="d_societyInput" placeholder="Society name"></div>
+          <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input type="text" id="d_societyInput" placeholder="e.g. Magarpatta"></div>
+          <div class="form-group">
+            <label data-i18n="label_delpoint_simple">Deliver to</label>
+            <select id="d_deliveryPointSelection">
+              <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door</option>
+              <option value="bell" data-i18n="opt_point_bell">Keep outside the door and ring bell</option>
+              <option value="lobby" data-i18n="opt_point_lobby">Lobby / Reception</option>
+              <option value="gate" data-i18n="opt_point_gate">Security Gate / I will come down</option>
+              <option value="other" data-i18n="opt_point_other">Other (see instructions)</option>
+            </select>
+          </div>
           <div class="form-group"><label><span data-i18n="label_maps_simple">📍 Maps Link</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="url" id="d_mapsInput" placeholder="Google Maps link"></div>
           <div class="form-group" style="margin-bottom:0;"><label><span data-i18n="label_landmark_simple">🏷️ Landmark</span> <span style="font-size:0.7rem;color:#aaa;" data-i18n="label_optional">(optional)</span></label><input type="text" id="d_landmarkInput" placeholder="e.g. Opposite main gate"></div>
         </div>
@@ -1346,7 +1386,7 @@ const BREAKFAST_COL_MAP = {
 // ═══════════════════════════════════════════════════════════
 let S = {
   step:0, phone:"", isFirstTime:true, is10Day:false, sameAddr:true,
-  profile:{name:"",first_name:"",last_name:"",area:"",wing:"",flat:"",floor:"",society:"",maps:"",landmark:"",
+  profile:{name:"",first_name:"",last_name:"",area:"",wing:"",flat:"",floor:"",society:"",delivery_point:"door",maps:"",landmark:"",
            payment_preference:"Daily Payment"},
   selectedDates:[], menuCache:{}, orders:{},
   calYear:0, calMonth:0,
@@ -1391,7 +1431,20 @@ function getMealAvailability(dateStr){
 }
 function fmtHour(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60),ampm=hh<12?"AM":"PM",hr=hh>12?hh-12:(hh||12);return `${hr}:${String(mm).padStart(2,"0")} ${ampm}`;}
 function getPeriodLabel(){const t=getIST(),d=t.getUTCDate();if(d<=10)return"1st – 10th";if(d<=20)return"11th – 20th";const last=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+1,0)).getUTCDate();return`21st – ${last}th`;}
-function buildAddr(wing,flat,floor,society,area){return [wing&&`Wing ${wing}`,flat&&`Flat ${flat}`,floor&&`${floor} Floor`,society,area].filter(Boolean).join(", ");}
+function buildAddr(wing,flat,floor,society,area,point){
+  const parts = [wing, flat, floor && `${floor} Floor`, society, area].filter(Boolean);
+  let addr = parts.join(", ");
+  const optLabels = {
+    door: "", // Default, no suffix
+    bell: t('opt_point_bell'),
+    lobby: t('opt_point_lobby'),
+    gate: t('opt_point_gate'),
+    other: t('opt_point_other')
+  };
+  const suffix = optLabels[point || "door"];
+  if(suffix) addr += ` (${suffix})`;
+  return addr;
+}
 
 // ═══════════════════════════════════════════════════════════
 // HOW IT WORKS
@@ -1588,37 +1641,34 @@ async function validate(step){
       const area=$("areaSelect").value;
       if(!area){toast(t('toast_area'));return false;}
       const isPickup = (area === "Self Pickup");
-      const flat = isPickup ? "" : $("flatInput").value.trim();
-      const society = isPickup ? "" : $("societyInput").value.trim();
-      
       if(!isPickup) {
-        if(!flat){toast(t('toast_flat'));return false;}
         if(!society){toast(t('toast_society'));return false;}
       }
       
       S.profile={name,first_name:firstName,last_name:lastName,area,
         wing:isPickup ? "" : $("wingInput").value.trim(),
-        flat,
+        flat:isPickup ? "" : $("flatInput").value.trim(),
         floor:isPickup ? "" : $("floorInput").value.trim(),
         society,
+        delivery_point:isPickup ? "door" : $("deliveryPointSelection").value,
         maps:isPickup ? "" : $("mapsInput").value.trim(),
         landmark:isPickup ? "" : $("landmarkInput").value.trim(),
         payment_preference:$("payFreqSelect").value};
     } else {
       const bf=readPerMealAddr("bf"),l=readPerMealAddr("l"),d=readPerMealAddr("d");
-      const hasAnyValid = (bf.area && (bf.flat || bf.area === "Self Pickup")) || 
-                          (l.area && (l.flat || l.area === "Self Pickup")) || 
-                          (d.area && (d.flat || d.area === "Self Pickup"));
-      if(!hasAnyValid){toast("Please provide a delivery address or select Self Pickup for at least one meal.");return false;}
+      const hasAnyValid = (bf.area && (bf.society || bf.area === "Self Pickup")) || 
+                          (l.area && (l.society || l.area === "Self Pickup")) || 
+                          (d.area && (d.society || d.area === "Self Pickup"));
+      if(!hasAnyValid){toast("Please provide a delivery address (Society/Building name) or select Self Pickup for at least one meal.");return false;}
       
-      const primary = (l.flat || l.area === "Self Pickup") ? l : ((bf.flat || bf.area === "Self Pickup") ? bf : d);
+      const primary = (l.society || l.area === "Self Pickup") ? l : ((bf.society || bf.area === "Self Pickup") ? bf : d);
       
       // Sanitize primary if it's pickup
       const clean = (a) => (a.area === "Self Pickup") ? { ...a, wing:"", flat:"", floor:"", society:"", maps:"", landmark:"" } : a;
       const cBf = clean(bf), cL = clean(l), cD = clean(d), cP = clean(primary);
 
       S.profile={name,first_name:firstName,last_name:lastName,area:cP.area,wing:cP.wing,flat:cP.flat,floor:cP.floor,
-        society:cP.society,maps:cP.maps,landmark:cP.landmark,
+        society:cP.society,delivery_point:cP.delivery_point||"door",maps:cP.maps,landmark:cP.landmark,
         payment_preference:$("payFreqSelect").value};
       S.mealAddrs={Breakfast:cBf,Lunch:cL,Dinner:cD};
     }
@@ -1718,6 +1768,7 @@ function handleLoginSuccess(profileData, isNew) {
     S.profile = {...S.profile, name: profileData.name || "", first_name: fn, last_name: ln,
       area: profileData.area || "", wing: profileData.wing || "",
       flat: profileData.flat || "", floor: profileData.floor || "", society: profileData.society || "",
+      delivery_point: profileData.delivery_point || "door",
       maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
       meal_addresses: profileData.meal_addresses || ""
     };
@@ -1754,6 +1805,7 @@ function handleLoginSuccess(profileData, isNew) {
   $("flatInput").value = S.profile.flat;
   $("floorInput").value = S.profile.floor;
   $("societyInput").value = S.profile.society;
+  $("deliveryPointSelection").value = S.profile.delivery_point || "door";
   $("mapsInput").value = S.profile.maps || "";
   $("landmarkInput").value = S.profile.landmark || "";
   $("payFreqSelect").value = S.profile.payment_preference;
@@ -1788,6 +1840,7 @@ function handleLoginSuccess(profileData, isNew) {
           if ($(`${pfx}_flatInput`)) $(`${pfx}_flatInput`).value = ad.flat || "";
           if ($(`${pfx}_floorInput`)) $(`${pfx}_floorInput`).value = ad.floor || "";
           if ($(`${pfx}_societyInput`)) $(`${pfx}_societyInput`).value = ad.society || "";
+          if ($(`${pfx}_deliveryPointSelection`)) $(`${pfx}_deliveryPointSelection`).value = ad.delivery_point || "door";
           if ($(`${pfx}_mapsInput`)) $(`${pfx}_mapsInput`).value = ad.maps || "";
           if ($(`${pfx}_landmarkInput`)) $(`${pfx}_landmarkInput`).value = ad.landmark || "";
           togglePickupUI(pfx, ad.area);
@@ -1797,7 +1850,7 @@ function handleLoginSuccess(profileData, isNew) {
   }
   
   if (!S.mealAddrs) {
-    const def = {area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society, maps: S.profile.maps || "", landmark: S.profile.landmark || ""};
+    const def = {area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society, delivery_point: S.profile.delivery_point, maps: S.profile.maps || "", landmark: S.profile.landmark || ""};
     S.mealAddrs = {Breakfast: {...def}, Lunch: {...def}, Dinner: {...def}};
   }
   
@@ -1884,6 +1937,7 @@ function setDeliveryMode(pfx, mode) {
     }
     // Visually clear delivery fields, but DO NOT erase the values in S.profile/S.mealAddrs
     const fields = ["wing","flat","floor","society","maps","landmark"];
+    // Note: delivery_point stays visible/functional as it's useful even if other fields are hidden for pickup card
     fields.forEach(f => {
       const id = (pfx === 'single') ? `${f}Input` : `${pfx}_${f}Input`;
       if ($(id)) $(id).value = "";
@@ -1908,7 +1962,11 @@ function setDeliveryMode(pfx, mode) {
           $(id).value = S.profile[f] || "";
         } else {
           const meal = (pfx==='bf')?'Breakfast':((pfx==='l')?'Lunch':'Dinner');
-          if (S.mealAddrs[meal]) $(id).value = S.mealAddrs[meal][f] || "";
+          if (S.mealAddrs[meal]) {
+            $(id).value = S.mealAddrs[meal][f] || "";
+            const dpId = (pfx === 'single') ? `deliveryPointSelection` : `${pfx}_deliveryPointSelection`;
+            if($(dpId)) $(dpId).value = (pfx === 'single') ? (S.profile.delivery_point||"door") : (S.mealAddrs[meal].delivery_point||"door");
+          }
         }
       }
     });
@@ -1925,15 +1983,15 @@ function toggleAddressMode(){
   if(!S.sameAddr){
     // Pre-fill per-meal blocks with whatever is in the single block
     const p=S.profile;
-    ["bf","l","d"].forEach(pfx=>{
-      const a=$(pfx+"_areaSelect"),w=$(pfx+"_wingInput"),f=$(pfx+"_flatInput"),
             fl=$(pfx+"_floorInput"),s=$(pfx+"_societyInput"),
+            dp=$(pfx+"_deliveryPointSelection"),
             m=$(pfx+"_mapsInput"),lm=$(pfx+"_landmarkInput");
       if(a&&!a.value) a.value=p.area||"";
       if(w&&!w.value) w.value=p.wing||"";
       if(f&&!f.value) f.value=p.flat||"";
       if(fl&&!fl.value) fl.value=p.floor||"";
       if(s&&!s.value) s.value=p.society||"";
+      if(dp&&!dp.value) dp.value=p.delivery_point||"door";
       if(m&&!m.value) m.value=p.maps||"";
       if(lm&&!lm.value) lm.value=p.landmark||"";
       if(a) togglePickupUI(pfx, a.value);
@@ -1951,6 +2009,7 @@ function syncSingleAddr(){
   S.profile.flat    = $("flatInput").value.trim();
   S.profile.floor   = $("floorInput").value.trim();
   S.profile.society = $("societyInput").value.trim();
+  S.profile.delivery_point = $("deliveryPointSelection").value;
   S.profile.maps    = $("mapsInput").value.trim();
   S.profile.landmark= $("landmarkInput").value.trim();
   togglePickupUI("single", area);
@@ -1963,6 +2022,7 @@ function readPerMealAddr(pfx){
     flat:    $(pfx+"_flatInput")?.value.trim()||"",
     floor:   $(pfx+"_floorInput")?.value.trim()||"",
     society: $(pfx+"_societyInput")?.value.trim()||"",
+    delivery_point: $(pfx+"_deliveryPointSelection")?.value||"door",
     maps:    $(pfx+"_mapsInput")?.value.trim()||"",
     landmark:$(pfx+"_landmarkInput")?.value.trim()||"",
   };
@@ -2661,15 +2721,16 @@ async function placeOrder(settleAll = false){
         notesKitchen:mObj.notesKitchen||"",
         notesDelivery:mObj.notesDelivery||"",
         subtotal:mObj.subtotal,
-        address:buildAddr(mAddr.wing,mAddr.flat,mAddr.floor,mAddr.society,mAddr.area),
-        area:mAddr.area,maps:mAddr.maps||"",landmark:mAddr.landmark||""});
+        address:buildAddr(mAddr.wing,mAddr.flat,mAddr.floor,mAddr.society,mAddr.area,mAddr.delivery_point),
+        area:mAddr.area,delivery_point:mAddr.delivery_point,maps:mAddr.maps||"",landmark:mAddr.landmark||""});
     });
     if(meals.length)orders.push({date,meals});
   }
   const payload={
     profile:{name:S.profile.name,phone:S.phone,
-      address:buildAddr(S.profile.wing,S.profile.flat,S.profile.floor,S.profile.society,S.profile.area),
+      address:buildAddr(S.profile.wing,S.profile.flat,S.profile.floor,S.profile.society,S.profile.area,S.profile.delivery_point),
       wing:S.profile.wing,flat:S.profile.flat,floor:S.profile.floor,society:S.profile.society,
+      delivery_point:S.profile.delivery_point,
       area:S.profile.area,maps:S.profile.maps,landmark:S.profile.landmark,
       payment_preference:S.profile.payment_preference,isFirstTime:S.isFirstTime},
     orders,
