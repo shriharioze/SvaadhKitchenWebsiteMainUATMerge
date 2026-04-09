@@ -686,17 +686,29 @@ function getMenu(dateStr) {
   if (r.Cutoff_Lunch)     co.Lunch     = Number(r.Cutoff_Lunch);
   if (r.Cutoff_Dinner)    co.Dinner    = Number(r.Cutoff_Dinner);
 
-  let bfJson = breakfast;
-  try {
-    if (r.Breakfast_JSON) bfJson = JSON.parse(r.Breakfast_JSON);
-  } catch(e) {}
+    cutoff_overrides: co
+  };
+
+  // MERGE LOGIC: Start with master active items, then merge daily overrides
+  const masterActive = breakfast;
+  let dailyBf = [];
+  try { if (r && r.Breakfast_JSON) dailyBf = JSON.parse(r.Breakfast_JSON); } catch(e) {}
+
+  // Prioritize Daily selections (where specific prices or choices were made)
+  // but ensure Master Active items are always present.
+  const finalBreakfast = [...dailyBf];
+  masterActive.forEach(m => {
+    if (!finalBreakfast.some(d => d.name === m.name)) {
+      finalBreakfast.push(m);
+    }
+  });
 
   return {
-    breakfast:    bfJson,
-    lunch_dry:    r.Lunch_Dry    || "",
-    lunch_curry:  r.Lunch_Curry  || "",
-    dinner_dry:   r.Dinner_Dry   || "",
-    dinner_curry: r.Dinner_Curry || "",
+    breakfast:    finalBreakfast,
+    lunch_dry:    r ? (r.Lunch_Dry || "") : "",
+    lunch_curry:  r ? (r.Lunch_Curry || "") : "",
+    dinner_dry:   r ? (r.Dinner_Dry || "") : "",
+    dinner_curry: r ? (r.Dinner_Curry || "") : "",
     cutoff_overrides: co
   };
 }
@@ -732,16 +744,22 @@ function getWeeklyMenu() {
     const displayDate = Utilities.formatDate(d, "Asia/Kolkata", "dd MMM");
 
     const r = menuMap[dateStr];
-    let bfItems = defaultBreakfast;
+    let bfDaily = [];
     try {
-      if (r && r.Breakfast_JSON) bfItems = JSON.parse(r.Breakfast_JSON);
+      if (r && r.Breakfast_JSON) bfDaily = JSON.parse(r.Breakfast_JSON);
     } catch(e) {}
+
+    // Merge Master + Daily
+    const finalBf = [...bfDaily];
+    defaultBreakfast.forEach(m => {
+      if (!finalBf.some(d => d.name === m.name)) finalBf.push(m);
+    });
 
     days.push({
       date: dateStr,
       dayName: dayName,
       displayDate: displayDate,
-      breakfast: bfItems,
+      breakfast: finalBf,
       lunch_dry: r ? (r.Lunch_Dry || "") : "",
       lunch_curry: r ? (r.Lunch_Curry || "") : "",
       dinner_dry: r ? (r.Dinner_Dry || "") : "",
