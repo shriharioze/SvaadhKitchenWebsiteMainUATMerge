@@ -1126,26 +1126,33 @@
       
       html += '<div style="display:flex; flex-direction:column; gap:12px; padding:10px;">';
       html += activeOrders.map(o => {
-        // Localize summary
+        // Create a copy of MR and add common kitchen instructions
+        const FULL_MR = {
+          ...MR,
+          "Less spicy": "कमी तिखट (लेस स्पायसी)",
+          "Extra chutney": "जास्त चटणी (एक्स्ट्रा चटणी)",
+          "Deliver at gate": "गेटवर द्या",
+          "Ring bell": "बेल वाजवा",
+          "Don't ring bell": "बेल वाजवू नका"
+        };
+
+        // Localize summary with robust regex escaping
         let summaryMar = o.summary || "साधी थाळी";
-        Object.keys(MR).forEach(key => {
-          const regex = new RegExp(key, 'g');
-          summaryMar = summaryMar.replace(regex, MR[key]);
+        Object.keys(FULL_MR).forEach(key => {
+          // Escape special regex characters like ( )
+          const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(escapedKey, 'gi');
+          summaryMar = summaryMar.replace(regex, FULL_MR[key]);
         });
 
-        // Localize Special Notes if match found in MR
+        // Localize Special Notes
         let noteMar = o.marathiNotes || o.Special_Notes_Kitchen || "";
-        if (noteMar && MR[noteMar.trim()]) {
-            noteMar = MR[noteMar.trim()];
-        } else if (noteMar) {
-            // Check for substrings within noteMar if it's a long note? 
-            // For now, simple direct match for common instructions like "No ring the bell"
-            Object.keys(MR).forEach(key => {
-                if (key.length > 5 && noteMar.toLowerCase().includes(key.toLowerCase())) {
-                    noteMar = noteMar.replace(new RegExp(key, 'gi'), MR[key]);
-                }
-            });
-        }
+        Object.keys(FULL_MR).forEach(key => {
+            const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (key.length > 5 && noteMar.toLowerCase().includes(key.toLowerCase())) {
+                noteMar = noteMar.replace(new RegExp(escapedKey, 'gi'), FULL_MR[key]);
+            }
+        });
 
         return `
         <div class="label-block" id="label_${o.Submission_ID}" style="background:white; border-radius:12px; border:1px solid #eee; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid var(--red);">
