@@ -1243,15 +1243,16 @@ function bootApp() {
     tpl.remove();
   }
   document.getElementById("shell").classList.add("on");
-  document.getElementById("shell").classList.add("on");
   const ist   = getIST();
   S.sidebarYear  = ist.getFullYear();
   S.sidebarMonth = ist.getMonth();
-  renderSidebar();
+
+  // Initialize UI state
+  switchPage('menu'); 
   selectDate(toISO(ist));
+
   renderBfMasterTable();
   renderSabjiMasterTable();
-  refreshApprovalCounts();
 }
 
 // ════════════════════════════════════════════════════════
