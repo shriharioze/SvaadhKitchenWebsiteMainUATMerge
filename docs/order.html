@@ -1206,7 +1206,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <!-- COD Button Removed -->
       <div style="margin-top:14px;">
         <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-          <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;">
+          <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;" onchange="checkPaymentConfirmation()">
           <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has been made</span>
           <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</span>
         </label>
@@ -1229,7 +1229,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
           ✅ Your balance is sufficient. This order will be instantly confirmed.
        </div>
        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-         <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#27ae60;">
+         <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#27ae60;" onchange="checkPaymentConfirmation()">
          <span style="font-size:0.82rem;">I confirm to pay ₹<span id="walletConfirmLabelAmt">0</span> from my Wallet</span>
        </label>
        <p class="mr-note" style="margin-top:4px;">मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
@@ -1539,10 +1539,27 @@ function updateNav(){
   btn.innerHTML = labels[s];
   // Disable if nothing ordered yet
   if(s===3&&!hasAnyOrder()){$("btnNext").disabled=true;$("btnNext").style.opacity="0.45";}
+  if(s===4){ checkPaymentConfirmation(); }
   
   // Toggle Quick Button Bar (Wallet, Orders, Logout) only after step 0
   const qb = $("quickButtonBar");
   if (qb) qb.style.display = (s > 0) ? "flex" : "none";
+}
+
+function checkPaymentConfirmation() {
+  if (S.step !== 4) return;
+  const isChecked = S.paymentChoice === "Wallet" ? $("walletConfirmCheck")?.checked : $("paidConfirm")?.checked;
+  const btn = $("btnNext");
+  if (!btn) return;
+  if (!isChecked) {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+    btn.style.filter = "grayscale(100%)";
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.style.filter = "none";
+  }
 }
 function refreshBillBtn(){
   if(S.step!==3)return;
@@ -2605,6 +2622,7 @@ async function buildBillScreen(){
     setupUPI(grandTotal);
   }
   $("btnNext").textContent=t('btn_place');
+  checkPaymentConfirmation();
 }
 
 function togglePaymentMode(mode) {
