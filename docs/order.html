@@ -637,6 +637,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 [data-theme="dark"] .success-summary-box{background:#2a2624;border-color:#3f3834;}
 [data-theme="dark"] .success-summary-item{color:#aaa;}
 [data-theme="dark"] .success-summary-total{border-color:#3f3834;color:white;}
+.meal-section{position:relative;}
+.meal-section.locked .meal-header, .meal-section.locked .meal-body{opacity:0.6; pointer-events:none;}
+.meal-locked-overlay{position:absolute; inset:0; background:rgba(255,255,255,0.7); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; border-radius:12px; padding:20px; text-align:center; animation:fadeIn 0.3s ease;}
+[data-theme="dark"] .meal-locked-overlay{background:rgba(0,0,0,0.6);}
+.meal-locked-msg{background:white; padding:12px 20px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.1); border:1.5px solid #ddd; max-width:240px;}
+[data-theme="dark"] .meal-locked-msg{background:#2a2624; border-color:#444; color:#eee;}
 .feedback-link{display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:#7f8c8d;text-decoration:none;font-weight:600;padding:6px 12px;background:#f5f0eb;border-radius:6px;transition:all 0.2s;}
 .feedback-link:hover{background:#ede7df;color:#c0392b;}
 .bug-link{color:#e67e22;background:#fff8e1;}
@@ -1761,16 +1767,18 @@ async function validate(step){
       }
 
       if (validCount > 0 && validCount < 3) {
-        const recorded = mealsData.filter(m => m.addr.area).map(m => m.name);
-        const blank = mealsData.filter(m => !m.addr.area).map(m => m.name);
+        const recorded = mealsData.filter(m => m.addr.area).map(m => `✅ <b>${m.name}</b>: Recorded`);
+        const blank = mealsData.filter(m => !m.addr.area).map(m => `⚪ <b>${m.name}</b>: Left Blank (Order Disabled)`);
         
-        const msg = `<div style="text-align:left; font-size:0.85rem; line-height:1.5;">
-          ✅ <b>Recorded:</b> ${recorded.join(", ")}<br>
-          ⚪ <b>Left Blank:</b> ${blank.join(" & ")}<br><br>
-          <span style="color:#555;">It's completely fine to leave meals blank! You can always configure them later from your profile.</span>
+        const msg = `<div style="text-align:left; font-size:0.85rem; line-height:1.6; color:var(--ink);">
+          <div style="margin-bottom:8px;">${recorded.join("<br>")}</div>
+          <div style="margin-bottom:12px; color:#c0392b;">${blank.join("<br>")}</div>
+          <div style="background:#fef9c3; border:1px solid #fde047; padding:10px; border-radius:8px; font-size:0.77rem; color:#854d0e;">
+               It's completely fine to leave meals blank! You can always configure them later from your profile.
+          </div>
         </div>`;
         
-        const confirmed = await sConfirm(msg, "Address Confirmation", "📍", "काही पत्त्यांची माहिती रिकामी आहे. पुढे जायचे?");
+        const confirmed = await sConfirm(msg, "Address Confirmation", "📍", "काही जेवणाची वेळ (Meals) पत्त्याशिवाय रिकामी ठेवली आहेत. पत्ता नसेल तर त्या जेवणाचे पदार्थ निवडता येणार नाहीत. तरीही पुढे जायचे?");
         if (!confirmed) return false;
       }
       
@@ -2272,8 +2280,21 @@ function renderMealContent(date){
   };
   $("mealSelectionContent").innerHTML=MEALS.map(meal=>{
     const isAvail=avail[meal],sub=S.orders[date]?.[meal]?.subtotal||0;
-    return `<div class="meal-section">
-      <div class="meal-header ${sub>0?"open":""}" id="mh_${date}_${meal}" onclick="toggleMeal('${date}','${meal}')">
+    const mAddr = getMealAddr(meal);
+    const isAddrMissing = !isPickup && !mAddr.area;
+    const lockedClass = isAddrMissing ? "locked" : "";
+    
+    return `<div class="meal-section ${lockedClass}">
+      ${isAddrMissing ? `
+        <div class="meal-locked-overlay">
+           <div class="meal-locked-msg">
+             <div style="font-size:1.4rem;margin-bottom:8px;">📍</div>
+             <div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">Address Missing</div>
+             <div style="font-size:0.72rem;color:#666;line-height:1.4;">Add <b>${meal}</b> address in Step 2 to order items.</div>
+           </div>
+        </div>
+      ` : ""}
+      <div class="meal-header ${(sub>0&&!isAddrMissing)?"open":""}" id="mh_${date}_${meal}" onclick="toggleMeal('${date}','${meal}')">
         <div class="meal-header-left">
           <span class="meal-icon">${ICONS[meal]}</span>
           <div>
@@ -2287,7 +2308,7 @@ function renderMealContent(date){
         </div>
       </div>
       ${isAvail
-        ?`<div class="meal-body ${sub>0?"open":""}" id="mb_${date}_${meal}">${buildMealBody(date,meal,menu)}</div>`
+        ?`<div class="meal-body ${(sub>0&&!isAddrMissing)?"open":""}" id="mb_${date}_${meal}">${buildMealBody(date,meal,menu)}</div>`
         :`<div class="meal-locked">${t('cutoff_passed_meal',{meal})}</div>`}
     </div>`;
   }).join("");
