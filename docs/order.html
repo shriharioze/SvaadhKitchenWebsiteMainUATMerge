@@ -2506,6 +2506,7 @@ async function buildBillScreen(){
   } catch(e) { /* non-fatal: fall back to no existing orders */ }
 
   let html="",grandTotal=0;
+  let promoTracker = Number(S.profile?.promoCount) || 0;
   for(const date of S.selectedDates){
     const dayOrders=S.orders[date]||{};
     let dayFoodTotal=0;
@@ -2564,6 +2565,7 @@ async function buildBillScreen(){
     let totalDelivery=0;
     let totalSmallOrderFee=0;
     let totalInflationSurcharge=0;
+    let dayReviewDiscountTotal=0;
 
     // Daily Credits: if day total crosses 150, refund any delivery/small fees paid earlier today
     let dayDeliveryCredit = 0;
@@ -2577,6 +2579,12 @@ async function buildBillScreen(){
 
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
+      
+      let mealReviewDiscount = 0;
+      if (promoTracker > 0) {
+        mealReviewDiscount = Math.round(sub * 0.10);
+        promoTracker--;
+      }
       const ICONS={Breakfast:"🌅",Lunch:"☀️",Dinner:"🌙"};
       html+=`<div class="bill-line" style="font-weight:700; color:var(--ink); padding:10px 0 6px; border-bottom: 2px solid #eee; margin-top:12px;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
       for(const[colKey,qty]of Object.entries(mObj.items||{})){
@@ -2618,6 +2626,12 @@ async function buildBillScreen(){
         totalInflationSurcharge += surcharge;
       }
 
+      // 6. Review Reward Discount
+      if (mealReviewDiscount > 0) {
+        mealExtras.push({ icon: "🎁", name: "Google Review Reward", val: -mealReviewDiscount, credit: true });
+        dayReviewDiscountTotal += mealReviewDiscount; // Add to a date-level tracker
+      }
+
       if (mealExtras.length > 0) {
         const creditItems = mealExtras.filter(e => e.credit);
         const chargeItems = mealExtras.filter(e => !e.credit);
@@ -2651,7 +2665,7 @@ async function buildBillScreen(){
     });
     // 6. Date-level Adjustments (Credits / Discounts)
     const totalCredits = dayDeliveryCredit + daySmallFeeCredit;
-    const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits; 
+    const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal; 
     grandTotal += dayTotal;
     
     html+=`<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">`;
