@@ -1350,7 +1350,7 @@ const UPI_VPA          = "9819969682@hdfc";
 const UPI_NAME         = "Svaadh Kitchen";
 let   FREE_AREAS       = ["Bhosale Garden"];   // populated dynamically from API
 const DELIVERY_CHARGE  = 10;
-const FREE_THRESHOLD   = 100;
+const FREE_THRESHOLD   = 150;
 const DISC_T1          = { min:300, rate:0.05 };
 const DISC_T2          = { min:450, rate:0.075 };
 let   CUTOFFS          = { Breakfast:7, Lunch:9.5, Dinner:17 };
@@ -2457,7 +2457,16 @@ async function buildBillScreen(){
       </div>`;
     }
     
-    // Discount upsell nudge based on combined day total
+    // Discount & Fee Waiver logic based on combined day total
+    const isDayFree = (combinedDayTotal >= FREE_THRESHOLD);
+
+    if(!isDayFree) {
+      const diff = FREE_THRESHOLD - combinedDayTotal;
+      html+=`<div style="font-size:0.72rem;color:#27ae60;background:#e8f5e9;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #c8e6c9;">
+        🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> on all meals!
+      </div>`;
+    }
+
     if(combinedDayTotal < DISC_T1.min) {
       const diff = DISC_T1.min - combinedDayTotal;
       html+=`<div style="font-size:0.72rem;color:#8e44ad;background:#f5eef8;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #e8d5f5;">
@@ -2465,7 +2474,7 @@ async function buildBillScreen(){
       </div>`;
     } else if(combinedDayTotal >= DISC_T1.min && combinedDayTotal < DISC_T2.min) {
       const diff = DISC_T2.min - combinedDayTotal;
-      html+=`<div style="font-size:0.72rem;color:#8e44ad;background:#f5eef8;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #e8d5f5;">
+      html+=`<div style="font-size:0.75rem;color:#8e44ad;background:#f5eef8;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #e8d5f5;">
         🎯 Add <strong>₹${diff}</strong> more to upgrade to <strong>7.5% off</strong>!
       </div>`;
     }
@@ -2473,12 +2482,15 @@ async function buildBillScreen(){
     let totalSmallOrderFee=0;
     let totalInflationSurcharge=0;
 
-    // Svaadh Logic: Breakfast delivery is free if Lunch/Dinner is ordered for same day
-    const hasMajorInCart = (dayOrders["Lunch"]?.subtotal > 0) || (dayOrders["Dinner"]?.subtotal > 0);
-    const hasMajorExisting = (existDay["Lunch"]?.subtotal > 0) || (existDay["Dinner"]?.subtotal > 0);
-    const hasAnyMajorOnDate = hasMajorInCart || hasMajorExisting;
-    const hasExistBfCharge = (existDay["Breakfast"]?.delivery_charged || 0) > 0;
-    let bfCreditApplied = false;
+    // Daily Credits: if day total crosses 150, refund any delivery/small fees paid earlier today
+    let dayDeliveryCredit = 0;
+    let daySmallFeeCredit = 0;
+    if (isDayFree && existingDayFoodTotal > 0) {
+      ["Breakfast","Lunch","Dinner"].forEach(m => {
+        dayDeliveryCredit += (existDay[m]?.delivery_charged || 0);
+        daySmallFeeCredit += (existDay[m]?.small_fee_charged || 0);
+      });
+    }
 
     ["Breakfast","Lunch","Dinner"].forEach(meal=>{
       const mObj=dayOrders[meal];const sub=mObj?.subtotal||0;if(sub<=0)return;
@@ -2490,78 +2502,50 @@ async function buildBillScreen(){
         html+=`<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p*qty}</span></div>`;
       }
 
-      // Combined MEAL-level total (for delivery & small order fee eligibility)
-      const existMealSub = (existDay[meal]?.subtotal) || 0;
-      const combinedMealSub = sub + existMealSub;
       const mAddr = getMealAddr(meal);
+      const isPickup = (mAddr.area === "Self Pickup");
+      const isFreeArea = FREE_AREAS.includes(mAddr.area);
+      const combinedMealSub = sub + (existDay[meal]?.subtotal || 0);
 
-      // UI Cleanup: Meal-level nudges made ultra-compact text
-      if (mAddr.area !== "Self Pickup" && (meal === "Lunch" || meal === "Dinner")) {
-        if (combinedMealSub > 0 && combinedMealSub < 50) {
-          html += `<div style="font-size:0.65rem;color:#2980b9;margin:4px 0 6px 4px;font-style:italic;">💡 Add ₹${50 - combinedMealSub} more to skip small order fee</div>`;
-        } else if (combinedMealSub >= 50 && combinedMealSub < FREE_THRESHOLD && !FREE_AREAS.includes(mAddr.area)) {
-          html += `<div style="font-size:0.65rem;color:#27ae60;margin:4px 0 6px 4px;font-style:italic;">✨ Add ₹${FREE_THRESHOLD - combinedMealSub} more for Free Delivery!</div>`;
-        }
-      }
-      
       let mealExtras = [];
-      let mExtrasTotal = 0;
-
-      // Delivery Credit: if existing orders paid delivery but combined meal now crosses FREE_THRESHOLD or switched to Pickup
-      const deliveryCredit = ((mAddr.area === "Self Pickup" || combinedMealSub >= FREE_THRESHOLD) && existMealSub > 0 && !FREE_AREAS.includes(mAddr.area))
-        ? (existDay[meal]?.delivery_charged || 0) : 0;
-      if (deliveryCredit > 0) {
-        mealExtras.push({ icon: "🏷️", name: `Free Delivery Upgrade`, val: -deliveryCredit, credit: true,
-          desc: `Your combined ${meal} total is ₹${combinedMealSub} (₹${existMealSub} prev + ₹${sub} now) — which crosses ₹${FREE_THRESHOLD}. We're refunding the ₹${deliveryCredit} delivery you paid earlier!` });
-        mExtrasTotal -= deliveryCredit; totalDelivery -= deliveryCredit;
+      
+      // 1. Delivery Credit for THIS meal if specific day total crossed threshold
+      if (isDayFree && existDay[meal] && (existDay[meal].delivery_charged > 0)) {
+         const cr = existDay[meal].delivery_charged;
+         mealExtras.push({ icon: "🏷️", name: `Combined Day Free Delivery`, val: -cr, credit: true,
+           desc: `Your combined day total is ₹${combinedDayTotal} (>= ₹${FREE_THRESHOLD}). We're refunding the ₹${cr} delivery you paid earlier on this meal!` });
+         totalDelivery -= cr;
       }
 
-      // Small Order Fee Credit: if existing orders paid small fee but combined meal now >= 50 or switched to Pickup
-      const smallFeeCredit = (((mAddr.area === "Self Pickup" || combinedMealSub >= 50)) && (meal === 'Lunch' || meal === 'Dinner') && existMealSub > 0)
-        ? (existDay[meal]?.small_fee_charged || 0) : 0;
-      if (smallFeeCredit > 0) {
-        mealExtras.push({ icon: "🏷️", name: `Small Order Fee Credit`, val: -smallFeeCredit, credit: true,
-          desc: `Your combined ${meal} total for today is now ₹${combinedMealSub} (over ₹50). You are getting back the ₹${smallFeeCredit} small order fee you had paid previously on this meal.` });
-        mExtrasTotal -= smallFeeCredit; totalSmallOrderFee -= smallFeeCredit;
+      // 2. Small Fee Credit for THIS meal if specific day total crossed threshold
+      if (isDayFree && existDay[meal] && (existDay[meal].small_fee_charged > 0)) {
+         const cr = existDay[meal].small_fee_charged;
+         mealExtras.push({ icon: "🏷️", name: `Combined Day Small Fee Refund`, val: -cr, credit: true,
+           desc: `Your combined day total is ₹${combinedDayTotal} (>= ₹${FREE_THRESHOLD}). Waiving the ₹${cr} small order fee you paid earlier!` });
+         totalSmallOrderFee -= cr;
       }
 
-      // Small Order Fee — based on combined meal total
-      if (mAddr.area !== "Self Pickup" && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      // 3. Small Order Fee (current)
+      // Waived if isDayFree or Pickup. Else applies if Lunch/Dinner and meal total < 50
+      if (!isDayFree && !isPickup && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
         const fee = 10;
         mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
-        mExtrasTotal += fee; totalSmallOrderFee += fee;
+        totalSmallOrderFee += fee;
       }
 
-      // Delivery — waived if combined meal total >= FREE_THRESHOLD or Pickup
-      if (mAddr.area !== "Self Pickup" && !FREE_AREAS.includes(mAddr.area) && sub > 0 && combinedMealSub < FREE_THRESHOLD) {
-        let fee = DELIVERY_CHARGE;
-        // Special Rule: Breakfast delivery is free if combined with Lunch/Dinner
-        if (meal === "Breakfast" && hasAnyMajorOnDate) fee = 0;
-
-        if (fee > 0) {
-          mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
-          mExtrasTotal += fee; totalDelivery += fee;
-        }
+      // 4. Delivery (current)
+      // Waived if isDayFree or Pickup or FreeArea
+      if (!isDayFree && !isPickup && !isFreeArea && sub > 0) {
+        const fee = DELIVERY_CHARGE;
+        mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
+        totalDelivery += fee;
       }
 
-      // Breakfast Delivery Credit: If Lunch/Dinner is added to a day where BF was already paid
-      if ((meal === "Lunch" || meal === "Dinner") && hasExistBfCharge && !bfCreditApplied) {
-        mealExtras.push({ 
-           icon: "🏷️", 
-           name: "Breakfast Combo Refund", 
-           val: -10, 
-           credit: true,
-           desc: "Bonus: Since you are now ordering Lunch/Dinner for today, your earlier Breakfast delivery fee of ₹10 is being refunded!" 
-        });
-        mExtrasTotal -= 10; totalDelivery -= 10;
-        bfCreditApplied = true;
-      }
-
-      // Market Surcharge
+      // 5. Market Surcharge
       const surcharge = Math.ceil(sub / 10);
       if (surcharge > 0) {
         mealExtras.push({ icon: "📈", name: "Market Surcharge", val: surcharge, desc: "A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market." });
-        mExtrasTotal += surcharge; totalInflationSurcharge += surcharge;
+        totalInflationSurcharge += surcharge;
       }
 
       if (mealExtras.length > 0) {

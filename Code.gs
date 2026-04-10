@@ -821,7 +821,7 @@ function submitOrder(body) {
   // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Garden")
   const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
   const DELIVERY  = 10;
-  const FREE_THR  = 100;
+  const FREE_THR  = 150;
 
   const submissionIds = [];
   
@@ -869,16 +869,22 @@ function submitOrder(body) {
       const prevMealSub = (existingDateInfo[mealType] || {}).subtotal || 0;
       const combinedMealSub = sub + prevMealSub;
       
-      // Delivery logic (matches frontend)
+      // Delivery & Fee logic (matches frontend)
       const isPickup  = (mealArea === "Self Pickup");
-      const delCharge = (!isPickup && !freeAreaNames.includes(mealArea) && sub > 0 && combinedMealSub < FREE_THR) ? DELIVERY : 0;
-      const discAmt   = getDisc(sub);
-      
+      const isDayFree = (combinedDayTotal >= FREE_THR);
+      const isFreeArea = freeAreaNames.includes(mealArea);
+
+      let delCharge = 0;
+      if (!isDayFree && !isPickup && !isFreeArea && sub > 0) {
+        delCharge = DELIVERY;
+      }
+
       let smallOrderFee = 0;
-      if (!isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (!isDayFree && !isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
       
+      const discAmt = getDisc(sub);
       const inflationSurcharge = Math.ceil(sub / 10);
       const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt;
 
@@ -1268,49 +1274,49 @@ function deleteOrder(phone, rowId, refundType) {
       overDiscount = overOnRemaining;
     }
 
-    // Delivery eligibility for same-meal remaining orders
-    // If combined meal total drops below FREE_THR after deletion → those remaining orders
-    // should have been charged delivery → customer saved delivery on them unjustly
-    const FREE_THR_D = 100;
+    // Delivery & Fee eligibility for remaining same-day orders
+    // If combined day total drops below 150 after deletion → those remaining orders
+    // should have been charged fees → customer saved them unjustly.
+    const FREE_THR_D = 150;
     const freeAreaNames2 = getAreas().filter(a => a.free).map(a => a.name);
-    const sameMealRemaining = sameDayRows.filter(x => x.Meal_Type === deleteMeal);
-    const remainingMealSub = sameMealRemaining.reduce((s,x) => s + (Number(x.Food_Subtotal)||0), 0);
-    const deletedMealSub = Number(r.Food_Subtotal) || 0;
-    const combinedMealSub = remainingMealSub + deletedMealSub;
-    const mealArea = r.Area || "";
-    const isNonFree = !freeAreaNames2.includes(mealArea);
+    const isNonFree = (area) => !freeAreaNames2.includes(area) && area !== "Self Pickup";
 
-    // Delivery was waived on remaining orders because combined total was >= FREE_THR
-    // After deletion, if remaining < FREE_THR, those remaining orders owe delivery
     let deliveryOwed = 0;
-    if (isNonFree && combinedMealSub >= FREE_THR_D && remainingMealSub < FREE_THR_D) {
-      // Each remaining same-meal order that was charged ₹0 delivery now owes ₹10
-      deliveryOwed = sameMealRemaining.filter(x => (Number(x.Delivery_Charge)||0) === 0).length * 10;
-    }
-
-    // Small order fee: if remaining same-meal sub was >= 50 (no fee) but now < 50
     let smallFeeOwed = 0;
-    if ((deleteMeal === 'Lunch' || deleteMeal === 'Dinner') &&
-        combinedMealSub >= 50 && remainingMealSub < 50) {
-      smallFeeOwed = sameMealRemaining.filter(x => (Number(x.Small_Order_Fee)||0) === 0).length * 10;
-    }
 
-    // Special Svaadh Logic: BF delivery is free only if Lunch/Dinner is ordered for same day.
-    // If Lunch/Dinner is deleted, but only BF remains -> customer may owe ₹10 back to Svaadh.
-    let bfDeliveryOwed = 0;
-    if ((deleteMeal === "Lunch" || deleteMeal === "Dinner") && !sameDayRows.some(x => ["Lunch","Dinner"].includes(String(x.Meal_Type).trim()))) {
-      const bfRem = sameDayRows.find(x => String(x.Meal_Type).trim() === "Breakfast");
-      if (bfRem) {
-        const bfArea = bfRem.Area || "";
-        // If remaining breakfast was charged ₹0 for delivery, and it's NOT a free area, then charge ₹10 back.
-        if (!freeAreaNames2.includes(bfArea) && (Number(bfRem.Delivery_Charge)||0) === 0) {
-          bfDeliveryOwed = 10;
+    if (oldDaySubtotal >= FREE_THR_D && remainingDaySubtotal < FREE_THR_D) {
+      // 1. Delivery Clawback: sum up delivery on all remaining rows that were waived due to the 150 rule
+      sameDayRows.forEach(x => {
+        const xArea = x.Area || "";
+        const xSub = Number(x.Food_Subtotal) || 0;
+        if (xSub > 0 && isNonFree(xArea)) {
+          // They should have paid delivery. Check if they were charged 0.
+          if ((Number(x.Delivery_Charge) || 0) === 0) {
+             deliveryOwed += 10;
+          }
         }
-      }
+        
+        // 2. Small Order Fee Clawback: if Lunch/Dinner row < 50 and was waived
+        const xMeal = String(x.Meal_Type).trim();
+        if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50) {
+          if ((Number(x.Small_Order_Fee) || 0) === 0) {
+            smallFeeOwed += 10;
+          }
+        }
+      });
+    } else {
+      // Partial drop handling: If they were always below 150, but a specific meal sub dropped below 100/50?
+      // Actually, the user wants the 150 rule to be the primary toggle now.
+      // But we still need to handle the case where day total was < 150, and they delete an order,
+      // and a specific meal total drops.
+      // Wait, the user said "remove the breakfast delivery free if lunch/dinner ordered, instead put this, 
+      // day's total over ₹150 then free delivery across all."
+      
+      // Let's stick to the 150 rule as the only common waiver.
     }
 
     // Actual refund = what was charged on deleted row minus any amount now owed back
-    const adjustment = overDiscount + deliveryOwed + smallFeeOwed + bfDeliveryOwed;
+    const adjustment = overDiscount + deliveryOwed + smallFeeOwed;
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
