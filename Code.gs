@@ -554,7 +554,7 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     meal_addresses:     r.Meal_Addresses || "",
-    review_promo_count: Number(r.Review_Promo_Count) || 0,
+    promoCount:         Number(r.Review_Promo_Count) || 0,
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -584,7 +584,7 @@ function verifyLogin(phone, pin) {
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
       meal_addresses:     r.Meal_Addresses || "",
-      review_promo_count: Number(r.Review_Promo_Count) || 0,
+      promoCount:         Number(r.Review_Promo_Count) || 0,
       wallet_balance:     _calculateWalletBalance(phone)
     }
   };
@@ -985,7 +985,9 @@ function submitOrder(body) {
       set("Inflation_Surcharge", inflationSurcharge);
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
-      set("Review_Discount",      meal._reviewDiscount || 0);
+      if (hIdx["Review_Discount"]) {
+        set("Review_Discount",   meal._reviewDiscount || 0);
+      }
       set("Net_Total",           netTotal);
       
       let pStat = payStatus;
@@ -1046,9 +1048,9 @@ function submitOrder(body) {
   }
 
   // Sync final promoCount back to customer sheet
-  if (cRowIdx !== -1) {
+  if (cRowIdx !== -1 && hIdx["Review_Promo_Count"]) {
     const realRow = cRowIdx + 2;
-    custWs.getRange(realRow, cIdx["Review_Promo_Count"] + 1).setValue(promoCount);
+    custWs.getRange(realRow, hIdx["Review_Promo_Count"]).setValue(promoCount);
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
@@ -3069,20 +3071,24 @@ function adminCancelOrder(body) {
 }
 
 // ── TEST DATA GENERATOR ──────────────────────────────────────
-function giftReviewPromo(body) {
+/**
+ * ADMIN: Grant Review Promo (Manual)
+ */
+function markReviewed(body) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   const rows = getAllRows(ws);
   const phone = _normalizePhone(body.phone);
   
   const hIdx = headerIndex(ws);
-  const rowIdx = rows.findIndex(x => _normalizePhone(x.Phone) === phone);
+  if (!hIdx["Review_Promo_Count"]) return {success: false, error: "Review column not initialized. Please refresh sheet."};
   
+  const rowIdx = rows.findIndex(x => _normalizePhone(x.Phone) === phone);
   if (rowIdx === -1) return {success: false, message: "Customer not found."};
   
   // Set Review_Promo_Count to 3
   const realRow = rowIdx + 2;
-  ws.getRange(realRow, hIdx["Review_Promo_Count"] + 1).setValue(3);
+  ws.getRange(realRow, hIdx["Review_Promo_Count"]).setValue(3);
   
   return {success: true, message: "10% Discount (3x) gifted successfully!"};
 }
