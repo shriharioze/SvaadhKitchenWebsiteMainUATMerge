@@ -2608,7 +2608,7 @@ async function buildBillScreen(){
     // SUFFICIENT WALLET BALANCE
     $("walletConfirmCard").style.display = "block";
     $("walletDeductAmount").textContent = `₹${grandTotal}`;
-    $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet balances update instantly, but may take 1-2 mins to sync on your screen depending on your network.',6000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
+    $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet recharges are verified manually by Admin and can take up to 24 hours. Until then, you can easily pay for today\\'s order directly via UPI!',7000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
     $("walletConfirmLabelAmt").textContent = grandTotal;
     // Set text for the override link
     const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
