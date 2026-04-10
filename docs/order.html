@@ -826,7 +826,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
         💡 <strong>Hint:</strong> Use your birthday (DDMM) so it's easy to remember!
       </div>
       <div class="form-group" style="margin-bottom:0;">
-        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="this.value=this.value.replace(/\D/g,''); if(this.value.length===4) goNext();">
+        <input type="password" id="pinInput" maxlength="4" placeholder="••••" inputmode="numeric" style="letter-spacing:8px;font-size:1.5rem;text-align:center;width:120px;margin:0 auto;display:block;" oninput="this.value=this.value.replace(/\D/g,''); checkPinLength(); if(this.value.length===4) goNext();">
       </div>
       <div id="forgotPinWrap" style="margin-top:14px;display:none;">
         <a href="https://wa.me/919322246765?text=Hi,%20I%20forgot%20my%20Svaadh%20Kitchen%20PIN.%20Please%20clear%20my%20PIN%20so%20I%20can%20reset%20it." target="_blank" style="font-size:0.75rem;color:#1a73e8;text-decoration:none;font-weight:600;padding:6px 12px;background:#f0f4f8;border-radius:6px;">Forgot PIN? Message us to reset</a>
@@ -1561,6 +1561,24 @@ function checkPaymentConfirmation() {
     btn.style.filter = "none";
   }
 }
+
+function checkPinLength() {
+  const val = $("pinInput")?.value || "";
+  const btn = $("btnNext");
+  if (!btn) return;
+  if (S.step === 0 && $("pinAuthSection")?.style.display === "block") {
+    if (val.length === 4) {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.style.filter = "none";
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.style.filter = "grayscale(100%)";
+    }
+  }
+}
+
 function refreshBillBtn(){
   if(S.step!==3)return;
   const ok=hasAnyOrder();
@@ -1790,7 +1808,7 @@ async function lookupCustomer(){
        $("forgotPinWrap").style.display = "block";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Verify PIN & Continue";
-       $("btnNext").disabled = false;
+       $("btnNext").disabled = true; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
        setTimeout(()=>$("pinInput").focus(), 100);
        return;
     } else {
@@ -1801,7 +1819,7 @@ async function lookupCustomer(){
        $("forgotPinWrap").style.display = "none";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Set PIN & Continue";
-       $("btnNext").disabled = false;
+       $("btnNext").disabled = true; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
        if (data.found) {
           const parts = (data.name || "").trim().split(" ");
           const firstName = parts[0] || "";
