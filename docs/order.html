@@ -1918,6 +1918,7 @@ function handleLoginSuccess(profileData, isNew) {
     const fn = parts[0] || "";
     const ln = parts.slice(1).join(" ") || "";
     const wb = Number(profileData.wallet_balance) || 0;
+    const pc = Number(profileData.promoCount) || 0;
     
     toast(`Welcome back, ${fn}! Wallet balance: ₹${wb}`, 3000);
     updateWalletBalanceUI(wb);
@@ -1928,10 +1929,11 @@ function handleLoginSuccess(profileData, isNew) {
       delivery_point: profileData.delivery_point || "door",
       maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
       meal_addresses: profileData.meal_addresses || "",
-      promoCount: profileData.promoCount || 0
+      promoCount: pc
     };
     S.walletBalance = wb;
     S.walletMode = true; // Everyone is on wallet/prepaid mode now
+
     const wantPromoHtml = pc === 0 ? `
       <div style="margin-top:4px; font-size:0.72rem; color:#f59e0b; font-weight:700; cursor:pointer;" onclick="showHowModal()">🎁 Want 10% OFF? Click here</div>
     ` : "";
@@ -1946,7 +1948,6 @@ function handleLoginSuccess(profileData, isNew) {
     </div>`;
 
     // REVIEW REWARD NOTIFICATION
-    const pc = Number(profileData.promoCount) || 0;
     if (pc > 0) {
       $("reviewRewardWrap").innerHTML = `
         <div class="reward-box">
