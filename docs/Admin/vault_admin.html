@@ -1735,6 +1735,12 @@ async function switchPage(page) {
     if (!(await showUIConfirm("You have unsaved menu changes for " + S.selectedDate + ".\nLeave without saving?", "Unsaved Changes", "⚠️"))) return;
     setMenuDirty(false);
   }
+  
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar) {
+    sidebar.style.display = (page === "menu") ? "flex" : "none";
+  }
+
   document.querySelectorAll(".page").forEach(el=>el.classList.remove("on"));
   document.getElementById("pageMenu").classList.toggle("on", page==="menu");
   document.getElementById("pageManage").classList.toggle("on", page==="manage");
