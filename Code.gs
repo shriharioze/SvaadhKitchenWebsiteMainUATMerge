@@ -2573,29 +2573,7 @@ function markOrdersStatus(body) {
   return {success:true, updatedRows:updated};
 }
 
-// ── ADMIN CANCEL ORDER ────────────────────────────────────────────────────────
-function adminCancelOrder(body) {
-  var date  = body.date;
-  var phone = body.phone;
-  var meal  = body.meal;
-  if (!date || !phone || !meal) return {success:false, error:"date, phone and meal required"};
-  var ss   = getSpreadsheet();
-  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  var hIdx = headerIndex(ws);
-  var rows = getAllRows(ws);
-  var updated = 0;
-  var fmtDate = function(v) {
-    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
-  };
-  rows.forEach(function(r) {
-    if (fmtDate(r.Order_Date)===date && String(r.Phone||"").trim()===phone && String(r.Meal_Type)===meal) {
-      ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Cancelled");
-      updated++;
-    }
-  });
-  return {success:true, updatedRows:updated};
-}
-
+// ── DELETED OBSOLETE ADMIN CANCEL ORDER (Merged with main) ──
 // ── ANALYTICS ─────────────────────────────────────────────────────────────────
 function getAnalytics(p) {
   var dateFrom = p.dateFrom, dateTo = p.dateTo;
@@ -2979,7 +2957,7 @@ function adminCancelOrder(body) {
     // Decide refundType for this specific row in the batch context
     let rType = "none";
     if (pStat === "wallet paid") rType = "wallet";
-    else if (pStat === "paid") {
+    else if (pStat === "paid" || pStat.includes("pending")) {
       rType = anyWallet ? "wallet" : "manual_upi";
     }
 
