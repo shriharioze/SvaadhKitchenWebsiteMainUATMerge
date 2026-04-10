@@ -1552,11 +1552,11 @@ function checkPaymentConfirmation() {
   const btn = $("btnNext");
   if (!btn) return;
   if (!isChecked) {
-    btn.disabled = true;
+    btn.dataset.locked = "payment";
     btn.style.opacity = "0.5";
     btn.style.filter = "grayscale(100%)";
   } else {
-    btn.disabled = false;
+    delete btn.dataset.locked;
     btn.style.opacity = "1";
     btn.style.filter = "none";
   }
@@ -1568,11 +1568,11 @@ function checkPinLength() {
   if (!btn) return;
   if (S.step === 0 && $("pinAuthSection")?.style.display === "block") {
     if (val.length === 4) {
-      btn.disabled = false;
+      delete btn.dataset.locked;
       btn.style.opacity = "1";
       btn.style.filter = "none";
     } else {
-      btn.disabled = true;
+      btn.dataset.locked = "pin";
       btn.style.opacity = "0.5";
       btn.style.filter = "grayscale(100%)";
     }
@@ -1586,6 +1586,14 @@ function refreshBillBtn(){
 }
 function goBack(){if(S.step>0){S.step--;updateNav();window.scrollTo(0,0);}}
 async function goNext(){
+  if($("btnNext").dataset.locked === "payment") {
+    toast("Please tick the confirmation box to proceed.");
+    return;
+  }
+  if($("btnNext").dataset.locked === "pin") {
+    toast("Please enter a 4-digit PIN.");
+    return;
+  }
   if($("btnNext").disabled)return;
   if(!(await validate(S.step))) return;
   if(S.step===0){
@@ -1808,7 +1816,7 @@ async function lookupCustomer(){
        $("forgotPinWrap").style.display = "block";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Verify PIN & Continue";
-       $("btnNext").disabled = true; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
+       $("btnNext").dataset.locked = "pin"; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
        setTimeout(()=>$("pinInput").focus(), 100);
        return;
     } else {
@@ -1819,7 +1827,7 @@ async function lookupCustomer(){
        $("forgotPinWrap").style.display = "none";
        $("pinAuthSection").style.display = "block";
        $("btnNext").textContent = "Set PIN & Continue";
-       $("btnNext").disabled = true; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
+       $("btnNext").dataset.locked = "pin"; $("btnNext").style.opacity="0.5"; $("btnNext").style.filter="grayscale(100%)";
        if (data.found) {
           const parts = (data.name || "").trim().split(" ");
           const firstName = parts[0] || "";
