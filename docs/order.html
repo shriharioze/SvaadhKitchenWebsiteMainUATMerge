@@ -1275,13 +1275,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       
       <!-- Review Reward Prompt -->
       <div class="card" style="margin:16px 0; background:linear-gradient(135deg,#fff8e1,#fffde7); border:1px solid #ffd54f; padding:16px; border-radius:12px; text-align:center;">
-        <div style="font-size:1.5rem; margin-bottom:8px;">⭐⭐⭐⭐⭐</div>
+        <div style="font-size:1.5rem; margin-bottom:8px;">🎁</div>
         <div style="font-weight:700; color:#856404; font-size:1rem; margin-bottom:4px;">Love the food?</div>
         <div style="font-size:0.85rem; color:#92400e; line-height:1.5; margin-bottom:12px;">
           Leave us a <strong>5-star rating & review</strong> on Google and get <strong>10% OFF</strong> on your next 3 orders!
         </div>
         <a href="https://g.page/r/CasEH8gGAhzLEAE/review" target="_blank" class="btn btn-primary" style="background:#f59e0b; border-color:#d97706; margin:0; font-size:0.9rem; padding:10px 16px;">
-          ⭐⭐⭐⭐⭐ Claim Your 10% Discount
+          Claim Your 10% Discount
         </a>
       </div>
 
@@ -2476,7 +2476,31 @@ function getPrice(colKey,meal,date){
 }
 function getItemName(colKey,meal,date){
   if(meal==="Breakfast"){if(colKey==="B_CURD")return"Curd (50g)";for(const[n,ck]of Object.entries(BREAKFAST_COL_MAP)){if(ck===colKey)return n;}return colKey;}
-  for(const g of FIXED_MEAL_ITEMS[meal]||[]){const f=g.items.find(i=>i.colKey===colKey);if(f)return f.name;}return colKey;
+  
+  let baseName = colKey;
+  for(const g of FIXED_MEAL_ITEMS[meal]||[]){
+    const f=g.items.find(i=>i.colKey===colKey);
+    if(f){ baseName = f.name; break; }
+  }
+  
+  const dayMenu = S.menuCache[date] || {};
+  const sabjiMap = {
+    L_DRY_MINI: dayMenu.lunch_dry,
+    L_DRY_FULL: dayMenu.lunch_dry,
+    L_CURRY_MINI: dayMenu.lunch_curry,
+    L_CURRY_FULL: dayMenu.lunch_curry,
+    D_DRY_MINI: dayMenu.dinner_dry,
+    D_DRY_FULL: dayMenu.dinner_dry,
+    D_CURRY_MINI: dayMenu.dinner_curry,
+    D_CURRY_FULL: dayMenu.dinner_curry
+  };
+  
+  const realSabji = sabjiMap[colKey];
+  if(realSabji && realSabji !== "---") {
+    return `${realSabji} (${baseName})`;
+  }
+  
+  return baseName;
 }
 function refreshBadge(date,meal){
   const sub=S.orders[date]?.[meal]?.subtotal||0;

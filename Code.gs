@@ -1048,9 +1048,9 @@ function submitOrder(body) {
   }
 
   // Sync final promoCount back to customer sheet
-  if (cRowIdx !== -1 && hIdx["Review_Promo_Count"]) {
+  if (cRowIdx !== -1 && cIdx["Review_Promo_Count"]) {
     const realRow = cRowIdx + 2;
-    custWs.getRange(realRow, hIdx["Review_Promo_Count"]).setValue(promoCount);
+    custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(promoCount);
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
