@@ -236,6 +236,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .customer-badge .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#27ae60,#2ecc71);display:flex;align-items:center;justify-content:center;font-size:1rem;color:white;font-weight:700;flex-shrink:0;}
 .customer-badge .cname{font-weight:600;font-size:0.9rem;}
 .customer-badge .csub{font-size:0.73rem;color:#555;margin-top:2px;}
+.reward-box{background:linear-gradient(135deg,#fff8e1,#feedaf);border:1.5px solid #fbbf24;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;animation:fadeIn 0.5s ease;}
+.reward-box .icon{font-size:1.4rem;flex-shrink:0;}
+.reward-box .rtitle{font-weight:700;font-size:0.9rem;color:#92400e;}
+.reward-box .rsub{font-size:0.74rem;color:#b45309;margin-top:2px;}
+[data-theme="dark"] .reward-box{background:linear-gradient(135deg,#2d2310,#4a3a10);border-color:#5a4a20;color:#fbbf24;}
+[data-theme="dark"] .reward-box .rtitle{color:#fbbf24;}
+[data-theme="dark"] .reward-box .rsub{color:#d4a017;}
 
 /* SAME ADDRESS TOGGLE */
 .same-addr-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;margin-bottom:14px;cursor:pointer;}
@@ -880,6 +887,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
   <div class="card">
     <h2 data-i18n="step2_details_title">👤 Your Details</h2>
     <div id="returningBadge"></div>
+    <div id="reviewRewardWrap"></div>
     <div class="input-row2">
       <div class="form-group" style="margin-bottom:0;">
         <label data-i18n="label_first_name">First Name *</label>
@@ -1264,6 +1272,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <div class="order-ref"><span data-i18n="order_id_label">Order ID:</span> <strong id="orderIdDisplay">—</strong></div>
       
       <div id="successSummary" class="success-summary-box"></div>
+      
+      <!-- Review Reward Prompt -->
+      <div class="card" style="margin:16px 0; background:linear-gradient(135deg,#fff8e1,#fffde7); border:1px solid #ffd54f; padding:16px; border-radius:12px; text-align:center;">
+        <div style="font-size:1.5rem; margin-bottom:8px;">⭐</div>
+        <div style="font-weight:700; color:#856404; font-size:1rem; margin-bottom:4px;">Love the food?</div>
+        <div style="font-size:0.85rem; color:#92400e; line-height:1.5; margin-bottom:12px;">
+          Leave us a <strong>5-star rating & review</strong> on Google and get <strong>10% OFF</strong> on your next 3 orders!
+        </div>
+        <a href="https://g.page/r/CasEH8gGAhzLEAE/review" target="_blank" class="btn btn-primary" style="background:#f59e0b; border-color:#d97706; margin:0; font-size:0.9rem; padding:10px 16px;">
+          🎁 Claim Your 10% Discount
+        </a>
+      </div>
 
       <p class="text-sm" style="margin-top:8px;"><span data-i18n="success_whatsapp_hint">Questions? WhatsApp us:</span> <a href="https://wa.me/919930748908" style="color:#c0392b;font-weight:600;">+91 99307 48908</a></p>
       <button class="btn btn-secondary mt-12" onclick="resetForAnotherOrder()" data-i18n="btn_another_order">Place another order →</button>
@@ -1507,7 +1527,10 @@ function showHowModal(){
       <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50 (Waived if Self Pickup)<br>
       <strong>📈 Market Surcharge:</strong> ₹1 per ₹10 of food bill<br>
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
-      <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br><br>
+      <strong>🗓️ Advance orders:</strong> Select multiple dates at once — order for the whole week!<br>
+      <div style="margin-top:12px; padding:10px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; color:#856404;">
+        <strong>🎁 Review Reward:</strong> Leave a 5-star review and get <strong>10% OFF</strong> on your next 3 orders!
+      </div><br>
       <strong>${t('how_help_label')}</strong><br>
       WhatsApp: <a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a>
     </div>`;
@@ -1904,19 +1927,44 @@ function handleLoginSuccess(profileData, isNew) {
       flat: profileData.flat || "", floor: profileData.floor || "", society: profileData.society || "",
       delivery_point: profileData.delivery_point || "door",
       maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
-      meal_addresses: profileData.meal_addresses || ""
+      meal_addresses: profileData.meal_addresses || "",
+      promoCount: profileData.promoCount || 0
     };
     S.walletBalance = wb;
     S.walletMode = true; // Everyone is on wallet/prepaid mode now
+    const wantPromoHtml = pc === 0 ? `
+      <div style="margin-top:4px; font-size:0.72rem; color:#f59e0b; font-weight:700; cursor:pointer;" onclick="showHowModal()">🎁 Want 10% OFF? Click here</div>
+    ` : "";
+
     $("returningBadge").innerHTML = `<div class="customer-badge">
       <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
-      <div style="flex:1;"><div class="cname">${t('welcome_back',{name:fn})}</div>
-      <div class="csub">${t('welcome_back_hint')}</div></div></div>
+      <div style="flex:1;">
+        <div class="cname">${t('welcome_back',{name:fn})}</div>
+        <div class="csub">${t('welcome_back_hint')}</div>
+        ${wantPromoHtml}
+      </div></div>
     </div>`;
+
+    // REVIEW REWARD NOTIFICATION
+    const pc = Number(profileData.promoCount) || 0;
+    if (pc > 0) {
+      $("reviewRewardWrap").innerHTML = `
+        <div class="reward-box">
+          <div class="icon">🎁</div>
+          <div style="flex:1;">
+            <div class="rtitle">Thank you for your Review!</div>
+            <div class="rsub">You have <strong>${pc}</strong> discount credits left. A 10% discount will be applied to your food subtotal for the next ${pc} meals.</div>
+          </div>
+        </div>`;
+    } else {
+      $("reviewRewardWrap").innerHTML = "";
+    }
+
     if (S.step === 0) goNext();
   } else {
     S.isFirstTime = true;
     $("returningBadge").innerHTML = "";
+    $("reviewRewardWrap").innerHTML = "";
     
     // For new users, show onboarding screens
     if (!localStorage.getItem("sk_seen_how")) {
@@ -2993,6 +3041,21 @@ function hideManageOrders(){
   syncWalletValue(); // Refresh main chip balance when closing manage orders
 }
 
+function showReviewPromoBanner() {
+  const pc = Number(S.profile?.promoCount) || 0;
+  if (pc > 0) return ""; // Don't show if they already have credits
+  return `
+    <div style="margin-bottom:14px; background:linear-gradient(135deg,#fff9db,#fffde7); border:1.5px dashed #fcc419; padding:12px; border-radius:12px; display:flex; align-items:center; gap:12px;">
+      <div style="font-size:1.5rem;">⭐</div>
+      <div style="flex:1;">
+        <div style="font-weight:700; font-size:0.85rem; color:#856404;">Get 10% OFF on 3 Orders!</div>
+        <div style="font-size:0.75rem; color:#92400e; margin-top:2px;">Leave us a 5-star review to unlock your reward.</div>
+      </div>
+      <a href="https://g.page/r/CasEH8gGAhzLEAE/review" target="_blank" style="background:#f59e0b; color:white; padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:700; text-decoration:none;">Review</a>
+    </div>
+  `;
+}
+
 // Per-order cached data (address, items, etc.) populated by loadExistingOrders
 const orderDataCache = {};  // rowId → { area, wing, flat, floor, society, maps, landmark, items_json, notes, payment_preference, customer_name, all_row_ids, original_total_paid, is_wallet, is_settlement }
 
@@ -3003,7 +3066,7 @@ async function loadExistingOrders(phone){
   const upcomingWrap = $("manageOrdersList");
   const pastWrap = $("pastOrdersList");
   
-  upcomingWrap.innerHTML = `<div class="loader"><div class="spinner"></div></div>`;
+  upcomingWrap.innerHTML = showReviewPromoBanner() + `<div class="loader"><div class="spinner"></div></div>`;
   pastWrap.innerHTML = "";
   try{
     const res=await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);

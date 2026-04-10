@@ -80,7 +80,8 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
-  "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses"
+  "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
+  "Review_Promo_Count"
 ];
 
 const ORDERS_HEADERS = [
@@ -92,7 +93,7 @@ const ORDERS_HEADERS = [
   "Dal","Rice","Salad","Curd",
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
-  "Food_Subtotal","Delivery_Charge","Discount_Amount","Net_Total",
+  "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed"
 ];
 
@@ -338,6 +339,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(approveWalletRecharge(body));
     }
+    if (action === "markReviewed") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markReviewed(body));
+    }
     if (action === "deleteBreakfastItem") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteBreakfastItem(body.id));
@@ -549,6 +554,7 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     meal_addresses:     r.Meal_Addresses || "",
+    review_promo_count: Number(r.Review_Promo_Count) || 0,
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -578,6 +584,7 @@ function verifyLogin(phone, pin) {
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
       meal_addresses:     r.Meal_Addresses || "",
+      review_promo_count: Number(r.Review_Promo_Count) || 0,
       wallet_balance:     _calculateWalletBalance(phone)
     }
   };
@@ -829,6 +836,17 @@ function submitOrder(body) {
   const submissionDates = orders.map(o => o.date);
   const existingDayTotals = getDayTotalsForDates(profile.phone, submissionDates.join(',')).dayTotals || {};
 
+  // Fetch current promo state
+  const custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const cIdx   = headerIndex(custWs);
+  const cRows  = getAllRows(custWs);
+  const phoneStr = _normalizePhone(profile.phone);
+  const cRowIdx = cRows.findIndex(r => _normalizePhone(r.Phone) === phoneStr);
+  let promoCount = 0;
+  if (cRowIdx !== -1) {
+    promoCount = Number(cRows[cRowIdx].Review_Promo_Count) || 0;
+  }
+
   for (const order of orders) {
     const orderDate = order.date;
     const existingDateInfo = (existingDayTotals[orderDate] || {});
@@ -898,7 +916,16 @@ function submitOrder(body) {
       
       const discAmt = getDisc(sub);
       const inflationSurcharge = Math.ceil(sub / 10);
-      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit;
+      
+      // Google Review Promo Logic (10% OFF per meal)
+      let reviewDiscount = 0;
+      if (promoCount > 0 && sub > 0) {
+        reviewDiscount = Math.round(sub * 0.10);
+        promoCount--;
+      }
+      
+      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount;
+      meal._reviewDiscount = reviewDiscount; // carry for set() below
 
 
       // Build items JSON
@@ -958,6 +985,7 @@ function submitOrder(body) {
       set("Inflation_Surcharge", inflationSurcharge);
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
+      set("Review_Discount",      meal._reviewDiscount || 0);
       set("Net_Total",           netTotal);
       
       let pStat = payStatus;
@@ -1015,6 +1043,12 @@ function submitOrder(body) {
 
   if (payFreq === "Prepaid Wallet" || payFreq.includes("10 days") || payFreq.includes("Wallet")) {
     try { _updateLedger(ss, profile, orders); } catch(e) { /* non-fatal */ }
+  }
+
+  // Sync final promoCount back to customer sheet
+  if (cRowIdx !== -1) {
+    const realRow = cRowIdx + 2;
+    custWs.getRange(realRow, cIdx["Review_Promo_Count"] + 1).setValue(promoCount);
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
@@ -2431,23 +2465,40 @@ function getOrderHistory(p) {
 // ── GET CUSTOMER LIST ─────────────────────────────────────────────────────────
 function getCustomerList() {
   var ss   = getSpreadsheet();
-  var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  var rows = getAllRows(ws);
+  var ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var ordRows = getAllRows(ordersWs);
+
+  var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var custRows = getAllRows(custWs);
+  var cMap = {};
+  custRows.forEach(function(c) {
+    var p = _normalizePhone(c.Phone);
+    if (p) cMap[p] = Number(c.Review_Promo_Count) || 0;
+  });
 
   var fmtDate = function(v) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
   var map = {};
-  rows.forEach(function(r) {
+  ordRows.forEach(function(r) {
     if (String(r.Payment_Status) === "Cancelled") return;
     var phone = String(r.Phone||"").trim();
     if (!phone) return;
+    var normP = _normalizePhone(phone);
     var d = fmtDate(r.Order_Date);
     if (!map[phone]) {
-      map[phone] = {phone:phone, name:String(r.Customer_Name||"").trim(),
-        area:String(r.Area||"").trim(), payFreq:String(r.Payment_Freq||"").trim(),
-        orderCount:0, totalSpent:0, pendingAmt:0, lastDate:""};
+      map[phone] = {
+        phone:phone, 
+        name:String(r.Customer_Name||"").trim(),
+        area:String(r.Area||"").trim(), 
+        payFreq:String(r.Payment_Freq||"").trim(),
+        orderCount:0, 
+        totalSpent:0, 
+        pendingAmt:0, 
+        lastDate:"",
+        promoCount: cMap[normP] || 0
+      };
     }
     map[phone].orderCount++;
     map[phone].totalSpent += Number(r.Net_Total)||0;
@@ -2463,6 +2514,28 @@ function getCustomerList() {
     .sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
 
   return {success:true, customers:customers};
+}
+
+function markReviewed(body) {
+  var phone = body.phone;
+  if (!phone) return {success:false, error:"phone required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = getAllRows(ws);
+  var normP = _normalizePhone(phone);
+
+  var r = rows.find(function(x) { return _normalizePhone(x.Phone) === normP; });
+  if (!r) return {success:false, error:"Customer not found"};
+
+  var col = hIdx["Review_Promo_Count"];
+  if (!col) return {success:false, error:"Review_Promo_Count column missing"};
+
+  var current = Number(r.Review_Promo_Count) || 0;
+  ws.getRange(r._row, col).setValue(current + 3);
+
+  return {success:true, newCount: current + 3};
 }
 
 // ── GET CUSTOMER HISTORY ──────────────────────────────────────────────────────
@@ -2996,6 +3069,24 @@ function adminCancelOrder(body) {
 }
 
 // ── TEST DATA GENERATOR ──────────────────────────────────────
+function giftReviewPromo(body) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const rows = getAllRows(ws);
+  const phone = _normalizePhone(body.phone);
+  
+  const hIdx = headerIndex(ws);
+  const rowIdx = rows.findIndex(x => _normalizePhone(x.Phone) === phone);
+  
+  if (rowIdx === -1) return {success: false, message: "Customer not found."};
+  
+  // Set Review_Promo_Count to 3
+  const realRow = rowIdx + 2;
+  ws.getRange(realRow, hIdx["Review_Promo_Count"] + 1).setValue(3);
+  
+  return {success: true, message: "10% Discount (3x) gifted successfully!"};
+}
+
 /**
  * Run this function once from the Apps Script editor to populate
  * dummy orders for Today and Tomorrow for testing prints/labels.

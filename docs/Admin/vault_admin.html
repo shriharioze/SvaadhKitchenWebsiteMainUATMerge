@@ -684,6 +684,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
+      <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
     </div>
     <div class="topbar-right">
@@ -1118,6 +1119,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           </div>
         </div>
       </div><!-- /pageApprovals -->
+      
+      <!-- ════ PAGE: REVIEWS ════ -->
+      <div class="page" id="pageReviews">
+        <div class="page-header">
+          <div class="page-title">Review Rewards <small>Mark customers as "Reviewed" to grant them a 10% discount on 3 meals</small></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+          <input class="cust-search" type="text" id="reviewUserSearch" placeholder="🔍 Search customer name or phone…" oninput="filterReviewUsers()">
+          <button class="btn-primary" onclick="loadReviewUsers()">↺ Refresh</button>
+        </div>
+        <div id="reviewGridWrap" class="cust-grid">
+           <!-- Rendered via JS -->
+        </div>
+      </div>
 
       <!-- Keep legacy IDs hidden to avoid JS errors if referenced elsewhere temporarily -->
       <div id="pagePayments" style="display:none;"></div>
@@ -1752,6 +1767,7 @@ async function switchPage(page) {
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
   document.getElementById("pageApprovals").classList.toggle("on", page==="approvals");
+  document.getElementById("pageReviews").classList.toggle("on", page==="reviews");
   document.getElementById("navMenu").classList.toggle("active", page==="menu");
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
@@ -1762,6 +1778,7 @@ async function switchPage(page) {
   document.getElementById("navHistory").classList.toggle("active", page==="history");
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navApprovals").classList.toggle("active", page==="approvals");
+  document.getElementById("navReviews").classList.toggle("active", page==="reviews");
   
   if (page==="approvals") {
     refreshApprovalCounts();
@@ -1802,6 +1819,7 @@ async function switchPage(page) {
     loadPayments();
   }
   if (page === "customers") loadCustomers();
+  if (page === "reviews") loadReviewUsers();
   document.getElementById("sidebar").style.setProperty("display", (page==="menu" ? "flex" : "none"), "important");
 }
 
@@ -3494,6 +3512,81 @@ async function markAsRefunded(subId, name, amt) {
   } catch(e) { 
     sLoading(false);
     toast("Error: " + e.message, 4000); 
+  }
+}
+
+// ── REVIEW REWARDS MANAGEMENT ──
+let _reviewUsers = [];
+async function loadReviewUsers() {
+  const wrap = document.getElementById("reviewGridWrap");
+  wrap.innerHTML = `<div style="text-align:center;padding:40px;grid-column:1/-1;"><div class="spinner" style="margin:0 auto;"></div><p style="color:#aaa;margin-top:12px;font-size:0.85rem;">Loading customers…</p></div>`;
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerList&pin=${S.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    _reviewUsers = data.customers;
+    renderReviewUsers(_reviewUsers);
+  } catch(e) {
+    wrap.innerHTML = `<div style="text-align:center;padding:40px;grid-column:1/-1;color:var(--red);">Error: ${e.message}</div>`;
+  }
+}
+
+function renderReviewUsers(list) {
+  const wrap = document.getElementById("reviewGridWrap");
+  if (!list.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:40px;grid-column:1/-1;color:var(--muted);">No customers found.</div>`;
+    return;
+  }
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+  const fmtD = d => d ? (p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")) : "—";
+  
+  wrap.innerHTML = list.map(c => `
+    <div class="cust-card" style="cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div class="cust-card-name">${c.name}</div>
+          <div class="cust-card-phone">📱 ${c.phone}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;font-weight:700;">Promo Credits</div>
+          <div style="font-size:1.1rem;font-weight:800;color:${c.promoCount > 0 ? "var(--green)" : "var(--muted)"};">${c.promoCount}</div>
+        </div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
+         Total Orders: <strong>${c.orderCount}</strong> &nbsp;·&nbsp; Last: <strong>${fmtD(c.lastDate)}</strong>
+      </div>
+      <button class="btn-green" style="width:100%;padding:8px;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:8px;" 
+              onclick="grantReviewReward('${c.phone}', '${c.name.replace(/'/g,"\\'")}')">
+         <span>🎁</span> Mark Reviewed (+3)
+      </button>
+    </div>
+  `).join("");
+}
+
+function filterReviewUsers() {
+  const q = document.getElementById("reviewUserSearch").value.toLowerCase();
+  const filtered = _reviewUsers.filter(c => 
+    c.name.toLowerCase().includes(q) || c.phone.replace(/\D/g,"").includes(q)
+  );
+  renderReviewUsers(filtered);
+}
+
+async function grantReviewReward(phone, name) {
+  if (!(await showUIConfirm(`Mark ${name} as Reviewed?\nThis will add 3 discount credits (10% off each).`, "Add Review Reward", "🎁"))) return;
+  sLoading(true, "Updating customer...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "markReviewed", pin: S.sessionPin, phone: phone })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast(`✅ Added 3 credits to ${name}! New balance: ${data.newCount}`);
+    loadReviewUsers(); // refresh
+  } catch(e) {
+    toast("Error: " + e.message);
+  } finally {
+    sLoading(false);
   }
 }
 

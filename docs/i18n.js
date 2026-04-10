@@ -201,6 +201,12 @@
     idx_review_us: "Review us on Google",
     idx_read_more: "Read more",
     idx_read_less: "Show less",
+
+    // ── Review Promotion ──────────────────────────────────
+    review_promo_text: "⭐ Loved the food? Get 10% OFF on your next 3 orders!",
+    review_promo_sub: "Leave us a 5-star rating & review on Google to unlock your reward.",
+    review_promo_cta: "Leave a Review & Get Discount",
+    review_promo_link: "https://g.page/r/CasEH8gGAhzLEAE/review"
   };
 
   // ── Core API ─────────────────────────────────────────────
