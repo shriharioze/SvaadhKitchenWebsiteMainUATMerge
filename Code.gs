@@ -883,10 +883,22 @@ function submitOrder(body) {
       if (!isDayFree && !isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
+
+      // Calculation of credits for previously paid fees on the same day (Retroactive waiver)
+      let dateDeliveryCredit = 0;
+      let dateSmallFeeCredit = 0;
+      if (isDayFree) {
+        Object.keys(existingDateInfo).forEach(mType => {
+          dateDeliveryCredit += (Number(existingDateInfo[mType].delivery_charged) || 0);
+          dateSmallFeeCredit += (Number(existingDateInfo[mType].small_fee_charged) || 0);
+        });
+      }
+      const totalDateCredit = dateDeliveryCredit + dateSmallFeeCredit;
+      const mealCredit = submissionDayFoodTotal > 0 ? (totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
       
       const discAmt = getDisc(sub);
       const inflationSurcharge = Math.ceil(sub / 10);
-      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt;
+      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit;
 
 
       // Build items JSON

@@ -1556,6 +1556,8 @@ function updateNav(){
   $("btnNext").style.display="block";
   $("btnNext").disabled=false;$("btnNext").style.opacity="1";
   const btn = $("btnNext");
+  delete btn.dataset.locked;
+  btn.style.filter = "none";
   const labels=[t('btn_continue'),t('btn_continue'),t('btn_continue'),t('btn_review'),t('btn_place')];
   btn.innerHTML = labels[s];
   // Disable if nothing ordered yet
@@ -1700,9 +1702,16 @@ async function goNext(){
     if(!hasAnyOrder()){toast(t('toast_select_item')); return;}
     
     sBtnLoading($("btnNext"), true, t('loading_building'));
-    S.step++; updateNav(); window.scrollTo(0,0);
-    buildBillScreen();
-    sBtnLoading($("btnNext"), false);
+    try {
+      S.step++; 
+      updateNav(); 
+      window.scrollTo(0,0);
+      await buildBillScreen();
+    } catch(e) {
+      toast("Error building bill: " + e.message);
+    } finally {
+      sBtnLoading($("btnNext"), false);
+    }
     return;
   }
   if(S.step===4){ await placeOrder(); return; }
@@ -2281,7 +2290,7 @@ function renderMealContent(date){
   $("mealSelectionContent").innerHTML=MEALS.map(meal=>{
     const isAvail=avail[meal],sub=S.orders[date]?.[meal]?.subtotal||0;
     const mAddr = getMealAddr(meal);
-    const isAddrMissing = !isPickup && !mAddr.area;
+    const isAddrMissing = (mAddr.area !== "Self Pickup") && !mAddr.area;
     const lockedClass = isAddrMissing ? "locked" : "";
     
     return `<div class="meal-section ${lockedClass}">
@@ -2530,21 +2539,8 @@ async function buildBillScreen(){
 
       let mealExtras = [];
       
-      // 1. Delivery Credit for THIS meal if specific day total crossed threshold
-      if (isDayFree && existDay[meal] && (existDay[meal].delivery_charged > 0)) {
-         const cr = existDay[meal].delivery_charged;
-         mealExtras.push({ icon: "🏷️", name: `Combined Day Free Delivery`, val: -cr, credit: true,
-           desc: `Your combined day total is ₹${combinedDayTotal} (>= ₹${FREE_THRESHOLD}). We're refunding the ₹${cr} delivery you paid earlier on this meal!` });
-         totalDelivery -= cr;
-      }
+      // 1 & 2. Credits (Moved to date-level adjustments at bottom)
 
-      // 2. Small Fee Credit for THIS meal if specific day total crossed threshold
-      if (isDayFree && existDay[meal] && (existDay[meal].small_fee_charged > 0)) {
-         const cr = existDay[meal].small_fee_charged;
-         mealExtras.push({ icon: "🏷️", name: `Combined Day Small Fee Refund`, val: -cr, credit: true,
-           desc: `Your combined day total is ₹${combinedDayTotal} (>= ₹${FREE_THRESHOLD}). Waiving the ₹${cr} small order fee you paid earlier!` });
-         totalSmallOrderFee -= cr;
-      }
 
       // 3. Small Order Fee (current)
       // Waived if isDayFree or Pickup. Else applies if Lunch/Dinner and meal total < 50
@@ -2558,7 +2554,7 @@ async function buildBillScreen(){
       // Waived if isDayFree or Pickup or FreeArea
       if (!isDayFree && !isPickup && !isFreeArea && sub > 0) {
         const fee = DELIVERY_CHARGE;
-        mealExtras.push({ icon: "🚚", name: `Delivery (${meal})`, val: fee });
+        mealExtras.push({ icon: "🚚", name: `Delivery Charge`, val: fee });
         totalDelivery += fee;
       }
 
@@ -2600,12 +2596,27 @@ async function buildBillScreen(){
       // Add gap after each meal block for clarity
       html += `<div style="height:10px;"></div>`;
     });
-    // Full discount line — includes retro credit for previous orders if applicable
-    // Final day totals block with gap above it
-    const dayTotal=dayFoodTotal-discAmt+totalDelivery+totalSmallOrderFee+totalInflationSurcharge;grandTotal+=dayTotal;
-    html+=`<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">
-      ${discAmt > 0 ? `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)"><span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>` : ''}
-      <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
+    // 6. Date-level Adjustments (Credits / Discounts)
+    const totalCredits = dayDeliveryCredit + daySmallFeeCredit;
+    const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits; 
+    grandTotal += dayTotal;
+    
+    html+=`<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">`;
+    
+    if (dayDeliveryCredit > 0) {
+      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${dayDeliveryCredit} delivery charge you paid for earlier orders today!', 7000)">
+        <span>🏷️ Combined Day Free Delivery</span><span>−₹${dayDeliveryCredit}</span></div>`;
+    }
+    if (daySmallFeeCredit > 0) {
+      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${daySmallFeeCredit} small order fee you paid for earlier orders today!', 7000)">
+        <span>🏷️ Combined Day Small Fee Credit</span><span>−₹${daySmallFeeCredit}</span></div>`;
+    }
+    if (discAmt > 0) {
+      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)">
+        <span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>`;
+    }
+    
+    html+=`  <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
     </div><hr class="bill-divider" style="margin-top:16px;"></div>`;
   }
   S.grandTotal=grandTotal;
@@ -2615,9 +2626,6 @@ async function buildBillScreen(){
   const tenCb=$("tenDayConfirm");if(tenCb)tenCb.checked=false;
   // codBtn logic removed
   $("billSummaryContent").innerHTML=html+
-    `<div style="margin:12px 4px; padding:12px; background:#fff9e6; border:1px solid #ffe0b2; border-radius:12px; font-size:0.7rem; color:#856404; line-height:1.4;">
-      💡 <strong>Delivery Note:</strong> Breakfast delivery is <strong>FREE</strong> if Lunch or Dinner is ordered for the same day (Automatically adjusted if ordered separately).
-    </div>` +
     `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
   
   const wb = Number(S.walletBalance) || 0;
