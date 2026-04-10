@@ -647,6 +647,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 .feedback-link:hover{background:#ede7df;color:#c0392b;}
 .bug-link{color:#e67e22;background:#fff8e1;}
 .bug-link:hover{background:#fef3c7;color:#d97706;}
+.satisfaction-link{color:#3498db;background:#ebf5fb;}
+.satisfaction-link:hover{background:#d6eaf8;color:#2980b9;}
 </style>
 <script>
   // Apply saved theme immediately to prevent flash
@@ -781,8 +783,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <button onclick="showManageOrders()" class="bill-chip-btn" style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋 Manage Orders</button>
     <button onclick="logoutCustomer()" style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
   </div>
-  <div style="width:100%; display:flex; justify-content:center; gap:16px; margin-top:8px; border-top:1px solid #f5f5f5; padding-top:8px;">
+  <div style="width:100%; display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:8px; border-top:1px solid #f5f5f5; padding-top:8px;">
      <a href="https://docs.google.com/forms/d/e/1FAIpQLSegGilECpH3x6jY0SmkfGlYbEQO9hPXfphpfy2prS6b-bSjGg/viewform?usp=header" target="_blank" class="feedback-link">🗣️ Feedback</a>
+     <a href="#" target="_blank" class="feedback-link satisfaction-link">🍱 Rate Meal & Service</a>
      <a href="https://docs.google.com/forms/d/e/1FAIpQLScqR82ZRF4R4h0Ea2P7U1WMo5ipenx-eM7R7WPXYKaM_4HShw/viewform?usp=header" target="_blank" class="feedback-link bug-link">🐞 Report Bug</a>
   </div>
 </div>
@@ -1266,8 +1269,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
       <button class="btn btn-secondary mt-12" onclick="resetForAnotherOrder()" data-i18n="btn_another_order">Place another order →</button>
       <div style="margin-top:16px; padding-top:12px; border-top:1px dashed #eee; display:flex; flex-direction:column; gap:8px;">
         <div style="font-size:0.75rem; color:#888;">Help us improve Svaadh Kitchen!</div>
-        <div style="display:flex; justify-content:center; gap:10px;">
+        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSegGilECpH3x6jY0SmkfGlYbEQO9hPXfphpfy2prS6b-bSjGg/viewform?usp=success" target="_blank" class="feedback-link">🗣️ Share Feedback</a>
+          <a href="#" target="_blank" class="feedback-link satisfaction-link">🍱 Rate Meal & Service</a>
           <a href="https://docs.google.com/forms/d/e/1FAIpQLScqR82ZRF4R4h0Ea2P7U1WMo5ipenx-eM7R7WPXYKaM_4HShw/viewform?usp=success" target="_blank" class="feedback-link bug-link">🐞 Found a Bug?</a>
         </div>
       </div>
@@ -2605,7 +2609,7 @@ async function buildBillScreen(){
     
     if (dayDeliveryCredit > 0) {
       html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${dayDeliveryCredit} delivery charge you paid for earlier orders today!', 7000)">
-        <span>🏷️ Combined Day Free Delivery</span><span>−₹${dayDeliveryCredit}</span></div>`;
+        <span>🏷️ Combined Day Free Delivery (Credit)</span><span>−₹${dayDeliveryCredit}</span></div>`;
     }
     if (daySmallFeeCredit > 0) {
       html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${daySmallFeeCredit} small order fee you paid for earlier orders today!', 7000)">
