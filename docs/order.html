@@ -890,7 +890,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
     <!-- Same for all toggle -->
     <label class="same-addr-row" id="sameAddrToggleRow" style="margin-bottom:16px;">
       <input type="checkbox" id="sameAddrCheck" checked onchange="toggleAddressMode()">
-      <span data-i18n="same_addr_label">Same address for all meals (Breakfast, Lunch &amp; Dinner)</span>
+      <span data-i18n="same_addr_label" style="display:inline-flex;align-items:center;">Same address for all meals (Breakfast, Lunch &amp; Dinner) <span class="info-icon" onclick="event.stopPropagation();toast('Uncheck this if you want lunch delivered to your office, and dinner to your home.',6000)" style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span></span>
     </label>
 
     <!-- SINGLE ADDRESS (shown when sameAddr=true) -->
@@ -1134,7 +1134,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#e74c3c;backgr
 <!-- STEP 3: DATES -->
 <div class="screen" id="screen2">
   <div class="card">
-    <h2 data-i18n="step3_title">🗓️ Select Delivery Dates</h2>
+    <h2 data-i18n="step3_title" style="display:flex;align-items:center;">🗓️ Select Delivery Dates <span class="info-icon" onclick="event.stopPropagation();toast('Tap multiple dates to seamlessly plan your meals for the whole week in advance!',6000)" style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span></h2>
     <div class="info-box" id="cutoffInfoBox">
       <strong>Order cutoff times:</strong><br>
       🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:30 AM &nbsp;|&nbsp; 🌙 Dinner: before 5:00 PM<br>
@@ -2608,7 +2608,7 @@ async function buildBillScreen(){
     // SUFFICIENT WALLET BALANCE
     $("walletConfirmCard").style.display = "block";
     $("walletDeductAmount").textContent = `₹${grandTotal}`;
-    $("walletCheckBalance").textContent = `Available Wallet Fund: ₹${wb}`;
+    $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet balances update instantly, but may take 1-2 mins to sync on your screen depending on your network.',6000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
     $("walletConfirmLabelAmt").textContent = grandTotal;
     // Set text for the override link
     const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
