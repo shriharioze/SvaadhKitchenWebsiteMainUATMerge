@@ -1950,7 +1950,7 @@ function handleLoginSuccess(profileData, isNew) {
     const fn = parts[0] || "";
     const ln = parts.slice(1).join(" ") || "";
     const wb = Number(profileData.wallet_balance) || 0;
-    const pc = (profileData.promoCount === null) ? null : Number(profileData.promoCount);
+    const pc = (profileData.promoCount === null) ? null : (isNaN(profileData.promoCount) ? profileData.promoCount : Number(profileData.promoCount));
     
     toast(`Welcome back, ${fn}! Wallet balance: ₹${wb}`, 3000);
     updateWalletBalanceUI(wb);
@@ -1971,7 +1971,7 @@ function handleLoginSuccess(profileData, isNew) {
       is_new: !!isNew 
     });
 
-    const isReviewed = (S.profile.promoCount !== null);
+    const isReviewed = (pc === "Exhausted" || (pc !== null && !isNaN(pc) && Number(pc) > 0));
     const wantPromoHtml = isReviewed ? `
       <div style="margin-top:4px; font-size:0.72rem; color:#f59e0b; font-weight:700; cursor:pointer;" onclick="showHowModal()">Thank you for the 5-star rating! ❤️</div>
     ` : `
@@ -1988,7 +1988,7 @@ function handleLoginSuccess(profileData, isNew) {
     </div>`;
 
     // REVIEW REWARD NOTIFICATION
-    if (pc > 0) {
+    if (typeof pc === "number" && pc > 0) {
       $("reviewRewardWrap").innerHTML = `
         <div class="reward-box">
           <div class="icon">🎁</div>
@@ -3138,7 +3138,7 @@ function hideManageOrders(){
 
 function showReviewPromoBanner() {
   const pc = (S.profile && S.profile.promoCount !== undefined) ? S.profile.promoCount : null;
-  const isReviewed = (pc !== null);
+  const isReviewed = (pc === "Exhausted" || (pc !== null && !isNaN(pc) && Number(pc) > 0));
   
   if (isReviewed) {
     return `

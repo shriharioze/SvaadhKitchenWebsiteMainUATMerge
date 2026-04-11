@@ -570,7 +570,11 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     meal_addresses:     r.Meal_Addresses || "",
-    promoCount:         (r.Review_Promo_Count === "" || r.Review_Promo_Count === undefined) ? null : Number(r.Review_Promo_Count),
+    promoCount: (function(v){ 
+      if(v===""||v===undefined) return null;
+      if(!isNaN(v)) return Number(v);
+      return v;
+    })(r.Review_Promo_Count),
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -600,7 +604,11 @@ function verifyLogin(phone, pin) {
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
       meal_addresses:     r.Meal_Addresses || "",
-      promoCount:         (r.Review_Promo_Count === "" || r.Review_Promo_Count === undefined) ? null : Number(r.Review_Promo_Count),
+      promoCount: (function(v){ 
+        if(v===""||v===undefined) return null;
+        if(!isNaN(v)) return Number(v);
+        return v;
+      })(r.Review_Promo_Count),
       wallet_balance:     _calculateWalletBalance(phone)
     }
   };
@@ -861,7 +869,8 @@ function submitOrder(body) {
   let promoCount = null;
   if (cRowIdx !== -1) {
     const rawVal = cRows[cRowIdx].Review_Promo_Count;
-    promoCount = (rawVal === "" || rawVal === undefined) ? null : Number(rawVal);
+    promoCount = (rawVal === "" || rawVal === undefined) ? null : rawVal;
+    if (promoCount !== null && !isNaN(promoCount)) promoCount = Number(promoCount);
   }
 
   for (const order of orders) {
@@ -943,7 +952,8 @@ function submitOrder(body) {
       
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
-      if (promoCount !== null && promoCount > 0 && sub > 0) {
+      const isNumeric = (typeof promoCount === "number" && !isNaN(promoCount));
+      if (isNumeric && promoCount > 0 && sub > 0) {
         reviewDiscount = Math.round(sub * 0.10);
         promoCount--;
       }
@@ -1073,8 +1083,13 @@ function submitOrder(body) {
 
   // Sync final promoCount back to customer sheet
   if (cRowIdx !== -1 && cIdx["Review_Promo_Count"]) {
+    // Pro transition: 0 -> "Exhausted"
+    let finalValue = promoCount;
+    if (finalValue === 0) finalValue = "Exhausted";
+    else if (finalValue === null) finalValue = "";
+    
     const realRow = cRowIdx + 2;
-    custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(promoCount === null ? "" : promoCount);
+    custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(finalValue);
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
