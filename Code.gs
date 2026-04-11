@@ -570,7 +570,7 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     meal_addresses:     r.Meal_Addresses || "",
-    promoCount:         Number(r.Review_Promo_Count) || 0,
+    promoCount:         (r.Review_Promo_Count === "" || r.Review_Promo_Count === undefined) ? null : Number(r.Review_Promo_Count),
     wallet_balance:     _calculateWalletBalance(phone)
   };
 }
@@ -600,7 +600,7 @@ function verifyLogin(phone, pin) {
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
       meal_addresses:     r.Meal_Addresses || "",
-      promoCount:         Number(r.Review_Promo_Count) || 0,
+      promoCount:         (r.Review_Promo_Count === "" || r.Review_Promo_Count === undefined) ? null : Number(r.Review_Promo_Count),
       wallet_balance:     _calculateWalletBalance(phone)
     }
   };
