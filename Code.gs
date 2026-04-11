@@ -858,9 +858,10 @@ function submitOrder(body) {
   const cRows  = getAllRows(custWs);
   const phoneStr = _normalizePhone(profile.phone);
   const cRowIdx = cRows.findIndex(r => _normalizePhone(r.Phone) === phoneStr);
-  let promoCount = 0;
+  let promoCount = null;
   if (cRowIdx !== -1) {
-    promoCount = Number(cRows[cRowIdx].Review_Promo_Count) || 0;
+    const rawVal = cRows[cRowIdx].Review_Promo_Count;
+    promoCount = (rawVal === "" || rawVal === undefined) ? null : Number(rawVal);
   }
 
   for (const order of orders) {
@@ -942,7 +943,7 @@ function submitOrder(body) {
       
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
-      if (promoCount > 0 && sub > 0) {
+      if (promoCount !== null && promoCount > 0 && sub > 0) {
         reviewDiscount = Math.round(sub * 0.10);
         promoCount--;
       }
@@ -1073,7 +1074,7 @@ function submitOrder(body) {
   // Sync final promoCount back to customer sheet
   if (cRowIdx !== -1 && cIdx["Review_Promo_Count"]) {
     const realRow = cRowIdx + 2;
-    custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(promoCount);
+    custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(promoCount === null ? "" : promoCount);
   }
 
   return {success: true, submissionId: submissionIds[0] || ""};
@@ -1141,6 +1142,7 @@ function _upsertCustomer(ss, profile) {
         case "PIN":             val = profile.pin || ""; break;
         case "Meal_Addresses":  val = profile.meal_addresses || ""; break;
         case "Standard_Order":  val = profile.standardOrder || ""; break;
+        case "Review_Promo_Count": val = ""; break;
         default:                val = "";
       }
       // Force leading zeros to be preserved for Phone and PIN by prepending '
