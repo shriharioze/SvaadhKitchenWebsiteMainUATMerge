@@ -308,8 +308,6 @@ function doPost(e) {
     // Customer actions (pinned via their own phone/PIN handled inside functions)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
     if (action === "getCustomerList") return jsonRes(getCustomerList());
-    if (action === "setStandardOrder") return jsonRes(setStandardOrder(body.phone, body.itemsJSON, body.templateName));
-    if (action === "removeStandardOrder") return jsonRes(removeStandardOrder(body.phone, body.templateName));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
     
     // Delivery Actions (Staff PIN ONLY)

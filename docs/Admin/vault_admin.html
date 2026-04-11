@@ -1231,6 +1231,38 @@ const GLOBAL_STAPLE_PRICES = {
   "B_CURD": 12
 };
 
+// Maps every possible column key / colKey to a human-readable display name
+function colKeyToDisplayName(k) {
+  const MAP = {
+    // Breakfast
+    "B_CURD":"Curd",
+    // Lunch legacy codes
+    "L_CHAPATI":"Chapati","L_WO_CHAPATI":"W/O Oil Chapati","L_PHULKA":"Phulka","L_GHEE_PHULKA":"Ghee Phulka",
+    "L_JOWAR":"Jowar Bhakri","L_BA_JRA":"Bajra Bhakri",
+    "L_DRY_MINI":"Dry Sabji (Mini)","L_DRY_FULL":"Dry Sabji (Full)",
+    "L_CURRY_MINI":"Curry Sabji (Mini)","L_CURRY_FULL":"Curry Sabji (Full)",
+    "L_DAL":"Dal","L_RICE":"Rice","L_SALAD":"Salad","L_CURD":"Curd",
+    // Dinner legacy codes
+    "D_CHAPATI":"Chapati","D_WO_CHAPATI":"W/O Oil Chapati","D_PHULKA":"Phulka","D_GHEE_PHULKA":"Ghee Phulka",
+    "D_JOWAR":"Jowar Bhakri","D_BA_JRA":"Bajra Bhakri",
+    "D_DRY_MINI":"Dry Sabji (Mini)","D_DRY_FULL":"Dry Sabji (Full)",
+    "D_CURRY_MINI":"Curry Sabji (Mini)","D_CURRY_FULL":"Curry Sabji (Full)",
+    "D_DAL":"Dal","D_RICE":"Rice","D_SALAD":"Salad","D_CURD":"Curd",
+    // Canonical names (already human-readable but underscored)
+    "Dry_Sabji_Mini":"Dry Sabji (Mini)","Dry_Sabji_Full":"Dry Sabji (Full)",
+    "Curry_Sabji_Mini":"Curry Sabji (Mini)","Curry_Sabji_Full":"Curry Sabji (Full)",
+    "Without_Oil_Chapati":"W/O Oil Chapati","Ghee_Phulka":"Ghee Phulka",
+    "Jowar_Bhakri":"Jowar Bhakri","Bajra_Bhakri":"Bajra Bhakri",
+    "Kanda_Poha":"Kanda Poha",
+  };
+  if (MAP[k]) return MAP[k];
+  // Try bfMaster / sabjiMaster lookup
+  const masterItem = [...(S.bfMaster||[]), ...(S.sabjiMaster||[])].find(x => x.id === k || x.name === k);
+  if (masterItem) return masterItem.name;
+  // Fallback: replace underscores with spaces
+  return k.replace(/_/g, ' ');
+}
+
 // ════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════
@@ -3213,7 +3245,7 @@ function renderCustomerDetail(data) {
   const rows = data.orders.map(o => {
     let items = "—";
     const rawItems = o.items;
-    try { const obj=JSON.parse(o.items); items=Object.entries(obj).filter(([,q])=>q>0).map(([n,q])=>`${q}×${n}`).join(", ")||"—"; } catch(e){}
+    try { const obj=JSON.parse(o.items); items=Object.entries(obj).filter(([,q])=>q>0).map(([n,q])=>`${q}×${colKeyToDisplayName(n)}`).join(", ")||"—"; } catch(e){ items = o.items || "—"; }
     return `<tr>
       <td style="white-space:nowrap;">${fmtD(o.date)}</td>
       <td>${mChip(o.meal)}</td>
@@ -3280,7 +3312,7 @@ function renderCustomerDetail(data) {
       if (favs && favs.length > 0) {
         const cards = favs.map(fav => {
           const itemDisplay = Object.entries(fav.items).filter(([,q])=>q>0).map(([k,q]) => {
-            const name = GLOBAL_STAPLE_PRICES[k] ? k : ([...S.bfMaster, ...S.sabjiMaster].find(x => x.id === k || x.name === k)?.name || k);
+          const name = colKeyToDisplayName(k);
             return `${q}×${name}`;
           }).join(", ");
 
