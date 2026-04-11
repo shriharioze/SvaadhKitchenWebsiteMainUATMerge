@@ -1720,7 +1720,10 @@ async function goNext(){
   if(S.step===3){
     if (S.selectedDates.length === 0) { toast("Please select at least one date"); return; }
     // Check if any selected date has an empty menu in cache
-    const emptyDates = S.selectedDates.filter(d => !S.menuCache[d] || (!S.menuCache[d].lunch_dry && !S.menuCache[d].dinner_dry));
+    const emptyDates = S.selectedDates.filter(d => {
+      const hasOrder = ["Breakfast", "Lunch", "Dinner"].some(m => (S.orders[d]?.[m]?.subtotal || 0) > 0);
+      return !hasOrder;
+    });
     if (emptyDates.length > 0) {
       const names = emptyDates.map(d => formatDate(d)).join(", ");
       const confirmMsg = t('empty_dates_warn', { n: emptyDates.length, dates: names });
