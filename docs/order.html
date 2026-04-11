@@ -1478,6 +1478,16 @@ const todayISO = () => {
 const formatDate = ds => new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
 function toast(msg,ms=2500){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
 
+const trackGA = (name, params = {}) => {
+  try {
+    if (typeof gtag === "function") {
+      gtag("event", name, params);
+    }
+  } catch (e) {
+    console.warn("GA tracking error", e);
+  }
+};
+
 async function syncWalletValue() {
   if (!S.phone) return;
   try {
@@ -1603,6 +1613,12 @@ function updateNav(){
   // Toggle Quick Button Bar (Wallet, Orders, Logout) only after step 0
   const qb = $("quickButtonBar");
   if (qb) qb.style.display = (s > 0) ? "flex" : "none";
+
+  // Analytics tracking
+  trackGA("step_view", { 
+    step_index: s, 
+    step_name: STEPS[s] 
+  });
 }
 
 function checkPaymentConfirmation() {
@@ -1945,6 +1961,11 @@ function handleLoginSuccess(profileData, isNew) {
     };
     S.walletBalance = wb;
     S.walletMode = true; // Everyone is on wallet/prepaid mode now
+
+    trackGA("login", { 
+      method: "PIN",
+      is_new: !!isNew 
+    });
 
     const isReviewed = (S.profile.promoCount !== undefined && S.profile.promoCount !== null && S.profile.promoCount !== "");
     const wantPromoHtml = isReviewed ? `
