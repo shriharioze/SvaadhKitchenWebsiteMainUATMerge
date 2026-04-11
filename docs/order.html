@@ -1950,7 +1950,8 @@ function handleLoginSuccess(profileData, isNew) {
     const fn = parts[0] || "";
     const ln = parts.slice(1).join(" ") || "";
     const wb = Number(profileData.wallet_balance) || 0;
-    const pc = (profileData.promoCount === null) ? null : (isNaN(profileData.promoCount) ? profileData.promoCount : Number(profileData.promoCount));
+    const pcVal = profileData.promoCount;
+    const pc = (pcVal === null || pcVal === "" || pcVal === undefined) ? null : (isNaN(pcVal) ? pcVal : Number(pcVal));
     
     toast(`Welcome back, ${fn}! Wallet balance: ₹${wb}`, 3000);
     updateWalletBalanceUI(wb);
@@ -2583,7 +2584,8 @@ async function buildBillScreen(){
   } catch(e) { /* non-fatal: fall back to no existing orders */ }
 
   let html="",grandTotal=0;
-  let promoTracker = Number(S.profile?.promoCount) || 0;
+  let pCount = S.profile?.promoCount;
+  let promoTracker = (pCount !== null && !isNaN(pCount)) ? Number(pCount) : 0;
   for(const date of S.selectedDates){
     const dayOrders=S.orders[date]||{};
     let dayFoodTotal=0;

@@ -570,10 +570,10 @@ function getCustomer(phone) {
     landmark:           r.Landmark || "",
     payment_preference: r.Payment_Freq || "Daily Payment",
     meal_addresses:     r.Meal_Addresses || "",
-    promoCount: (function(v){ 
-      if(v===""||v===undefined) return null;
-      if(!isNaN(v)) return Number(v);
-      return v;
+    promoCount: (function(v){
+      if (v === "" || v === null || v === undefined) return null;
+      var num = Number(v);
+      return isNaN(num) ? v : num;
     })(r.Review_Promo_Count),
     wallet_balance:     _calculateWalletBalance(phone)
   };
@@ -604,10 +604,10 @@ function verifyLogin(phone, pin) {
       landmark:           r.Landmark || "",
       payment_preference: r.Payment_Freq || "Daily Payment",
       meal_addresses:     r.Meal_Addresses || "",
-      promoCount: (function(v){ 
-        if(v===""||v===undefined) return null;
-        if(!isNaN(v)) return Number(v);
-        return v;
+      promoCount: (function(v){
+        if (v === "" || v === null || v === undefined) return null;
+        var num = Number(v);
+        return isNaN(num) ? v : num;
       })(r.Review_Promo_Count),
       wallet_balance:     _calculateWalletBalance(phone)
     }
