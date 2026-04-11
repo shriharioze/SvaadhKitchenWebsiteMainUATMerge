@@ -4523,52 +4523,6 @@ async function placeBulkOrders(customer, selectedDates, templates) {
   finally { sLoading(false); }
 }
 
-async function quickOrderStandard(phone, name, itemsJSON, favName) {
-  const result = await sOrderPlacementModal(name, favName);
-  if (!result) return;
-  
-  const { date, meal } = result;
-  
-  let itemsObj = itemsJSON;
-  if (typeof itemsObj === "string") {
-    try { itemsObj = JSON.parse(itemsObj); } catch(e) { itemsObj = {}; }
-  }
-  
-  // itemList must be [{colKey, qty}]
-  let itemList = [];
-  if (Array.isArray(itemsObj)) {
-    itemList = itemsObj;
-  } else {
-    itemList = Object.entries(itemsObj).map(([colKey, qty]) => ({ colKey, qty }));
-  }
-  
-  // Calculate subtotal
-  let subtotal = 0;
-  Object.entries(itemsObj).forEach(([key, qty]) => {
-    if (GLOBAL_STAPLE_PRICES[key]) subtotal += GLOBAL_STAPLE_PRICES[key] * Number(qty);
-    else {
-      const item = [...S.bfMaster, ...S.sabjiMaster].find(x => x.id === key || x.name === key);
-      if (item) subtotal += (Number(item.price) || (key.includes("Full")?45:22)) * Number(qty);
-    }
-  });
-
-  toast("Placing order...");
-  try {
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        _action: "processOrder", pin: S.sessionPin, profile: { phone, name },
-        orders: [{ date, meals: [{ type: meal, items: itemList, subtotal }] }],
-        payment_method: "Wallet", payment_status: "Paid"
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast("Order placed! ✅");
-      loadCustomers(true); 
-    } else throw new Error(data.error);
-  } catch(e) { sAlert("Error: " + e.message); }
-}
 
 </script>
 </body>
