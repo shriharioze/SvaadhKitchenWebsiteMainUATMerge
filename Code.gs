@@ -381,6 +381,22 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveLabels(body));
     }
+    if (action === "markCustomersPaid") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markCustomersPaid(body));
+    }
+    if (action === "markOrdersStatus") {
+      if (!isAdmin) return jsonRes({error:"Invalid PIN"});
+      return jsonRes(markOrdersStatus(body));
+    }
+    if (action === "getBillingData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getBillingData(body.cycle));
+    }
+    if (action === "markBillingCollected") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markBillingCollected(body.submissionIds));
+    }
     if (action === "saveArea") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveArea(body));
@@ -3330,4 +3346,132 @@ function placeBulkOrders(body) {
     });
   });
   return {success:true, count: count};
+}
+
+// ═══════════════════════════════════════════════════════
+// SENIOR BILLING — On Account Orders
+// ═══════════════════════════════════════════════════════
+
+function getBillingData(cycle) {
+  const ss = getSpreadsheet();
+  const ordersWs  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const custWs    = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const allOrders = getAllRows(ordersWs);
+  const allCusts  = getAllRows(custWs);
+
+  // Build customer map: phone → { billing_cycle, address, name }
+  const custMap = {};
+  allCusts.forEach(c => {
+    const phone = String(c.Phone || '').trim();
+    if (phone) custMap[phone] = {
+      billing_cycle: String(c.Billing_Cycle || '').trim(),
+      name:    c.Customer_Name || '',
+      area:    c.Area || '',
+      society: c.Society || '',
+      wing:    c.Wing || '',
+      flat:    c.Flat || '',
+      floor:   c.Floor || ''
+    };
+  });
+
+  // Compute date range for requested cycle (IST)
+  const now = getISTDate();
+  const todayStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+  let fromStr = todayStr;
+  let toStr   = todayStr;
+
+  if (cycle === 'Weekly') {
+    // Mon–Sun of current week
+    const dayOfWeek = now.getDay(); // 0=Sun
+    const diffToMon = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+    const mon = new Date(now); mon.setDate(now.getDate() + diffToMon);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    fromStr = Utilities.formatDate(mon, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = Utilities.formatDate(sun, 'Asia/Kolkata', 'yyyy-MM-dd');
+  } else if (cycle === 'Monthly') {
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const first = new Date(y, m, 1);
+    const last  = new Date(y, m + 1, 0);
+    fromStr = Utilities.formatDate(first, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = Utilities.formatDate(last, 'Asia/Kolkata', 'yyyy-MM-dd');
+  }
+
+  // Filter On Account orders within cycle date range
+  const onAccountOrders = allOrders.filter(r => {
+    const status = String(r.Payment_Status || '').trim().toLowerCase();
+    if (status !== 'on account') return false;
+    const dateStr = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+      : String(r.Order_Date).trim();
+    return dateStr >= fromStr && dateStr <= toStr;
+  });
+
+  // Group by customer phone
+  const grouped = {};
+  onAccountOrders.forEach(r => {
+    const phone = String(r.Phone || '').trim();
+    const cust  = custMap[phone] || {};
+    // Only include customers whose billing_cycle matches requested cycle
+    if ((cust.billing_cycle || '').toLowerCase() !== cycle.toLowerCase()) return;
+
+    if (!grouped[phone]) {
+      grouped[phone] = {
+        phone,
+        name:    r.Customer_Name || cust.name || '',
+        area:    r.Area || cust.area || '',
+        society: r.Society || cust.society || '',
+        wing:    r.Wing || cust.wing || '',
+        flat:    r.Flat || cust.flat || '',
+        floor:   r.Floor || cust.floor || '',
+        billing_cycle: cust.billing_cycle || cycle,
+        from: fromStr,
+        to:   toStr,
+        orders: [],
+        total: 0
+      };
+    }
+
+    const dateStr = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
+      : String(r.Order_Date).trim();
+
+    grouped[phone].orders.push({
+      sid:   String(r.Submission_ID || ''),
+      date:  dateStr,
+      meal:  String(r.Meal_Type || ''),
+      items: String(r.Items_JSON || '{}'),
+      subtotal: Number(r.Food_Subtotal || 0),
+      delivery: Number(r.Delivery_Charge || 0),
+      discount: Number(r.Discount_Amount || 0),
+      net:      Number(r.Net_Total || 0)
+    });
+    grouped[phone].total += Number(r.Net_Total || 0);
+  });
+
+  const customers = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
+  return { success: true, cycle, from: fromStr, to: toStr, customers };
+}
+
+function markBillingCollected(submissionIds) {
+  if (!submissionIds || !submissionIds.length) return { success: false, error: 'No submission IDs provided' };
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const hIdx = headerIndex(ws);
+  const rows = getAllRows(ws);
+  const statusCol = hIdx['Payment_Status'];
+  if (!statusCol) return { success: false, error: 'Payment_Status column not found' };
+
+  let count = 0;
+  const idSet = new Set(submissionIds.map(id => String(id).replace(/\D/g, '')));
+
+  rows.forEach(r => {
+    const cleanId = String(r.Submission_ID || '').replace(/\D/g, '');
+    if (idSet.has(cleanId)) {
+      ws.getRange(r._row, statusCol).setValue('Collected');
+      count++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return { success: true, count };
 }

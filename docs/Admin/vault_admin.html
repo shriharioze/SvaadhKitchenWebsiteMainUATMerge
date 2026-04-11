@@ -678,6 +678,42 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .approval-panel { display: none; }
 .approval-panel.active { display: block; }
 
+/* ═══════════════════════════════════════════════
+   SENIOR BILLING PAGE
+═══════════════════════════════════════════════ */
+.billing-cycle-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 1px; }
+.billing-cycle-tab {
+  padding: 8px 18px; border: 1px solid transparent; border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  font-size: .85rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  background: none; transition: all .15s; margin-bottom: -1px; font-family: inherit;
+}
+.billing-cycle-tab:hover { color: var(--red); background: var(--bg); }
+.billing-cycle-tab.active { color: var(--red); background: var(--surface); border-color: var(--border); }
+.billing-cust-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 20px 24px; margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.billing-cust-name { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--ink); }
+.billing-cust-meta { font-size: .75rem; color: var(--muted); margin-top:2px; margin-bottom:12px; }
+.billing-order-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-bottom: 14px; }
+.billing-order-table th { background: var(--bg2); padding: 8px 12px; text-align: left; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+.billing-order-table td { padding: 8px 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+.billing-order-table tr:hover td { background: var(--bg); }
+.billing-total-row { background: var(--bg2); font-weight: 700; border-top: 2px solid var(--border); }
+.billing-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.btn-gen-pdf { display:flex; align-items:center; gap:7px; padding:9px 18px; background:var(--blue); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.82rem; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-gen-pdf:hover { background:#174d8a; }
+.btn-mark-collected { display:flex; align-items:center; gap:7px; padding:9px 18px; background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.82rem; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn-mark-collected:hover { background:#245f3e; }
+.billing-empty { text-align:center; padding:48px; color:var(--muted); font-size:.9rem; }
+@media print {
+  .bill-print-page { font-family: 'DM Sans', sans-serif; padding: 24px; max-width: 480px; margin: 0 auto; }
+  body * { visibility: hidden; }
+  .bill-print-page, .bill-print-page * { visibility: visible; }
+  .bill-print-page { position: absolute; top: 0; left: 0; }
+}
+
 /* Standard Order Styles */
 .std-order-card { 
   background: #fff; border: 1.5px dashed var(--gold-border); border-radius: var(--radius); 
@@ -739,6 +775,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
+      <button class="topbar-btn" id="navBilling" onclick="switchPage('billing')">📋 Senior Billing</button>
     </div>
     <div class="topbar-right">
       <button onclick="logout()">Logout</button>
@@ -1190,6 +1227,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <!-- Keep legacy IDs hidden to avoid JS errors if referenced elsewhere temporarily -->
       <div id="pagePayments" style="display:none;"></div>
       <div id="pageRefunds" style="display:none;"></div>
+
+      <!-- ════ PAGE: SENIOR BILLING ════ -->
+      <div class="page" id="pageBilling">
+        <div class="page-header">
+          <div class="page-title">📋 Senior Billing <small>On Account orders — Daily, Weekly &amp; Monthly</small></div>
+        </div>
+        <div class="billing-cycle-nav">
+          <button class="billing-cycle-tab active" id="billingTabDaily"   onclick="switchBillingTab('Daily')">📅 Daily</button>
+          <button class="billing-cycle-tab"         id="billingTabWeekly"  onclick="switchBillingTab('Weekly')">📆 Weekly</button>
+          <button class="billing-cycle-tab"         id="billingTabMonthly" onclick="switchBillingTab('Monthly')">🗓️ Monthly</button>
+        </div>
+        <div id="billingPeriodLabel" style="font-size:.78rem;color:var(--muted);margin-bottom:14px;"></div>
+        <div id="billingContent"><p class="billing-empty">Select a tab above to load billing data.</p></div>
+      </div><!-- /pageBilling -->
+
 
     </div><!-- /main -->
   </div><!-- /body-wrap -->
@@ -1872,6 +1924,7 @@ async function switchPage(page) {
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
   document.getElementById("pageApprovals").classList.toggle("on", page==="approvals");
   document.getElementById("pageReviews").classList.toggle("on", page==="reviews");
+  document.getElementById("pageBilling").classList.toggle("on", page==="billing");
   document.getElementById("navMenu").classList.toggle("active", page==="menu");
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
@@ -1883,7 +1936,9 @@ async function switchPage(page) {
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navApprovals").classList.toggle("active", page==="approvals");
   document.getElementById("navReviews").classList.toggle("active", page==="reviews");
+  document.getElementById("navBilling").classList.toggle("active", page==="billing");
   
+  if (page==="billing") switchBillingTab('Daily');
   if (page==="approvals") {
     refreshApprovalCounts();
     switchApprovalTab('refunds');
@@ -3546,7 +3601,240 @@ async function refreshApprovalCounts() {
   } catch(e) { console.warn("Count refresh failed", e); }
 }
 
+// ═══════════════════════════════════════════════════════
+// SENIOR BILLING JS
+// ═══════════════════════════════════════════════════════
+
+let _currentBillingCycle = 'Daily';
+
+function switchBillingTab(cycle) {
+  _currentBillingCycle = cycle;
+  ['Daily','Weekly','Monthly'].forEach(c => {
+    const el = document.getElementById(`billingTab${c}`);
+    if (el) el.classList.toggle('active', c === cycle);
+  });
+  loadBillingTab(cycle);
+}
+
+async function loadBillingTab(cycle) {
+  const content = document.getElementById('billingContent');
+  const label   = document.getElementById('billingPeriodLabel');
+  content.innerHTML = `<div style="text-align:center;padding:32px;"><div class="spinner"></div><p style="font-size:.78rem;color:#888;margin-top:8px;">Loading ${cycle} billing data…</p></div>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ _action: 'getBillingData', pin: S.sessionPin, cycle })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Unknown error');
+    const fmtDate = d => d ? d.split('-').reverse().join(' / ') : '';
+    if (cycle === 'Daily') {
+      label.textContent = `📅 Today: ${fmtDate(data.from)}`;
+    } else if (cycle === 'Weekly') {
+      label.textContent = `📆 Week: ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
+    } else {
+      label.textContent = `🗓️ Month: ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
+    }
+    content.innerHTML = renderBillingCards(data.customers, cycle);
+  } catch(e) {
+    content.innerHTML = `<p style="color:#c0392b;padding:16px;">Error: ${e.message}</p>`;
+  }
+}
+
+function _colToDisplay(k) {
+  const MAP = {
+    'B_CURD':'Curd',
+    'L_CHAPATI':'Chapati','L_WO_CHAPATI':'W/O Oil Chapati','L_PHULKA':'Phulka','L_GHEE_PHULKA':'Ghee Phulka',
+    'L_JOWAR':'Jowar Bhakri','L_BA_JRA':'Bajra Bhakri',
+    'L_DRY_MINI':'Dry Sabji (Mini)','L_DRY_FULL':'Dry Sabji (Full)',
+    'L_CURRY_MINI':'Curry Sabji (Mini)','L_CURRY_FULL':'Curry Sabji (Full)',
+    'L_DAL':'Dal','L_RICE':'Rice','L_SALAD':'Salad','L_CURD':'Curd',
+    'D_CHAPATI':'Chapati','D_WO_CHAPATI':'W/O Oil Chapati','D_PHULKA':'Phulka','D_GHEE_PHULKA':'Ghee Phulka',
+    'D_JOWAR':'Jowar Bhakri','D_BA_JRA':'Bajra Bhakri',
+    'D_DRY_MINI':'Dry Sabji (Mini)','D_DRY_FULL':'Dry Sabji (Full)',
+    'D_CURRY_MINI':'Curry Sabji (Mini)','D_CURRY_FULL':'Curry Sabji (Full)',
+    'D_DAL':'Dal','D_RICE':'Rice','D_SALAD':'Salad','D_CURD':'Curd',
+    'Dry_Sabji_Mini':'Dry Sabji (Mini)','Dry_Sabji_Full':'Dry Sabji (Full)',
+    'Curry_Sabji_Mini':'Curry Sabji (Mini)','Curry_Sabji_Full':'Curry Sabji (Full)',
+    'Without_Oil_Chapati':'W/O Oil Chapati','Ghee_Phulka':'Ghee Phulka',
+    'Jowar_Bhakri':'Jowar Bhakri','Bajra_Bhakri':'Bajra Bhakri','Kanda_Poha':'Kanda Poha'
+  };
+  return MAP[k] || k.replace(/_/g,' ');
+}
+
+function _parseItems(jsonStr) {
+  try {
+    const obj = JSON.parse(jsonStr);
+    return Object.entries(obj).filter(([,q])=>Number(q)>0)
+      .map(([k,q])=>`${q}× ${_colToDisplay(k)}`).join(', ') || '—';
+  } catch(e) { return jsonStr || '—'; }
+}
+
+function renderBillingCards(customers, cycle) {
+  if (!customers || !customers.length) {
+    return `<p class="billing-empty">✅ No outstanding On Account orders for ${cycle} billing.</p>`;
+  }
+  const mealIcon = m => m==='Breakfast'?'🍳':m==='Lunch'?'🍱':'🍽️';
+  const fmtDate  = d => d ? d.split('-').reverse().join('/') : '';
+  return customers.map(c => {
+    // Sort orders by date
+    const orders = [...c.orders].sort((a,b)=>a.date.localeCompare(b.date));
+    const allSids = orders.map(o=>o.sid);
+
+    const rows = orders.map(o => {
+      const chkbox = cycle === 'Daily'
+        ? `<input type="checkbox" class="billing-chk" data-sid="${o.sid}" data-phone="${c.phone}" style="width:14px;height:14px;cursor:pointer;">`
+        : '';
+      return `<tr>
+        <td>${chkbox}</td>
+        <td style="white-space:nowrap;">${fmtDate(o.date)}</td>
+        <td>${mealIcon(o.meal)} ${o.meal}</td>
+        <td style="font-size:.76rem;max-width:200px;">${_parseItems(o.items)}</td>
+        <td style="text-align:right;font-weight:700;">₹${o.net}</td>
+      </tr>`;
+    }).join('');
+
+    const addrParts = [c.wing && `Wing ${c.wing}`, c.flat && `Flat ${c.flat}`, c.floor && `${c.floor} Floor`, c.society, c.area].filter(Boolean).join(', ');
+
+    const bulkBtn = cycle !== 'Daily'
+      ? `<button class="btn-mark-collected" onclick="markBillingCollectedJS(${JSON.stringify(allSids)},'${c.phone}')">✅ Mark All Collected</button>`
+      : `<button class="btn-mark-collected" onclick="markSelectedCollected('${c.phone}')">✅ Mark Selected Collected</button>`;
+
+    return `<div class="billing-cust-card" id="billingCard_${c.phone.replace(/\D/g,'')}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+        <div>
+          <div class="billing-cust-name">${c.name}</div>
+          <div class="billing-cust-meta">📞 ${c.phone} &nbsp;|&nbsp; ${addrParts || '—'} &nbsp;|&nbsp; ${c.billing_cycle} billing</div>
+        </div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--red);">₹${c.total.toFixed(2)}</div>
+      </div>
+      <table class="billing-order-table">
+        <thead><tr><th style="width:28px;"></th><th>Date</th><th>Meal</th><th>Items</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="billing-total-row"><td colspan="4">Total Due</td><td style="text-align:right;">₹${c.total.toFixed(2)}</td></tr></tfoot>
+      </table>
+      <div class="billing-actions">
+        <button class="btn-gen-pdf" onclick="generateBillPDF(${JSON.stringify(c).replace(/"/g,'&quot;')})">📄 Generate PDF Bill</button>
+        ${bulkBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markBillingCollectedJS(sids, phone) {
+  if (!sids || !sids.length) { toast('No orders selected.'); return; }
+  const ok = await sConfirm(`Mark ${sids.length} order(s) as Collected for ₹${sids.length} entries?`, 'Confirm Collection', '✅');
+  if (!ok) return;
+  sLoading(true, 'Marking as Collected…');
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ _action: 'markBillingCollected', pin: S.sessionPin, submissionIds: sids })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast(`✅ ${data.count} order(s) marked as Collected!`);
+    loadBillingTab(_currentBillingCycle);
+  } catch(e) {
+    toast('Error: ' + e.message);
+  } finally {
+    sLoading(false);
+  }
+}
+
+async function markSelectedCollected(phone) {
+  const checked = [...document.querySelectorAll(`.billing-chk[data-phone="${phone}"]:checked`)];
+  if (!checked.length) { toast('Please tick at least one order.'); return; }
+  const sids = checked.map(el => el.dataset.sid);
+  await markBillingCollectedJS(sids, phone);
+}
+
+function generateBillPDF(cust) {
+  const mealIcon = m => m==='Breakfast'?'🍳':m==='Lunch'?'🍱':'🍽️';
+  const fmtDate  = d => d ? d.split('-').reverse().join(' Apr '.includes(d) ? ' ' : '/') : '';
+  const fmtDateFull = d => {
+    if (!d) return '';
+    const [y,m,day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+  };
+  const orders = [...cust.orders].sort((a,b)=>a.date.localeCompare(b.date));
+  const addrParts = [cust.wing&&`Wing ${cust.wing}`,cust.flat&&`Flat ${cust.flat}`,cust.floor&&`${cust.floor} Floor`,cust.society,cust.area].filter(Boolean).join(', ');
+  const cycleLabel = cust.billing_cycle === 'Daily'
+    ? `Daily Bill — ${fmtDateFull(cust.from)}`
+    : cust.billing_cycle === 'Weekly'
+    ? `Weekly Bill — ${fmtDateFull(cust.from)} to ${fmtDateFull(cust.to)}`
+    : `Monthly Bill — ${fmtDateFull(cust.from)} to ${fmtDateFull(cust.to)}`;
+
+  const orderRows = orders.map(o => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;white-space:nowrap;color:#555;">${fmtDateFull(o.date)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;">${mealIcon(o.meal)} ${o.meal}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:.8rem;color:#555;">${_parseItems(o.items)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">₹${o.net}</td>
+    </tr>`).join('');
+
+  const billHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Svaadh Kitchen — Bill</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #f9f7f4; color: #1a1a1a; }
+    .bill-wrap { max-width: 520px; margin: 32px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08); overflow: hidden; }
+    .bill-header { background: linear-gradient(135deg,#c8192a,#8b1220); color:#fff; padding:28px 28px 20px; }
+    .bill-brand { font-family:'DM Serif Display',serif; font-size:1.5rem; letter-spacing:.5px; }
+    .bill-cycle { font-size:.85rem; opacity:.85; margin-top:4px; }
+    .bill-body { padding: 24px 28px; }
+    .bill-cust { background:#fafafa; border-radius:10px; padding:14px 18px; margin-bottom:20px; border:1px solid #eee; }
+    .bill-cust-name { font-weight:700; font-size:1rem; color:#1a1a1a; }
+    .bill-cust-meta { font-size:.78rem; color:#777; margin-top:3px; line-height:1.4; }
+    table { width:100%; border-collapse:collapse; }
+    th { background:#f5f5f5; padding:8px 10px; text-align:left; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#888; }
+    .bill-total { background:#fff8f0; border-top:2px solid #c8192a; }
+    .bill-total td { padding:12px 10px; font-size:1rem; font-weight:800; }
+    .bill-total td:last-child { color:#c8192a; }
+    .bill-footer { text-align:center; padding:20px 28px 28px; color:#888; font-size:.78rem; border-top:1px solid #eee; }
+    .bill-footer strong { color:#c8192a; }
+    .print-btn { display:block; background:#c8192a; color:#fff; border:none; border-radius:8px; padding:12px 28px; font-size:.9rem; font-weight:700; cursor:pointer; margin:20px auto 0; font-family:inherit; }
+    @media print { .print-btn { display:none; } body { background:#fff; } .bill-wrap { box-shadow:none; border-radius:0; } }
+  </style>
+</head>
+<body>
+<div class="bill-wrap">
+  <div class="bill-header">
+    <div class="bill-brand">🍱 Svaadh Kitchen</div>
+    <div class="bill-cycle">${cycleLabel}</div>
+  </div>
+  <div class="bill-body">
+    <div class="bill-cust">
+      <div class="bill-cust-name">${cust.name}</div>
+      <div class="bill-cust-meta">📞 ${cust.phone}<br>${addrParts || ''}</div>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Meal</th><th>Items</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>${orderRows}</tbody>
+      <tfoot><tr class="bill-total"><td colspan="3"><strong>Total Due</strong></td><td style="text-align:right;">₹${cust.total.toFixed(2)}</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="bill-footer">
+    Pay via UPI &nbsp;<strong>9819969682@hdfc</strong> (Svaadh Kitchen)<br><br>
+    Thank you for being our valued customer! 🙏
+  </div>
+</div>
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(billHTML);
+  win.document.close();
+}
+
 function switchApprovalTab(tab) {
+
   document.querySelectorAll(".approvals-tab").forEach(el=>el.classList.remove("active"));
   document.querySelectorAll(".approval-panel").forEach(el=>el.classList.remove("active"));
   
