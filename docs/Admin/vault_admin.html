@@ -189,6 +189,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   .cust-grid { grid-template-columns: 1fr !important; }
   .pay-summary-strip { flex-direction: column; }
   .pay-sum-card { min-width: unset; width: 100%; }
+  .fav-list-wrap { grid-template-columns: 1fr !important; }
 }
 
 /* ═══════════════════════════════════════════════
@@ -597,6 +598,35 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .kpi-card.gold{border-color:var(--gold-border);background:var(--gold-soft);}
 .kpi-card .kv{font-size:1.25rem;font-weight:700;color:var(--ink);}
 .kpi-card.green .kv{color:var(--green);}
+
+/* Calendar and Quick Order UI */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 12px 0; }
+.cal-day { 
+  padding: 8px 4px; border: 1px solid var(--border); border-radius: 6px; 
+  text-align: center; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+  background: white;
+}
+.cal-day:hover { border-color: var(--red); color: var(--red); }
+.cal-day.active { background: var(--red); color: white; border-color: var(--red); font-weight: 700; }
+.cal-day.disabled { opacity: 0.3; pointer-events: none; background: #f5f5f5; }
+.cal-day.today { border-color: var(--red); border-width: 2px; }
+.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 700; font-size: 0.85rem; }
+.cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.65rem; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+
+.meal-btn-group { display: flex; gap: 8px; margin: 12px 0; }
+.meal-btn { 
+  flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; 
+  background: white; cursor: pointer; font-size: 0.85rem; font-weight: 600; 
+  transition: all 0.2s; color: var(--muted); font-family: inherit;
+}
+.meal-btn.active { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+
+.bulk-panel { 
+  background: #fef9f0; border: 1px dashed #f5e6c8; border-radius: 12px; 
+  padding: 16px; margin-top: 20px; 
+}
+.bulk-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; color: #856404; display: flex; align-items: center; gap: 6px; }
+
 .kpi-card.gold .kv{color:var(--gold);}
 .kpi-card .kl{font-size:.67rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:3px;}
 .meal-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
@@ -645,8 +675,30 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   color: var(--red); background: var(--surface); border-color: var(--border);
   box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
 }
-.approval-panel { display: none; }
 .approval-panel.active { display: block; }
+
+/* Standard Order Styles */
+.std-order-card { 
+  background: #fff; border: 1.5px dashed var(--gold-border); border-radius: var(--radius); 
+  padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(200, 146, 42, 0.08);
+}
+.std-order-info { flex: 1; }
+.std-order-label { font-size: 0.65rem; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.std-order-items { font-size: 0.82rem; color: var(--ink2); font-weight: 500; }
+.btn-quick-order {
+  background: var(--gold); color: white; border: none; padding: 10px 18px; border-radius: 99px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s; box-shadow: 0 4px 12px rgba(200, 146, 42, 0.2);
+}
+.btn-quick-order:hover { background: #b07e20; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(200, 146, 42, 0.3); }
+.btn-quick-order:active { transform: translateY(0); }
+
+.btn-set-fav {
+  background: none; border: 1px solid var(--border); color: var(--muted); padding: 4px 8px; 
+  border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-set-fav:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
 </style>
 </head>
 <body>
@@ -1155,9 +1207,28 @@ function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
   return sConfirm(message, title, icon);
 }
 // ════════════════════════════════════════════════════════
-// CONFIG
+// CONFIG & PRICING
 // ════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+
+const GLOBAL_STAPLE_PRICES = {
+  // Breads
+  "Chapati": 9, "Without_Oil_Chapati": 8, "Phulka": 7, "Ghee_Phulka": 10,
+  "Jowar_Bhakri": 20, "Bajra_Bhakri": 20,
+  // Sabji (Standard)
+  "Dry_Sabji_Mini": 22, "Dry_Sabji_Full": 45,
+  "Curry_Sabji_Mini": 22, "Curry_Sabji_Full": 45,
+  // Basics
+  "Dal": 22, "Rice": 12, "Salad": 6, "Curd": 12,
+  // Legacy colKey aliases
+  "L_CHAPATI": 9, "L_WO_CHAPATI": 8, "L_PHULKA": 7, "L_GHEE_PHULKA": 10,
+  "L_JOWAR": 20, "L_BA_JRA": 20, "L_DRY_MINI": 22, "L_DRY_FULL": 45,
+  "L_CURRY_MINI": 22, "L_CURRY_FULL": 45, "L_DAL": 22, "L_RICE": 12, "L_SALAD": 6, "L_CURD": 12,
+  "D_CHAPATI": 9, "D_WO_CHAPATI": 8, "D_PHULKA": 7, "D_GHEE_PHULKA": 10,
+  "D_JOWAR": 20, "D_BA_JRA": 20, "D_DRY_MINI": 22, "D_DRY_FULL": 45,
+  "D_CURRY_MINI": 22, "D_CURRY_FULL": 45, "D_DAL": 22, "D_RICE": 12, "D_SALAD": 6, "D_CURD": 12,
+  "B_CURD": 12
+};
 
 // ════════════════════════════════════════════════════════
 // STATE
@@ -3140,6 +3211,7 @@ function renderCustomerDetail(data) {
   };
   const rows = data.orders.map(o => {
     let items = "—";
+    const rawItems = o.items;
     try { const obj=JSON.parse(o.items); items=Object.entries(obj).filter(([,q])=>q>0).map(([n,q])=>`${q}×${n}`).join(", ")||"—"; } catch(e){}
     return `<tr>
       <td style="white-space:nowrap;">${fmtD(o.date)}</td>
@@ -3147,36 +3219,201 @@ function renderCustomerDetail(data) {
       <td style="font-size:.78rem;max-width:200px;">${items}</td>
       <td style="text-align:right;font-weight:700;white-space:nowrap;">${fmtM(o.total)}</td>
       <td>${pBadge(o.status)}</td>
+      <td style="text-align:right;">
+    <td style="text-align:right;">
+        <button class="btn-set-fav" onclick="setAsStandard('${data.phone}', this.dataset.raw, '${o.meal}')" data-raw='${rawItems.replace(/'/g, "&apos;")}' title="Set as Standard Order">⭐ Favorite</button>
+      </td>
     </tr>`;
   }).join("");
+
+  window.setAsStandard = async (phone, rawItems, meal) => {
+    let items;
+    try { items = JSON.parse(rawItems); } catch(e) { items = rawItems; }
+    
+    const suggestedName = ""; 
+    const templateName = prompt(`Enter a name for this ${meal} Favorite:`, suggestedName);
+    if (!templateName || !templateName.trim()) return;
+
+    sLoading(true, "Saving Favorite...");
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ _action: "setStandardOrder", pin: S.sessionPin, phone, items, templateName: templateName.trim(), meal })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast("⭐ Favorite Saved!");
+      loadCustomerDetail(phone); 
+    } catch(e) {
+      toast("Error: " + e.message);
+    } finally {
+      sLoading(false);
+    }
+  };
+
+  window.deleteStandardOrder = async (phone, templateName) => {
+    if (!confirm(`Are you sure you want to delete the favorite "${templateName}"?`)) return;
+    
+    sLoading(true, "Deleting Favorite...");
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ _action: "removeStandardOrder", pin: S.sessionPin, phone, templateName })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast("🗑️ Favorite Deleted");
+      loadCustomerDetail(phone);
+    } catch(e) {
+      toast("Error: " + e.message);
+    } finally {
+      sLoading(false);
+    }
+  };
+
+  // Render Favorites Grid
+  let stdOrderHtml = "";
+  if (data.standardOrder) {
+    try {
+      const favs = JSON.parse(data.standardOrder);
+      if (favs && favs.length > 0) {
+        const cards = favs.map(fav => {
+          const itemDisplay = Object.entries(fav.items).filter(([,q])=>q>0).map(([k,q]) => {
+            const name = GLOBAL_STAPLE_PRICES[k] ? k : ([...S.bfMaster, ...S.sabjiMaster].find(x => x.id === k || x.name === k)?.name || k);
+            return `${q}×${name}`;
+          }).join(", ");
+
+          const raw = JSON.stringify(fav.items).replace(/"/g, '&quot;');
+          const mealType = fav.meal || "Other";
+
+          return `
+          <div class="fav-card" data-meal="${mealType}" style="background:white; border:1px solid var(--red-border); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center; position:relative;">
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" class="fav-bulk-check" data-meal="${mealType}" data-raw='${raw}' value="${fav.name}" style="width:16px; height:16px; cursor:pointer;" onchange="syncFavToggles(this)">
+                <div style="font-weight:700; font-size:0.85rem; color:var(--red);">${fav.name}</div>
+              </div>
+              <div style="font-size:0.75rem; color:var(--muted); line-height:1.2; margin-top:2px;">
+                ${itemDisplay}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn-set-fav" style="border-color:var(--red-border); color:var(--red); width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;" 
+                onclick="deleteStandardOrder('${data.phone}', '${fav.name.replace(/'/g, "\\'")}')" title="Delete Favorite">🗑️</button>
+            </div>
+          </div>`;
+        }).join("");
+        stdOrderHtml = `
+          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin: 20px 0 10px;">⚡ Saved Favorites</div>
+          <div class="fav-list-wrap" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">${cards}</div>
+        `;
+      }
+    } catch(e) {}
+  }
+
+  // Render Bulk Placement Tool
+  const today = getIST();
+  const bulkCalHtml = generateCalendar(today.getUTCFullYear(), today.getUTCMonth(), [], "toggleBulkDate");
+  const bulkTool = `
+    <div class="bulk-panel">
+      <div class="bulk-title">🗓️ Bulk Order Multi-Placement</div>
+      <div style="font-size:0.75rem; color:#856404; margin-bottom:12px;">Select multiple dates. Use the <b>tick boxes</b> on your favorites above to decide what to place for each date. Only one favorite per meal type can be ticked.</div>
+      
+      <div style="display:grid; grid-template-columns: 1fr 200px; gap:20px;">
+        <div id="bulkCalendar" class="bulk-cal-wrap">
+          <div class="cal-header"><span>${MONTHS[today.getUTCMonth()]} ${today.getUTCFullYear()}</span></div>
+          ${bulkCalHtml}
+        </div>
+        <div>
+          <button class="btn-primary" style="width:100%; padding:10px; background:var(--red); border-color:var(--red);" onclick="handleBulkOrderTrigger('${data.phone}', '${data.name.replace(/'/g, "\\'")}')">🚚 Place Bulk Orders</button>
+          <div style="font-size:0.68rem; color:var(--muted); margin-top:10px; line-height:1.2;">
+            Selected dates will be cross-referenced with your ticked favorites.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  window._bulkSelected = [];
+  window.toggleBulkDate = (el, iso) => {
+    const idx = window._bulkSelected.indexOf(iso);
+    if (idx === -1) {
+      window._bulkSelected.push(iso);
+      el.classList.add('active');
+    } else {
+      window._bulkSelected.splice(idx, 1);
+      el.classList.remove('active');
+    }
+  };
+
+  function syncFavToggles(chk) {
+    const meal = chk.dataset.meal;
+    if (!chk.checked || meal === "Other") return;
+    document.querySelectorAll(`.fav-bulk-check[data-meal="${meal}"]`).forEach(c => {
+      if (c !== chk) c.checked = false;
+    });
+  }
+
+  async function handleBulkOrderTrigger(phone, name) {
+    const selectedDates = [...document.querySelectorAll(".cal-day.active")].map(d => d.dataset.date);
+    if (!selectedDates.length) { toast("Please select at least one date on the calendar."); return; }
+    const selectedFavs = [...document.querySelectorAll(".fav-bulk-check:checked")];
+    if (!selectedFavs.length) { toast("Please select at least one favorite template (tick the boxes)."); return; }
+    const counts = { Breakfast: 0, Lunch: 0, Dinner: 0, Other: 0 };
+    selectedFavs.forEach(f => counts[f.dataset.meal]++);
+    if (counts.Breakfast > 1 || counts.Lunch > 1 || counts.Dinner > 1) {
+      toast("Error: Maximum one favorite per meal type (Breakfast/Lunch/Dinner) allowed.");
+      return;
+    }
+    if (!(await showUIConfirm(`Place orders for ${selectedDates.length} days using ${selectedFavs.length} template(s)?`, "Confirm Bulk Order", "🚚"))) return;
+    sLoading(true, `Placing orders for ${selectedDates.length} days...`);
+    try {
+      const templates = selectedFavs.map(chk => ({ name: chk.value, items: JSON.parse(chk.dataset.raw), meal: chk.dataset.meal }));
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ _action: "placeBulkOrders", pin: S.sessionPin, phone, name, templates, dates: selectedDates })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      toast(`✅ Successfully placed ${data.count} orders!`);
+      loadCustomerDetail(phone);
+    } catch(e) {
+      toast("Error: " + e.message);
+    } finally {
+      sLoading(false);
+    }
+  }
+
   return `<div class="cust-detail-wrap">
     <div class="cust-detail-head">
       <div>
         <div class="cust-detail-title">${data.name}</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:2px;">📱 ${data.phone} &nbsp;·&nbsp; ${data.area} &nbsp;·&nbsp; ${data.orderCount} orders</div>
+        <div style="font-size:.75rem; color:var(--muted); margin-top:2px;">📱 ${data.phone} &nbsp;·&nbsp; ${data.area} &nbsp;·&nbsp; ${data.orderCount} orders</div>
       </div>
-      <div style="display:flex;gap:14px;align-items:center;">
+      <div style="display:flex; gap:14px; align-items:center;">
         <div style="text-align:right;">
-          <div style="font-size:1.05rem;font-weight:700;">${fmtM(data.totalSpent)} total</div>
-          <div style="font-size:.8rem;margin-top:2px;">
+          <div style="font-size:1.05rem; font-weight:700;">${fmtM(data.totalSpent)} total</div>
+          <div style="font-size:.8rem; margin-top:2px;">
             ${data.pending>0?`<span style="color:var(--gold);">⏳ ${fmtM(data.pending)} pending</span>`:`<span style="color:var(--green);">✓ Fully paid</span>`}
           </div>
         </div>
         <button class="cust-detail-close" onclick="document.getElementById('custDetailWrap').innerHTML=''" title="Close">✕</button>
       </div>
     </div>
-    <div class="hist-table-wrap">
+    
+    ${stdOrderHtml}
+    ${bulkTool}
+
+    <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin: 30px 0 10px;">📜 Order History</div>
+
       <table class="hist-table">
-        <thead><tr><th>Date</th><th>Meal</th><th>Items</th><th style="text-align:right;">Amount</th><th>Status</th></tr></thead>
+        <thead><tr><th>Date</th><th>Meal</th><th>Items</th><th style="text-align:right;">Amount</th><th>Status</th><th style="text-align:right;">Fav</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>
   </div>`;
 }
 
-// ════════════════════════════════════════════════════════
-// PAYMENTS PAGE
-// ════════════════════════════════════════════════════════
+// ── PAYMENTS PAGE ────────────────────────────────────────────────────────────
 let _payDate = "";
 async function loadPayments() {
   const date = document.getElementById("payDate").value;
@@ -3416,7 +3653,7 @@ async function activateWalletRecharge(phone, timestamp, amt, name) {
   sLoading(true, "Activating credits...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
-      body: JSON.stringify({_action:"approveWalletRecharge", pin:S.sessionPin, phone, timestamp})});
+      body: JSON.stringify({ _action: "approveWalletRecharge", pin: S.sessionPin, phone, timestamp }) });
     const data = await res.json();
     if (data.success) {
       toast("Wallet Activated ✅");
@@ -3611,6 +3848,247 @@ async function grantReviewReward(phone, name) {
   } finally {
     sLoading(false);
   }
+}
+
+// ── NEW: CALENDAR & ORDER MODALS ──────────────────────────────
+function generateCalendar(year, month, selectedDates = [], onToggleFnName = null) {
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayISO = toISO(getIST());
+
+  let html = `<div class="cal-dow">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div>${d}</div>`).join("")}</div>`;
+  html += `<div class="cal-grid">`;
+  
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day disabled"></div>`;
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isActive = selectedDates.includes(iso);
+    const isToday = iso === todayISO;
+    const isPast = iso < todayISO;
+    
+    // For bulk tool, we pass toggleBulkDate(this, '...')
+    // For modal, we'll attach listeners manually after rendering
+    const clickAttr = onToggleFnName ? `onclick="${onToggleFnName}(this, '${iso}')"` : "";
+    
+    html += `<div class="cal-day ${isActive?'active':''} ${isToday?'today':''} ${isPast?'disabled':''}" 
+              data-date="${iso}" ${clickAttr}>${d}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+/**
+ * Custom Order Placement Modal (Replaces prompt)
+ */
+function sOrderPlacementModal(customerName, favName = "") {
+  return new Promise((resolve) => {
+    const ist = getIST();
+    let selDate = toISO(ist);
+    let selMeal = ist.getHours() < 9 ? "Breakfast" : (ist.getHours() < 16 ? "Lunch" : "Dinner");
+    
+    const overlay = document.createElement('div');
+    overlay.className = 's-modal-overlay';
+    overlay.style.zIndex = "5000";
+    document.body.appendChild(overlay);
+
+    const closeModal = (val) => {
+      document.body.removeChild(overlay);
+      resolve(val);
+    };
+
+    const render = () => {
+      overlay.innerHTML = `
+        <div class="s-modal" style="max-width:350px;">
+          <div class="s-modal-title" style="font-size:1.1rem;">Place Order</div>
+          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Customer: <strong>${customerName}</strong><br>${favName ? `Using Template: <strong>${favName}</strong>` : ''}</div>
+          
+          <div class="cal-header">
+            <span>${MONTHS[ist.getMonth()]} ${ist.getFullYear()}</span>
+          </div>
+          ${generateCalendar(ist.getFullYear(), ist.getMonth(), [selDate])}
+          
+          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-top:16px;">Select Meal</div>
+          <div class="meal-btn-group">
+            <button class="meal-btn ${selMeal==='Breakfast'?'active':''}" data-m="Breakfast">Breakfast</button>
+            <button class="meal-btn ${selMeal==='Lunch'?'active':''}" data-m="Lunch">Lunch</button>
+            <button class="meal-btn ${selMeal==='Dinner'?'active':''}" data-m="Dinner">Dinner</button>
+          </div>
+          
+          <div class="s-modal-footer">
+            <button class="s-btn s-btn-secondary" id="sOrderCancel">Cancel</button>
+            <button class="s-btn s-btn-primary" id="sOrderConfirm">🚀 Place Order</button>
+          </div>
+        </div>
+      `;
+      
+      // Wire up listeners
+      overlay.querySelectorAll('.meal-btn').forEach(btn => {
+        btn.onclick = () => {
+          overlay.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selMeal = btn.dataset.m;
+        };
+      });
+
+      overlay.querySelectorAll('.cal-day:not(.disabled)').forEach(day => {
+        day.onclick = () => {
+          overlay.querySelectorAll('.cal-day').forEach(d => d.classList.remove('active'));
+          day.classList.add('active');
+          selDate = day.dataset.date;
+        };
+      });
+
+      overlay.querySelector('#sOrderCancel').onclick = () => closeModal(null);
+      overlay.querySelector('#sOrderConfirm').onclick = () => closeModal({ date: selDate, meal: selMeal });
+    };
+
+    render();
+  });
+}
+
+/**
+ * Bulk Order Placement Logic
+ */
+async function handleBulkOrderTrigger(phone, name) {
+  const selectedDates = [...document.querySelectorAll(".cal-day.active")].map(d => d.dataset.date);
+  const selectedFavs = [...document.querySelectorAll(".fav-bulk-check:checked")];
+  
+  if (!selectedDates.length) return sAlert("Please select at least one date on the calendar.");
+  if (!selectedFavs.length) return sAlert("Please tick at least one favorite above to use as a template.");
+  
+  const customer = _custData.find(c => c.phone === phone);
+  if (!customer) return sAlert("Customer session lost. Please reload.");
+  
+  // Build templates object
+  const templates = selectedFavs.map(chk => {
+    const favName = chk.value;
+    const favs = JSON.parse(customer.standardOrder || "[]");
+    return favs.find(f => f.name === favName);
+  }).filter(Boolean);
+
+  placeBulkOrders(customer, selectedDates, templates);
+}
+
+function syncFavToggles(chk) {
+  const meal = chk.dataset.meal;
+  if (!chk.checked || meal === "Other") return;
+  // If a Breakfast/Lunch/Dinner is checked, uncheck others of SAME category
+  document.querySelectorAll(`.fav-bulk-check[data-meal="${meal}"]`).forEach(c => {
+    if (c !== chk) c.checked = false;
+  });
+}
+
+/**
+ * Bulk Order Placement Logic
+ */
+async function placeBulkOrders(customer, selectedDates, templates) {
+  const totalOrders = selectedDates.length * templates.length;
+  const confirmed = await sConfirm(`Place ${totalOrders} orders for ${customer.name}?`, "Bulk Order", "🚚");
+  if (!confirmed) return;
+
+  const orders = [];
+  selectedDates.forEach(date => {
+    const dailyMeals = templates.map(fav => {
+      // Safely parse items in case they are stringified
+      let itemsObj = fav.items;
+      if (typeof itemsObj === "string") {
+        try { itemsObj = JSON.parse(itemsObj); } catch(e) { itemsObj = {}; }
+      }
+
+      // Calculate subtotal
+      let subtotal = 0;
+      Object.entries(itemsObj).forEach(([key, qty]) => {
+        if (GLOBAL_STAPLE_PRICES[key]) subtotal += GLOBAL_STAPLE_PRICES[key] * Number(qty);
+        else {
+          const item = [...S.bfMaster, ...S.sabjiMaster].find(x => x.id === key || x.name === key);
+          if (item) subtotal += (Number(item.price) || (key.includes("Full")?45:22)) * Number(qty);
+        }
+      });
+
+      const mType = fav.name.toLowerCase().includes("breakfast") ? "Breakfast" : (fav.name.toLowerCase().includes("lunch") ? "Lunch" : "Dinner");
+
+      return {
+        type: mType,
+        items: Object.entries(itemsObj).map(([colKey, qty]) => ({ colKey, qty })),
+        subtotal: subtotal
+      };
+    });
+    orders.push({ date, meals: dailyMeals });
+  });
+
+  if (!orders.length) {
+    sAlert("No matching favorite templates found for the selected meals. Please set templates named 'Breakfast', 'Lunch', or 'Dinner' first.");
+    return;
+  }
+
+  sLoading(true, "Placing Bulk Orders...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        _action: "processOrder",
+        pin: S.sessionPin,
+        profile: { phone: customer.phone, name: customer.name },
+        orders: orders,
+        payment_method: "Wallet",
+        payment_status: "Paid"
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      sAlert(`Successfully placed ${orders.reduce((s,o)=>s+o.meals.length,0)} orders!`, "Success", "✅");
+      loadCustomers(true);
+    } else throw new Error(data.error);
+  } catch(e) { sAlert("Bulk Order Error: " + e.message); }
+  finally { sLoading(false); }
+}
+
+async function quickOrderStandard(phone, name, itemsJSON, favName) {
+  const result = await sOrderPlacementModal(name, favName);
+  if (!result) return;
+  
+  const { date, meal } = result;
+  
+  let itemsObj = itemsJSON;
+  if (typeof itemsObj === "string") {
+    try { itemsObj = JSON.parse(itemsObj); } catch(e) { itemsObj = {}; }
+  }
+  
+  // itemList must be [{colKey, qty}]
+  let itemList = [];
+  if (Array.isArray(itemsObj)) {
+    itemList = itemsObj;
+  } else {
+    itemList = Object.entries(itemsObj).map(([colKey, qty]) => ({ colKey, qty }));
+  }
+  
+  // Calculate subtotal
+  let subtotal = 0;
+  Object.entries(itemsObj).forEach(([key, qty]) => {
+    if (GLOBAL_STAPLE_PRICES[key]) subtotal += GLOBAL_STAPLE_PRICES[key] * Number(qty);
+    else {
+      const item = [...S.bfMaster, ...S.sabjiMaster].find(x => x.id === key || x.name === key);
+      if (item) subtotal += (Number(item.price) || (key.includes("Full")?45:22)) * Number(qty);
+    }
+  });
+
+  toast("Placing order...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        _action: "processOrder", pin: S.sessionPin, profile: { phone, name },
+        orders: [{ date, meals: [{ type: meal, items: itemList, subtotal }] }],
+        payment_method: "Wallet", payment_status: "Paid"
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast("Order placed! ✅");
+      loadCustomers(true); 
+    } else throw new Error(data.error);
+  } catch(e) { sAlert("Error: " + e.message); }
 }
 
 </script>

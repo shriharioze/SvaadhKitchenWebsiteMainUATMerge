@@ -81,7 +81,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
   "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
-  "Review_Promo_Count", "Review_Reward_Claimed"
+  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order"
 ];
 
 const ORDERS_HEADERS = [
@@ -307,6 +307,10 @@ function doPost(e) {
 
     // Customer actions (pinned via their own phone/PIN handled inside functions)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
+    if (action === "getCustomerList") return jsonRes(getCustomerList());
+    if (action === "setStandardOrder") return jsonRes(setStandardOrder(body.phone, body.itemsJSON, body.templateName));
+    if (action === "removeStandardOrder") return jsonRes(removeStandardOrder(body.phone, body.templateName));
+    if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
     
     // Delivery Actions (Staff PIN ONLY)
     if (action === "markDelivered") {
@@ -317,7 +321,19 @@ function doPost(e) {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(batchMarkEnRoute(body));
     }
-     if (action === "markEnRoute") {
+    if (action === "setStandardOrder") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(setStandardOrder(body.phone, body.items, body.templateName, body.meal));
+    }
+    if (action === "removeStandardOrder") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(removeStandardOrder(body.phone, body.templateName));
+    }
+    if (action === "placeBulkOrders") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(placeBulkOrders(body));
+    }
+    if (action === "markEnRoute") {
        if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
        return jsonRes(markEnRoute(body));
      }
@@ -879,7 +895,14 @@ function submitOrder(body) {
       const mealType = meal.type;
       const sub = Number(meal.subtotal) || 0;
       const mealArea = meal.area || profile.area || "";
-      const items  = meal.items || [];   // [{colKey, qty}]
+      
+      let items  = meal.items || [];   // [{colKey, qty}]
+      // Safety fix: If items is a stringified JSON, parse it (prevents character-distortion crash)
+      if (typeof items === "string") {
+        try { items = JSON.parse(items); } catch(e) { items = []; }
+      }
+      if (!Array.isArray(items)) items = [];
+
       const nKitchen = meal.notesKitchen || "";
       const nDelivery = meal.notesDelivery || "";
       
@@ -1078,23 +1101,26 @@ function _upsertCustomer(ss, profile) {
     const rowNum = existing._row;
     const hIdx = headerIndex(ws);
     const update = (col, val) => {
-      if (hIdx[col] && val !== undefined && val !== null) {
+      // ONLY update if val is effectively provided (not undefined)
+      if (hIdx[col] && val !== undefined) {
         ws.getRange(rowNum, hIdx[col]).setValue(val);
       }
     };
-    update("Customer_Name", profile.name || "");
-    update("Area",          profile.area || "");
-    update("Wing",          profile.wing || "");
-    update("Flat",          profile.flat || "");
-    update("Floor",         profile.floor || "");
-    update("Society",       profile.society || "");
-    update("Full_Address",  fullAddr);
-    update("Maps_Link",     profile.maps || "");
-    update("Landmark",      profile.landmark || "");
-    update("Payment_Freq",  profile.payment_preference || "Daily Payment");
-    // Only update PIN if provided (non-empty)
+    if (profile.name !== undefined) update("Customer_Name", profile.name);
+    if (profile.area !== undefined) update("Area",          profile.area);
+    if (profile.wing !== undefined) update("Wing",          profile.wing);
+    if (profile.flat !== undefined) update("Flat",          profile.flat);
+    if (profile.floor !== undefined) update("Floor",         profile.floor);
+    if (profile.society !== undefined) update("Society",       profile.society);
+    if (profile.area !== undefined || profile.society !== undefined) update("Full_Address",  fullAddr);
+    if (profile.maps !== undefined) update("Maps_Link",     profile.maps || "");
+    if (profile.landmark !== undefined) update("Landmark",      profile.landmark || "");
+    if (profile.payment_preference !== undefined) update("Payment_Freq",  profile.payment_preference);
     if (profile.pin) update("PIN", profile.pin);
     if (profile.meal_addresses) update("Meal_Addresses", profile.meal_addresses);
+    if (profile.standardOrder !== undefined) update("Standard_Order", profile.standardOrder);
+    
+    SpreadsheetApp.flush(); // Ensure writes are committed
   } else {
     // For new records, construct a clean Row Array mapping directly to our schema
     const newRow = CUSTOMERS_HEADERS.map(h => {
@@ -1114,6 +1140,7 @@ function _upsertCustomer(ss, profile) {
         case "Created_At":      val = getISTTimestamp(); break;
         case "PIN":             val = profile.pin || ""; break;
         case "Meal_Addresses":  val = profile.meal_addresses || ""; break;
+        case "Standard_Order":  val = profile.standardOrder || ""; break;
         default:                val = "";
       }
       // Force leading zeros to be preserved for Phone and PIN by prepending '
@@ -2478,7 +2505,8 @@ function getCustomerList() {
     if (p) {
       cMap[p] = {
         count: Number(c.Review_Promo_Count) || 0,
-        claimed: (String(c.Review_Reward_Claimed) === "TRUE" || String(c.Review_Reward_Claimed) === "true")
+        claimed: (String(c.Review_Reward_Claimed) === "TRUE" || String(c.Review_Reward_Claimed) === "true"),
+        standardOrder: c.Standard_Order || ""
       };
     }
   });
@@ -2505,7 +2533,8 @@ function getCustomerList() {
         pendingAmt:0, 
         lastDate:"",
         promoCount: cMap[normP] ? cMap[normP].count : 0,
-        reviewClaimed: cMap[normP] ? cMap[normP].claimed : false
+        reviewClaimed: cMap[normP] ? cMap[normP].claimed : false,
+        standardOrder: cMap[normP] ? cMap[normP].standardOrder : ""
       };
     }
     map[phone].orderCount++;
@@ -2587,8 +2616,17 @@ function getCustomerHistory(phone) {
   var totalSpent = Math.round(activeOrders.reduce(function(s,o){return s+o.total;},0));
   var pending    = Math.round(activeOrders.filter(function(o){return String(o.status)!=="Paid" && String(o.status)!=="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0));
 
+  // Fetch Standard_Order from customer sheet
+  var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var cRows = getAllRows(custWs);
+  var normP = _normalizePhone(phone);
+  var standardOrder = "";
+  var custMatch = cRows.find(function(c){ return _normalizePhone(c.Phone) === normP; });
+  if (custMatch) standardOrder = custMatch.Standard_Order || "";
+
   return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
-          orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length};
+          orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length,
+          standardOrder: standardOrder};
 }
 
 // ── GET DATE PAYMENTS ─────────────────────────────────────────────────────────
@@ -3201,4 +3239,80 @@ function seedTestData() {
     Logger.log("ERROR in seedTestData: " + err.message);
     return "Error: " + err.message;
   }
+}
+
+function setStandardOrder(phone, itemsJSON, templateName, meal) {
+  var ss = getSpreadsheet();
+  var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var rows = getAllRows(custWs);
+  var normP = _normalizePhone(phone);
+  var cust = rows.find(function(c){ return _normalizePhone(c.Phone) === normP; });
+  
+  var currentStr = (cust && cust.Standard_Order) ? cust.Standard_Order : "[]";
+  var list = [];
+  try { list = JSON.parse(currentStr); if(!Array.isArray(list)) list=[]; } catch(e){ list=[]; }
+  
+  // Ensure items is an object, not a string, before saving
+  var finalItems = itemsJSON;
+  if (typeof itemsJSON === "string") {
+    try { finalItems = JSON.parse(itemsJSON); } catch(e) { finalItems = itemsJSON; }
+  }
+  
+  // Remove existing with same name if any
+  list = list.filter(function(x){ return x.name !== templateName; });
+  list.push({ 
+    name: templateName, 
+    meal: meal || "Other",
+    items: finalItems, 
+    createdAt: new Date().toISOString() 
+  });
+  
+  _upsertCustomer(ss, { phone: phone, standardOrder: JSON.stringify(list) });
+  return { success: true };
+}
+
+function removeStandardOrder(phone, templateName) {
+  var ss = getSpreadsheet();
+  var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var rows = getAllRows(custWs);
+  var normP = _normalizePhone(phone);
+  var cust = rows.find(function(c){ return _normalizePhone(c.Phone) === normP; });
+  
+  if (!cust || !cust.Standard_Order) return { success: true };
+  
+  var list = [];
+  try { list = JSON.parse(cust.Standard_Order); if(!Array.isArray(list)) list=[]; } catch(e){ list=[]; }
+  list = list.filter(function(x){ return x.name !== templateName; });
+  
+  _upsertCustomer(ss, { phone: phone, standardOrder: JSON.stringify(list) });
+  return { success: true };
+}
+
+function placeBulkOrders(body) {
+  const pin = String(body.pin || "").trim();
+  if (pin !== ADMIN_PIN) return {success:false, error:"STRICT ADMIN PIN REQUIRED"};
+  
+  const phone = body.phone;
+  const name = body.name;
+  const templates = body.templates; 
+  const dates = body.dates;     
+  
+  let count = 0;
+  dates.forEach(function(date) {
+    templates.forEach(function(tpl) {
+      const orderBody = {
+        phone: phone,
+        name: name,
+        date: date,
+        meal: tpl.meal,
+        items: tpl.items,
+        payment_method: "Wallet",
+        payment_freq: "Prepaid Wallet",
+        source: "Admin Bulk"
+      };
+      const res = submitOrder(orderBody);
+      if (res.success) count++;
+    });
+  });
+  return {success:true, count: count};
 }
