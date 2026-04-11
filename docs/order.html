@@ -2751,13 +2751,14 @@ async function buildBillScreen(){
     
     html+=`<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">`;
     
-    if (dayDeliveryCredit > 0) {
-      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${dayDeliveryCredit} delivery charge you paid for earlier orders today!', 7000)">
-        <span>🏷️ Combined Day Free Delivery (Credit)</span><span>−₹${dayDeliveryCredit}</span></div>`;
-    }
-    if (daySmallFeeCredit > 0) {
-      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total is ≥ ₹${FREE_THRESHOLD}, we have credited back the ₹${daySmallFeeCredit} small order fee you paid for earlier orders today!', 7000)">
-        <span>🏷️ Combined Day Small Fee Credit</span><span>−₹${daySmallFeeCredit}</span></div>`;
+    if (totalCredits > 0) {
+      let creditParts = [];
+      if (dayDeliveryCredit > 0) creditParts.push(`₹${dayDeliveryCredit} delivery charge`);
+      if (daySmallFeeCredit > 0) creditParts.push(`₹${daySmallFeeCredit} small order fee`);
+      let creditDesc = creditParts.join(' and ');
+      
+      html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total reached ₹${FREE_THRESHOLD}, we have credited back the ${creditDesc} paid for earlier orders today!', 7000)">
+        <span>🏷️ Combined Day Fee Credits (Refund)</span><span>−₹${totalCredits}</span></div>`;
     }
     if (discAmt > 0) {
       html+=`<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)">
