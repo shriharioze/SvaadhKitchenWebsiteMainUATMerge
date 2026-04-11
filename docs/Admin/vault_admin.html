@@ -3285,6 +3285,17 @@ async function loadCustomerDetail(phone) {
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     wrap.innerHTML = renderCustomerDetail(data);
+    // Wire up ⚡ Place buttons via event delegation (avoids HTML escaping issues)
+    wrap.querySelectorAll('.qe-place-btn').forEach(btn => {
+      btn.onclick = () => {
+        const ph   = btn.dataset.phone;
+        const nm   = btn.dataset.name;
+        const itms = btn.dataset.items;
+        const fn   = btn.dataset.favname;
+        const mt   = btn.dataset.meal;
+        quickOrderStandard(ph, nm, itms, fn, mt);
+      };
+    });
   } catch(e) {
     wrap.innerHTML = `<p style="color:#c0392b;padding:16px;">Error: ${e.message}</p>`;
   }
@@ -3371,8 +3382,12 @@ function renderCustomerDetail(data) {
             return `${q}×${name}`;
           }).join(", ");
 
+          const mealType = fav.meal || 'Other';
           const raw = JSON.stringify(fav.items).replace(/"/g, '&quot;');
-          const mealType = fav.meal || "Other";
+          const safeItems = JSON.stringify(fav.items).replace(/"/g, '&quot;');
+          const safeTplName = fav.name.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+          const safePhone = data.phone.replace(/'/g, '&#39;');
+          const safeCustName = (data.name||'').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 
           return `
           <div class="fav-card" data-meal="${mealType}" style="background:white; border:1px solid var(--red-border); border-radius:10px; padding:10px; display:flex; justify-content:space-between; align-items:center; position:relative;">
@@ -3385,11 +3400,14 @@ function renderCustomerDetail(data) {
                 ${itemDisplay}
               </div>
             </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <button class="btn-set-fav" style="border-color:var(--red-border); color:var(--red); width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;" 
+            <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+              <button class="btn-set-fav qe-place-btn" style="border-color:var(--red); color:var(--red); padding:5px 10px; font-size:0.73rem; font-weight:700; border-radius:6px; white-space:nowrap;"
+                data-phone="${safePhone}" data-name="${safeCustName}" data-items='${safeItems}' data-favname="${safeTplName}" data-meal="${mealType}" title="Place with tweaks">⚡ Place</button>
+              <button class="btn-set-fav" style="border-color:var(--red-border); color:var(--red); width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;"
                 onclick="deleteStandardOrder('${data.phone}', '${fav.name.replace(/'/g, "\\'")}')" title="Delete Favorite">🗑️</button>
             </div>
           </div>`;
+
         }).join("");
         stdOrderHtml = `
           <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin: 20px 0 10px;">⚡ Saved Favorites</div>
@@ -4202,71 +4220,211 @@ function generateCalendar(year, month, selectedDates = [], onToggleFnName = null
 /**
  * Custom Order Placement Modal (Replaces prompt)
  */
-function sOrderPlacementModal(customerName, favName = "") {
+// ═══════════════════════════════════════════════════════
+// QUICK EDIT MODAL — Pre-fill from favorite, tweak & place
+// ═══════════════════════════════════════════════════════
+
+function _getAvailableItemsForMeal(mealType) {
+  const staples = [
+    {key:'Chapati',label:'Chapati',price:9},
+    {key:'Without_Oil_Chapati',label:'W/O Oil Chapati',price:8},
+    {key:'Phulka',label:'Phulka',price:7},
+    {key:'Ghee_Phulka',label:'Ghee Phulka',price:10},
+    {key:'Jowar_Bhakri',label:'Jowar Bhakri',price:20},
+    {key:'Bajra_Bhakri',label:'Bajra Bhakri',price:20},
+    {key:'Dry_Sabji_Mini',label:'Dry Sabji (Mini)',price:22},
+    {key:'Dry_Sabji_Full',label:'Dry Sabji (Full)',price:45},
+    {key:'Curry_Sabji_Mini',label:'Curry Sabji (Mini)',price:22},
+    {key:'Curry_Sabji_Full',label:'Curry Sabji (Full)',price:45},
+    {key:'Dal',label:'Dal',price:22},
+    {key:'Rice',label:'Rice',price:12},
+    {key:'Salad',label:'Salad',price:6},
+    {key:'Curd',label:'Curd',price:12},
+  ];
+  if (mealType === 'Breakfast') {
+    return S.bfMaster.map(x => ({key: x.id||x.name, label: x.name, price: Number(x.price)||0}));
+  }
+  // Lunch/Dinner — also add dynamic sabjis from master if present
+  const dynamic = (S.sabjiMaster||[]).map(x => ({key:x.id||x.name, label:x.name, price:Number(x.price)||22}));
+  const existingKeys = new Set(staples.map(s=>s.key));
+  dynamic.forEach(d => { if (!existingKeys.has(d.key)) staples.push(d); });
+  return staples;
+}
+
+function _calcSubtotal(itemsObj) {
+  let sub = 0;
+  Object.entries(itemsObj).forEach(([key,qty]) => {
+    const n = Number(qty)||0;
+    if (n <= 0) return;
+    if (GLOBAL_STAPLE_PRICES[key]) { sub += GLOBAL_STAPLE_PRICES[key] * n; return; }
+    const found = [...(S.bfMaster||[]),...(S.sabjiMaster||[])].find(x=>x.id===key||x.name===key);
+    if (found) sub += (Number(found.price)||22) * n;
+  });
+  return sub;
+}
+
+function sQuickEditModal(customerName, favName, initialItems, defaultMeal) {
   return new Promise((resolve) => {
     const ist = getIST();
     let selDate = toISO(ist);
-    let selMeal = ist.getHours() < 9 ? "Breakfast" : (ist.getHours() < 16 ? "Lunch" : "Dinner");
-    
+    let selMeal = defaultMeal || (ist.getHours() < 9 ? 'Breakfast' : ist.getHours() < 16 ? 'Lunch' : 'Dinner');
+
+    // Working copy of items {key: qty}
+    let editItems = {};
+    let rawObj = initialItems;
+    if (typeof rawObj === 'string') { try { rawObj = JSON.parse(rawObj); } catch(e){ rawObj={}; } }
+    if (Array.isArray(rawObj)) {
+      rawObj.forEach(({colKey,qty}) => { editItems[colKey] = Number(qty)||0; });
+    } else {
+      Object.entries(rawObj).forEach(([k,v]) => { if (Number(v) > 0) editItems[k] = Number(v); });
+    }
+
     const overlay = document.createElement('div');
     overlay.className = 's-modal-overlay';
-    overlay.style.zIndex = "5000";
+    overlay.style.cssText = 'z-index:5000;';
     document.body.appendChild(overlay);
 
-    const closeModal = (val) => {
-      document.body.removeChild(overlay);
-      resolve(val);
-    };
+    const closeModal = (val) => { document.body.removeChild(overlay); resolve(val); };
 
     const render = () => {
+      const avail = _getAvailableItemsForMeal(selMeal);
+      const existingKeys = new Set(Object.keys(editItems).filter(k => editItems[k] > 0));
+      const addableItems = avail.filter(a => !existingKeys.has(a.key));
+
+      const itemRows = Object.entries(editItems)
+        .filter(([,q]) => q > 0)
+        .map(([key,qty]) => {
+          const label = colKeyToDisplayName ? colKeyToDisplayName(key) : key.replace(/_/g,' ');
+          const price = GLOBAL_STAPLE_PRICES[key] || 22;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+            <div>
+              <span style="font-size:.83rem;font-weight:600;">${label}</span>
+              <span style="font-size:.72rem;color:#888;margin-left:6px;">₹${price} each</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button onclick="_qtyChange('${key}',-1)" style="width:26px;height:26px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;font-size:1rem;line-height:1;">−</button>
+              <span id="qty_${key}" style="min-width:20px;text-align:center;font-weight:700;font-size:.9rem;">${qty}</span>
+              <button onclick="_qtyChange('${key}',1)" style="width:26px;height:26px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;font-size:1rem;line-height:1;">+</button>
+              <button onclick="_qtyRemove('${key}')" style="width:26px;height:26px;border:1px solid #ffcccc;border-radius:6px;background:#fff5f5;cursor:pointer;font-size:.8rem;">✕</button>
+            </div>
+          </div>`;
+        }).join('');
+
+      const addOptions = addableItems.map(a =>
+        `<option value="${a.key}">${a.label} (₹${a.price})</option>`
+      ).join('');
+
+      const sub = _calcSubtotal(editItems);
+
       overlay.innerHTML = `
-        <div class="s-modal" style="max-width:350px;">
-          <div class="s-modal-title" style="font-size:1.1rem;">Place Order</div>
-          <div style="font-size:0.8rem; color:var(--muted); margin-bottom:12px;">Customer: <strong>${customerName}</strong><br>${favName ? `Using Template: <strong>${favName}</strong>` : ''}</div>
-          
-          <div class="cal-header">
-            <span>${MONTHS[ist.getMonth()]} ${ist.getFullYear()}</span>
-          </div>
-          ${generateCalendar(ist.getFullYear(), ist.getMonth(), [selDate])}
-          
-          <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-top:16px;">Select Meal</div>
-          <div class="meal-btn-group">
-            <button class="meal-btn ${selMeal==='Breakfast'?'active':''}" data-m="Breakfast">Breakfast</button>
-            <button class="meal-btn ${selMeal==='Lunch'?'active':''}" data-m="Lunch">Lunch</button>
-            <button class="meal-btn ${selMeal==='Dinner'?'active':''}" data-m="Dinner">Dinner</button>
-          </div>
-          
-          <div class="s-modal-footer">
-            <button class="s-btn s-btn-secondary" id="sOrderCancel">Cancel</button>
-            <button class="s-btn s-btn-primary" id="sOrderConfirm">🚀 Place Order</button>
-          </div>
-        </div>
-      `;
-      
-      // Wire up listeners
-      overlay.querySelectorAll('.meal-btn').forEach(btn => {
-        btn.onclick = () => {
-          overlay.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          selMeal = btn.dataset.m;
-        };
-      });
+        <div class="s-modal" style="max-width:440px;max-height:90vh;overflow-y:auto;">
+          <div class="s-modal-title" style="font-size:1rem;">⚡ Place Order — ${favName}</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">Customer: <strong>${customerName}</strong></div>
 
-      overlay.querySelectorAll('.cal-day:not(.disabled)').forEach(day => {
-        day.onclick = () => {
-          overlay.querySelectorAll('.cal-day').forEach(d => d.classList.remove('active'));
-          day.classList.add('active');
-          selDate = day.dataset.date;
-        };
-      });
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+            <div>
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--muted);">Date</div>
+              <input type="date" id="qeDate" value="${selDate}" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem;">
+            </div>
+            <div>
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;margin-bottom:4px;color:var(--muted);">Meal</div>
+              <div style="display:flex;gap:4px;">
+                ${['Breakfast','Lunch','Dinner'].map(m =>
+                  `<button class="meal-btn ${selMeal===m?'active':''}" data-m="${m}" onclick="_qeMeal('${m}')" style="flex:1;padding:6px 4px;font-size:.72rem;">${m.slice(0,3)}</button>`
+                ).join('')}
+              </div>
+            </div>
+          </div>
 
-      overlay.querySelector('#sOrderCancel').onclick = () => closeModal(null);
-      overlay.querySelector('#sOrderConfirm').onclick = () => closeModal({ date: selDate, meal: selMeal });
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;margin-bottom:8px;color:var(--muted);">Items</div>
+          <div id="qeItemRows">${itemRows || '<p style="color:#aaa;font-size:.8rem;">No items yet — add from below.</p>'}</div>
+
+          ${addOptions ? `
+          <div style="display:flex;gap:6px;align-items:center;margin-top:10px;">
+            <select id="qeAddSel" style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:.8rem;">
+              <option value="">+ Add item…</option>
+              ${addOptions}
+            </select>
+            <button onclick="_qeAdd()" style="padding:7px 14px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;">Add</button>
+          </div>` : ''}
+
+          <div style="margin-top:14px;padding:10px 14px;background:#fff8f0;border-radius:8px;border:1px solid #ffe0b0;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:.8rem;color:#856404;">Subtotal (food only)</span>
+            <span id="qeSubtotal" style="font-size:1rem;font-weight:800;color:var(--red);">₹${sub}</span>
+          </div>
+
+          <div class="s-modal-footer" style="margin-top:14px;">
+            <button class="s-btn s-btn-secondary" onclick="_qeClose(null)">Cancel</button>
+            <button class="s-btn s-btn-primary" onclick="_qeConfirm()" style="background:var(--red);border-color:var(--red);">⚡ Place as On Account</button>
+          </div>
+        </div>`;
+
+      // Wire up dynamic functions scoped to this modal
+      window._qtyChange = (key, delta) => {
+        editItems[key] = Math.max(0, (editItems[key]||0) + delta);
+        if (editItems[key] === 0) delete editItems[key];
+        render();
+      };
+      window._qtyRemove = (key) => { delete editItems[key]; render(); };
+      window._qeMeal   = (m)   => { selMeal = m; render(); };
+      window._qeClose  = (v)   => closeModal(v);
+      window._qeAdd    = ()    => {
+        const sel = document.getElementById('qeAddSel');
+        if (!sel || !sel.value) return;
+        editItems[sel.value] = (editItems[sel.value]||0) + 1;
+        render();
+      };
+      window._qeConfirm = () => {
+        selDate = document.getElementById('qeDate')?.value || selDate;
+        closeModal({ date: selDate, meal: selMeal, items: {...editItems} });
+      };
     };
 
     render();
   });
 }
+
+async function quickOrderStandard(phone, name, rawItems, favName, mealType) {
+  // Fix double-escaped &apos; from HTML attribute passing
+  if (typeof name === 'string') name = name.replace(/&apos;/g, "'");
+  if (typeof favName === 'string') favName = favName.replace(/&apos;/g, "'");
+
+  const result = await sQuickEditModal(name, favName, rawItems, mealType);
+  if (!result) return;
+
+  const { date, meal, items } = result;
+  const itemsObj = items;
+
+  // Build [{colKey, qty}] list
+  const itemList = Object.entries(itemsObj)
+    .filter(([,q]) => Number(q) > 0)
+    .map(([colKey,qty]) => ({ colKey, qty: Number(qty) }));
+
+  if (!itemList.length) { toast('No items in order — nothing placed.'); return; }
+
+  const subtotal = _calcSubtotal(itemsObj);
+
+  sLoading(true, 'Placing order as On Account…');
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        _action: 'processOrder', pin: S.sessionPin,
+        profile: { phone, name },
+        orders: [{ date, meals: [{ type: meal, items: itemList, subtotal }] }],
+        payment_method: 'On Account',
+        payment_status: 'On Account'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(`✅ Order placed as On Account for ${name}!`);
+      loadCustomers(true);
+    } else throw new Error(data.error);
+  } catch(e) { sAlert('Error: ' + e.message); }
+  finally { sLoading(false); }
+}
+
 
 /**
  * Bulk Order Placement Logic
