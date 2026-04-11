@@ -1391,6 +1391,7 @@ const FREE_THRESHOLD   = 150;
 const DISC_T1          = { min:300, rate:0.05 };
 const DISC_T2          = { min:450, rate:0.075 };
 let   CUTOFFS          = { Breakfast:7, Lunch:9.5, Dinner:17 };
+const ICONS            = { Breakfast: "🍳", Lunch: "🍱", Dinner: "🍽️" };
 
 // ═══════════════════════════════════════════════════════════
 // FIXED MENU
@@ -2538,7 +2539,8 @@ function hasAnyOrder(){
 // STEP 5: BILL
 // ═══════════════════════════════════════════════════════════
 async function buildBillScreen(){
-  $("summaryCard").style.display = "block";
+  const wrap = $("summaryCard");
+  wrap.style.display = "block";
   $("billSummaryContent").innerHTML = `<div style="text-align:center;padding:24px;"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:6px;">Building your summary…</p></div>`;
 
   // Fetch existing orders for all selected dates (for combined-day billing logic)
