@@ -3540,8 +3540,34 @@ function renderReviewUsers(list) {
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
   const fmtD = d => d ? (p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")) : "—";
   
-  wrap.innerHTML = list.map(c => `
-    <div class="cust-card" style="cursor:default;">
+  wrap.innerHTML = list.map(c => {
+    const isClaimed = !!c.reviewClaimed;
+    const isExhausted = isClaimed && c.promoCount === 0;
+    const isActive = isClaimed && c.promoCount > 0;
+    
+    let btnHtml = "";
+    if (isExhausted) {
+      btnHtml = `<div style="background:#f1f5f9;color:#64748b;padding:8px;border-radius:8px;font-size:0.75rem;text-align:center;font-weight:700;border:1.5px solid #e2e8f0;">
+                   ✅ REVIEW QUOTA EXHAUSTED
+                 </div>`;
+    } else if (isActive) {
+      btnHtml = `<div style="background:#f0faf4;color:#166534;padding:8px;border-radius:8px;font-size:0.75rem;text-align:center;font-weight:700;border:1.5px solid #bbf7d0;">
+                   🎁 REWARDS ACTIVE (${c.promoCount} left)
+                 </div>`;
+    } else if (isClaimed) {
+       btnHtml = `<div style="background:#f0faf4;color:#166534;padding:8px;border-radius:8px;font-size:0.75rem;text-align:center;font-weight:700;border:1.5px solid #bbf7d0;">
+                   ✅ REVIEW CLAIMED
+                 </div>`;
+    } else {
+      btnHtml = `<button class="btn-green" style="width:100%;padding:8px;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:8px;" 
+                        onclick="grantReviewReward('${c.phone}', '${c.name.replace(/'/g,"\\\\'")}')">
+                   <span>🎁</span> Mark Reviewed (+3)
+                 </button>`;
+    }
+
+    return `
+    <div class="cust-card" style="cursor:default; position:relative; overflow:hidden;">
+      ${(isExhausted || isClaimed) ? `<div style="position:absolute; top:0; right:0; background:${isExhausted ? '#64748b' : '#22c55e'}; color:white; font-size:0.55rem; padding:2px 8px; font-weight:800; border-bottom-left-radius:8px; text-transform:uppercase;">${isExhausted ? 'Finished' : 'Claimed'}</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
         <div>
           <div class="cust-card-name">${c.name}</div>
@@ -3555,12 +3581,9 @@ function renderReviewUsers(list) {
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">
          Total Orders: <strong>${c.orderCount}</strong> &nbsp;·&nbsp; Last: <strong>${fmtD(c.lastDate)}</strong>
       </div>
-      <button class="btn-green" style="width:100%;padding:8px;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:8px;" 
-              onclick="grantReviewReward('${c.phone}', '${c.name.replace(/'/g,"\\'")}')">
-         <span>🎁</span> Mark Reviewed (+3)
-      </button>
-    </div>
-  `).join("");
+      ${btnHtml}
+    </div>`;
+  }).join("");
 }
 
 function filterReviewUsers() {

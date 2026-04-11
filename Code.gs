@@ -81,7 +81,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
   "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
-  "Review_Promo_Count"
+  "Review_Promo_Count", "Review_Reward_Claimed"
 ];
 
 const ORDERS_HEADERS = [
@@ -2475,7 +2475,12 @@ function getCustomerList() {
   var cMap = {};
   custRows.forEach(function(c) {
     var p = _normalizePhone(c.Phone);
-    if (p) cMap[p] = Number(c.Review_Promo_Count) || 0;
+    if (p) {
+      cMap[p] = {
+        count: Number(c.Review_Promo_Count) || 0,
+        claimed: (String(c.Review_Reward_Claimed) === "TRUE" || String(c.Review_Reward_Claimed) === "true")
+      };
+    }
   });
 
   var fmtDate = function(v) {
@@ -2499,7 +2504,8 @@ function getCustomerList() {
         totalSpent:0, 
         pendingAmt:0, 
         lastDate:"",
-        promoCount: cMap[normP] || 0
+        promoCount: cMap[normP] ? cMap[normP].count : 0,
+        reviewClaimed: cMap[normP] ? cMap[normP].claimed : false
       };
     }
     map[phone].orderCount++;
@@ -2536,6 +2542,12 @@ function markReviewed(body) {
 
   var current = Number(r.Review_Promo_Count) || 0;
   ws.getRange(r._row, col).setValue(current + 3);
+
+  // Mark as claimed
+  var claimCol = hIdx["Review_Reward_Claimed"];
+  if (claimCol) {
+    ws.getRange(r._row, claimCol).setValue("TRUE");
+  }
 
   return {success:true, newCount: current + 3};
 }
