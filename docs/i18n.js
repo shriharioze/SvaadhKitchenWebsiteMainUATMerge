@@ -202,7 +202,9 @@
     idx_read_more: "Read more",
     idx_read_less: "Show less",
 
-    // ── Review Promotion ──────────────────────────────────
+    upi_or: "or",
+    review_thanks_title: "Thank you! ❤️",
+    review_thanks_msg: "Your 5-star rating and review really means a lot to us. We hope you enjoyed your discounted meals!",
     review_promo_text: "Loved the food? Get 10% OFF on your next 3 orders!",
     review_promo_sub: "Leave us a 5-star rating & review on Google to unlock your reward.",
     review_promo_cta: "Leave a Review & Get Discount",
