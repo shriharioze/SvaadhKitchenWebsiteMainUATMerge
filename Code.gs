@@ -399,7 +399,7 @@ function doPost(e) {
     }
     if (action === "getBillingData") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
-      return jsonRes(getBillingData(body.cycle));
+      return jsonRes(getBillingData(body.cycle, body.filterValue));
     }
     if (action === "markBillingCollected") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
