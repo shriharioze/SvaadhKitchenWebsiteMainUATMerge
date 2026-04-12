@@ -494,7 +494,13 @@ function renderCard(o, i, meal) {
       ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
       ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
     </div>
-    ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ""}
+    
+    <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+      <div style="background:#e3f2fd; border-radius:10px; padding:10px 14px; font-size:0.85rem; color:#1565c0; font-weight:700; border: 1px solid #bbdefb; display:flex; align-items:center; gap:8px;">
+        <span>🚚</span> <span>Instruction : ${o.deliveryPoint || "Handover at Doorstep"}</span>
+      </div>
+      ${o.notes ? `<div class="notes-box" style="margin-bottom:0; padding:10px 14px; font-size:0.85rem; border: 1px solid #ffe082;">📝 Special instructions for driver staff (optional): ${o.notes}</div>` : ""}
+    </div>
 
     <div class="card-actions">
       ${hasPhone

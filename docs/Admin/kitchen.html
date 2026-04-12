@@ -1162,7 +1162,14 @@
           <div style="background:#f8fafc; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:10px; color:#334155; line-height:1.4;">
             ${summaryMar}
           </div>
-          ${noteMar ? `<div style="font-size:0.9rem; color:#dc2626; font-weight:700; margin-bottom:12px; padding:0 4px;">सूचविले: ${noteMar}</div>` : ''}
+          ${noteMar ? `<div style="font-size:0.9rem; color:#dc2626; font-weight:700; margin-bottom:8px; padding:0 4px;">व्युह: ${noteMar}</div>` : ''}
+          <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+            ${noteMar || o.Special_Notes_Kitchen ? `<div style="font-size:0.88rem; color:#dc2626; font-weight:700; border-left:3px solid #dc2626; padding:4px 8px; background:#fef2f2;">🍳 Special instructions for kitchen staff (optional): ${noteMar || o.Special_Notes_Kitchen}</div>` : ""}
+            <div style="display:flex; flex-direction:column; gap:4px; border:1px dashed #cbd5e1; padding:8px; border-radius:8px; background:#f1f5f9;">
+              <div style="font-size:0.8rem; color:#475569; font-weight:600;">🚚 Instruction: ${o.Delivery_Point || "Handover at Doorstep"}</div>
+              ${o.Special_Notes_Delivery ? `<div style="font-size:0.8rem; color:#475569;">🚩 Special instructions for driver staff (optional): ${o.Special_Notes_Delivery}</div>` : ""}
+            </div>
+          </div>
           <div style="display:flex; justify-content:flex-end;">
             <button onclick="markOrderPacked('${o.Submission_ID}')" style="background:#059669; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">पॅक झाल्यावर क्लिक करा</button>
           </div>

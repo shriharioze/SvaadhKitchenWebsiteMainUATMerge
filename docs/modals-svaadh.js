@@ -26,7 +26,9 @@ const sAlert = (msg, title = "Svaadh Kitchen", icon = "ℹ️", subtitle = "") =
   });
 };
 
-const sConfirm = (msg, title = "Confirm Action", icon = "⚠️", subtitle = "") => {
+const sConfirm = (msg, title = "Confirm Action", icon = "⚠️", subtitle = "", options = {}) => {
+  const confirmLabel = options.confirmLabel || "Confirm";
+  const cancelLabel = options.cancelLabel || "Cancel";
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 's-modal-overlay';
@@ -37,8 +39,8 @@ const sConfirm = (msg, title = "Confirm Action", icon = "⚠️", subtitle = "")
         <div class="s-modal-msg">${msg}</div>
         ${subtitle ? `<div style="font-size:0.75rem; color:#888; font-style:italic; margin-top:-15px; margin-bottom:20px;">${subtitle}</div>` : ''}
         <div class="s-modal-footer">
-          <button class="s-btn s-btn-secondary" id="sModalCancel">Cancel</button>
-          <button class="s-btn s-btn-primary" id="sModalConfirm">Confirm</button>
+          <button class="s-btn s-btn-secondary" id="sModalCancel">${cancelLabel}</button>
+          <button class="s-btn s-btn-primary" id="sModalConfirm">${confirmLabel}</button>
         </div>
       </div>
     `;

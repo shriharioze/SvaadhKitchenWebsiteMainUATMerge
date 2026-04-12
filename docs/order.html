@@ -3924,8 +3924,15 @@
         });
         if (emptyDates.length > 0) {
           const names = emptyDates.map(d => formatDate(d)).join(", ");
-          const confirmMsg = t('empty_dates_warn', { n: emptyDates.length, dates: names });
-          if (!(await sConfirm(confirmMsg, "No Menu Found", "📅", "निवडलेल्या तारखांसाठी मेनू उपलब्ध नाही. सुरू ठेवायचे?"))) return;
+          const confirmMsg = `For the following selected date(s), no items have been ordered: <br><br><b>${names}</b><br><br>Would you like to continue to the review page or stay here to add items?`;
+          const confirmed = await sConfirm(
+            confirmMsg,
+            "Empty Dates Detected",
+            "📅",
+            "निवडलेल्या तारखांसाठी तुम्ही काहीही निवडलेले नाही. तरीही पुढे जायचे की आणखी पदार्थ निवडायचे?",
+            { confirmLabel: "Continue to Review →", cancelLabel: "Add Items / Meals" }
+          );
+          if (!confirmed) return;
         }
         if (!hasAnyOrder()) { toast(t('toast_select_item')); return; }
 

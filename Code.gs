@@ -81,7 +81,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
   "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
-  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order", "Billing_Cycle", "Fee_Exempt"
+  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order", "Billing_Cycle", "Fee_Exempt", "Delivery_Point"
 ];
 
 const ORDERS_HEADERS = [
@@ -94,7 +94,7 @@ const ORDERS_HEADERS = [
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
-  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed"
+  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point"
 ];
 
 // Item colKey → Orders column name mapping (for quick lookup)
@@ -1044,6 +1044,7 @@ function submitOrder(body) {
       set("Full_Address",        fullAddr);
       set("Maps_Link",           mapsLink);
       set("Landmark",            landmark);
+      set("Delivery_Point",      _getDeliveryPointLabel(meal.delivery_point || profile.delivery_point));
       if (!hIdx["Small_Order_Fee"]) {
         ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Small_Order_Fee");
         hIdx["Small_Order_Fee"] = ordersWs.getLastColumn();
@@ -1174,6 +1175,7 @@ function _upsertCustomer(ss, profile) {
     if (profile.area !== undefined || profile.society !== undefined) update("Full_Address",  fullAddr);
     if (profile.maps !== undefined) update("Maps_Link",     profile.maps || "");
     if (profile.landmark !== undefined) update("Landmark",      profile.landmark || "");
+    if (profile.delivery_point !== undefined) update("Delivery_Point", _getDeliveryPointLabel(profile.delivery_point));
     if (profile.payment_preference !== undefined) update("Payment_Freq",  profile.payment_preference);
     if (profile.pin) update("PIN", profile.pin);
     if (profile.meal_addresses) update("Meal_Addresses", profile.meal_addresses);
@@ -1195,6 +1197,7 @@ function _upsertCustomer(ss, profile) {
         case "Full_Address":    val = fullAddr; break;
         case "Maps_Link":       val = profile.maps || ""; break;
         case "Landmark":        val = profile.landmark || ""; break;
+        case "Delivery_Point":  val = _getDeliveryPointLabel(profile.delivery_point); break;
         case "Payment_Freq":    val = profile.payment_preference || "Daily Payment"; break;
         case "Created_At":      val = getISTTimestamp(); break;
         case "PIN":             val = profile.pin || ""; break;
@@ -2024,6 +2027,8 @@ function getKitchenSummary(date) {
       Meal_Type: meal,
       summary: summaryParts.join(", "),
       Special_Notes_Kitchen: String(r.Special_Notes_Kitchen || ""),
+      Special_Notes_Delivery: String(r.Special_Notes_Delivery || ""),
+      Delivery_Point: String(r.Delivery_Point || ""),
       marathiNotes: String(r.marathiNotes || ""),
       Packed: r.Packed === true || String(r.Packed).toLowerCase() === "true"
     });
@@ -2073,6 +2078,7 @@ function getDriverOrders(date) {
       area:          area,
       address:       String(r.Full_Address || ""),
       landmark:      String(r.Landmark || ""),
+      deliveryPoint: String(r.Delivery_Point || ""),
       maps:          String(r.Maps_Link || ""),
       notes:         String(r.Special_Notes_Delivery || ""),
       deliveredAt:   delMap[sid] || "",
@@ -3604,4 +3610,19 @@ function toggleFeeExempt(phone, status) {
     custWs.appendRow(row);
   }
   return { success: true, status: val };
+}
+
+function _getDeliveryPointLabel(key) {
+  if (!key) return "Handover at Doorstep";
+  const map = {
+    door: "Handover at Doorstep / Office Door",
+    bell_keep: "Keep outside & Ring bell",
+    lobby_handoff: "Handover at Lobby / Reception",
+    lobby_keep: "Keep at Lobby / Reception",
+    gate_handoff: "Handover at Security Gate",
+    gate_keep: "Keep at security cabin",
+    comedown: "Customer will come down",
+    other: "Other (see instructions)"
+  };
+  return map[key] || key;
 }
