@@ -993,7 +993,7 @@ function submitOrder(body) {
       // Build items JSON
       const itemsObj = {};
       items.forEach(({colKey, qty}) => {
-        const canonical = ITEM_COL_MAP[colKey] || colKey;
+        const canonical = resolveName(colKey); // Use name instead of ID
         itemsObj[canonical] = qty;
       });
 
