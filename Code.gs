@@ -81,7 +81,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
   "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
-  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order"
+  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order", "Billing_Cycle", "Fee_Exempt"
 ];
 
 const ORDERS_HEADERS = [
@@ -348,6 +348,10 @@ function doPost(e) {
     if (action === "markRefunded") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markRefunded(body.submissionId));
+    }
+    if (action === "toggleFeeExempt") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(toggleFeeExempt(body.phone, body.status));
     }
     if (action === "approveWalletRecharge") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -953,13 +957,16 @@ function submitOrder(body) {
       const isDayFree = (combinedDayTotal >= FREE_THR);
       const isFreeArea = freeAreaNames.includes(mealArea);
 
+      // VIP Fee Exemption
+      const isFeeExempt = (cRowIdx !== -1 && (cRows[cRowIdx].Fee_Exempt === "Yes" || cRows[cRowIdx].Fee_Exempt === true));
+
       let delCharge = 0;
-      if (!isDayFree && !isPickup && !isFreeArea && sub > 0) {
+      if (!isFeeExempt && !isDayFree && !isPickup && !isFreeArea && sub > 0) {
         delCharge = DELIVERY;
       }
 
       let smallOrderFee = 0;
-      if (!isDayFree && !isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (!isFeeExempt && !isDayFree && !isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
 
@@ -3490,4 +3497,32 @@ function markBillingCollected(submissionIds) {
   });
   SpreadsheetApp.flush();
   return { success: true, count };
+}
+
+/**
+ * VIP / Fee Exempt Logic
+ */
+function toggleFeeExempt(phone, status) {
+  const ss = getSpreadsheet();
+  const custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const rows = getAllRows(custWs);
+  const hIdx = headerIndex(custWs);
+  const phoneStr = _normalizePhone(phone);
+  const idx = rows.findIndex(r => _normalizePhone(r.Phone) === phoneStr);
+  
+  const val = (status === true || String(status).toLowerCase() === "yes") ? "Yes" : "No";
+  
+  if (idx !== -1) {
+    custWs.getRange(idx + 2, hIdx["Fee_Exempt"]).setValue(val);
+  } else {
+    // Number not found - create a FUTURE whitelist entry (Predetermine)
+    if (!phone || phone.length < 10) return { success: false, error: "Invalid phone number" };
+    const row = new Array(CUSTOMERS_HEADERS.length).fill("");
+    row[hIdx["Phone"] - 1] = phone;
+    row[hIdx["Fee_Exempt"] - 1] = val;
+    row[hIdx["Created_At"] - 1] = getISTTimestamp();
+    row[hIdx["Customer_Name"] - 1] = "VIP (Pre-registered)";
+    custWs.appendRow(row);
+  }
+  return { success: true, status: val };
 }
