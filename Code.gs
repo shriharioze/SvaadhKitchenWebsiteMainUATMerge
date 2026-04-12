@@ -2604,6 +2604,32 @@ function getCustomerList() {
     }
   });
 
+  // Also include SK_Customers entries that have never placed an order (e.g. pre-registered VIPs)
+  custRows.forEach(function(c) {
+    var p = String(c.Phone || "").trim();
+    if (!p) return;
+    var normP = _normalizePhone(p);
+    if (map[p]) return; // already in map from orders
+    // Only surface pre-registered VIPs (Fee_Exempt = Yes) to keep the list clean
+    if (String(c.Fee_Exempt).trim() !== "Yes") return;
+    map[p] = {
+      phone: p,
+      name: String(c.Customer_Name || "").trim(),
+      area: String(c.Area || "").trim(),
+      payFreq: String(c.Payment_Freq || "").trim(),
+      orderCount: 0,
+      totalSpent: 0,
+      pendingAmt: 0,
+      lastDate: String(c.Created_At instanceof Date
+        ? Utilities.formatDate(c.Created_At, "Asia/Kolkata", "yyyy-MM-dd")
+        : (c.Created_At || "")).slice(0, 10),
+      promoCount: 0,
+      reviewClaimed: false,
+      standardOrder: "",
+      Fee_Exempt: "Yes"
+    };
+  });
+
   var customers = Object.values(map)
     .map(function(c){return Object.assign({},c,{totalSpent:Math.round(c.totalSpent),pendingAmt:Math.round(c.pendingAmt)});})
     .sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
