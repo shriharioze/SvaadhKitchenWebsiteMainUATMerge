@@ -736,6 +736,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
 }
 .btn-set-fav:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+.vip-chip { 
+  display: inline-block; padding: 2px 8px; font-size: 0.65rem; font-weight: 800; 
+  background: var(--gold-soft); color: var(--gold); border: 1.5px solid var(--gold-border); 
+  border-radius: 99px; margin-left: 6px; vertical-align: middle; text-transform: uppercase;
+}
 </style>
 </head>
 <body>
@@ -3267,7 +3272,7 @@ function renderCustomerGrid(list) {
   if (!list.length) { el.innerHTML=`<div class="no-orders-msg">No customers found.</div>`; return; }
   el.innerHTML = `<div class="cust-grid">${list.map(c=>`
     <div class="cust-card" onclick="loadCustomerDetail('${c.phone}')">
-      <div class="cust-card-name">${c.name}</div>
+      <div class="cust-card-name">${c.name} ${c.Fee_Exempt === 'Yes' ? '<span class="vip-chip">🌟 VIP</span>' : ''}</div>
       <div class="cust-card-phone">📱 ${c.phone} &nbsp;·&nbsp; <span class="area-chip" style="font-size:.68rem;">${c.area}</span></div>
       <div class="cust-card-meta">
         <div class="cust-card-stat"><strong>${c.orderCount}</strong> orders</div>
