@@ -169,7 +169,7 @@ const BUSINESS_CONTEXT = {
   },
   payment: {
     options: ["Svaadh Wallet (Prepaid)", "UPI", "Prepaid Wallet Billing"],
-    upi_id: "9819969682@hdfc",
+    upi_id: "shriharioze07-1@okhdfcbank",
     prepaid_wallet: "Prepaid Wallet Billing operates as a prepaid wallet. Customers must maintain a top-up balance, and orders are deducted immediately."
   },
   ordering: {

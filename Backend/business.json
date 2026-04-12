@@ -49,7 +49,7 @@
   },
   "payment": {
     "options": ["Svaadh Wallet (Prepaid Credits)", "UPI", "Prepaid Wallet Billing"],
-    "upi_id": "9819969682@hdfc",
+    "upi_id": "shriharioze07-1@okhdfcbank",
     "wallet": {
       "name": "Svaadh Wallet",
       "recharge": "Min ₹100 via UPI. Pay to the provided VPA/QR, then click 'I have completed the payment' to alert Admin for verification (usually takes 1-2 hours).",
