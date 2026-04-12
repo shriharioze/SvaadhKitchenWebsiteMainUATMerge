@@ -581,12 +581,117 @@
         grid-template-columns: 1fr;
       }
 
-      .sabji-cook-card .cook-val,
       .dal-card .cook-val {
         font-size: 2.2rem;
       }
     }
-  </style>
+
+    /* ── MEAL TOGGLE ── */
+    .meal-tabs {
+      display: flex;
+      gap: 5px;
+      margin: 0 20px 10px;
+      padding: 4px;
+      background: #eee;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+    .m-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 6px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      border: none;
+    }
+    .m-tab.active {
+      background: #fff;
+      color: #d35400;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .m-tab.auto {
+      position: relative;
+    }
+    .m-tab.auto::after {
+      content: "Auto";
+      position: absolute;
+      top: -6px;
+      right: 4px;
+      background: #27ae60;
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 800;
+    }
+
+    /* ── MENU MODAL (Adapted from order.html) ── */
+    .wm-overlay {
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,0.5);
+      z-index: 30000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    .wm-overlay.active { display: flex; }
+    .wm-sheet {
+      background: #fff;
+      width: 90%;
+      max-width: 500px;
+      max-height: 85vh;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    }
+    .wm-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wm-body {
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .wm-day {
+      padding: 12px;
+      background: #fdf8f2;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .wm-day h4 { font-size: 0.9rem; color: #d35400; margin-bottom: 6px; }
+    .wm-day p { font-size: 0.85rem; color: #333; line-height: 1.4; }
+    .close-modal {
+      background: #eee;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .menu-btn-mr {
+      background: #fff;
+      color: #d35400;
+      border: 1px solid #d35400;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    </style>
 
 </head>
 
@@ -626,6 +731,7 @@
       <div class="controls">
         <input type="date" id="datePicker">
         <button class="load-btn" onclick="loadKitchen()">Load</button>
+        <button class="menu-btn-mr" onclick="openWeeklyMenu()">आठवड्याचा मेन्यू</button>
         <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
       </div>
     </div>
@@ -636,10 +742,30 @@
           <div class="ktab" id="tab_Labels" onclick="switchKTab('Labels')">Labels</div>
         </div>
       </div>
+      
+      <!-- MEAL TOGGLE -->
+      <div class="meal-tabs" id="mealTabs">
+        <button class="m-tab" id="mtab_Breakfast" onclick="setManualMeal('Breakfast')">🌅 Breakfast</button>
+        <button class="m-tab" id="mtab_Lunch" onclick="setManualMeal('Lunch')">☀️ Lunch</button>
+        <button class="m-tab" id="mtab_Dinner" onclick="setManualMeal('Dinner')">🌙 Dinner</button>
+      </div>
     <div class="kbody" id="kbody">
       <div class="no-orders">Select a date and tap Load</div>
     </div>
     <div class="last-updated" id="lastUpdated"></div>
+  </div>
+
+  <!-- WEEKLY MENU MODAL -->
+  <div class="wm-overlay" id="wmOverlay">
+    <div class="wm-sheet">
+      <div class="wm-header">
+        <h3 style="color:#d35400;">📋 आठवड्याचा मेन्यू (Weekly Menu)</h3>
+        <button class="close-modal" onclick="closeWeeklyMenu()">×</button>
+      </div>
+      <div class="wm-body" id="wmBody">
+        <div style="text-align:center; padding:20px; color:#999;">Loading menu...</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -647,6 +773,7 @@
     let K = { pin: "", sessionPin: "" };
      let _lastData = null;
      let _currentTab = "Summary";
+     let _manualMeal = null; // null means auto-detect based on time
 
     // ── RATE LIMITING ──
     let attempts = 0;
@@ -901,9 +1028,19 @@
         Dinner: { icon: "🌙", label: "रात्रीचे जेवण" },
       };
 
-      const currentMeal = getCurrentMeal();
+      const currentMeal = _manualMeal || getCurrentMeal();
+      
+      // Update meal tab UI
+      document.querySelectorAll(".m-tab").forEach(el => {
+        el.classList.remove("active", "auto");
+        if (el.id === "mtab_" + currentMeal) {
+          el.classList.add("active");
+          if (!_manualMeal) el.classList.add("auto");
+        }
+      });
+
       if (!meals[currentMeal]) {
-          document.getElementById("kbody").innerHTML = `<div class="no-orders" style="padding:40px; text-align:center;">🎉 No ${currentMeal} orders found!</div>`;
+          document.getElementById("kbody").innerHTML = `<div class="no-orders" style="padding:40px; text-align:center;">🎉 No ${currentMeal} orders found for this date.</div>`;
           return;
       }
       
@@ -1013,7 +1150,7 @@
         Dinner: { icon: "🌙", label: "रात्रीचे जेवण" },
       };
 
-      const currentMeal = getCurrentMeal();
+      const currentMeal = _manualMeal || getCurrentMeal();
       if (meals[currentMeal]) {
         const m = meals[currentMeal];
         const { icon, label } = MEAL_META[currentMeal];
@@ -1109,7 +1246,7 @@
         return;
       }
 
-      const currentMeal = getCurrentMeal();
+      const currentMeal = _manualMeal || getCurrentMeal();
       const activeOrders = _lastData.orders.filter(o => {
           if (o.Packed) return false;
           return o.Meal_Type === currentMeal;
@@ -1266,6 +1403,57 @@
         }
       };
       document.addEventListener("visibilitychange", window._visHandler);
+    }
+
+    function setManualMeal(m) {
+      _manualMeal = m;
+      renderView();
+    }
+
+    async function openWeeklyMenu() {
+      const overlay = document.getElementById("wmOverlay");
+      const body = document.getElementById("wmBody");
+      overlay.classList.add("active");
+      
+      if (_lastData && _lastData.menu) {
+        renderMenuModal(_lastData.menu);
+      } else {
+        body.innerHTML = '<div style="text-align:center; padding:20px;">Fetching menu...</div>';
+        try {
+          const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayIST()}&pin=${K.sessionPin}`);
+          const data = await res.json();
+          renderMenuModal(data);
+        } catch (e) {
+          body.innerHTML = '<div style="color:red; text-align:center; padding:20px;">Error loading menu</div>';
+        }
+      }
+    }
+
+    function renderMenuModal(menu) {
+      const body = document.getElementById("wmBody");
+      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayMR = { 
+        "Monday": "सोमवार (Monday)", "Tuesday": "मंगळवार (Tuesday)", "Wednesday": "बुधवार (Wednesday)", 
+        "Thursday": "गुरुवार (Thursday)", "Friday": "शुक्रवार (Friday)", "Saturday": "शनिवार (Saturday)" 
+      };
+      
+      let html = "";
+      days.forEach(day => {
+        const m = menu[day] || { b: "None", l_dry: "None", l_curry: "None", d_dry: "None", d_curry: "None" };
+        html += `
+          <div class="wm-day">
+            <h4>📅 ${dayMR[day]}</h4>
+            <p><strong>न्याहारी (BF):</strong> ${mr(m.b)}</p>
+            <p><strong>दुपार (Lunch):</strong> ${mr(m.l_dry)} & ${mr(m.l_curry)}</p>
+            <p><strong>रात्र (Dinner):</strong> ${mr(m.d_dry)} & ${mr(m.d_curry)}</p>
+          </div>
+        `;
+      });
+      body.innerHTML = html;
+    }
+
+    function closeWeeklyMenu() {
+      document.getElementById("wmOverlay").classList.remove("active");
     }
 
 
