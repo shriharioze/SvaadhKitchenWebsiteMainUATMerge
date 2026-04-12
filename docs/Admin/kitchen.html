@@ -1483,41 +1483,42 @@
       const body = document.getElementById("wmBody");
       overlay.classList.add("active");
 
-      if (_lastData && _lastData.menu) {
-        renderMenuModal(_lastData.menu);
-      } else {
-        body.innerHTML = '<div style="text-align:center; padding:20px;">Fetching menu...</div>';
-        try {
-          const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayIST()}&pin=${K.sessionPin}`);
-          const data = await res.json();
-          renderMenuModal(data);
-        } catch (e) {
-          body.innerHTML = '<div style="color:red; text-align:center; padding:20px;">Error loading menu</div>';
+      body.innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:8px;">Fetching menu...</p></div>';
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu&pin=${K.sessionPin}`);
+        const data = await res.json();
+        if (data.success) {
+          renderMenuModal(data.days);
+        } else {
+          throw new Error(data.error || "Failed to load menu");
         }
+      } catch (e) {
+        body.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error: ${e.message}</div>`;
       }
     }
 
-    function renderMenuModal(menu) {
+    function renderMenuModal(days) {
       const body = document.getElementById("wmBody");
-      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const dayMR = {
-        "Monday": "सोमवार (Monday)", "Tuesday": "मंगळवार (Tuesday)", "Wednesday": "बुधवार (Wednesday)",
-        "Thursday": "गुरुवार (Thursday)", "Friday": "शुक्रवार (Friday)", "Saturday": "शनिवार (Saturday)"
+        "Monday": "सोमवार", "Tuesday": "मंगळवार", "Wednesday": "बुधवार",
+        "Thursday": "गुरुवार", "Friday": "शुक्रवार", "Saturday": "शनिवार", "Sunday": "रविवार"
       };
 
       let html = "";
-      days.forEach(day => {
-        const m = menu[day] || { b: "None", l_dry: "None", l_curry: "None", d_dry: "None", d_curry: "None" };
+      days.forEach(d => {
+        const bfList = (d.breakfast || []).map(b => b.name).join(", ") || "None";
         html += `
-          <div class="wm-day">
-            <h4>📅 ${dayMR[day]}</h4>
-            <p><strong>न्याहारी (BF):</strong> ${mr(m.b)}</p>
-            <p><strong>दुपार (Lunch):</strong> ${mr(m.l_dry)} & ${mr(m.l_curry)}</p>
-            <p><strong>रात्र (Dinner):</strong> ${mr(m.d_dry)} & ${mr(m.d_curry)}</p>
+          <div class="wm-day" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <h4 style="color:#c0392b; font-size: 1rem; margin-bottom: 8px;">
+              📅 ${dayMR[d.dayName] || d.dayName} (${d.displayDate})
+            </h4>
+            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>न्याहारी (BF):</strong> ${mr(bfList)}</p>
+            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>दुपार (Lunch):</strong> ${mr(d.lunch_dry || "None")} & ${mr(d.lunch_curry || "None")}</p>
+            <p style="font-size:0.88rem; margin-bottom:0;"><strong>रात्र (Dinner):</strong> ${mr(d.dinner_dry || "None")} & ${mr(d.dinner_curry || "None")}</p>
           </div>
         `;
       });
-      body.innerHTML = html;
+      body.innerHTML = html || '<div style="text-align:center; padding:20px;">No menu data available.</div>';
     }
 
     function closeWeeklyMenu() {
