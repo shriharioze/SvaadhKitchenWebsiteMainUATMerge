@@ -3482,43 +3482,42 @@ function getBillingData(cycle, filterValue) {
     };
   });
 
-  // Compute date range based on cycle and filter (IST)
+  // Compute date range based on cycle and filter (IST context)
   const now = getISTDate();
-  const year = now.getFullYear();
   let fromStr = '';
   let toStr   = '';
+
+  // Helper to parse "YYYY-MM-DD" string reliably
+  const parseYMD = (s) => {
+    if (!s) return null;
+    const p = s.split('-');
+    return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+  };
 
   if (cycle === 'Daily') {
     fromStr = filterValue || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = fromStr;
   } else if (cycle === 'Monthly') {
     const mIdx = (filterValue !== undefined && filterValue !== '') ? parseInt(filterValue) : now.getMonth();
-    const first = new Date(year, mIdx, 1);
-    const last  = new Date(year, mIdx + 1, 0);
+    const first = new Date(now.getFullYear(), mIdx, 1);
+    const last  = new Date(now.getFullYear(), mIdx + 1, 0);
     fromStr = Utilities.formatDate(first, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = Utilities.formatDate(last, 'Asia/Kolkata', 'yyyy-MM-dd');
   } else if (cycle === 'Weekly') {
     // filterValue is a date string YYYY-MM-DD
-    let baseDate = new Date();
-    if (filterValue) {
-      const parts = filterValue.split('-');
-      baseDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[2]));
-    }
+    let baseDate = parseYMD(filterValue) || now;
     
     // Find Monday of this week (Mon-Sat cycle)
     const day = baseDate.getDay(); // 0=Sun, 1=Mon...
     const diff = (day === 0 ? -6 : 1 - day); // Distance to Monday
-    const mon = new Date(baseDate);
-    mon.setDate(baseDate.getDate() + diff);
+    const mon = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + diff);
     
     // Saturday is Monday + 5 days
-    const sat = new Date(mon);
-    sat.setDate(mon.getDate() + 5);
+    const sat = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 5);
     
     fromStr = Utilities.formatDate(mon, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = Utilities.formatDate(sat, 'Asia/Kolkata', 'yyyy-MM-dd');
   } else {
-    // Fallback
     fromStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = fromStr;
   }
@@ -3527,10 +3526,9 @@ function getBillingData(cycle, filterValue) {
   const onAccountOrders = allOrders.filter(r => {
     const status = String(r.Payment_Status || '').trim().toLowerCase();
     if (status !== 'on account') return false;
-    const dateStr = r.Order_Date instanceof Date
-      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
-      : String(r.Order_Date).trim();
-    return dateStr >= fromStr && dateStr <= toStr;
+    const dVal = r.Order_Date;
+    const ds = dVal instanceof Date ? Utilities.formatDate(dVal, 'Asia/Kolkata', 'yyyy-MM-dd') : String(dVal).trim();
+    return ds >= fromStr && ds <= toStr;
   });
 
   // Group by customer phone
@@ -3538,7 +3536,7 @@ function getBillingData(cycle, filterValue) {
   onAccountOrders.forEach(r => {
     const phone = String(r.Phone || '').trim();
     const cust  = custMap[phone] || {};
-    // Only include customers whose billing_cycle matches requested cycle
+    // Filter by billing cycle
     if ((cust.billing_cycle || '').toLowerCase() !== cycle.toLowerCase()) return;
 
     if (!grouped[phone]) {
@@ -3558,25 +3556,24 @@ function getBillingData(cycle, filterValue) {
       };
     }
 
-    const dateStr = r.Order_Date instanceof Date
-      ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
-      : String(r.Order_Date).trim();
+    const oDate = r.Order_Date;
+    const ds    = oDate instanceof Date ? Utilities.formatDate(oDate, 'Asia/Kolkata', 'yyyy-MM-dd') : String(oDate).trim();
 
     grouped[phone].orders.push({
       sid:   String(r.Submission_ID || ''),
-      date:  dateStr,
+      date:  ds,
       meal:  String(r.Meal_Type || ''),
       items: String(r.Items_JSON || '{}'),
-      subtotal: Number(r.Food_Subtotal || 0),
-      delivery: Number(r.Delivery_Charge || 0),
-      discount: Number(r.Discount_Amount || 0),
-      net:      Number(r.Net_Total || 0)
+      net:   Number(r.Net_Total || 0)
     });
     grouped[phone].total += Number(r.Net_Total || 0);
   });
 
-  const customers = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
-  return { success: true, cycle, from: fromStr, to: toStr, customers };
+  // Default sorting: Total Amount Descending, then Name
+  const customers = Object.values(grouped).sort((a,b) => {
+    if (b.total !== a.total) return b.total - a.total;
+    return a.name.localeCompare(b.name);
+  });  return { success: true, cycle, from: fromStr, to: toStr, customers };
 }
 
 function markBillingCollected(submissionIds) {

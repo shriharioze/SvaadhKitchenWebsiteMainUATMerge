@@ -3764,9 +3764,9 @@ async function loadBillingTab(cycle) {
     if (!data.success) throw new Error(data.error || 'Unknown error');
     const fmtDate = d => d ? d.split('-').reverse().join(' / ') : '';
     if (cycle === 'Daily') {
-      label.textContent = `📅 Today: ${fmtDate(data.from)}`;
+      label.textContent = `📅 Date: ${fmtDate(data.from)}`;
     } else if (cycle === 'Weekly') {
-      label.textContent = `📆 Week: ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
+      label.textContent = `📆 Week (Mon-Sat): ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
     } else {
       label.textContent = `🗓️ Month: ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
     }
