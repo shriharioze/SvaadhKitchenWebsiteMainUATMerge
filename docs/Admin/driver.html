@@ -125,6 +125,23 @@
   .empty-icon{font-size:2.5rem;margin-bottom:8px;}
   .spinner{width:28px;height:28px;border:3px solid #eee;border-top-color:#c0392b;border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto;}
   @keyframes spin{to{transform:rotate(360deg);}}
+
+  .wake-status {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    background: rgba(0,0,0,0.1);
+    padding: 2px 8px;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 10px;
+  }
+  .wake-status.active {
+    background: #27ae60;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -155,6 +172,7 @@
     <div class="topbar-row1">
       <div class="topbar-title">🛵 Svaadh Delivery</div>
       <div style="display:flex;align-items:center;gap:12px;">
+        <div id="wakeStatus" class="wake-status">⚡ Wake: Off</div>
         <span class="sync-badge" id="syncBadge">—</span>
         <button onclick="logout()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;opacity:0.8;" title="Logout">🔐</button>
       </div>
@@ -718,8 +736,41 @@ function switchTab(meal) {
 
 document.getElementById("datePicker").value = todayIST();
 
+// ── SCREEN WAKE LOCK ──
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      updateWakeStatus(true);
+      wakeLock.addEventListener('release', () => updateWakeStatus(false));
+    }
+  } catch (err) { updateWakeStatus(false); }
+}
+
+function updateWakeStatus(active) {
+  const el = document.getElementById("wakeStatus");
+  if (!el) return;
+  if (active) {
+    el.textContent = "⚡ Wake: On";
+    el.classList.add("active");
+  } else {
+    el.textContent = "⚡ Wake: Off (Click)";
+    el.classList.remove("active");
+  }
+}
+
+document.addEventListener('click', () => {
+  if (!wakeLock) requestWakeLock();
+}, { once: true });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
 // Auto-Login
 window.onload = () => {
+  requestWakeLock();
   const saved = localStorage.getItem('sk-driver-pin');
   if (saved && saved.length === 4) {
     verifyPin(saved);

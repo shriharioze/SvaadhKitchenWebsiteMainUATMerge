@@ -793,7 +793,10 @@
     <div class="kheader">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:12px;">
         <h1 style="margin:0;">🍽 SVAADH KITCHEN</h1>
-        <button class="logout-btn" onclick="logout()" title="Logout">🔐 Logout</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div id="wakeStatus" class="wake-status">⚡ Stay Awake: Inactive</div>
+          <button class="logout-btn" onclick="logout()" title="Logout">🔐 Logout</button>
+        </div>
       </div>
       <div class="controls">
         <input type="date" id="datePicker">
@@ -964,24 +967,26 @@
       "Dry Sabji": "सुकी भाजी", "Curry Sabji": "रस्सा भाजी",
       "Sabji (Dry)": "सुकी भाजी", "Sabji (Curry)": "रस्सा भाजी",
       "Dal": "वरण", "Rice": "भात", "Salad": "सलाड", "Curd": "दही", "Curd (50g)": "दही",
-      "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "घी उपमा", "Upma": "उपमा", "Poha": "पोहे",
+      "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "तुपातील उपमा", "Upma": "उपमा", "Poha": "पोहे",
       "Thalipeeth": "थालीपीठ", "Aloo Paratha": "आलू पराठा", "Tikhi Puri": "तिखी पुरी", "Paneer Paratha": "पनीर पराठा",
       "Ghee Sheera": "घी शिरा", "Palak Paratha (2 peices)": "पालक पराठा (२ पीसेस)", "Methi Paratha (2 pieces)": "मेथी पराठा (२ पीसेस)",
-      "4 x Idli and 100ml Chutney": "४ x इडली आणि १००ml चटणी",
+      "4 x Idli and 100ml Chutney": "४ x इडली आणि १००ml चटणी", "Chutney": "चटणी",
       "orders": "ऑर्डर",
       // Specific Sabjis
-      "Cauliflower": "फ्लॉवर", "French Beans": "फरसबी", "Cabbage": "कोबी", "Bhindi": "भेंडी",
-      "Bhendi Fry": "भेंडी", "Potato": "बटाटा", "Aloo": "बटाटा", "Matki": "मटकी",
-      "Mataki": "मटकी", "Matki (Dry)": "मटकी सुकी", "Matki (Curry)": "मटकी रस्सा",
-      "Soyabean": "सोयाबीन", "Gavari": "गवार", "Pithla": "पिठलं", "Akha Masoor": "अख्खा मसूर",
-      "Dal kanda": "डाळ कांदा", "Dal Kanda": "डाळ कांदा", "Sev tomato": "शेव टोमॅटो",
-      "Shimla Besan": "ढोबळी बेसन", "Palak corn": "पालक कॉर्न", "Green moong": "हिरवा मूग",
-      "Green Moong": "हिरवा मूग", "Kofta": "कोफ्ता", "Methi": "मेथी", "Aloo Matar": "बटाटा मटार",
+      "Cauliflower": "फ्लॉवर", "flower": "फ्लॉवर", "French Beans": "फरसबी", "Cabbage": "कोबी", "Bhindi": "भेंडी",
+      "Bhendi Fry": "भेंडी", "Potato": "बटाटा", "Aloo": "बटाटा", "Matki": "मटकी", "bata": "बटाटा",
+      "Mataki": "मटकी", "Matki (Dry)": "मटकी सुकी", "Matki (Curry)": "मटकी रस्सा", "Matki masala": "मटकी मसाला",
+      "Soyabean": "सोयाबीन", "soyabean": "सोयाबीन", "Gavari": "गवार", "gavar": "गवार", "Pithla": "पिठलं", "Akha Masoor": "अख्खा मसूर",
+      "Dal kanda": "डाळ कांदा", "Dal Kanda": "डाळ कांदा", "Sev tomato": "शेव टोमॅटो", "Shev tomato": "शेव टोमॅटो",
+      "Shimla Besan": "ढोबळी बेसन", "Shimla besan": "ढोबळी बेसन", "Palak corn": "पालक कॉर्न", "Green moong": "हिरवा मूग",
+      "Green Moong": "हिरवा मूग", "hirva moong": "हिरवा मूग", "Kofta": "कोफ्ता", "kofta": "कोफ्ता", "Methi": "मेथी", "Aloo Matar": "बटाटा मटार",
       "Batata": "बटाटा", "Shepu": "शेपू", "Tondli": "तोंडली", "Vatana": "वटाणा",
-      "Mix Veg": "मिक्सव्हेज", "Paneer": "पनीर", "Chavali": "चवळी", "Ghee": "तूप", "Phulka": "फुलका",
+      "Mix Veg": "मिक्सव्हेज", "Mix veg": "मिक्सव्हेज", "Paneer": "पनीर", "Chavali": "चवळी", "Chowli": "चवळी", "Ghee": "तूप", "Kanda besan": "कांदा बेसन",
+      "Kala chana": "काळा चणा", "Kala Chana": "काळा चणा",
       // Items for summary
       "Standard Tiffin": "साधी थाळी",
-      "No ring the bell": "बेल वाजवू नका"
+      "No ring the bell": "बेल वाजवू नका",
+      "None": "-", "-": "-", "": "-"
     };
     function mr(name) { return MR[name] || name; }
 
@@ -1460,6 +1465,35 @@
         el.textContent = `Updated: ${updStr}  ·  Refresh in ${m}:${s}`;
       }, 1000);
 
+      // Screen Wake Lock
+      let wakeLock = null;
+      async function requestWakeLock() {
+        try {
+          if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            updateWakeStatus(true);
+            wakeLock.addEventListener('release', () => updateWakeStatus(false));
+          }
+        } catch (err) { updateWakeStatus(false); }
+      }
+
+      function updateWakeStatus(active) {
+        const el = document.getElementById("wakeStatus");
+        if (!el) return;
+        if (active) {
+          el.textContent = "⚡ Stay Awake: Active";
+          el.classList.add("active");
+        } else {
+          el.textContent = "⚡ Stay Awake: Inactive (Click to Activate)";
+          el.classList.remove("active");
+        }
+      }
+
+      // Fallback: request on first click
+      document.addEventListener('click', () => {
+        if (!wakeLock) requestWakeLock();
+      }, { once: true });
+
       // Pause when tab hidden, resume when visible
       document.removeEventListener("visibilitychange", window._visHandler);
       window._visHandler = () => {
@@ -1468,9 +1502,11 @@
         } else {
           doRefresh();
           window._rt = setInterval(doRefresh, REFRESH_SECS * 1000);
+          requestWakeLock(); // Re-acquire wake lock
         }
       };
       document.addEventListener("visibilitychange", window._visHandler);
+      requestWakeLock(); // Initial request
     }
 
     function setManualMeal(m) {
@@ -1506,15 +1542,20 @@
 
       let html = "";
       days.forEach(d => {
-        const bfList = (d.breakfast || []).map(b => b.name).join(", ") || "None";
+        const bfList = (d.breakfast || []).map(b => mr(b.name)).join(", ");
+        const l_dry = mr(d.lunch_dry || "-");
+        const l_curry = mr(d.lunch_curry || "-");
+        const d_dry = mr(d.dinner_dry || "-");
+        const d_curry = mr(d.dinner_curry || "-");
+
         html += `
           <div class="wm-day" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
             <h4 style="color:#c0392b; font-size: 1rem; margin-bottom: 8px;">
               📅 ${dayMR[d.dayName] || d.dayName} (${d.displayDate})
             </h4>
-            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>न्याहारी (BF):</strong> ${mr(bfList)}</p>
-            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>दुपार (Lunch):</strong> ${mr(d.lunch_dry || "None")} & ${mr(d.lunch_curry || "None")}</p>
-            <p style="font-size:0.88rem; margin-bottom:0;"><strong>रात्र (Dinner):</strong> ${mr(d.dinner_dry || "None")} & ${mr(d.dinner_curry || "None")}</p>
+            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>न्याहारी (BF):</strong> ${bfList}</p>
+            <p style="font-size:0.88rem; margin-bottom:4px;"><strong>दुपार (Lunch):</strong> ${l_dry} & ${l_curry}</p>
+            <p style="font-size:0.88rem; margin-bottom:0;"><strong>रात्र (Dinner):</strong> ${d_dry} & ${d_curry}</p>
           </div>
         `;
       });
