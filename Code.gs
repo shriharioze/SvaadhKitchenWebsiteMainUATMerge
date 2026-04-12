@@ -593,7 +593,8 @@ function getCustomer(phone) {
       var num = Number(v);
       return isNaN(num) ? v : num;
     })(r.Review_Promo_Count),
-    wallet_balance:     _calculateWalletBalance(phone)
+    wallet_balance:     _calculateWalletBalance(phone),
+    feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true)
   };
 }
 
@@ -627,7 +628,8 @@ function verifyLogin(phone, pin) {
         var num = Number(v);
         return isNaN(num) ? v : num;
       })(r.Review_Promo_Count),
-      wallet_balance:     _calculateWalletBalance(phone)
+      wallet_balance:     _calculateWalletBalance(phone),
+      feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true)
     }
   };
 }

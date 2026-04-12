@@ -3629,7 +3629,7 @@
       step: 0, phone: "", isFirstTime: true, is10Day: false, sameAddr: true,
       profile: {
         name: "", first_name: "", last_name: "", area: "", wing: "", flat: "", floor: "", society: "", delivery_point: "door", maps: "", landmark: "",
-        payment_preference: "Daily Payment"
+        payment_preference: "Daily Payment", feeExempt: false
       },
       selectedDates: [], menuCache: {}, orders: {},
       calYear: 0, calMonth: 0,
@@ -4801,13 +4801,17 @@
         }
 
         // Discount & Fee Waiver logic based on combined day total
-        const isDayFree = (combinedDayTotal >= FREE_THRESHOLD);
+        const isDayFree = (combinedDayTotal >= FREE_THRESHOLD) || S.profile.feeExempt;
 
-        if (!isDayFree) {
+        if (S.profile.feeExempt) {
+          html += `<div style="font-size:0.75rem;color:#d35400;background:#fff3e0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-weight:700;border:1.5px dashed #ffb74d;display:flex;align-items:center;gap:8px;">
+            <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
+          </div>`;
+        } else if (!isDayFree) {
           const diff = FREE_THRESHOLD - combinedDayTotal;
           html += `<div style="font-size:0.72rem;color:#27ae60;background:#e8f5e9;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #c8e6c9;">
-        🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> on all meals!
-      </div>`;
+            🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> on all meals!
+          </div>`;
         }
 
         if (combinedDayTotal < DISC_T1.min) {
@@ -4865,16 +4869,16 @@
 
 
           // 3. Small Order Fee (current)
-          // Waived if isDayFree or Pickup. Else applies if Lunch/Dinner and meal total < 50
-          if (!isDayFree && !isPickup && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
+          // Waived if isDayFree or Pickup or VIP. Else applies if Lunch/Dinner and meal total < 50
+          if (!S.profile.feeExempt && !isDayFree && !isPickup && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
             const fee = 10;
             mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
             totalSmallOrderFee += fee;
           }
 
           // 4. Delivery (current)
-          // Waived if isDayFree or Pickup or FreeArea
-          if (!isDayFree && !isPickup && !isFreeArea && sub > 0) {
+          // Waived if isDayFree or Pickup or FreeArea or VIP
+          if (!S.profile.feeExempt && !isDayFree && !isPickup && !isFreeArea && sub > 0) {
             const fee = DELIVERY_CHARGE;
             mealExtras.push({ icon: "🚚", name: `Delivery Charge`, val: fee });
             totalDelivery += fee;
