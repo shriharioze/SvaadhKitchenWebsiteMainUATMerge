@@ -3536,8 +3536,6 @@ function getBillingData(cycle, filterValue) {
   onAccountOrders.forEach(r => {
     const phone = String(r.Phone || '').trim();
     const cust  = custMap[phone] || {};
-    // Filter by billing cycle
-    if ((cust.billing_cycle || '').toLowerCase() !== cycle.toLowerCase()) return;
 
     if (!grouped[phone]) {
       grouped[phone] = {
