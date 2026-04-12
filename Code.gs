@@ -3498,20 +3498,25 @@ function getBillingData(cycle, filterValue) {
     fromStr = Utilities.formatDate(first, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = Utilities.formatDate(last, 'Asia/Kolkata', 'yyyy-MM-dd');
   } else if (cycle === 'Weekly') {
-    const weekN = parseInt(filterValue) || 1;
-    // We define "Week N" as the N-th Monday-Sunday block that contains or follows the 1st of the month
-    const mIdx = now.getMonth();
-    let d = new Date(year, mIdx, 1);
-    // Adjust to the Monday of the week containing the 1st
-    while (d.getDay() !== 1) { d.setDate(d.getDate() - 1); }
+    // filterValue is a date string YYYY-MM-DD
+    let baseDate = new Date();
+    if (filterValue) {
+      const parts = filterValue.split('-');
+      baseDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
     
-    // Advance to the start of weekN
-    d.setDate(d.getDate() + (weekN - 1) * 7);
+    // Find Monday of this week (Mon-Sat cycle)
+    const day = baseDate.getDay(); // 0=Sun, 1=Mon...
+    const diff = (day === 0 ? -6 : 1 - day); // Distance to Monday
+    const mon = new Date(baseDate);
+    mon.setDate(baseDate.getDate() + diff);
     
-    const mon = new Date(d);
-    const sun = new Date(d); sun.setDate(d.getDate() + 6);
+    // Saturday is Monday + 5 days
+    const sat = new Date(mon);
+    sat.setDate(mon.getDate() + 5);
+    
     fromStr = Utilities.formatDate(mon, 'Asia/Kolkata', 'yyyy-MM-dd');
-    toStr   = Utilities.formatDate(sun, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = Utilities.formatDate(sat, 'Asia/Kolkata', 'yyyy-MM-dd');
   } else {
     // Fallback
     fromStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');

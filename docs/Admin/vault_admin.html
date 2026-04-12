@@ -1262,14 +1262,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           </div>
           <!-- Weekly Filter -->
           <div id="bf_Weekly" class="billing-filter-group" style="display:none;">
-            <div class="billing-chips">
-              <button class="billing-chip active" onclick="setBillingWeek(1)">W1</button>
-              <button class="billing-chip" onclick="setBillingWeek(2)">W2</button>
-              <button class="billing-chip" onclick="setBillingWeek(3)">W3</button>
-              <button class="billing-chip" onclick="setBillingWeek(4)">W4</button>
-              <button class="billing-chip" onclick="setBillingWeek(5)">W5</button>
-              <button class="billing-chip" onclick="setBillingWeek(6)">W6</button>
-            </div>
+            <input type="date" id="bf_weekly_date" class="billing-input" onchange="loadBillingTab('Weekly')">
+            <span style="font-size: 0.75rem; color: var(--muted);">(Select any date in the week)</span>
           </div>
           <!-- Monthly Filter -->
           <div id="bf_Monthly" class="billing-filter-group" style="display:none;">
@@ -1307,6 +1301,7 @@ function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
 // CONFIG & PRICING
 // ════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+function $(id) { return document.getElementById(id); }
 
 const GLOBAL_STAPLE_PRICES = {
   // Breads
@@ -1475,6 +1470,7 @@ function initBillingFilters() {
   const ist = getIST();
   const dateStr = toISO(ist);
   if ($('bf_daily_date')) $('bf_daily_date').value = dateStr;
+  if ($('bf_weekly_date')) $('bf_weekly_date').value = dateStr;
   if ($('bf_monthly_select')) $('bf_monthly_select').value = ist.getMonth();
 }
 
@@ -3737,7 +3733,6 @@ async function refreshApprovalCounts() {
 // ═══════════════════════════════════════════════════════
 
 let _currentBillingCycle = 'Daily';
-let _currentBillingWeek = 1;
 
 function switchBillingTab(cycle) {
   _currentBillingCycle = cycle;
@@ -3750,21 +3745,13 @@ function switchBillingTab(cycle) {
   loadBillingTab(cycle);
 }
 
-function setBillingWeek(n) {
-  _currentBillingWeek = n;
-  document.querySelectorAll('.billing-chip').forEach((btn, idx) => {
-    btn.classList.toggle('active', (idx + 1) === n);
-  });
-  loadBillingTab('Weekly');
-}
-
 async function loadBillingTab(cycle) {
   const content = document.getElementById('billingContent');
   const label   = document.getElementById('billingPeriodLabel');
   
   let filterValue = '';
   if (cycle === 'Daily') filterValue = $('bf_daily_date').value;
-  else if (cycle === 'Weekly') filterValue = _currentBillingWeek;
+  else if (cycle === 'Weekly') filterValue = $('bf_weekly_date').value;
   else if (cycle === 'Monthly') filterValue = $('bf_monthly_select').value;
 
   content.innerHTML = `<div style="text-align:center;padding:32px;"><div class="spinner"></div><p style="font-size:.78rem;color:#888;margin-top:8px;">Loading ${cycle} billing data…</p></div>`;
