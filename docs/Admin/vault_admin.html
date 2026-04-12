@@ -741,6 +741,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   background: var(--gold-soft); color: var(--gold); border: 1.5px solid var(--gold-border); 
   border-radius: 99px; margin-left: 6px; vertical-align: middle; text-transform: uppercase;
 }
+
+/* ════ SENIOR BILLING FILTERS ════ */
+.billing-filter-group { display: flex; align-items: center; gap: 10px; }
+.billing-input { padding: 6px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .85rem; font-family: inherit; color: var(--ink); background: var(--surface); }
+.billing-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.billing-chip { padding: 6px 12px; border-radius: var(--radius-sm); font-size: .8rem; font-weight: 600; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all .15s; font-family: inherit; }
+.billing-chip.active { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.billing-chip:hover:not(.active) { border-color: var(--muted); }
+
 </style>
 </head>
 <body>
@@ -1244,6 +1253,35 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <button class="billing-cycle-tab"         id="billingTabWeekly"  onclick="switchBillingTab('Weekly')">📆 Weekly</button>
           <button class="billing-cycle-tab"         id="billingTabMonthly" onclick="switchBillingTab('Monthly')">🗓️ Monthly</button>
         </div>
+        
+        <!-- Filters for cycles -->
+        <div id="billingFiltersWrap" style="margin-bottom:16px;">
+          <!-- Daily Filter -->
+          <div id="bf_Daily" class="billing-filter-group">
+            <input type="date" id="bf_daily_date" class="billing-input" onchange="loadBillingTab('Daily')">
+          </div>
+          <!-- Weekly Filter -->
+          <div id="bf_Weekly" class="billing-filter-group" style="display:none;">
+            <div class="billing-chips">
+              <button class="billing-chip active" onclick="setBillingWeek(1)">W1</button>
+              <button class="billing-chip" onclick="setBillingWeek(2)">W2</button>
+              <button class="billing-chip" onclick="setBillingWeek(3)">W3</button>
+              <button class="billing-chip" onclick="setBillingWeek(4)">W4</button>
+              <button class="billing-chip" onclick="setBillingWeek(5)">W5</button>
+              <button class="billing-chip" onclick="setBillingWeek(6)">W6</button>
+            </div>
+          </div>
+          <!-- Monthly Filter -->
+          <div id="bf_Monthly" class="billing-filter-group" style="display:none;">
+            <select id="bf_monthly_select" class="billing-input" onchange="loadBillingTab('Monthly')">
+              <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+              <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+              <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+              <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+            </select>
+          </div>
+        </div>
+
         <div id="billingPeriodLabel" style="font-size:.78rem;color:var(--muted);margin-bottom:14px;"></div>
         <div id="billingContent"><p class="billing-empty">Select a tab above to load billing data.</p></div>
       </div><!-- /pageBilling -->
@@ -1430,6 +1468,14 @@ function bootApp() {
 
   renderBfMasterTable();
   renderSabjiMasterTable();
+  initBillingFilters();
+}
+
+function initBillingFilters() {
+  const ist = getIST();
+  const dateStr = toISO(ist);
+  if ($('bf_daily_date')) $('bf_daily_date').value = dateStr;
+  if ($('bf_monthly_select')) $('bf_monthly_select').value = ist.getMonth();
 }
 
 // ════════════════════════════════════════════════════════
@@ -3691,24 +3737,41 @@ async function refreshApprovalCounts() {
 // ═══════════════════════════════════════════════════════
 
 let _currentBillingCycle = 'Daily';
+let _currentBillingWeek = 1;
 
 function switchBillingTab(cycle) {
   _currentBillingCycle = cycle;
   ['Daily','Weekly','Monthly'].forEach(c => {
     const el = document.getElementById(`billingTab${c}`);
     if (el) el.classList.toggle('active', c === cycle);
+    const filter = document.getElementById(`bf_${c}`);
+    if (filter) filter.style.display = (c === cycle) ? 'block' : 'none';
   });
   loadBillingTab(cycle);
+}
+
+function setBillingWeek(n) {
+  _currentBillingWeek = n;
+  document.querySelectorAll('.billing-chip').forEach((btn, idx) => {
+    btn.classList.toggle('active', (idx + 1) === n);
+  });
+  loadBillingTab('Weekly');
 }
 
 async function loadBillingTab(cycle) {
   const content = document.getElementById('billingContent');
   const label   = document.getElementById('billingPeriodLabel');
+  
+  let filterValue = '';
+  if (cycle === 'Daily') filterValue = $('bf_daily_date').value;
+  else if (cycle === 'Weekly') filterValue = _currentBillingWeek;
+  else if (cycle === 'Monthly') filterValue = $('bf_monthly_select').value;
+
   content.innerHTML = `<div style="text-align:center;padding:32px;"><div class="spinner"></div><p style="font-size:.78rem;color:#888;margin-top:8px;">Loading ${cycle} billing data…</p></div>`;
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ _action: 'getBillingData', pin: S.sessionPin, cycle })
+      body: JSON.stringify({ _action: 'getBillingData', pin: S.sessionPin, cycle, filterValue })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Unknown error');

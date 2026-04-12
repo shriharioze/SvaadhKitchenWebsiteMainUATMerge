@@ -3460,7 +3460,7 @@ function placeBulkOrders(body) {
 // SENIOR BILLING — On Account Orders
 // ═══════════════════════════════════════════════════════
 
-function getBillingData(cycle) {
+function getBillingData(cycle, filterValue) {
   const ss = getSpreadsheet();
   const ordersWs  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const custWs    = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
@@ -3482,27 +3482,40 @@ function getBillingData(cycle) {
     };
   });
 
-  // Compute date range for requested cycle (IST)
+  // Compute date range based on cycle and filter (IST)
   const now = getISTDate();
-  const todayStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
-  let fromStr = todayStr;
-  let toStr   = todayStr;
+  const year = now.getFullYear();
+  let fromStr = '';
+  let toStr   = '';
 
-  if (cycle === 'Weekly') {
-    // Mon–Sun of current week
-    const dayOfWeek = now.getDay(); // 0=Sun
-    const diffToMon = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
-    const mon = new Date(now); mon.setDate(now.getDate() + diffToMon);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    fromStr = Utilities.formatDate(mon, 'Asia/Kolkata', 'yyyy-MM-dd');
-    toStr   = Utilities.formatDate(sun, 'Asia/Kolkata', 'yyyy-MM-dd');
+  if (cycle === 'Daily') {
+    fromStr = filterValue || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = fromStr;
   } else if (cycle === 'Monthly') {
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const first = new Date(y, m, 1);
-    const last  = new Date(y, m + 1, 0);
+    const mIdx = (filterValue !== undefined && filterValue !== '') ? parseInt(filterValue) : now.getMonth();
+    const first = new Date(year, mIdx, 1);
+    const last  = new Date(year, mIdx + 1, 0);
     fromStr = Utilities.formatDate(first, 'Asia/Kolkata', 'yyyy-MM-dd');
     toStr   = Utilities.formatDate(last, 'Asia/Kolkata', 'yyyy-MM-dd');
+  } else if (cycle === 'Weekly') {
+    const weekN = parseInt(filterValue) || 1;
+    // We define "Week N" as the N-th Monday-Sunday block that contains or follows the 1st of the month
+    const mIdx = now.getMonth();
+    let d = new Date(year, mIdx, 1);
+    // Adjust to the Monday of the week containing the 1st
+    while (d.getDay() !== 1) { d.setDate(d.getDate() - 1); }
+    
+    // Advance to the start of weekN
+    d.setDate(d.getDate() + (weekN - 1) * 7);
+    
+    const mon = new Date(d);
+    const sun = new Date(d); sun.setDate(d.getDate() + 6);
+    fromStr = Utilities.formatDate(mon, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = Utilities.formatDate(sun, 'Asia/Kolkata', 'yyyy-MM-dd');
+  } else {
+    // Fallback
+    fromStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    toStr   = fromStr;
   }
 
   // Filter On Account orders within cycle date range
