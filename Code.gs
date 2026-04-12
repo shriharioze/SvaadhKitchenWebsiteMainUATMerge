@@ -887,6 +887,20 @@ function submitOrder(body) {
     if (promoCount !== null && !isNaN(promoCount)) promoCount = Number(promoCount);
   }
 
+  // Pre-fetch masters once for ID -> Name resolution in sheet columns
+  const masterMap = {};
+  try {
+    const masters = getAdminData();
+    (masters.breakfastMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
+    (masters.sabjiMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
+  } catch(e) { console.error("Master fetch failed in submitOrder", e); }
+
+  const resolveName = (k) => {
+    if (ITEM_COL_MAP[k]) return ITEM_COL_MAP[k].replace(/_/g, ' ');
+    if (masterMap[k]) return masterMap[k];
+    return k.replace(/_/g, ' ');
+  };
+
   for (const order of orders) {
     const orderDate = order.date;
     const existingDateInfo = (existingDayTotals[orderDate] || {});
@@ -1063,7 +1077,7 @@ function submitOrder(body) {
         let bfSlot = 1;
         items.forEach(({colKey, qty}) => {
           if (bfSlot > 4) return;
-          const displayName = colKey === "B_CURD" ? "Curd" : colKey;
+          const displayName = (colKey === "B_CURD") ? "Curd" : resolveName(colKey);
           set(`BF_Item_${bfSlot}`, displayName);
           set(`BF_Qty_${bfSlot}`,  qty);
           bfSlot++;
@@ -1075,7 +1089,9 @@ function submitOrder(body) {
         // Lunch/Dinner: map colKeys to named columns
         items.forEach(({colKey, qty}) => {
           const canonical = ITEM_COL_MAP[colKey] || colKey;
-          set(canonical, qty);
+          // If canonical is still an ID, try masterMap
+          const finalCol = (masterMap[canonical]) ? masterMap[canonical] : canonical;
+          set(finalCol, qty);
         });
       }
 
