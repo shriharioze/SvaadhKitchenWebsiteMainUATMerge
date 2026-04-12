@@ -5058,8 +5058,8 @@
       }
       const name = (S.profile?.name || 'Customer').trim();
       const phone = (S.phone || '').trim();
-      const note = `Wallet Recharge: ${name} ${phone}`.slice(0, 50);
-      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=${encodeURIComponent(note)}`;
+      const tr = "SKW" + Date.now();
+      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}&mc=5812`;
 
       $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
       $('walletUpiLink').href = upiData;
@@ -5115,7 +5115,8 @@
 
       $("upiNoteDisplay").textContent = note;
 
-      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR`;
+      const tr = "SKO" + Date.now();
+      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR&tr=${tr}&mc=5812`;
       $("qrcode").innerHTML = "";
       new QRCode($("qrcode"), { text: upiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
 
