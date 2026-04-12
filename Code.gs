@@ -3527,7 +3527,7 @@ function toggleFeeExempt(phone, status) {
     row[hIdx["Phone"] - 1] = phone;
     row[hIdx["Fee_Exempt"] - 1] = val;
     row[hIdx["Created_At"] - 1] = getISTTimestamp();
-    row[hIdx["Customer_Name"] - 1] = "VIP (Pre-registered)";
+    row[hIdx["Customer_Name"] - 1] = "";
     custWs.appendRow(row);
   }
   return { success: true, status: val };

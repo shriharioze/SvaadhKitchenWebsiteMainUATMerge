@@ -4804,11 +4804,18 @@
         // Discount & Fee Waiver logic based on combined day total
         const isDayFree = (combinedDayTotal >= FREE_THRESHOLD) || S.profile.feeExempt;
 
+        // Suppress "Add more for Free Delivery" banner if all ordered meals are Self Pickup
+        const allPickup = ["Breakfast","Lunch","Dinner"].every(m => {
+          const mObj = dayOrders[m];
+          if (!mObj || (mObj.subtotal || 0) <= 0) return true; // not ordered
+          return getMealAddr(m).area === "Self Pickup";
+        });
+
         if (S.profile.feeExempt) {
           html += `<div style="font-size:0.75rem;color:#d35400;background:#fff3e0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-weight:700;border:1.5px dashed #ffb74d;display:flex;align-items:center;gap:8px;">
             <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
           </div>`;
-        } else if (!isDayFree) {
+        } else if (!isDayFree && !allPickup) {
           const diff = FREE_THRESHOLD - combinedDayTotal;
           html += `<div style="font-size:0.72rem;color:#27ae60;background:#e8f5e9;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #c8e6c9;">
             🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> on all meals!
