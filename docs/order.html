@@ -3538,7 +3538,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const UPI_VPA = "shriharioze07-1@okhdfcbank";
+    const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Garden"];   // populated dynamically from API
     const DELIVERY_CHARGE = 10;
@@ -5059,7 +5059,8 @@
       const name = (S.profile?.name || 'Customer').trim();
       const phone = (S.phone || '').trim();
       const tr = "SKW" + Date.now();
-      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt}&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}&mc=5812`;
+      // Added mode=02 and removed mc=5812 for better personal VPA stability
+      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}&mode=02`;
 
       $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
       $('walletUpiLink').href = upiData;
@@ -5116,7 +5117,8 @@
       $("upiNoteDisplay").textContent = note;
 
       const tr = "SKO" + Date.now();
-      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&tn=${encodeURIComponent(note)}&cu=INR&tr=${tr}&mc=5812`;
+      // Added mode=02 and removed mc=5812 for better personal VPA stability
+      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&tr=${tr}&mode=02`;
       $("qrcode").innerHTML = "";
       new QRCode($("qrcode"), { text: upiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
 
