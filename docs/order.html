@@ -4900,7 +4900,7 @@
           }
 
           // 5. Market Surcharge
-          const surcharge = Math.ceil(sub / 10);
+          const surcharge = Math.floor(sub / 20);
           if (surcharge > 0) {
             mealExtras.push({ icon: "📈", name: "Market Surcharge", val: surcharge, desc: "A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market." });
             totalInflationSurcharge += surcharge;
