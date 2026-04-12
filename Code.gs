@@ -2562,7 +2562,8 @@ function getCustomerList() {
       cMap[p] = {
         count: Number(c.Review_Promo_Count) || 0,
         claimed: (String(c.Review_Reward_Claimed) === "TRUE" || String(c.Review_Reward_Claimed) === "true"),
-        standardOrder: c.Standard_Order || ""
+        standardOrder: c.Standard_Order || "",
+        feeExempt: (String(c.Fee_Exempt).trim() === "Yes") ? "Yes" : "No"
       };
     }
   });
@@ -2590,7 +2591,8 @@ function getCustomerList() {
         lastDate:"",
         promoCount: cMap[normP] ? cMap[normP].count : 0,
         reviewClaimed: cMap[normP] ? cMap[normP].claimed : false,
-        standardOrder: cMap[normP] ? cMap[normP].standardOrder : ""
+        standardOrder: cMap[normP] ? cMap[normP].standardOrder : "",
+        Fee_Exempt: cMap[normP] ? cMap[normP].feeExempt : "No"
       };
     }
     map[phone].orderCount++;
@@ -2680,9 +2682,11 @@ function getCustomerHistory(phone) {
   var custMatch = cRows.find(function(c){ return _normalizePhone(c.Phone) === normP; });
   if (custMatch) standardOrder = custMatch.Standard_Order || "";
 
+  var feeExempt = custMatch ? (String(custMatch.Fee_Exempt).trim() === "Yes" ? "Yes" : "No") : "No";
+
   return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
           orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length,
-          standardOrder: standardOrder};
+          standardOrder: standardOrder, Fee_Exempt: feeExempt};
 }
 
 // ── GET DATE PAYMENTS ─────────────────────────────────────────────────────────

@@ -4140,7 +4140,8 @@
           delivery_point: profileData.delivery_point || "door",
           maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
           meal_addresses: profileData.meal_addresses || "",
-          promoCount: pc
+          promoCount: pc,
+          feeExempt: (profileData.feeExempt === true || String(profileData.feeExempt) === "true")
         };
         S.walletBalance = wb;
         S.walletMode = true; // Everyone is on wallet/prepaid mode now
