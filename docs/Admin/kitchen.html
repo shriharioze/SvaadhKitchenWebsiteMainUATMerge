@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Svaadh Kitchen</title>
   <link rel="icon" type="image/x-icon" href="../images/svaadh-kitchen-hero.PNG">
-<link rel="shortcut icon" href="../images/svaadh-kitchen-hero.PNG">
+  <link rel="shortcut icon" href="../images/svaadh-kitchen-hero.PNG">
   <link rel="stylesheet" href="../modals-svaadh.css">
   <script src="../modals-svaadh.js"></script>
   <style>
@@ -290,7 +290,8 @@
       opacity: 0.5;
     }
 
-    .item-card.zero .inum, .item-card.zero .iname {
+    .item-card.zero .inum,
+    .item-card.zero .iname {
       color: #bdc3c7;
     }
 
@@ -414,10 +415,11 @@
       padding: 5px;
       margin: 10px 20px 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
       gap: 5px;
       border: 1px solid #eee;
     }
+
     .ktab {
       flex: 1;
       padding: 10px;
@@ -428,6 +430,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .ktab.active {
       background: #d35400;
       color: #fff;
@@ -444,6 +447,7 @@
       border-radius: 12px;
       border: 1px solid #eee;
     }
+
     .pack-count {
       background: #d35400;
       color: #fff;
@@ -454,12 +458,14 @@
       text-align: center;
       font-size: 1.1rem;
     }
+
     .pack-desc {
       flex: 1;
       font-size: 0.95rem;
       font-weight: 600;
       color: #2c3e50;
     }
+
     .pack-type {
       font-size: 0.75rem;
       color: #95a5a6;
@@ -475,6 +481,7 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
     .roti-matrix-wrap {
       background: #fff;
       border: 1px solid #eee;
@@ -483,23 +490,28 @@
       margin-bottom: 25px;
       -webkit-overflow-scrolling: touch;
     }
+
     .roti-table {
       width: 100%;
       border-collapse: collapse;
       min-width: 500px;
     }
-    .roti-table th, .roti-table td {
+
+    .roti-table th,
+    .roti-table td {
       padding: 12px 6px;
       text-align: center;
       border: 1px solid #ddd;
       font-size: 0.9rem;
     }
+
     .roti-table th {
       background: #f8f9fa;
       color: #333;
       font-weight: 800;
       font-size: 0.75rem;
     }
+
     .roti-table td.roti-name {
       text-align: left;
       padding-left: 15px;
@@ -507,35 +519,64 @@
       position: sticky;
       left: 0;
       z-index: 2;
-      border-right: 2px solid rgba(0,0,0,0.1);
-      box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+      border-right: 2px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     }
 
     /* Full Row Colors */
-    .roti-row-Chapati { background: #d35400 !important; color: #fff !important; }
-    .roti-row-Without_Oil_Chapati { background: #2980b9 !important; color: #fff !important; }
-    .roti-row-Phulka { background: #8e44ad !important; color: #fff !important; }
-    .roti-row-Ghee_Phulka { background: #c0392b !important; color: #fff !important; }
-    .roti-row-Jowar_Bhakri { background: #27ae60 !important; color: #fff !important; }
-    .roti-row-Bajra_Bhakri { background: #16a085 !important; color: #fff !important; }
+    .roti-row-Chapati {
+      background: #d35400 !important;
+      color: #fff !important;
+    }
+
+    .roti-row-Without_Oil_Chapati {
+      background: #2980b9 !important;
+      color: #fff !important;
+    }
+
+    .roti-row-Phulka {
+      background: #8e44ad !important;
+      color: #fff !important;
+    }
+
+    .roti-row-Ghee_Phulka {
+      background: #c0392b !important;
+      color: #fff !important;
+    }
+
+    .roti-row-Jowar_Bhakri {
+      background: #27ae60 !important;
+      color: #fff !important;
+    }
+
+    .roti-row-Bajra_Bhakri {
+      background: #16a085 !important;
+      color: #fff !important;
+    }
 
     .roti-val {
       font-weight: 900;
       font-size: 1.2rem;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
+
     .roti-empty {
-      color: rgba(255,255,255,0.3);
+      color: rgba(255, 255, 255, 0.3);
       font-weight: 400;
     }
-    .roti-name.val-Chapati, .roti-name.val-Without_Oil_Chapati, .roti-name.val-Phulka,
-    .roti-name.val-Ghee_Phulka, .roti-name.val-Jowar_Bhakri, .roti-name.val-Bajra_Bhakri {
-       color: #fff !important;
+
+    .roti-name.val-Chapati,
+    .roti-name.val-Without_Oil_Chapati,
+    .roti-name.val-Phulka,
+    .roti-name.val-Ghee_Phulka,
+    .roti-name.val-Jowar_Bhakri,
+    .roti-name.val-Bajra_Bhakri {
+      color: #fff !important;
     }
 
     .logout-btn {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       color: #fff;
       padding: 6px 10px;
       border-radius: 8px;
@@ -546,7 +587,10 @@
       gap: 5px;
       transition: all 0.2s;
     }
-    .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
 
     /* ── MOBILE OPTIMIZATION ── */
     @media (max-width: 650px) {
@@ -596,6 +640,7 @@
       border-radius: 12px;
       border: 1px solid #ddd;
     }
+
     .m-tab {
       flex: 1;
       text-align: center;
@@ -609,14 +654,17 @@
       background: transparent;
       border: none;
     }
+
     .m-tab.active {
       background: #fff;
       color: #d35400;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     }
+
     .m-tab.auto {
       position: relative;
     }
+
     .m-tab.auto::after {
       content: "Auto";
       position: absolute;
@@ -633,15 +681,19 @@
     /* ── MENU MODAL (Adapted from order.html) ── */
     .wm-overlay {
       position: fixed;
-      inset:0;
-      background: rgba(0,0,0,0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
       z-index: 30000;
       display: none;
       align-items: center;
       justify-content: center;
       backdrop-filter: blur(2px);
     }
-    .wm-overlay.active { display: flex; }
+
+    .wm-overlay.active {
+      display: flex;
+    }
+
     .wm-sheet {
       background: #fff;
       width: 90%;
@@ -651,8 +703,9 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
     }
+
     .wm-header {
       padding: 15px 20px;
       border-bottom: 1px solid #eee;
@@ -660,18 +713,31 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .wm-body {
       padding: 20px;
       overflow-y: auto;
     }
+
     .wm-day {
       padding: 12px;
       background: #fdf8f2;
       border-radius: 12px;
       margin-bottom: 12px;
     }
-    .wm-day h4 { font-size: 0.9rem; color: #d35400; margin-bottom: 6px; }
-    .wm-day p { font-size: 0.85rem; color: #333; line-height: 1.4; }
+
+    .wm-day h4 {
+      font-size: 0.9rem;
+      color: #d35400;
+      margin-bottom: 6px;
+    }
+
+    .wm-day p {
+      font-size: 0.85rem;
+      color: #333;
+      line-height: 1.4;
+    }
+
     .close-modal {
       background: #eee;
       border: none;
@@ -681,6 +747,7 @@
       cursor: pointer;
       font-weight: bold;
     }
+
     .menu-btn-mr {
       background: #fff;
       color: #d35400;
@@ -691,7 +758,7 @@
       cursor: pointer;
       font-size: 0.8rem;
     }
-    </style>
+  </style>
 
 </head>
 
@@ -735,20 +802,20 @@
         <button class="refresh-btn" onclick="loadKitchen()" title="Refresh">↻</button>
       </div>
     </div>
-      <div class="ktabs" style="display:flex; justify-content:center; align-items:center;">
-        <div style="display:flex; gap:0;">
-          <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
-          <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
-          <div class="ktab" id="tab_Labels" onclick="switchKTab('Labels')">Labels</div>
-        </div>
+    <div class="ktabs" style="display:flex; justify-content:center; align-items:center;">
+      <div style="display:flex; gap:0;">
+        <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
+        <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
+        <div class="ktab" id="tab_Labels" onclick="switchKTab('Labels')">Labels</div>
       </div>
-      
-      <!-- MEAL TOGGLE -->
-      <div class="meal-tabs" id="mealTabs">
-        <button class="m-tab" id="mtab_Breakfast" onclick="setManualMeal('Breakfast')">🌅 Breakfast</button>
-        <button class="m-tab" id="mtab_Lunch" onclick="setManualMeal('Lunch')">☀️ Lunch</button>
-        <button class="m-tab" id="mtab_Dinner" onclick="setManualMeal('Dinner')">🌙 Dinner</button>
-      </div>
+    </div>
+
+    <!-- MEAL TOGGLE -->
+    <div class="meal-tabs" id="mealTabs">
+      <button class="m-tab" id="mtab_Breakfast" onclick="setManualMeal('Breakfast')">🌅 Breakfast</button>
+      <button class="m-tab" id="mtab_Lunch" onclick="setManualMeal('Lunch')">☀️ Lunch</button>
+      <button class="m-tab" id="mtab_Dinner" onclick="setManualMeal('Dinner')">🌙 Dinner</button>
+    </div>
     <div class="kbody" id="kbody">
       <div class="no-orders">Select a date and tap Load</div>
     </div>
@@ -771,9 +838,9 @@
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
     let K = { pin: "", sessionPin: "" };
-     let _lastData = null;
-     let _currentTab = "Summary";
-     let _manualMeal = null; // null means auto-detect based on time
+    let _lastData = null;
+    let _currentTab = "Summary";
+    let _manualMeal = null; // null means auto-detect based on time
 
     // ── RATE LIMITING ──
     let attempts = 0;
@@ -823,7 +890,7 @@
         pinAuthInProgress = true;
         sLoading(true, "Logging you in...");
       }
-      
+
       const pinToVerify = autoPin || K.pin;
       try {
         const today = todayIST();
@@ -842,7 +909,7 @@
         attempts = 0;
         K.sessionPin = pinToVerify;
         localStorage.setItem('sk-kitchen-pin', pinToVerify);
-        
+
         K.pin = ""; renderDots();
         document.getElementById("loginWrap").style.display = "none";
         document.getElementById("shell").style.display = "block";
@@ -865,7 +932,7 @@
       const ist = new Date(now.getTime() + 5.5 * 3600000);
       const h = ist.getUTCHours();
       if (h >= 21) {
-          ist.setUTCDate(ist.getUTCDate() + 1);
+        ist.setUTCDate(ist.getUTCDate() + 1);
       }
       return ist.toISOString().slice(0, 10);
     }
@@ -920,12 +987,12 @@
 
     const SABJI_WEIGHTS = {
       // Dry Sabjis
-      "Cauliflower": { "फ्लॉवर": 100, "टोमॅटो": 20, "मटार": 10 },
-      "Cabbage": 75, "Bhindi": 100,
+      "Cauliflower": { "फ्लॉवर": 85, "टोमॅटो": 20, "मटार": 10 },
+      "Cabbage": 72, "Bhindi": 100,
       "French Beans": 80, "French_Beans": 80,
-      "Beans": 80, "Matki": 55, "Mataki": 55, "Matki (Dry)": 55, "Matki masala": 55,
-      "Shimla Besan": { "ढोबळी": 70, "बेसन": 25 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20, "शेव": 15 },
-      "Dal kanda": { "डाळ": 33, "कांदा/टोमॅटो": 20 },
+      "Beans": 80, "Matki masala": 55,
+      "Shimla Besan": { "ढोबळी": 75 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20 },
+      "Dal kanda": { "डाळ": 33, "कांदा": 10, "टोमॅटो": 10 },
       "Green Moong (Dry)": 30, "Green Moong": 30,
 
       // Curry Sabjis
@@ -986,7 +1053,7 @@
       if (timeInMins >= 525 && timeInMins < 840) return "Lunch";
       // Dinner: 14:00 (840) to 21:00 (1260)
       if (timeInMins >= 840 && timeInMins < 1260) return "Dinner";
-      
+
       // Post-21:00 (prep for tomorrow's Breakfast)
       return "Breakfast";
     }
@@ -1029,7 +1096,7 @@
       };
 
       const currentMeal = _manualMeal || getCurrentMeal();
-      
+
       // Update meal tab UI
       document.querySelectorAll(".m-tab").forEach(el => {
         el.classList.remove("active", "auto");
@@ -1040,21 +1107,21 @@
       });
 
       if (!meals[currentMeal]) {
-          document.getElementById("kbody").innerHTML = `<div class="no-orders" style="padding:40px; text-align:center;">🎉 No ${currentMeal} orders found for this date.</div>`;
-          return;
+        document.getElementById("kbody").innerHTML = `<div class="no-orders" style="padding:40px; text-align:center;">🎉 No ${currentMeal} orders found for this date.</div>`;
+        return;
       }
-      
+
       const current_m = meals[currentMeal];
       const { icon, label } = MEAL_META[currentMeal];
 
       if (currentMeal === "Breakfast") {
-          const bfEntries = Object.entries(current_m.items || {}).filter(([, q]) => q > 0);
-          const bfHtml = bfEntries.length
-            ? bfEntries.map(([name, qty]) =>
-              `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
-            ).join("")
-            : `<div style="color:#555;font-size:0.82rem;padding:8px;">माहिती नाही</div>`;
-          html += `<div class="meal-block">
+        const bfEntries = Object.entries(current_m.items || {}).filter(([, q]) => q > 0);
+        const bfHtml = bfEntries.length
+          ? bfEntries.map(([name, qty]) =>
+            `<div class="item-card"><span class="iname">${mr(name)}</span><span class="inum">${qty}</span></div>`
+          ).join("")
+          : `<div style="color:#555;font-size:0.82rem;padding:8px;">माहिती नाही</div>`;
+        html += `<div class="meal-block">
         <div class="meal-head">
           <span class="meal-icon">${icon}</span>
           <span class="meal-title">${label}</span>
@@ -1248,10 +1315,10 @@
 
       const currentMeal = _manualMeal || getCurrentMeal();
       const activeOrders = _lastData.orders.filter(o => {
-          if (o.Packed) return false;
-          return o.Meal_Type === currentMeal;
+        if (o.Packed) return false;
+        return o.Meal_Type === currentMeal;
       });
-      
+
       if (activeOrders.length === 0) {
         const msg = `🎉 No ${currentMeal} orders to pack!`;
         body.innerHTML = `<div class="no-orders" style="color:var(--green); font-weight:bold; padding:40px; text-align:center;">${msg}</div>`;
@@ -1260,7 +1327,7 @@
 
       const fmtDate = d => { const p = d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
       let html = `<div style="text-align:center;font-size:0.75rem;color:#666;margin-bottom:14px;">📦 Labeled Packing - ${fmtDate(_lastData.date)}</div>`;
-      
+
       html += '<div style="display:flex; flex-direction:column; gap:12px; padding:10px;">';
       html += activeOrders.map(o => {
         // Create a copy of MR and add common kitchen instructions
@@ -1285,10 +1352,10 @@
         // Localize Special Notes
         let noteMar = o.marathiNotes || o.Special_Notes_Kitchen || "";
         Object.keys(FULL_MR).forEach(key => {
-            const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (key.length > 5 && noteMar.toLowerCase().includes(key.toLowerCase())) {
-                noteMar = noteMar.replace(new RegExp(escapedKey, 'gi'), FULL_MR[key]);
-            }
+          const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          if (key.length > 5 && noteMar.toLowerCase().includes(key.toLowerCase())) {
+            noteMar = noteMar.replace(new RegExp(escapedKey, 'gi'), FULL_MR[key]);
+          }
         });
 
         return `
@@ -1311,9 +1378,10 @@
             <button onclick="markOrderPacked('${o.Submission_ID}')" style="background:#059669; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">पॅक झाल्यावर क्लिक करा</button>
           </div>
         </div>
-      `;}).join('');
+      `;
+      }).join('');
       html += '</div>';
-      
+
       body.innerHTML = html;
     }
 
@@ -1323,25 +1391,25 @@
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                _action: "markOrderPacked",
-                pin: K.sessionPin,
-                submissionId: id
-            })
+          method: "POST",
+          body: JSON.stringify({
+            _action: "markOrderPacked",
+            pin: K.sessionPin,
+            submissionId: id
+          })
         });
         const data = await res.json();
         if (data.success) {
-            if (block) block.remove();
-            // Update cache
-            const order = _lastData.orders.find(o => o.Submission_ID === id);
-            if (order) order.Packed = true;
-            
-            if (_lastData.orders.filter(o => !o.Packed).length === 0) {
-                renderLabelsTab();
-            }
+          if (block) block.remove();
+          // Update cache
+          const order = _lastData.orders.find(o => o.Submission_ID === id);
+          if (order) order.Packed = true;
+
+          if (_lastData.orders.filter(o => !o.Packed).length === 0) {
+            renderLabelsTab();
+          }
         } else {
-            throw new Error(data.error);
+          throw new Error(data.error);
         }
       } catch (e) {
         if (block) block.style.opacity = '1';
@@ -1353,7 +1421,7 @@
     // ── AUTO-SET DATE ON LOAD ──
     (function () {
       document.getElementById("datePicker").value = todayIST();
-      
+
       // Auto-Login
       const saved = localStorage.getItem('sk-kitchen-pin');
       if (saved && saved.length === 4) {
@@ -1414,7 +1482,7 @@
       const overlay = document.getElementById("wmOverlay");
       const body = document.getElementById("wmBody");
       overlay.classList.add("active");
-      
+
       if (_lastData && _lastData.menu) {
         renderMenuModal(_lastData.menu);
       } else {
@@ -1432,11 +1500,11 @@
     function renderMenuModal(menu) {
       const body = document.getElementById("wmBody");
       const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const dayMR = { 
-        "Monday": "सोमवार (Monday)", "Tuesday": "मंगळवार (Tuesday)", "Wednesday": "बुधवार (Wednesday)", 
-        "Thursday": "गुरुवार (Thursday)", "Friday": "शुक्रवार (Friday)", "Saturday": "शनिवार (Saturday)" 
+      const dayMR = {
+        "Monday": "सोमवार (Monday)", "Tuesday": "मंगळवार (Tuesday)", "Wednesday": "बुधवार (Wednesday)",
+        "Thursday": "गुरुवार (Thursday)", "Friday": "शुक्रवार (Friday)", "Saturday": "शनिवार (Saturday)"
       };
-      
+
       let html = "";
       days.forEach(day => {
         const m = menu[day] || { b: "None", l_dry: "None", l_curry: "None", d_dry: "None", d_curry: "None" };
