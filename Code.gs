@@ -124,14 +124,18 @@ const BUSINESS_CONTEXT = {
   name: "Svaadh Kitchen",
   type: "Cloud Kitchen",
   tagline: "Wholesome homemade vegetarian meals, straight from our kitchen to your plate.",
-  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals since August 2023 (over 2.5 years). We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We deliver to Bhosale Garden, Magarpatta, Amanora, DP Road, Triveni Nagar, and 10 other nearby areas. Customers can also opt for Self Pickup to waive all fees.",
+  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals since August 2023 (over 2.5 years). We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We deliver exclusively to 15 areas in Hadapsar: Bhosale Garden, Magarpatta, Amanora, DP Road, Triveni Nagar, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi (till Yash Honda), Pune-Solapur Road (till Gadital), Vihar Chowk, Mandai, and Gadital. Delivery is FREE for Bhosale Garden and Triveni Nagar. All other areas have a nominal ₹10 fee if the order is below ₹100. Self Pickup is always free.",
   vision: "To make homemade vegetarian meals easily accessible and affordable for everyone, while maintaining taste, quality, and consistency.",
-  locations_served: ["Bhosale Garden", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar", "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", "Vaiduwadi", "Pune-Solapur Road", "Vihar Chowk", "Mandai", "Gadital", "Self Pickup"],
+  locations_served: [
+    "Bhosale Garden", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar", 
+    "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", 
+    "Vaiduwadi (Till Yash Honda Only)", "Pune-Solapur Road (Till Gadital Only)", "Vihar Chowk", "Mandai (Hadapsar Mandai)", "Gadital"
+  ],
   order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:30 AM", dinner: "before 5:00 PM", closed_on: "Sunday" },
   delivery: {
-    free_area: "Bhosale Garden, Triveni Nagar, Self Pickup",
-    charge: "₹10 per meal for others if subtotal is below ₹100. Free for Bhosale Garden, Triveni Nagar and Self Pickup always.",
-    per_meal_address: "Each meal can go to a different address — breakfast at home, lunch at office, dinner back home."
+    free_areas: ["Bhosale Garden", "Triveni Nagar", "Self Pickup"],
+    charge: "₹10 per meal for other listed areas if subtotal is below ₹100. Free for Bhosale Garden, Triveni Nagar and Self Pickup always.",
+    outside_policy: "We only deliver in the listed Hadapsar areas. We DO NOT deliver to areas like Kothrud, Baner, Viman Nagar, etc."
   },
   menu: {
     note: "Today's sabji (dry and curry) changes daily — shown in the order form. Breakfast items also rotate daily.",
@@ -2350,10 +2354,50 @@ function handleChat(body) {
   const userMessage = String(body.message || "").trim();
   const history     = body.history || [];   // [{role:"user"|"model", text:"..."}]
   if (!userMessage) return {reply: "Please send a message."};
-  return {reply: callGemini(buildSystemPrompt(), history, userMessage)};
+
+  let extraMenu = "";
+  try {
+    // Basic date detection (e.g., "tomorrow", "15th", "15-04", "April 15")
+    const msgLower = userMessage.toLowerCase();
+    let targetDate = new Date();
+    let foundDate = false;
+
+    if (msgLower.includes("tomorrow")) {
+      targetDate.setDate(targetDate.getDate() + 1);
+      foundDate = true;
+    } else if (msgLower.includes("today")) {
+      foundDate = true;
+    } else {
+      // Look for day numbers (1st, 2nd, 3rd, 4th... 31st) or simple digits
+      const dayMatch = msgLower.match(/(\d{1,2})(st|nd|rd|th)?/);
+      if (dayMatch) {
+        const day = parseInt(dayMatch[1]);
+        if (day >= 1 && day <= 31) {
+          targetDate.setDate(day);
+          // If the detected day is in the past, assume next month
+          if (targetDate < new Date()) targetDate.setMonth(targetDate.getMonth() + 1);
+          foundDate = true;
+        }
+      }
+    }
+
+    if (foundDate) {
+      const dateStr = Utilities.formatDate(targetDate, "Asia/Kolkata", "yyyy-MM-dd");
+      const m = getMenu(dateStr);
+      const bf = (m.breakfast || []).map(function(x) { return x.name + " ₹" + x.price; }).join(", ");
+      extraMenu = "\nMenu for " + dateStr + " (" + Utilities.formatDate(targetDate, "Asia/Kolkata", "EEEE") + "): "
+        + (Utilities.formatDate(targetDate, "Asia/Kolkata", "EEEE") === "Sunday" ? "CLOSED (Sunday)" :
+          "BF: " + (bf || "TBD") + " | L: " + (m.lunch_dry || "") + (m.lunch_curry ? " & " + m.lunch_curry : "") +
+          " | D: " + (m.dinner_dry || "") + (m.dinner_curry ? " & " + m.dinner_curry : ""));
+    }
+  } catch (e) {
+    console.error("Date menu fetch failed:", e);
+  }
+
+  return {reply: callGemini(buildSystemPrompt(extraMenu), history, userMessage)};
 }
 
-function buildSystemPrompt() {
+function buildSystemPrompt(extraMenu) {
   const B = BUSINESS_CONTEXT;
   const breads = B.menu.breads.map(function(i){ return i.name+"₹"+i.price; }).join(", ");
   const sabji  = B.menu.sabji.map(function(i){ return i.name+"₹"+i.price; }).join(", ");
@@ -2361,8 +2405,6 @@ function buildSystemPrompt() {
 
   var todayLine = "";
   try {
-    // Use new Date() directly — Apps Script respects the project timezone (Asia/Kolkata)
-    // DO NOT manually add 5.5 hours — Utilities.formatDate already applies the timezone
     var now = new Date();
     var todayStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
     var dayName = Utilities.formatDate(now, "Asia/Kolkata", "EEEE");
@@ -2376,21 +2418,26 @@ function buildSystemPrompt() {
       +((!m.lunch_dry&&!m.dinner_dry)?" (sabji TBD—send to WA group)":"")+"\n");
   } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
-  return "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
+  const prompt = "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
     +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
-    +" Areas: Bhosale Garden/Triveni Nagar(free), others(₹10/meal if subtotal<₹100), Self Pickup available.\n"
-    + todayLine
-    +"MEAL MODEL: Make Your Own Meal (not a fixed thali). Customers pick items individually.\n"
+    +" AREAS: " + B.locations_served.join(", ") + ".\n"
+    +" DELIVERY POLICY: FREE for Bhosale Garden, Triveni Nagar, and Self Pickup. Other areas ₹10/meal if subtotal < ₹100. "
+    + B.delivery.outside_policy + "\n"
+    +" PRIVACY & SECURITY: DO NOT disclose user phone numbers, PINs, transaction IDs, UPI details, or specific refund info. If a user asks about their payment or refund, tell them to check their 'Svaadh Wallet' or 'View/Edit existing orders' dashboard, or message us on WhatsApp at " + B.contact.whatsapp + ".\n"
+    + todayLine + (extraMenu || "")
+    +"\nMEAL MODEL: Make Your Own Meal (not a fixed thali). Customers pick items individually.\n"
     +"Lunch/Dinner — Breads:"+breads+" | Sabji:"+sabji+" | Basics:"+basics+"\n"
     +"Breakfast: daily rotating ₹35–₹70. "+B.menu.breakfast_note+"\n"
     +"Self pickup also available (no delivery charge).\n"
-    +"Uses Pure Ghee & Groundnut refined oil.\n"
+    +"Uses Pure Ghee & Groundnut refined oil. Pure Veg kitchen.\n"
     +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
     +"Payment: Wallet (Prepaid) or UPI("+B.payment.upi_id+"), prepaid cycle (requires wallet balance).\n"
     +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
     +"WhatsApp: "+B.contact.whatsapp+" | WA group: "+B.contact.whatsapp_group+"\n"
-    +"Reply in customer's language(English/Hindi/Marathi). Be brief & warm."
-    +" For orders send to order URL. Don't invent info. Direct unknowns to WhatsApp.";
+    +"Reply in customer's language (English/Hindi/Marathi). Be brief & warm. Match the language they use."
+    +" For orders, always send to order URL. Don't invent info. Direct unknowns to WhatsApp.";
+  
+  return prompt;
 }
 
 function callGemini(systemPrompt, history, userMessage) {
