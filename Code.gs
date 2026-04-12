@@ -2252,16 +2252,16 @@ function getLabelOrders(date, meal) {
 // ── PACKAGING EXPENSES ────────────────────────────────────────
 // Edit unit costs below to match your actual supplier prices
 var PKG_UNIT_COSTS = {
-  "Breakfast Box":           3.00,
+  "Breakfast Box":           2.36,
   "Delivery Bag":            1.00,
-  "Label / Sticker":         0.25,
+  "Label / Sticker":         0.2,
   "Bread Packet":            0.70,
-  "Sabji Container (Mini)":  2.00,
-  "Sabji Container (Full)":  2.50,
-  "Dal Container":           2.00,
-  "Rice Container":          1.50,
-  "Salad Container":         1.00,
-  "Curd Container":          1.00
+  "Sabji Container (Mini)":  2.70,
+  "Sabji Container (Full)":  4.0,
+  "Dal Container":           4.00,
+  "Rice Container":          2.00,
+  "Salad Container":         0.700,
+  "Curd Container":          1.70
 };
 
 function getPackagingExpenses(date) {
