@@ -168,6 +168,7 @@
     cutoff_passed_meal: "⏰ Order cutoff has passed for {meal} today.",
     all_cutoffs_passed_title: "No more meals available today",
     bf_menu_not_set: "Today's breakfast menu hasn't been set yet. Check our WhatsApp for updates!",
+    kitchen_closed: "Kitchen is closed on Sundays! 🚪 Enjoy your weekend.",
     special_instructions_label: "Special instructions (optional)",
     special_instructions_ph: "Jain, less spicy, no onion…",
     label_notes_kitchen: "Special instructions for kitchen staff (optional)",

@@ -4924,10 +4924,10 @@
               : `🚚 Delivery & Extra Charges (${mealExtras.length} items)`;
             html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
           <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
-            <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon">▶</span></span>
+            <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon open">▶</span></span>
             <span style="font-weight:600;color:${netTotal <= 0 ? '#27ae60' : '#7f8c8d'};">₹${netTotal}</span>
           </div>
-          <div id="${exId}" class="extra-breakdown">
+          <div id="${exId}" class="extra-breakdown open">
             ${mealExtras.map(ex => `
               <div class="bill-line indent delivery-line" style="margin-top:5px;font-size:0.75rem;color:${ex.credit ? '#27ae60' : '#95a5a6'};">
                 <span style="display:flex;align-items:center;gap:5px;">
