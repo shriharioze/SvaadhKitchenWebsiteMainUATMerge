@@ -81,7 +81,7 @@ const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verifie
 const CUSTOMERS_HEADERS = [
   "Phone","Customer_Name","Area","Wing","Flat","Floor","Society","Full_Address",
   "Maps_Link","Landmark","Payment_Freq","Created_At","Ledger_Sheet_ID","PIN","Meal_Addresses",
-  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order", "Billing_Cycle", "Fee_Exempt", "Delivery_Point"
+  "Review_Promo_Count", "Review_Reward_Claimed", "Standard_Order", "Billing_Cycle", "Fee_Exempt", "Delivery_Point", "On_Account"
 ];
 
 const ORDERS_HEADERS = [
@@ -207,6 +207,10 @@ function doGet(e) {
       return jsonRes({success:true});
     }
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
+    if (action === "markOnAccount") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markOnAccount(p.phone, p.cycle, p.status));
+    }
     
     // Auth Tiers (STRICTLY ISOLATED)
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
@@ -396,6 +400,10 @@ function doPost(e) {
     if (action === "markOrdersStatus") {
       if (!isAdmin) return jsonRes({error:"Invalid PIN"});
       return jsonRes(markOrdersStatus(body));
+    }
+    if (action === "markOnAccount") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markOnAccount(body.phone, body.cycle, body.status));
     }
     if (action === "getBillingData") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -598,7 +606,9 @@ function getCustomer(phone) {
       return isNaN(num) ? v : num;
     })(r.Review_Promo_Count),
     wallet_balance:     _calculateWalletBalance(phone),
-    feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true)
+    feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true),
+    onAccount:          r.On_Account || "No",
+    billingCycle:       r.Billing_Cycle || "Daily"
   };
 }
 
@@ -633,7 +643,9 @@ function verifyLogin(phone, pin) {
         return isNaN(num) ? v : num;
       })(r.Review_Promo_Count),
       wallet_balance:     _calculateWalletBalance(phone),
-      feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true)
+      feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true),
+      onAccount:          r.On_Account || "No",
+      billingCycle:       r.Billing_Cycle || "Daily"
     }
   };
 }
@@ -962,7 +974,7 @@ function submitOrder(body) {
       const combinedMealSub = sub + prevMealSub;
       
       // Delivery & Fee logic (matches frontend)
-      const isPickup  = (mealArea === "Self Pickup");
+      const isPickup  = (mealArea.toLowerCase().includes("pickup"));
       const isDayFree = (combinedDayTotal >= FREE_THR);
       const isFreeArea = freeAreaNames.includes(mealArea);
 
@@ -1018,9 +1030,9 @@ function submitOrder(body) {
       const flat    = isPickup ? "" : (meal.flat    || profile.flat    || "");
       const floor   = isPickup ? "" : (meal.floor   || profile.floor   || "");
       const society = isPickup ? "" : (meal.society || profile.society || "");
-      const area    = mealArea;
+      const area    = isPickup ? "Self Pickup" : mealArea;
 
-      const fullAddr = (area === "Self Pickup")
+      const fullAddr = isPickup
                         ? "Self Pickup (A 104, Shree laxmi vihar society)"
                         : [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area].filter(Boolean).join(", ");
       const mapsLink = isPickup ? "" : (meal.maps || profile.maps || "");
@@ -1080,6 +1092,8 @@ function submitOrder(body) {
         } else {
           pStat = "Pending"; // Wallet failed, fallback to pending
         }
+      } else if (payMethod === "On Account") {
+        pStat = "On Account";
       }
       
       set("Payment_Method",      payMethod);
@@ -1190,6 +1204,8 @@ function _upsertCustomer(ss, profile) {
     if (profile.pin) update("PIN", profile.pin);
     if (profile.meal_addresses) update("Meal_Addresses", profile.meal_addresses);
     if (profile.standardOrder !== undefined) update("Standard_Order", profile.standardOrder);
+    if (profile.onAccount !== undefined) update("On_Account", profile.onAccount);
+    if (profile.billingCycle !== undefined) update("Billing_Cycle", profile.billingCycle);
     
     SpreadsheetApp.flush(); // Ensure writes are committed
   } else {
@@ -1213,6 +1229,8 @@ function _upsertCustomer(ss, profile) {
         case "PIN":             val = profile.pin || ""; break;
         case "Meal_Addresses":  val = profile.meal_addresses || ""; break;
         case "Standard_Order":  val = profile.standardOrder || ""; break;
+        case "Billing_Cycle":   val = profile.billingCycle || "Daily"; break;
+        case "On_Account":      val = profile.onAccount || "No"; break;
         case "Review_Promo_Count": val = ""; break;
         default:                val = "";
       }
@@ -1225,6 +1243,21 @@ function _upsertCustomer(ss, profile) {
     const nextRow = Math.max(2, ws.getLastRow() + 1);
     ws.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
   }
+}
+
+/**
+ * ADMIN: Toggle On Account status for a customer
+ */
+function markOnAccount(phone, cycle, status) {
+  const ss = getSpreadsheet();
+  const phoneStr = _normalizePhone(phone);
+  const profile = {
+    phone: phoneStr,
+    onAccount: status,
+    billingCycle: cycle
+  };
+  _upsertCustomer(ss, profile);
+  return { success: true, phone: phoneStr, status: status, cycle: cycle };
 }
 
 // ── GET CUSTOMER ORDERS ──────────────────────────────────────
@@ -1331,7 +1364,16 @@ function getCustomerOrders(phone) {
       };
     });
 
-  return {orders: upcoming, past_orders: past, wallet_balance: _calculateWalletBalance(phone)};
+  const onAccountBalance = allFiltered
+    .filter(r => String(r.Payment_Status || "").toLowerCase() === "on account")
+    .reduce((sum, r) => sum + (Number(r.Net_Total) || 0), 0);
+
+  return {
+    orders: upcoming,
+    past_orders: past,
+    wallet_balance: _calculateWalletBalance(phone),
+    on_account_balance: onAccountBalance
+  };
 }
 
 function _buildSummary(r) {
@@ -2102,7 +2144,7 @@ function getDriverOrders(date) {
     if (d !== date) return;
     if (String(r.Payment_Status) === "Cancelled") return;
     var area = String(r.Area || "").trim();
-    if (area.toLowerCase() === "pickup") return;
+    if (area.toLowerCase().includes("pickup")) return;
     var meal = String(r.Meal_Type || "");
     if (!meals[meal]) return;
     var sid = String(r.Submission_ID || "");
@@ -2651,7 +2693,9 @@ function getCustomerList() {
         count: Number(c.Review_Promo_Count) || 0,
         claimed: (String(c.Review_Reward_Claimed) === "TRUE" || String(c.Review_Reward_Claimed) === "true"),
         standardOrder: c.Standard_Order || "",
-        feeExempt: (String(c.Fee_Exempt).trim() === "Yes") ? "Yes" : "No"
+        feeExempt: (String(c.Fee_Exempt).trim() === "Yes") ? "Yes" : "No",
+        onAccount: (String(c.On_Account).trim() === "Yes") ? "Yes" : "No",
+        billingCycle: c.Billing_Cycle || "Daily"
       };
     }
   });
@@ -2680,7 +2724,9 @@ function getCustomerList() {
         promoCount: cMap[normP] ? cMap[normP].count : 0,
         reviewClaimed: cMap[normP] ? cMap[normP].claimed : false,
         standardOrder: cMap[normP] ? cMap[normP].standardOrder : "",
-        Fee_Exempt: cMap[normP] ? cMap[normP].feeExempt : "No"
+        Fee_Exempt:    cMap[normP] ? cMap[normP].feeExempt : "No",
+        onAccount:     cMap[normP] ? cMap[normP].onAccount : "No",
+        billingCycle:  cMap[normP] ? cMap[normP].billingCycle : "Daily"
       };
     }
     map[phone].orderCount++;
@@ -2714,7 +2760,9 @@ function getCustomerList() {
       promoCount: 0,
       reviewClaimed: false,
       standardOrder: "",
-      Fee_Exempt: "Yes"
+      Fee_Exempt: "Yes",
+      onAccount: String(c.On_Account).trim() === "Yes" ? "Yes" : "No",
+      billingCycle: c.Billing_Cycle || "Daily"
     };
   });
 
@@ -2797,10 +2845,12 @@ function getCustomerHistory(phone) {
   if (custMatch) standardOrder = custMatch.Standard_Order || "";
 
   var feeExempt = custMatch ? (String(custMatch.Fee_Exempt).trim() === "Yes" ? "Yes" : "No") : "No";
+  var onAccount = custMatch ? (String(custMatch.On_Account).trim() === "Yes" ? "Yes" : "No") : "No";
+  var billingCycle = custMatch ? (custMatch.Billing_Cycle || "Daily") : "Daily";
 
   return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
           orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length,
-          standardOrder: standardOrder, Fee_Exempt: feeExempt};
+          standardOrder: standardOrder, Fee_Exempt: feeExempt, On_Account: onAccount, Billing_Cycle: billingCycle};
 }
 
 // ── GET DATE PAYMENTS ─────────────────────────────────────────────────────────

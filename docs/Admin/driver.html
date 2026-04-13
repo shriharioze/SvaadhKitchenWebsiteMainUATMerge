@@ -397,7 +397,7 @@ function setSyncBadge() {
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll(data) {
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
-    const raw = ((data.meals || {})[meal] || []).filter(o => o.area && o.area.toLowerCase() !== "self pickup");
+    const raw = ((data.meals || {})[meal] || []).filter(o => o.area && !o.area.toLowerCase().includes("pickup"));
     // Sort: Undelivered first, then Delivered (sorted by delivery time)
     const orders = [
       ...raw.filter(o => !o.deliveredAt),

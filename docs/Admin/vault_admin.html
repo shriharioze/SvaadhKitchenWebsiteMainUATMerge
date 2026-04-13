@@ -352,6 +352,36 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   border: 1.5px solid var(--border); cursor: pointer; font-family: inherit;
   background: white; color: var(--muted); transition: all .15s;
 }
+
+.vip-chip {
+  background: #fff8e1;
+  color: #ffa000;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid #ffecb3;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.on-account-chip {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid #bbdefb;
+  vertical-align: middle;
+  margin-left: 4px;
+}
 .manage-tab.active { border-color: var(--red); background: var(--red-soft); color: var(--red); }
 
 .manage-table {
@@ -679,7 +709,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .approval-panel.active { display: block; }
 
 /* ═══════════════════════════════════════════════
-   SENIOR BILLING PAGE
+   ON ACCOUNT BILLING PAGE
 ═══════════════════════════════════════════════ */
 .billing-cycle-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 1px; }
 .billing-cycle-tab {
@@ -736,13 +766,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
 }
 .btn-set-fav:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
-.vip-chip { 
-  display: inline-block; padding: 2px 8px; font-size: 0.65rem; font-weight: 800; 
-  background: var(--gold-soft); color: var(--gold); border: 1.5px solid var(--gold-border); 
-  border-radius: 99px; margin-left: 6px; vertical-align: middle; text-transform: uppercase;
-}
+/* vip-chip already defined above */
 
-/* ════ SENIOR BILLING FILTERS ════ */
+/* ════ ON ACCOUNT BILLING FILTERS ════ */
 .billing-filter-group { display: flex; align-items: center; gap: 10px; }
 .billing-input { padding: 6px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .85rem; font-family: inherit; color: var(--ink); background: var(--surface); }
 .billing-chips { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -789,7 +815,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
-      <button class="topbar-btn" id="navBilling" onclick="switchPage('billing')">📋 Senior Billing</button>
+      <button class="topbar-btn" id="navBilling" onclick="switchPage('billing')">📋 On Account Billing</button>
     </div>
     <div class="topbar-right">
       <button onclick="logout()">Logout</button>
@@ -897,6 +923,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌅 Breakfast until</label>
                 <select id="cutoffBf" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
                   <option value="">Default (7:00 AM)</option>
+                  <option value="6.5">6:30 AM</option>
+                  <option value="6.75">6:45 AM</option>
                   <option value="7.5">7:30 AM</option>
                   <option value="8">8:00 AM</option>
                   <option value="8.5">8:30 AM</option>
@@ -907,6 +935,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">☀️ Lunch until</label>
                 <select id="cutoffL" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
                   <option value="">Default (9:30 AM)</option>
+                  <option value="9">9:00 AM</option>
+                  <option value="9.167">9:10 AM</option>
+                  <option value="9.25">9:15 AM</option>
+                  <option value="9.333">9:20 AM</option>
                   <option value="9.667">9:40 AM</option>
                   <option value="9.75">9:45 AM</option>
                   <option value="9.833">9:50 AM</option>
@@ -917,6 +949,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌙 Dinner until</label>
                 <select id="cutoffD" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
                   <option value="">Default (5:00 PM)</option>
+                  <option value="16.5">4:30 PM</option>
+                  <option value="16.667">4:40 PM</option>
+                  <option value="16.75">4:45 PM</option>
+                  <option value="16.833">4:50 PM</option>
                   <option value="17.167">5:10 PM</option>
                   <option value="17.25">5:15 PM</option>
                   <option value="17.333">5:20 PM</option>
@@ -1162,6 +1198,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="filterCustomers()">
           <button class="btn-primary" onclick="loadCustomers()">↺ Refresh</button>
           <button class="btn-primary" style="background:#8e44ad; border-color:#8e44ad;" onclick="whitelistNewVIP()">🌟 Whitelist VIP Number</button>
+          <button class="btn-primary" style="background:#1e5fa8; border-color:#1e5fa8;" onclick="whitelistOnAccount()">💳 Manage On Account</button>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
           <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Payment:</span>
@@ -1243,10 +1280,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <div id="pagePayments" style="display:none;"></div>
       <div id="pageRefunds" style="display:none;"></div>
 
-      <!-- ════ PAGE: SENIOR BILLING ════ -->
+      <!-- ════ PAGE: ON ACCOUNT BILLING ════ -->
       <div class="page" id="pageBilling">
         <div class="page-header">
-          <div class="page-title">📋 Senior Billing <small>On Account orders — Daily, Weekly &amp; Monthly</small></div>
+          <div class="page-title">📋 On Account Billing <small>Deferred payments — Daily, Weekly &amp; Monthly</small></div>
         </div>
         <div class="billing-cycle-nav">
           <button class="billing-cycle-tab active" id="billingTabDaily"   onclick="switchBillingTab('Daily')">📅 Daily</button>
@@ -3314,7 +3351,11 @@ function renderCustomerGrid(list) {
   if (!list.length) { el.innerHTML=`<div class="no-orders-msg">No customers found.</div>`; return; }
   el.innerHTML = `<div class="cust-grid">${list.map(c=>`
     <div class="cust-card" onclick="loadCustomerDetail('${c.phone}')">
-      <div class="cust-card-name">${c.name} ${c.Fee_Exempt === 'Yes' ? '<span class="vip-chip">🌟 VIP</span>' : ''}</div>
+      <div class="cust-card-name">
+        ${c.name} 
+        ${c.Fee_Exempt === 'Yes' ? '<span class="vip-chip">🌟 VIP</span>' : ''}
+        ${c.onAccount === 'Yes' ? '<span class="on-account-chip">💳 On Account</span>' : ''}
+      </div>
       <div class="cust-card-phone">📱 ${c.phone} &nbsp;·&nbsp; <span class="area-chip" style="font-size:.68rem;">${c.area}</span></div>
       <div class="cust-card-meta">
         <div class="cust-card-stat"><strong>${c.orderCount}</strong> orders</div>
@@ -3396,6 +3437,69 @@ async function whitelistNewVIP() {
     sLoading(false);
   }
 }
+async function toggleOnAccount(phone, status) {
+  let cycle = "Daily";
+  if (status) {
+    const choice = prompt("Select billing cycle:\n1: Daily\n2: Weekly\n3: Monthly", "1");
+    if (!choice) return;
+    if (choice === "2") cycle = "Weekly";
+    else if (choice === "3") cycle = "Monthly";
+    else cycle = "Daily";
+  }
+
+  const msg = status 
+    ? `Authorize this user for 'On Account' payments? They will be billed ${cycle}.`
+    : "Remove 'On Account' authorization?";
+    
+  if (!(await showUIConfirm(msg, status ? "Authorize On Account" : "Revoke Authorization", "💳"))) return;
+  
+  sLoading(true, "Updating status...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "markOnAccount", pin: S.sessionPin, phone, status: status ? "Yes" : "No", cycle })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast(status ? `💳 User authorized (${cycle})` : "Authorization revoked");
+    loadCustomerDetail(phone);
+    loadCustomers(true);
+  } catch(e) {
+    sAlert("Error: " + e.message);
+  } finally {
+    sLoading(false);
+  }
+}
+
+async function whitelistOnAccount() {
+  const phone = prompt("Enter the phone number to authorize for 'On Account':");
+  if (!phone || phone.length < 10) return;
+  
+  const choice = prompt("Select billing cycle:\n1: Daily\n2: Weekly\n3: Monthly", "1");
+  if (!choice) return;
+  let cycle = "Daily";
+  if (choice === "2") cycle = "Weekly";
+  else if (choice === "3") cycle = "Monthly";
+
+  if (!(await showUIConfirm(`Authorize ${phone} for 'On Account' payments (${cycle})? Even if they aren't registered yet, it will apply when they first login.`, "Manage On Account", "💳"))) return;
+  
+  sLoading(true, "Updating records...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "markOnAccount", pin: S.sessionPin, phone, status: "Yes", cycle })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast("💳 Number authorized successfully!");
+    loadCustomers(true);
+  } catch(e) {
+    sAlert("Error: " + e.message);
+  } finally {
+    sLoading(false);
+  }
+}
+
 function renderCustomerDetail(data) {
   const fmtD = d => d ? (p=>p[2]+"/"+p[1]+"/"+p[0])(d.split("-")) : "—";
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
@@ -3613,6 +3717,19 @@ function renderCustomerDetail(data) {
        <button class="btn-set-fav" style="padding:8px 16px; font-weight:700; border-color:${data.Fee_Exempt === 'Yes' ? 'var(--red-border)' : 'var(--gold)'}; color:${data.Fee_Exempt === 'Yes' ? 'var(--red)' : 'var(--gold)'};" 
          onclick="toggleVIP('${data.phone}', ${data.Fee_Exempt !== 'Yes'})">
          ${data.Fee_Exempt === 'Yes' ? 'Remove VIP Status' : '🌟 Make VIP (Fee Exempt)'}
+       </button>
+    </div>
+    
+    <div style="background:#eef4fd; padding:12px 16px; border-radius:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; border:1px solid #90caf9;">
+       <div>
+         <div style="font-size:.65rem; color:#5c6bc0; font-weight:700; text-transform:uppercase; margin-bottom:4px;">On Account Authorization</div>
+         <div style="font-size:.9rem; font-weight:700;">
+           ${data.On_Account === 'Yes' ? `<span style="color:#0d47a1;">💳 Authorized (${data.Billing_Cycle || 'Daily'})</span>` : '<span style="color:var(--muted);">Unauthorized</span>'}
+         </div>
+       </div>
+       <button class="btn-set-fav" style="padding:8px 16px; font-weight:700; border-color:${data.On_Account === 'Yes' ? 'var(--red-border)' : '#1e5fa8'}; color:${data.On_Account === 'Yes' ? 'var(--red)' : '#1e5fa8'};" 
+         onclick="toggleOnAccount('${data.phone}', ${data.On_Account !== 'Yes'})">
+         ${data.On_Account === 'Yes' ? 'Remove On Account' : '💳 Authorize On Account'}
        </button>
     </div>
     

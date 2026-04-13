@@ -3375,6 +3375,52 @@
         </div>
       </div>
 
+      <!-- ON ACCOUNT CARD (Unified Flow) -->
+      <div class="card" id="onAccountCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
+        <div class="wallet-confirm-card" style="background: linear-gradient(135deg, #1565c0, #134e91);">
+          <div class="wc-label">Total amount</div>
+          <div class="wc-amount" id="onAccountDeductAmount">₹0</div>
+          <div class="wc-balance" id="onAccountCycle" style="background:rgba(255,255,255,0.15); border:none;"> Authorized: On Account (<span id="onAccountCycleDisplay">Daily</span>)</div>
+        </div>
+        <div class="card" style="margin-top:-10px; border-top-left-radius:0; border-top-right-radius:0;">
+          <div style="background:#e3f2fd; border:1px solid #90caf9; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#0d47a1; line-height:1.6;">
+            💡 You can pay now via UPI <b>OR</b> settle later at the end of your billing cycle.
+          </div>
+
+          <div class="upi-section" style="padding:0; box-shadow:none; border:none; background:none;">
+            <p class="text-sm" style="font-size:0.75rem; color:#666; margin-bottom:10px;">👇 Use QR below ONLY if paying via UPI right now:</p>
+            <div id="qrcodeOnAccount" style="margin:0 auto;"></div>
+            <div class="upi-amount" id="upiAmountDisplayOnAccount" style="font-size:1.1rem; margin-top:8px;">₹0</div>
+            
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; margin:10px 0; font-size:0.71rem; color:#4a5568; text-align:left;">
+              <span data-i18n-html="payment_note_label">📝 <strong>Note:</strong></span> <span id="upiNoteDisplayOnAccount" style="color:#1e40af; font-weight:600;"></span>
+            </div>
+
+            <a id="upiDeepLinkOnAccount" href="#" class="btn btn-primary" style="text-decoration:none; margin:0; font-size:0.85rem; padding:8px 12px; height:auto; background:#1e40af; border-color:#1e40af;">👆 Tap to Pay via UPI App</a>
+            
+            <div style="margin-top:18px; padding:12px; background:#fff; border:1px dashed #cbd5e0; border-radius:10px;">
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin-bottom:0; text-align:left;">
+                <input type="checkbox" id="onAccountConfirmCheck" style="margin-top:3px; width:auto; accent-color:#1e40af;">
+                <div style="display:flex; flex-direction:column;">
+                  <span style="font-size:0.82rem; font-weight:700; color:#1a202c;">✅ I have paid via UPI now</span>
+                  <span style="font-size:0.7rem; color:#718096;">(Order will be marked as UPI/Pending)</span>
+                </div>
+              </label>
+              
+              <div style="margin:8px 0; border-top:1px solid #edf2f7; padding-top:8px; font-size:0.65rem; color:#64748b; font-weight:700; text-align:center;">OR</div>
+              
+              <div style="font-size:0.78rem; font-weight:600; color:#1e3a8a; line-height:1.4; display:flex; align-items:center; justify-content:center; gap:6px;">
+                 <span>📦 Settle later as <b>On Account</b></span>
+              </div>
+            </div>
+
+            <div style="text-align:center; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+               <a href="javascript:togglePaymentMode('UPI')" style="font-size:0.72rem; color:#7f8c8d; text-decoration:underline;">I am not On Account, let me choose another method</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card" id="successCard" style="display:none;">
         <div class="success-screen">
           <div class="big-icon">🎉</div>
@@ -3796,7 +3842,15 @@
 
     function checkPaymentConfirmation() {
       if (S.step !== 4) return;
-      const isChecked = S.paymentChoice === "Wallet" ? $("walletConfirmCheck")?.checked : $("paidConfirm")?.checked;
+      let isChecked = false;
+      if (S.paymentChoice === "Wallet") {
+        isChecked = $("walletConfirmCheck")?.checked;
+      } else if (S.paymentChoice === "OnAccount") {
+        // For On Account, the checkbox is optional (Step 4 & 5)
+        isChecked = true; 
+      } else {
+        isChecked = $("paidConfirm")?.checked;
+      }
       const btn = $("btnNext");
       if (!btn) return;
       if (!isChecked) {
@@ -4148,7 +4202,9 @@
           maps: profileData.maps || "", landmark: profileData.landmark || "", payment_preference: profileData.payment_preference || "Daily Payment",
           meal_addresses: profileData.meal_addresses || "",
           promoCount: pc,
-          feeExempt: (profileData.feeExempt === true || String(profileData.feeExempt) === "true")
+          feeExempt: (profileData.feeExempt === true || String(profileData.feeExempt) === "true"),
+          onAccount: profileData.onAccount || "No",
+          billingCycle: profileData.billingCycle || "Daily"
         };
         S.walletBalance = wb;
         S.walletMode = true; // Everyone is on wallet/prepaid mode now
@@ -4411,7 +4467,7 @@
           if (dp && !dp.value) dp.value = p.delivery_point || "door";
           if (m && !m.value) m.value = p.maps || "";
           if (lm && !lm.value) lm.value = p.landmark || "";
-          if (a) togglePickupUI(pfx, a.value);
+          if (a) togglePickupUI(pfx, a.value || "");
         });
       } else {
         togglePickupUI("single", $("areaSelect").value);
@@ -4977,43 +5033,67 @@
         `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
 
       const wb = Number(S.walletBalance) || 0;
+      const isOnAccount = (S.profile.onAccount === "Yes");
+      
+      // Hide all payment cards by default
       $("walletConfirmCard").style.display = "none";
+      $("onAccountCard").style.display = "none";
       $("paymentCard").style.display = "none";
+      
+      // Reset confirmations
+      if ($("walletConfirmCheck")) $("walletConfirmCheck").checked = false;
+      if ($("onAccountConfirmCheck")) $("onAccountConfirmCheck").checked = false;
+      if ($("paidConfirm")) $("paidConfirm").checked = false;
 
-      if (wb >= grandTotal && grandTotal > 0 && !S.tempUpiMode) {
-        // SUFFICIENT WALLET BALANCE
-        $("walletConfirmCard").style.display = "block";
-        $("walletDeductAmount").textContent = `₹${grandTotal}`;
-        $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet recharges are verified manually by Admin and can take up to 24 hours. Until then, you can easily pay for today\\'s order directly via UPI!',7000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
-        $("walletConfirmLabelAmt").textContent = grandTotal;
-        // Set text for the override link
-        const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
-        if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
-
-        $("walletConfirmCheck").checked = false;
-        S.paymentChoice = "Wallet";
+      // Determine default payment choice
+      if (!S.tempUpiMode) {
+        if (isOnAccount) {
+          S.paymentChoice = "OnAccount";
+          $("onAccountCard").style.display = "block";
+          $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
+          $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
+          // Update the switch link if it exists
+          const upiLink = $("onAccountCard").querySelector("a[href*='togglePaymentMode']");
+          if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+        } else if (wb >= grandTotal && grandTotal > 0) {
+          S.paymentChoice = "Wallet";
+          $("walletConfirmCard").style.display = "block";
+          $("walletDeductAmount").textContent = `₹${grandTotal}`;
+          $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet recharges are verified manually by Admin and can take up to 24 hours. Until then, you can easily pay for today\\'s order directly via UPI!',7000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
+          $("walletConfirmLabelAmt").textContent = grandTotal;
+          const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
+          if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+        } else {
+          S.paymentChoice = "UPI";
+          $("paymentCard").style.display = "block";
+        }
       } else {
-        // INSUFFICIENT WALLET OR MANUAL OVERRIDE
-        $("paymentCard").style.display = "block";
         S.paymentChoice = "UPI";
+        $("paymentCard").style.display = "block";
+      }
 
-        // Show switch back link if balance is actually sufficient but we are in override mode
+      if (S.paymentChoice === "OnAccount") {
+        setupUPI(grandTotal, true);
+      }
+
+      if (S.paymentChoice === "UPI") {
+        // Show switch back links if applicable
         if (wb >= grandTotal && grandTotal > 0) {
           const sw = $("walletSwitchBackWrap");
           if (sw) {
             sw.style.display = "block";
             const balSpan = $("switchBackWalletBal");
             if (balSpan) balSpan.textContent = wb;
+            // Also need to handle On Account switch back if I had one, but UPI is the fallback usually
           }
         }
-
+        
         // Add context if they have SOME wallet balance
         const warnBox = $("paymentCard").querySelector(".mr-note");
         if (wb > 0 && warnBox) {
           const prompt = `<div style="background:#fff3cd; border:1px solid #ffd5d0; padding:10px; border-radius:10px; margin-bottom:12px; font-size:0.75rem; color:#856404;">
          💡 Your wallet only has ₹${wb}. Please pay full ₹${grandTotal} via UPI or <a href="javascript:openWalletRecharge()" style="color:#c0392b; font-weight:700;">Recharge Wallet</a>.
        </div>`;
-          // Avoid duplication
           if (!warnBox.parentNode.querySelector(".wallet-shortfall")) {
             const div = document.createElement("div");
             div.className = "wallet-shortfall";
@@ -5030,8 +5110,13 @@
     function togglePaymentMode(mode) {
       if (mode === "UPI") {
         S.tempUpiMode = true;
-      } else {
+        S.paymentChoice = "UPI";
+      } else if (mode === "Wallet") {
         S.tempUpiMode = false;
+        S.paymentChoice = "Wallet";
+      } else if (mode === "OnAccount") {
+        S.tempUpiMode = false;
+        S.paymentChoice = "OnAccount";
       }
       buildBillScreen();
     }
@@ -5097,8 +5182,13 @@
       }
     }
 
-    function setupUPI(amount) {
-      $("upiAmountDisplay").textContent = `₹${amount}`;
+    function setupUPI(amount, isOnAccount = false) {
+      const qid = isOnAccount ? "qrcodeOnAccount" : "qrcode";
+      const amtId = isOnAccount ? "upiAmountDisplayOnAccount" : "upiAmountDisplay";
+      const noteId = isOnAccount ? "upiNoteDisplayOnAccount" : "upiNoteDisplay";
+      const linkId = isOnAccount ? "upiDeepLinkOnAccount" : "upiDeepLink";
+
+      $(amtId).textContent = `₹${amount}`;
 
       // Build smart UPI note: name + dates
       const name = (S.profile?.name || "Customer").trim();
@@ -5114,29 +5204,29 @@
       }
       if (note.length > 50) note = note.slice(0, 50);
 
-      $("upiNoteDisplay").textContent = note;
+      $(noteId).textContent = note;
 
       const tr = "SKO" + Date.now();
       // Added mode=02 and removed mc=5812 for better personal VPA stability
       const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&tr=${tr}&mode=02`;
-      $("qrcode").innerHTML = "";
-      new QRCode($("qrcode"), { text: upiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
+      
+      const qrEl = $(qid);
+      qrEl.innerHTML = "";
+      new QRCode(qrEl, { text: upiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
 
       // Make the QR code clickable
-      $("qrcode").style.cursor = "pointer";
-      $("qrcode").title = "Tap to pay via any UPI app";
-      $("qrcode").onclick = () => {
+      qrEl.style.cursor = "pointer";
+      qrEl.title = "Tap to pay via any UPI app";
+      qrEl.onclick = () => {
         if (isIOS()) {
-          // For iOS, the deep link usually works better when triggered via <a> tag, 
-          // but if deepLinkBtn.onclick has specific logic (like copy for iOS), we trigger that.
-          $("upiDeepLink").click();
+          $(linkId).click();
         } else {
           window.location.href = upiStr;
         }
       };
 
       // iOS: upi:// deep link doesn't work — show copy button instead
-      const deepLinkBtn = $("upiDeepLink");
+      const deepLinkBtn = $(linkId);
       if (isIOS()) {
         deepLinkBtn.removeAttribute("href");
         deepLinkBtn.textContent = t('upi_copy_label');
@@ -5171,10 +5261,17 @@
     // ═══════════════════════════════════════════════════════════
     async function placeOrder(settleAll = false) {
       const isWalletOrder = S.paymentChoice === "Wallet";
-      const confirmEl = isWalletOrder ? $("walletConfirmCheck") : $("paidConfirm");
+      const isOnAccountOrder = S.paymentChoice === "OnAccount";
+      
+      let confirmEl;
+      if (isWalletOrder) confirmEl = $("walletConfirmCheck");
+      else if (isOnAccountOrder) confirmEl = $("onAccountConfirmCheck");
+      else confirmEl = $("paidConfirm");
 
       if (confirmEl && !confirmEl.checked) {
-        toast(isWalletOrder ? "Please confirm wallet deduction" : t('toast_confirm_payment'));
+        if (isWalletOrder) toast("Please confirm wallet deduction");
+        else if (isOnAccountOrder) toast("Please confirm 'On Account' placement");
+        else toast(t('toast_confirm_payment'));
         return;
       }
 
@@ -5200,13 +5297,17 @@
           const items = Object.entries(mObj.items).filter(([, q]) => q > 0)
             .map(([colKey, qty]) => ({ colKey, qty }));
           const mAddr = getMealAddr(meal);
+          const isMealPickup = (mAddr.area && mAddr.area.toLowerCase().includes("pickup"));
           meals.push({
             type: meal, items,
             notesKitchen: mObj.notesKitchen || "",
             notesDelivery: mObj.notesDelivery || "",
             subtotal: mObj.subtotal,
-            address: buildAddr(mAddr.wing, mAddr.flat, mAddr.floor, mAddr.society, mAddr.area, mAddr.delivery_point),
-            area: mAddr.area, delivery_point: mAddr.delivery_point, maps: mAddr.maps || "", landmark: mAddr.landmark || ""
+            address: isMealPickup ? "Self Pickup (A 104, Shree laxmi vihar society)" : buildAddr(mAddr.wing, mAddr.flat, mAddr.floor, mAddr.society, mAddr.area, mAddr.delivery_point),
+            area: isMealPickup ? "Self Pickup" : mAddr.area, 
+            delivery_point: mAddr.delivery_point, 
+            maps: isMealPickup ? "" : (mAddr.maps || ""), 
+            landmark: isMealPickup ? "" : (mAddr.landmark || "")
           });
         });
         if (meals.length) orders.push({ date, meals });
@@ -5221,8 +5322,8 @@
           payment_preference: S.profile.payment_preference, isFirstTime: S.isFirstTime
         },
         orders,
-        payment_method: isWalletOrder ? "Wallet" : "UPI",
-        payment_status: isWalletOrder ? "Paid" : "Pending",
+        payment_method: (isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) ? "On Account" : (isWalletOrder ? "Wallet" : "UPI"),
+        payment_status: ((isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) || isWalletOrder) ? "Paid" : "Pending",
         settle_all: settleAll
       };
       const _pCtrl = new AbortController(); const _pTid = setTimeout(() => _pCtrl.abort(), 15000);
@@ -5391,11 +5492,13 @@
 
         // Render Wallet Dash wrap
         const wb = Number(data.wallet_balance) || 0;
+        const oab = Number(data.on_account_balance) || 0;
         S.profile = (S.profile || {});
         S.walletBalance = wb;
+        S.onAccountBalance = oab;
         if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
 
-        $("walletDashWrap").innerHTML = `
+        let walletDashHtml = `
       <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#e8f5e9,#ffffff);border:1px solid #c8e6c9;">
         <h2 style="color:#1b5e20;margin-bottom:12px;font-size:1.1rem;">💼 Prepaid Wallet</h2>
         <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -5420,6 +5523,26 @@
         </div>
       </div>
     `;
+
+        if (oab > 0 || (S.profile && S.profile.onAccount === "Yes")) {
+          walletDashHtml += `
+      <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#eef2f7,#ffffff);border:1px solid #d1d9e6;">
+        <h2 style="color:#2c3e50;margin-bottom:12px;font-size:1.1rem;">💳 On Account Dues</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.75rem;color:#666;">Total Outstanding Balance</div>
+            <div style="font-size:1.6rem;font-weight:700;color:#1e3a5f;">₹${oab}</div>
+          </div>
+          <div style="text-align:right;">
+             <div style="font-size:0.65rem;color:#7f8c8d;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Billing Cycle</div>
+             <div style="font-size:0.85rem;font-weight:600;color:#34495e;">${(S.profile && S.profile.billingCycle) || 'Daily'}</div>
+          </div>
+        </div>
+      </div>
+      `;
+        }
+
+        $("walletDashWrap").innerHTML = walletDashHtml;
 
         const today = todayISO();
         const istNow = getIST();
@@ -5508,9 +5631,16 @@
               (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
             const payMeth = String(firstRow?.payment_method || "").toLowerCase();
             const isWalletPay = payMeth.includes("wallet") || stat.toLowerCase().includes("wallet");
-            const payChip = isWalletPay ?
-              `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>` :
-              `<div style="display:inline-block;background:#f3e5f5;color:#6a1b9a;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1c4e9;margin-top:5px;vertical-align:middle;">📱 UPI</div>`;
+            const isOnAccount = payMeth.includes("account") || stat.toLowerCase() === "on account";
+            
+            let payChip = "";
+            if (isOnAccount) {
+              payChip = `<div style="display:inline-block;background:#eef2f7;color:#2c3e50;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1d9e6;margin-top:5px;vertical-align:middle;">💳 On Account</div>`;
+            } else if (isWalletPay) {
+              payChip = `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>`;
+            } else {
+              payChip = `<div style="display:inline-block;background:#f3e5f5;color:#6a1b9a;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1c4e9;margin-top:5px;vertical-align:middle;">📱 UPI</div>`;
+            }
 
             const cancelledHtml = isCancelled ? `
           <div style="margin-top:10px;background:#fff3e0;border:1px solid #ffe0b2;padding:10px 14px;border-radius:12px;font-size:0.75rem;color:#e65100;line-height:1.5;">
