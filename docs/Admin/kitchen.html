@@ -824,6 +824,7 @@
         <div class="ktab active" id="tab_Summary" onclick="switchKTab('Summary')">Summary</div>
         <div class="ktab" id="tab_Packing" onclick="switchKTab('Packing')">Packing</div>
         <div class="ktab" id="tab_Labels" onclick="switchKTab('Labels')">Labels</div>
+        <div class="ktab" id="tab_PrintLabel" onclick="switchKTab('PrintLabel')">Print Label</div>
       </div>
     </div>
 
@@ -1079,11 +1080,15 @@
 
     let _showAllMeals = false;
 
-    function switchKTab(t) {
-      _currentTab = t;
+    function switchKTab(tab) {
       document.querySelectorAll(".ktab").forEach(el => el.classList.remove("active"));
-      document.getElementById("tab_" + t).classList.add("active");
-      renderView();
+      document.getElementById("tab_" + tab).classList.add("active");
+      _currentTab = tab;
+
+      if (_currentTab === "Summary") renderKitchen(_lastData);
+      else if (_currentTab === "Packing") renderPacking(_lastData);
+      else if (_currentTab === "Labels") renderLabelsTab();
+      else if (_currentTab === "PrintLabel") renderPrintLabelsTab();
     }
 
     function renderView() {
@@ -1091,6 +1096,7 @@
       if (_currentTab === "Summary") renderKitchen(_lastData);
       else if (_currentTab === "Packing") renderPacking(_lastData);
       else if (_currentTab === "Labels") renderLabelsTab();
+      else if (_currentTab === "PrintLabel") renderPrintLabelsTab();
     }
 
     function renderKitchen(data) {
@@ -1624,13 +1630,234 @@
       document.getElementById("wmOverlay").classList.remove("active");
     }
 
+    // ── BULK PRINT LABELS (PORTED FROM ADMIN) ──
+    let _bulkLabelOrders = [];
+    const LABEL_EN = {
+      Chapati: "CH", Without_Oil_Chapati: "CH(O)", Phulka: "PH", Ghee_Phulka: "GPH",
+      Jowar_Bhakri: "J", Bajra_Bhakri: "B",
+      Dry_Sabji_Mini: "D100", Dry_Sabji_Full: "D250",
+      Curry_Sabji_Mini: "C100", Curry_Sabji_Full: "C250",
+      Dal: "DAL", Rice: "R", Salad: "S", Curd: "CU",
+      "Kanda Poha": "KP", "Ghee Upma": "GU", "Thalipeeth": "TP",
+      "Paneer Paratha": "PP", "Methi Thepla": "MT", "Sabudana Khichdi": "SK",
+    };
+    const LABEL_MR = {
+      Chapati: "च", Without_Oil_Chapati: "च बिनतेल", Phulka: "फु", Ghee_Phulka: "घी फु",
+      Jowar_Bhakri: "जो", Bajra_Bhakri: "बाज",
+      Dry_Sabji_Mini: "सु १००", Dry_Sabji_Full: "सु २५०",
+      Curry_Sabji_Mini: "र १००", Curry_Sabji_Full: "र २५०",
+      Dal: "दाल", Rice: "भात", Salad: "स", Curd: "दही",
+      "Kanda Poha": "कांपो", "Ghee Upma": "घीऊ", "Thalipeeth": "था",
+      "Paneer Paratha": "पनपरा", "Methi Thepla": "मेथी", "Sabudana Khichdi": "साबु",
+    };
+    const LD_COLS = ["Chapati", "Without_Oil_Chapati", "Phulka", "Ghee_Phulka", "Jowar_Bhakri", "Bajra_Bhakri",
+      "Dry_Sabji_Mini", "Dry_Sabji_Full", "Curry_Sabji_Mini", "Curry_Sabji_Full", "Dal", "Rice", "Salad", "Curd"];
 
+    function renderPrintLabelsTab() {
+      const today = document.getElementById("datePicker").value || new Date().toISOString().split('T')[0];
+      const selectedMeal = _manualMeal || getCurrentMeal();
+      
+      document.getElementById("kbody").innerHTML = `
+        <div class="label-controls">
+          <input type="date" id="bulkLabelDate" value="${today}">
+          <select id="bulkLabelMeal">
+            <option value="Breakfast" ${selectedMeal==='Breakfast'?'selected':''}>Breakfast</option>
+            <option value="Lunch" ${selectedMeal==='Lunch'?'selected':''}>Lunch</option>
+            <option value="Dinner" ${selectedMeal==='Dinner'?'selected':''}>Dinner</option>
+          </select>
+          <select id="bulkLabelLang">
+            <option value="Devanagari">Devanagari (Marathi)</option>
+            <option value="English">English</option>
+          </select>
+          <select id="bulkLabelMode">
+            <option value="Actual">Actual (Final)</option>
+            <option value="Test">Test (Top 5 Only)</option>
+          </select>
+          <button class="gen-btn" onclick="generateBulkLabels()">Generate Labels</button>
+        </div>
+        <div id="bulkLabelPreview" class="label-preview" style="display:none;"></div>
+        <button id="bulkDownloadBtn" class="download-btn" onclick="saveBulkLabelsToDrive()">💾 Save PDF to Drive</button>
+      `;
+    }
 
+    async function generateBulkLabels() {
+      const date = document.getElementById("bulkLabelDate").value;
+      const meal = document.getElementById("bulkLabelMeal").value;
+      const lang = document.getElementById("bulkLabelLang").value;
+      const preview = document.getElementById("bulkLabelPreview");
+      const btn = document.getElementById("bulkDownloadBtn");
 
+      if (!date) { sAlert("Select a date first"); return; }
 
+      preview.style.display = "block";
+      preview.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa;">Loading…</div>';
+      btn.style.display = "none";
 
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getLabelOrders&pin=${K.sessionPin}&date=${date}&meal=${meal}&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.error) { preview.innerHTML = `<p style="color:#c0392b;padding:20px;">Error: ${data.error}</p>`; return; }
 
+        _bulkLabelOrders = data.orders || [];
+        if (!_bulkLabelOrders.length) {
+          preview.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa;">No orders found for this date/meal</div>';
+          return;
+        }
+        
+        // Render Preview
+        const d = new Date(date + "T00:00:00");
+        const disp = d.getDate().toString().padStart(2, "0") + "/" + (d.getMonth() + 1).toString().padStart(2, "0") + "/" + d.getFullYear();
+        let html = `<h3>${_bulkLabelOrders.length} Labels · ${meal} · ${disp}</h3>`;
+        _bulkLabelOrders.forEach((o, i) => {
+          const summary = getBulkItemSummary(o, meal, lang);
+          html += `
+            <div class="label-card">
+              <div>
+                <div class="lname">Name: ${o.name}</div>
+                <div class="lsummary">${summary}</div>
+                ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
+              </div>
+              <div class="lnum">#${i + 1} · ${o.area}</div>
+            </div>`;
+        });
+        preview.innerHTML = html;
+        btn.style.display = "block";
+        btn.textContent = "💾 Save to Drive";
+      } catch (e) {
+        preview.innerHTML = `<p style="color:red;">Network Error: ${e.message}</p>`;
+      }
+    }
 
+    function getBulkItemSummary(order, meal, lang) {
+      const lbl = lang === "Devanagari" ? LABEL_MR : LABEL_EN;
+      const parts = [];
+      if (meal === "Breakfast") {
+        for (let n = 1; n <= 4; n++) {
+          const item = order["BF_Item_" + n], qty = Number(order["BF_Qty_" + n]) || 0;
+          if (item && qty > 0) {
+            const a = lbl[item] || lbl[item.replace(/ /g, "_")] || item;
+            parts.push(qty + "x" + a);
+          }
+        }
+        const curdQty = Number(order.Curd) || 0;
+        if (curdQty > 0) parts.push(curdQty + "x" + lbl.Curd);
+      } else {
+        LD_COLS.forEach(col => {
+          const q = Number(order[col]) || 0;
+          if (q > 0) parts.push(q + "x" + (lbl[col] || col));
+        });
+      }
+      return parts.join(", ");
+    }
+
+    async function saveBulkLabelsToDrive() {
+      const date = document.getElementById("bulkLabelDate").value;
+      const meal = document.getElementById("bulkLabelMeal").value;
+      const lang = document.getElementById("bulkLabelLang").value;
+      const btn = document.getElementById("bulkDownloadBtn");
+
+      if (!_bulkLabelOrders.length) { sAlert("Generate labels first"); return; }
+      btn.disabled = true;
+      btn.textContent = "⏳ Generating PDF… (+3px size active)";
+
+      if (!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const W = 50, LH = 25, GAP = 2.7, BLOCK = LH + GAP;
+        const isTest = document.getElementById('bulkLabelMode').value === "Test";
+        const currentLabels = isTest ? _bulkLabelOrders.slice(0, 5) : _bulkLabelOrders;
+        const n = currentLabels.length, totalH = n * BLOCK;
+        const isMR = lang === "Devanagari";
+        const TW = W - 4, LM = 2;
+
+        const doc = new jsPDF({ unit: "mm", format: [W, totalH || 1], orientation: (totalH >= W ? "portrait" : "landscape") });
+
+        if (!isMR) {
+          currentLabels.forEach((order, idx) => {
+            const BY = idx * BLOCK;
+            const summary = getBulkItemSummary(order, meal, lang);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(14); // 11 + 3
+            const nameL = doc.splitTextToSize("Name: " + order.name, TW);
+            let y = BY + 7; doc.text(nameL, LM, y);
+            y += nameL.length * 5 + 1.5;
+            doc.setFont("helvetica", "normal"); doc.setFontSize(12); // 9 + 3
+            const sumL = doc.splitTextToSize(summary, TW);
+            doc.text(sumL, LM, y);
+            y += sumL.length * 4 + 1;
+            if (order.notes) {
+              doc.setFontSize(11); doc.setTextColor(184, 96, 0); // 8 + 3
+              doc.text("* " + order.notes, LM, Math.min(y, BY + LH - 2));
+              doc.setTextColor(0, 0, 0);
+            }
+            if (idx < n - 1) { doc.setDrawColor(0); doc.line(1, BY + LH + GAP / 2, W - 1, BY + LH + GAP / 2); }
+          });
+        } else {
+          // Devanagari logic using Canvas
+          const SCALE = 10, PW = W * SCALE, PH = totalH * SCALE;
+          const mm = v => v * SCALE, maxW = mm(TW);
+          const cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
+          const ctx = cv.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, PW, PH);
+          const devFont = "'Hind','Noto Sans Devanagari',sans-serif";
+
+          const cvWrap = (text, bold, fSize, x, startY, lH) => {
+            ctx.font = (bold ? "bold " : "") + `${fSize}px ${devFont}`;
+            const words = text.split(" ");
+            let line = "", cy = startY;
+            for (const w of words) {
+              const test = line ? line + " " + w : w;
+              if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, cy); cy += lH; line = w; }
+              else line = test;
+            }
+            if (line) { ctx.fillText(line, x, cy); cy += lH; } return cy;
+          };
+
+          currentLabels.forEach((order, idx) => {
+            const BY = mm(idx * BLOCK);
+            const summary = getBulkItemSummary(order, meal, lang);
+            ctx.fillStyle = "#000";
+            let y = cvWrap("Name: " + order.name, true, mm(3.8), mm(LM), BY + mm(5.5), mm(4.8)); // slightly larger sizes
+            y += mm(1); ctx.fillStyle = "#222";
+            y = cvWrap(summary, false, mm(3.3), mm(LM), y, mm(4.2));
+            if (order.notes) {
+              ctx.fillStyle = "#b86000"; ctx.font = `${mm(2.8)}px ${devFont}`;
+              ctx.fillText("* " + order.notes, mm(LM), Math.min(y, BY + mm(LH - 2)));
+            }
+            if (idx < n - 1) {
+              const lineY = BY + mm(LH) + mm(GAP / 2);
+              ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.beginPath();
+              ctx.moveTo(mm(1), lineY); ctx.lineTo(PW - mm(1), lineY); ctx.stroke();
+            }
+          });
+          doc.addImage(cv.toDataURL("image/png"), "PNG", 0, 0, W, totalH);
+        }
+
+        btn.textContent = "⏳ Saving to Drive…";
+        const pdfB64 = doc.output("datauristring").split(",")[1];
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ _action: "saveLabels", pin: K.sessionPin, date, meal, lang, pdf: pdfB64 })
+        });
+        const data = await res.json();
+        if (data.url) {
+          btn.innerHTML = `<a href="${data.url}" target="_blank" style="color:#fff;text-decoration:none;">✅ Saved — Open (${data.name})</a>`;
+          btn.disabled = false;
+        } else {
+          sAlert("Error: " + (data.error || "Unknown error"));
+          btn.textContent = "💾 Save to Drive"; btn.disabled = false;
+        }
+      } catch (e) {
+        sAlert("PDF Error: " + e.message);
+        btn.textContent = "💾 Save to Drive"; btn.disabled = false;
+      }
+    }
   </script>
 </body>
 
