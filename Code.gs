@@ -2049,6 +2049,18 @@ function getKitchenSummary(date) {
       Customer_Name: String(r.Customer_Name || ""),
       Meal_Type: meal,
       summary: summaryParts.join(", "),
+      items: {
+        Chapati: Number(r.Chapati)||0, Without_Oil_Chapati: Number(r.Without_Oil_Chapati)||0,
+        Phulka: Number(r.Phulka)||0, Ghee_Phulka: Number(r.Ghee_Phulka)||0,
+        Jowar_Bhakri: Number(r.Jowar_Bhakri)||0, Bajra_Bhakri: Number(r.Bajra_Bhakri)||0,
+        Dry_Sabji_Mini: Number(r.Dry_Sabji_Mini)||0, Dry_Sabji_Full: Number(r.Dry_Sabji_Full)||0,
+        Curry_Sabji_Mini: Number(r.Curry_Sabji_Mini)||0, Curry_Sabji_Full: Number(r.Curry_Sabji_Full)||0,
+        Dal: Number(r.Dal)||0, Rice: Number(r.Rice)||0, Salad: Number(r.Salad)||0, Curd: Number(r.Curd)||0,
+        "Kanda Poha": Number(r["Kanda Poha"])||0, "Ghee Upma": Number(r["Ghee Upma"])||0,
+        "Thalipeeth": Number(r["Thalipeeth"])||0, "Palak Paratha": Number(r["Palak Paratha"])||0,
+        "Paneer Paratha": Number(r["Paneer Paratha"])||0, "Methi Thepla": Number(r["Methi Thepla"])||0,
+        "Sabudana Khichdi": Number(r["Sabudana Khichdi"])||0
+      },
       Special_Notes_Kitchen: String(r.Special_Notes_Kitchen || ""),
       Special_Notes_Delivery: String(r.Special_Notes_Delivery || ""),
       Delivery_Point: String(r.Delivery_Point || ""),

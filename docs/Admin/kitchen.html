@@ -554,6 +554,19 @@
       color: #fff !important;
     }
 
+    .roti-row-Rice {
+      background: #d35400 !important;
+      color: #fff !important;
+    }
+    .roti-row-Salad {
+      background: #27ae60 !important;
+      color: #fff !important;
+    }
+    .roti-name.val-Rice,
+    .roti-name.val-Salad {
+      color: #fff !important;
+    }
+
     .roti-val {
       font-weight: 900;
       font-size: 1.2rem;
@@ -1316,19 +1329,19 @@
                 </thead>
                 <tbody>
                   ${m.riceMatrix && Object.keys(m.riceMatrix).length > 0 ? `
-                    <tr>
-                      <td class="roti-name" style="background:#fffcf5; color:#d35400;">भात (Rice)</td>
+                    <tr class="roti-row-Rice">
+                      <td class="roti-name val-Rice">भा (Rice)</td>
                       ${[1, 2, 3, 4].map(n => {
               const count = m.riceMatrix[n] || 0;
-              return count > 0 ? `<td class="roti-val" style="color:#d35400; font-weight:900;">${count}</td>` : `<td class="roti-empty">·</td>`;
+              return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
             }).join("")}
                     </tr>` : ""}
                   ${m.saladMatrix && Object.keys(m.saladMatrix).length > 0 ? `
-                    <tr>
-                      <td class="roti-name" style="background:#f4fbf4; color:#27ae60;">कोशिंबीर (Salad)</td>
+                    <tr class="roti-row-Salad">
+                      <td class="roti-name val-Salad">को (Salad)</td>
                       ${[1, 2, 3, 4].map(n => {
               const count = m.saladMatrix[n] || 0;
-              return count > 0 ? `<td class="roti-val" style="color:#27ae60; font-weight:900;">${count}</td>` : `<td class="roti-empty">·</td>`;
+              return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
             }).join("")}
                     </tr>` : ""}
                 </tbody>
@@ -1409,14 +1422,23 @@
           "Don't ring bell": "बेल वाजवू नका"
         };
 
-        // Localize summary with robust regex escaping
-        let summaryMar = o.summary || "साधी थाळी";
-        Object.keys(FULL_MR).forEach(key => {
-          // Escape special regex characters like ( )
-          const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(escapedKey, 'gi');
-          summaryMar = summaryMar.replace(regex, FULL_MR[key]);
-        });
+        // ── NEW CONCISE SUMMARY LOGIC ──
+        let summaryMar = "";
+        const items = o.items || {};
+        const parts = [];
+        const lang = "Devanagari";
+        const lbl = LABEL_MR;
+
+        if (currentMeal === "Breakfast") {
+          ["Kanda Poha", "Ghee Upma", "Thalipeeth", "Palak Paratha", "Paneer Paratha", "Methi Thepla", "Sabudana Khichdi", "Curd"].forEach(k => {
+            if (items[k] > 0) parts.push(`${items[k]}x${lbl[k] || k}`);
+          });
+        } else {
+          LD_COLS.forEach(col => {
+            if (items[col] > 0) parts.push(`${items[col]}x${lbl[col] || col}`);
+          });
+        }
+        summaryMar = parts.join(", ") || o.summary || "साधी थाळी";
 
         // Localize Special Notes
         let noteMar = o.marathiNotes || o.Special_Notes_Kitchen || "";
