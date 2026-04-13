@@ -1341,12 +1341,14 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949
 function $(id) { return document.getElementById(id); }
 
 const GLOBAL_STAPLE_PRICES = {
-  // Breads
+  // Breads (Underscore version)
   "Chapati": 9, "Without_Oil_Chapati": 8, "Phulka": 7, "Ghee_Phulka": 10,
   "Jowar_Bhakri": 20, "Bajra_Bhakri": 20,
+  // Breads (Space version for UI compatibility)
+  "Without Oil Chapati": 8, "Ghee Phulka": 10, "Jowar Bhakri": 20, "Bajra Bhakri": 20,
   // Sabji (Standard)
-  "Dry_Sabji_Mini": 22, "Dry_Sabji_Full": 45,
-  "Curry_Sabji_Mini": 22, "Curry_Sabji_Full": 45,
+  "Dry_Sabji_Mini": 22, "Dry_Sabji_Full": 45, "Curry_Sabji_Mini": 22, "Curry_Sabji_Full": 45,
+  "Dry Sabji Mini": 22, "Dry Sabji Full": 45, "Curry Sabji Mini": 22, "Curry Sabji Full": 45,
   // Basics
   "Dal": 22, "Rice": 12, "Salad": 6, "Curd": 12,
   // Legacy colKey aliases
@@ -4469,9 +4471,27 @@ function _calcSubtotal(itemsObj) {
   Object.entries(itemsObj).forEach(([key,qty]) => {
     const n = Number(qty)||0;
     if (n <= 0) return;
-    if (GLOBAL_STAPLE_PRICES[key]) { sub += GLOBAL_STAPLE_PRICES[key] * n; return; }
+    
+    // Exact match in staples (with underscores or spaces)
+    if (GLOBAL_STAPLE_PRICES[key]) { 
+      sub += GLOBAL_STAPLE_PRICES[key] * n; 
+      return; 
+    }
+    
+    // Normalize key (spaces to underscores) and retry staple lookup
+    const normKey = key.replace(/\s+/g, '_');
+    if (GLOBAL_STAPLE_PRICES[normKey]) {
+      sub += GLOBAL_STAPLE_PRICES[normKey] * n;
+      return;
+    }
+
     const found = [...(S.bfMaster||[]),...(S.sabjiMaster||[])].find(x=>x.id===key||x.name===key);
-    if (found) sub += (Number(found.price)||22) * n;
+    if (found) {
+      sub += (Number(found.price)|| (key.includes('Full') ? 45 : 22)) * n;
+    } else {
+      // Final fallback for items not in master nor staples (e.g. unknown favorite keys)
+      sub += (key.includes('Full') ? 45 : 22) * n;
+    }
   });
   return sub;
 }
@@ -4514,8 +4534,13 @@ function sQuickEditModal(customerName, favName, initialItems, defaultMeal) {
           if (GLOBAL_STAPLE_PRICES[key]) {
             price = GLOBAL_STAPLE_PRICES[key];
           } else {
-            const found = [...(S.bfMaster||[]), ...(S.sabjiMaster||[])].find(x => x.id === key || x.name === key);
-            price = found ? (Number(found.price) || (key.includes('Full') ? 45 : 22)) : 22;
+            const normKey = key.replace(/\s+/g, '_');
+            if (GLOBAL_STAPLE_PRICES[normKey]) {
+              price = GLOBAL_STAPLE_PRICES[normKey];
+            } else {
+              const found = [...(S.bfMaster||[]), ...(S.sabjiMaster||[])].find(x => x.id === key || x.name === key);
+              price = found ? (Number(found.price) || (key.includes('Full') ? 45 : 22)) : (key.includes('Full') ? 45 : 22);
+            }
           }
 
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;">
@@ -4708,15 +4733,8 @@ async function placeBulkOrders(customer, selectedDates, templates) {
         try { itemsObj = JSON.parse(itemsObj); } catch(e) { itemsObj = {}; }
       }
 
-      // Calculate subtotal
-      let subtotal = 0;
-      Object.entries(itemsObj).forEach(([key, qty]) => {
-        if (GLOBAL_STAPLE_PRICES[key]) subtotal += GLOBAL_STAPLE_PRICES[key] * Number(qty);
-        else {
-          const item = [...S.bfMaster, ...S.sabjiMaster].find(x => x.id === key || x.name === key);
-          if (item) subtotal += (Number(item.price) || (key.includes("Full")?45:22)) * Number(qty);
-        }
-      });
+      // Calculate subtotal using shared robust logic
+      const subtotal = _calcSubtotal(itemsObj);
 
       const mType = fav.name.toLowerCase().includes("breakfast") ? "Breakfast" : (fav.name.toLowerCase().includes("lunch") ? "Lunch" : "Dinner");
 
