@@ -758,6 +758,20 @@
       cursor: pointer;
       font-size: 0.8rem;
     }
+    @media print {
+      body { background: white !important; }
+      .kheader, .ktabs, .meal-tabs, .last-updated, .logout-btn, #wakeStatus, button, .no-print { display: none !important; }
+      .kbody { padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+      .label-block { 
+        page-break-inside: avoid; 
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        margin-bottom: 20px !important;
+        border-left: 8px solid #c0392b !important;
+        display: block !important;
+        padding: 15px !important;
+      }
+    }
   </style>
 
 </head>
@@ -1280,6 +1294,38 @@
             </div>`;
           }
 
+          if ((m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || (m.saladMatrix && Object.keys(m.saladMatrix).length > 0)) {
+            html += `<div class="matrix-title">Rice & Salad Preparation Matrix</div>
+            <div class="roti-matrix-wrap">
+              <table class="roti-table">
+                <thead>
+                  <tr>
+                    <th class="roti-name">Item</th>
+                    ${[1, 2, 3, 4].map(n => `<th>${n}</th>`).join("")}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${m.riceMatrix && Object.keys(m.riceMatrix).length > 0 ? `
+                    <tr>
+                      <td class="roti-name" style="background:#fffcf5; color:#d35400;">भात (Rice)</td>
+                      ${[1, 2, 3, 4].map(n => {
+              const count = m.riceMatrix[n] || 0;
+              return count > 0 ? `<td class="roti-val" style="color:#d35400; font-weight:900;">${count}</td>` : `<td class="roti-empty">·</td>`;
+            }).join("")}
+                    </tr>` : ""}
+                  ${m.saladMatrix && Object.keys(m.saladMatrix).length > 0 ? `
+                    <tr>
+                      <td class="roti-name" style="background:#f4fbf4; color:#27ae60;">कोशिंबीर (Salad)</td>
+                      ${[1, 2, 3, 4].map(n => {
+              const count = m.saladMatrix[n] || 0;
+              return count > 0 ? `<td class="roti-val" style="color:#27ae60; font-weight:900;">${count}</td>` : `<td class="roti-empty">·</td>`;
+            }).join("")}
+                    </tr>` : ""}
+                </tbody>
+              </table>
+            </div>`;
+          }
+
           if (packs.length > 0) {
             const packMR = {
               "100ml plastic container for mini dry": "100ml प्लास्टिक कंटेनर (सुकी भाजी)",
@@ -1309,6 +1355,14 @@
 
       if (!html) html = `<div class="no-orders">No packing items needed for this date.</div>`;
       document.getElementById("kbody").innerHTML = html;
+    }
+
+    function getFittedFontSize(text, baseSize) {
+      const len = (text || "").length;
+      let size = baseSize + 3; // +3 increase as requested
+      if (len > 100) size -= 4;
+      else if (len > 60) size -= 2;
+      return size + "px";
     }
 
     function renderLabelsTab() {
@@ -1363,23 +1417,27 @@
           }
         });
 
+        const nameSize = getFittedFontSize(o.Customer_Name, 18);
+        const summarySize = getFittedFontSize(summaryMar, 16);
+        const noteSize = getFittedFontSize(noteMar, 14);
+
         return `
-        <div class="label-block" id="label_${o.Submission_ID}" style="background:white; border-radius:12px; border:1px solid #eee; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid var(--red);">
+        <div class="label-block" id="label_${o.Submission_ID}" style="background:white; border-radius:12px; border:1px solid #eee; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid var(--red); margin-bottom:12px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <div style="font-weight:700; color:#1e293b; font-size:1.1rem;">${o.Customer_Name}</div>
+            <div style="font-weight:700; color:#1e293b; font-size:${nameSize}; line-height:1.2;">${o.Customer_Name}</div>
           </div>
-          <div style="background:#f8fafc; padding:10px; border-radius:8px; font-size:0.95rem; margin-bottom:10px; color:#334155; line-height:1.4;">
+          <div style="background:#f8fafc; padding:10px; border-radius:8px; font-size:${summarySize}; margin-bottom:10px; color:#334155; line-height:1.5; word-wrap:break-word;">
             ${summaryMar}
           </div>
-          ${noteMar ? `<div style="font-size:0.9rem; color:#dc2626; font-weight:700; margin-bottom:8px; padding:0 4px;">व्युह: ${noteMar}</div>` : ''}
-          <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+          ${noteMar ? `<div style="font-size:${noteSize}; color:#dc2626; font-weight:700; margin-bottom:8px; padding:0 4px; word-wrap:break-word;">व्युह: ${noteMar}</div>` : ''}
+          <div class="no-print" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
             ${noteMar || o.Special_Notes_Kitchen ? `<div style="font-size:0.88rem; color:#dc2626; font-weight:700; border-left:3px solid #dc2626; padding:4px 8px; background:#fef2f2;">🍳 Special instructions for kitchen staff (optional): ${noteMar || o.Special_Notes_Kitchen}</div>` : ""}
             <div style="display:flex; flex-direction:column; gap:4px; border:1px dashed #cbd5e1; padding:8px; border-radius:8px; background:#f1f5f9;">
               <div style="font-size:0.8rem; color:#475569; font-weight:600;">🚚 Instruction: ${o.Delivery_Point || "Handover at Doorstep"}</div>
               ${o.Special_Notes_Delivery ? `<div style="font-size:0.8rem; color:#475569;">🚩 Special instructions for driver staff (optional): ${o.Special_Notes_Delivery}</div>` : ""}
             </div>
           </div>
-          <div style="display:flex; justify-content:flex-end;">
+          <div style="display:flex; justify-content:flex-end;" class="no-print">
             <button onclick="markOrderPacked('${o.Submission_ID}')" style="background:#059669; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">पॅक झाल्यावर क्लिक करा</button>
           </div>
         </div>
