@@ -498,6 +498,36 @@ function renderCard(o, i, meal) {
   const waText      = encodeURIComponent(`✅ Hi ${o.name}! Your ${meal} has been delivered. Thank you! 🙏`);
   const waNum       = hasPhone ? "91" + o.phone.replace(/\D/g,"").slice(-10) : "";
 
+  // ── DYNAMIC ADDRESS OVERRIDE ──
+  let displayArea = o.area || "";
+  let displayAddr = o.address || "";
+  let displayLandmark = o.landmark || "";
+  
+  if (o.mealAddresses) {
+    try {
+      const ma = JSON.parse(o.mealAddresses);
+      const mData = ma[meal];
+      if (mData && mData.area) {
+        displayArea = mData.area;
+        if (displayArea.toLowerCase().includes("pickup")) {
+          // If profile says pickup, ensure it shows as pickup
+        } else {
+          // Use profile address components if it's a specific delivery location
+          const parts = [
+            mData.wing ? `Wing ${mData.wing}` : "",
+            mData.flat ? `Flat ${mData.flat}` : "",
+            mData.floor ? `${mData.floor} Floor` : "",
+            mData.society || "",
+            mData.area || ""
+          ].filter(Boolean);
+          displayAddr = parts.join(", ");
+          displayLandmark = mData.landmark || "";
+        }
+      }
+    } catch(e) { console.warn("Error parsing mealAddresses override", e); }
+  }
+  const isPickup = displayArea.toLowerCase().includes("pickup");
+
   return `<div class="order-card${isDelivered?" delivered":""}" id="dcard_${o.submissionId}">
     <div class="order-header">
       <div class="order-num">DELIVERY #${i+1}</div>
@@ -508,11 +538,11 @@ function renderCard(o, i, meal) {
     <div class="cust-name">${o.name || "—"}</div>
     <div class="cust-phone">${hasPhone ? "📞 "+o.phone : ""}</div>
     <div class="address-box">
-      ${(o.area && o.area.toLowerCase().includes("pickup")) 
-        ? `<div style="color:#d32f2f; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">🏠 SELF PICKUP</div><div style="font-size:0.8rem; color:#666;">Customer will pick up from kitchen</div>`
-        : `📍 ${o.address || "Address not available"}
-          ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
-          ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}`
+      ${isPickup 
+        ? `<div style="color:#d32f2f; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">🏠 SELF PICKUP</div><div style="font-size:0.8rem; color:#666;">Customer set "${displayArea}" in profile</div>`
+        : `📍 ${displayAddr || "Address not available"}
+          ${displayArea ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${displayArea}</span>` : ""}
+          ${displayLandmark ? `<div class="landmark">🏢 Landmark: <span>${displayLandmark}</span></div>` : ""}`
       }
     </div>
     
@@ -527,7 +557,7 @@ function renderCard(o, i, meal) {
       ${hasPhone
         ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`
         : `<span class="btn-call" style="background:#ccc;pointer-events:none;">No number</span>`}
-      ${(hasMap && !(o.area && o.area.toLowerCase().includes("pickup")))
+      ${(hasMap && !isPickup)
         ? `<a class="btn-maps" href="${o.maps}" target="_blank">🗺 Maps</a>`
         : `<span class="btn-maps disabled">No map</span>`}
       ${hasPhone

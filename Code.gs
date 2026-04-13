@@ -2137,6 +2137,20 @@ function getDriverOrders(date) {
     });
   }
 
+  // Load customer meal preferences (Source of Truth)
+  var custMap = {};
+  var custWs = ss.getSheetByName(TAB_CUSTOMERS);
+  if (custWs) {
+    getAllRows(custWs).forEach(function(r) {
+      var ph = _normalizePhone(r.Phone);
+      if (ph) {
+        custMap[ph] = {
+          mealAddresses: r.Meal_Addresses || ""
+        };
+      }
+    });
+  }
+
   rows.forEach(function(r) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
@@ -2149,6 +2163,7 @@ function getDriverOrders(date) {
     var meal = String(r.Meal_Type || "");
     if (!meals[meal]) return;
     var sid = String(r.Submission_ID || "");
+    var normP = _normalizePhone(r.Phone);
     meals[meal].push({
       submissionId:  sid,
       name:          String(r.Customer_Name || ""),
@@ -2161,7 +2176,8 @@ function getDriverOrders(date) {
       notes:         String(r.Special_Notes_Delivery || ""),
       deliveredAt:   delMap[sid] || "",
       amount:        Number(r.Net_Total || r.Food_Subtotal || 0),
-      paymentStatus: String(r.Payment_Status || "")
+      paymentStatus: String(r.Payment_Status || ""),
+      mealAddresses: custMap[normP] ? custMap[normP].mealAddresses : ""
     });
   });
 
