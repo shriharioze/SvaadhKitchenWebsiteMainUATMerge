@@ -97,14 +97,33 @@ const ORDERS_HEADERS = [
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point"
 ];
 
-// Item colKey → Orders column name mapping (for quick lookup)
 const ITEM_COL_MAP = {
-  "Chapati":"Chapati","Without_Oil_Chapati":"Without_Oil_Chapati",
-  "Phulka":"Phulka","Ghee_Phulka":"Ghee_Phulka",
-  "Jowar_Bhakri":"Jowar_Bhakri","Bajra_Bhakri":"Bajra_Bhakri",
-  "Dry_Sabji_Mini":"Dry_Sabji_Mini","Dry_Sabji_Full":"Dry_Sabji_Full",
-  "Curry_Sabji_Mini":"Curry_Sabji_Mini","Curry_Sabji_Full":"Curry_Sabji_Full",
-  "Dal":"Dal","Rice":"Rice","Salad":"Salad","Curd":"Curd",
+  // Canonical Names (Universal Standard)
+  "Chapati": "Chapati",
+  "Without Oil Chapati": "Without_Oil_Chapati",
+  "Phulka": "Phulka",
+  "Ghee Phulka": "Ghee_Phulka",
+  "Jowar Bhakri": "Jowar_Bhakri",
+  "Bajra Bhakri": "Bajra_Bhakri",
+  "Dry Sabji Mini": "Dry_Sabji_Mini",
+  "Dry Sabji Full": "Dry_Sabji_Full",
+  "Curry Sabji Mini": "Curry_Sabji_Mini",
+  "Curry Sabji Full": "Curry_Sabji_Full",
+  "Dal": "Dal",
+  "Rice": "Rice",
+  "Salad": "Salad",
+  "Curd": "Curd",
+
+  // Underscored variants
+  "Without_Oil_Chapati":"Without_Oil_Chapati",
+  "Ghee_Phulka":"Ghee_Phulka",
+  "Jowar_Bhakri":"Jowar_Bhakri",
+  "Bajra_Bhakri":"Bajra_Bhakri",
+  "Dry_Sabji_Mini":"Dry_Sabji_Mini",
+  "Dry_Sabji_Full":"Dry_Sabji_Full",
+  "Curry_Sabji_Mini":"Curry_Sabji_Mini",
+  "Curry_Sabji_Full":"Curry_Sabji_Full",
+
   // Legacy colKey aliases from order.html
   "L_CHAPATI":"Chapati","L_WO_CHAPATI":"Without_Oil_Chapati","L_PHULKA":"Phulka","L_GHEE_PHULKA":"Ghee_Phulka",
   "L_JOWAR":"Jowar_Bhakri","L_BAJRA":"Bajra_Bhakri",
