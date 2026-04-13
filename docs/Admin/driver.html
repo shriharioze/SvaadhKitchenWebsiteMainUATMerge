@@ -616,7 +616,8 @@ async function markAllEnRoute(meal) {
     btn.className = "route-btn green done";
     btn.innerHTML = `🚗 ${meal} Out for Delivery`;
     
-    // Refresh the UI cards to show the car emoji
+    // Refresh the UI cards to unlock the "Mark Delivered" buttons
+    document.getElementById("panel_" + meal).innerHTML = renderMealPanel(orders, meal);
     switchTab(meal);
     await sAlert(`Success! ${submissionIds.length} orders marked as Out for Delivery.`, "Delivery Started", "✅");
   } catch (err) {

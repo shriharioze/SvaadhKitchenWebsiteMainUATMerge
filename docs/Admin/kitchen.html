@@ -1264,7 +1264,11 @@
           if (o.Rice && o.Rice.count > 0) packs.push({ count: o.Rice.count, name: "250ml aluminium container for rice" });
         }
 
-        if (packs.length > 0 || (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0)) {
+        const hasMatrices = (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) || 
+                            (m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || 
+                            (m.saladMatrix && Object.keys(m.saladMatrix).length > 0);
+
+        if (packs.length > 0 || hasMatrices) {
           html += `<div class="meal-block">
             <div class="meal-head">
               <span class="meal-icon">${icon}</span>
@@ -1272,7 +1276,7 @@
             </div>
             <div class="meal-body">`;
 
-          if (m.rotiMatrix) {
+          if (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) {
             const rotis = ["Chapati", "Without_Oil_Chapati", "Phulka", "Ghee_Phulka", "Jowar_Bhakri", "Bajra_Bhakri"];
             html += `<div class="matrix-title">Roti Preparation Matrix (Packet Sizes)</div>
             <div class="roti-matrix-wrap">
