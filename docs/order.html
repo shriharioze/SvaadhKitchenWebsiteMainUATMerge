@@ -5208,11 +5208,16 @@
       }
       const name = (S.profile?.name || 'Customer').trim();
       const phone = (S.phone || '').trim();
-      const note = `Svaadh Wallet: ${phone.slice(-4)}`;
+      const note = `SvaadhW ${phone.slice(-4)}`;
       // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
       const upiData = `upi://pay?pa=${UPI_VPA}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
 
-      $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
+      const qrImg = $('walletQrImg');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
+      qrImg.onclick = () => { $('walletUpiLink').click(); };
+      qrImg.style.cursor = 'pointer';
+      qrImg.title = 'Tap to pay via any UPI app';
+      
       $('walletUpiLink').href = upiData;
       $('walletQrWrap').style.display = 'block';
     }
@@ -5256,19 +5261,8 @@
       $(amtId).textContent = `₹${amount}`;
 
       // Build smart UPI note: name + dates
-      const name = (S.profile?.name || "Customer").trim();
-      let note = "";
-      if (S.selectedDates.length === 1) {
-        note = `Svaadh: ${name} - ${formatDate(S.selectedDates[0])}`;
-      } else if (S.selectedDates.length > 1) {
-        const first = formatDate(S.selectedDates[0]);
-        const last = formatDate(S.selectedDates[S.selectedDates.length - 1]);
-        note = `Svaadh: ${name} - ${first} to ${last}`;
-      } else {
-        note = `Svaadh: ${name} - ${S.phone.slice(-4)}`;
-      }
-      if (note.length > 50) note = note.slice(0, 50);
-
+      // Simplified note for best compatibility across UPI apps (GPay etc)
+      const note = `Svaadh ${S.phone.slice(-4)}`;
       $(noteId).textContent = note;
 
       // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
@@ -5281,13 +5275,8 @@
       // Make the QR code clickable
       qrEl.style.cursor = "pointer";
       qrEl.title = "Tap to pay via any UPI app";
-      qrEl.onclick = () => {
-        if (isIOS()) {
-          $(linkId).click();
-        } else {
-          window.location.href = upiStr;
-        }
-      };
+      // Always use anchor click for proper Android Intent handling (fixes GPay blocking navigation)
+      qrEl.onclick = () => { $(linkId).click(); };
 
       // iOS: upi:// deep link doesn't work — show copy button instead
       const deepLinkBtn = $(linkId);
@@ -5313,7 +5302,7 @@
       } else {
         deepLinkBtn.href = upiStr;
         deepLinkBtn.onclick = null;
-        deepLinkBtn.textContent = t('upi_pay_btn', { amt: amount });
+        deepLinkBtn.textContent = `👆 Pay ₹${amount} via UPI App`;
       }
 
       // codBtn event handlers removed
