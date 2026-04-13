@@ -471,6 +471,11 @@ function doPost(e) {
       return jsonRes({success:true});
     }
 
+    if (action === "submitManualOrder") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(submitManualOrder(body));
+    }
+
     // Regular order submission
     return jsonRes(submitOrder(body));
   } catch(err) {
@@ -3903,4 +3908,53 @@ function _deriveMapsLink(addr, society) {
     }
   }
   return "";
+}
+
+// ── SUBMIT MANUAL ORDER (Admin Feature) ────────────────────
+function submitManualOrder(body) {
+  const ss = getSpreadsheet();
+  const ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const custWs   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  
+  const phone = String(body.phone || "").trim();
+  const name  = body.name || "Manual Customer";
+  const amount = Number(body.amount) || 0;
+  const date   = body.date || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  const mealType = body.mealType || "Other";
+  
+  if (!phone || amount <= 0) throw new Error("Invalid phone or amount");
+  
+  // 1. Ensure customer exists with Daily Billing and On Account enabled
+  const profile = { 
+    phone: phone, 
+    name: name, 
+    billingCycle: "Daily", 
+    onAccount: "Yes",
+    payment_preference: "10 days billing" // Mark as on-account preference
+  };
+  _upsertCustomer(ss, profile);
+  
+  // 2. Append to SK_Orders
+  const hIdx = headerIndex(ordersWs);
+  const row = new Array(ORDERS_HEADERS.length).fill("");
+  const set = (colName, val) => {
+    const idx = hIdx[colName];
+    if (idx) row[idx - 1] = val;
+  };
+  
+  const sid = "M" + Date.now().toString(36).toUpperCase();
+  set("Submission_ID", sid);
+  set("Submitted_At",  getISTTimestamp());
+  set("Order_Date",   date);
+  set("Meal_Type",    mealType);
+  set("Customer_Name", name);
+  set("Phone",         phone);
+  set("Food_Subtotal", amount);
+  set("Net_Total",     amount);
+  set("Payment_Method", "On Account");
+  set("Payment_Status", "On Account");
+  set("Source",         "Admin Manual Entry");
+  
+  ordersWs.appendRow(row);
+  return { success: true, sid: sid };
 }

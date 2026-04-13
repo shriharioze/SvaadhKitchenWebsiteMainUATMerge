@@ -815,6 +815,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
       <button class="topbar-btn" id="navApprovals" onclick="switchPage('approvals')">✅ Approvals</button>
+      <button class="topbar-btn" id="navManual" onclick="switchPage('manual')">➕ Manual Entry</button>
       <button class="topbar-btn" id="navBilling" onclick="switchPage('billing')">📋 On Account Billing</button>
     </div>
     <div class="topbar-right">
@@ -1317,6 +1318,56 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div id="billingContent"><p class="billing-empty">Select a tab above to load billing data.</p></div>
       </div><!-- /pageBilling -->
 
+
+      <!-- ════ PAGE: MANUAL ENTRY ════ -->
+      <div class="page" id="pageManual">
+        <div class="page-header">
+          <div class="page-title">➕ Manual Order Entry <small>Log orders for customers who don't fill the form</small></div>
+        </div>
+        
+        <div class="meal-card" style="max-width: 500px; margin: 20px auto;">
+          <div class="meal-card-head" style="background:var(--blue-soft);">
+            <div class="meal-card-title" style="color:var(--blue);">Manual Order Details</div>
+          </div>
+          <div class="meal-card-body">
+            <div style="display:grid;gap:16px;">
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Order Date</label>
+                <input type="date" id="manualDate" class="billing-input" style="width:100%;">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Customer Name</label>
+                <input type="text" id="manualName" placeholder="Enter full name" class="billing-input" style="width:100%;">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Mobile Number</label>
+                <input type="tel" id="manualPhone" placeholder="10-digit number" class="billing-input" style="width:100%;" maxlength="10">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Meal Type</label>
+                <select id="manualMealType" class="billing-input" style="width:100%;">
+                  <option value="Breakfast">🌅 Breakfast</option>
+                  <option value="Lunch">☀️ Lunch</option>
+                  <option value="Dinner">🌙 Dinner</option>
+                  <option value="Other">🥘 Other</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Net Amount (₹) <span style="color:var(--red); font-size: 0.65rem;">(On Account)</span></label>
+                <input type="number" id="manualAmount" placeholder="0" class="billing-input" style="width:100%;">
+              </div>
+              <div style="margin-top:10px;">
+                <button class="btn-primary" id="manualSubmitBtn" onclick="submitManualEntry()" style="width:100%;padding:12px;font-size:1rem;">
+                  🚀 Mark On Account
+                </button>
+              </div>
+              <div style="font-size:0.7rem;color:var(--muted);text-align:center;">
+                Note: This will also add/update the customer with "Daily" billing configuration.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /pageManual -->
 
     </div><!-- /main -->
   </div><!-- /body-wrap -->
@@ -2008,6 +2059,7 @@ async function switchPage(page) {
   document.getElementById("pageApprovals").classList.toggle("on", page==="approvals");
   document.getElementById("pageReviews").classList.toggle("on", page==="reviews");
   document.getElementById("pageBilling").classList.toggle("on", page==="billing");
+  document.getElementById("pageManual").classList.toggle("on", page==="manual");
   document.getElementById("navMenu").classList.toggle("active", page==="menu");
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
@@ -2019,6 +2071,7 @@ async function switchPage(page) {
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
   document.getElementById("navApprovals").classList.toggle("active", page==="approvals");
   document.getElementById("navReviews").classList.toggle("active", page==="reviews");
+  document.getElementById("navManual").classList.toggle("active", page==="manual");
   document.getElementById("navBilling").classList.toggle("active", page==="billing");
   
   if (page==="billing") switchBillingTab('Daily');
@@ -2059,6 +2112,10 @@ async function switchPage(page) {
     const pp = document.getElementById("payDate");
     if (!pp.value) pp.value = toISO(getIST());
     loadPayments();
+  }
+  if (page === "manual") {
+    const picker = document.getElementById("manualDate");
+    if (!picker.value) { picker.value = toISO(getIST()); }
   }
   if (page === "customers") loadCustomers();
   if (page === "reviews") loadReviewUsers();
@@ -4773,6 +4830,65 @@ async function placeBulkOrders(customer, selectedDates, templates) {
     } else throw new Error(data.error);
   } catch(e) { sAlert("Bulk Order Error: " + e.message); }
   finally { sLoading(false); }
+}
+
+
+// ════════════════════════════════════════════════════════
+// MANUAL ENTRY PAGE
+// ════════════════════════════════════════════════════════
+async function submitManualEntry() {
+  const date   = document.getElementById('manualDate').value;
+  const name   = document.getElementById('manualName').value.trim();
+  const phone  = document.getElementById('manualPhone').value.trim();
+  const amount = document.getElementById('manualAmount').value;
+  const meal   = document.getElementById('manualMealType').value;
+  const btn    = document.getElementById('manualSubmitBtn');
+
+  if (!date || !name || !phone || !amount) {
+    sAlert('Please fill all required fields.', 'Missing Info', '⚠️');
+    return;
+  }
+  if (phone.length !== 10 || isNaN(phone)) {
+    sAlert('Please enter a valid 10-digit mobile number.', 'Invalid Phone', '⚠️');
+    return;
+  }
+  if (Number(amount) <= 0) {
+    sAlert('Amount must be greater than zero.', 'Invalid Amount', '⚠️');
+    return;
+  }
+
+  const ok = await sConfirm(`Add "On Account" order for ${name} (₹${amount})?`, 'Confirm Manual Entry', '🚀');
+  if (!ok) return;
+
+  sBtnLoading(btn, true, 'Submitting…');
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        _action: 'submitManualOrder',
+        pin: S.sessionPin,
+        date: date,
+        name: name,
+        phone: phone,
+        amount: amount,
+        mealType: meal
+      })
+    });
+    const data = await res.json();
+    sBtnLoading(btn, false);
+    if (!data.success) throw new Error(data.error || 'Submission failed');
+
+    toast('Manual "On Account" order logged successfully! ✅');
+    
+    // Reset fields except date
+    document.getElementById('manualName').value = '';
+    document.getElementById('manualPhone').value = '';
+    document.getElementById('manualAmount').value = '';
+    
+  } catch(e) {
+    sBtnLoading(btn, false);
+    sAlert('Error: ' + e.message, 'Failed', '❌');
+  }
 }
 
 
