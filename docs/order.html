@@ -1016,9 +1016,37 @@
     }
 
     .upi-id {
-      font-size: 0.75rem;
-      color: #888;
+      font-size: 0.8rem;
+      color: #666;
       margin-bottom: 14px;
+      padding: 6px 12px;
+      background: #f8f9fa;
+      border: 1px dashed #ced4da;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .upi-id:hover {
+      background: #eef2f7;
+      border-color: #aeb9c4;
+      color: #333;
+      transform: translateY(-1px);
+    }
+
+    .upi-id:active {
+      transform: translateY(0);
+      background: #e2e6ea;
+    }
+
+    .upi-id::after {
+      content: '📋';
+      font-size: 0.85rem;
+      opacity: 0.7;
     }
 
     .upi-or {
@@ -3322,7 +3350,7 @@
           </p>
           <div id="qrcode" style="margin:14px auto 0;"></div>
           <div class="upi-amount" id="upiAmountDisplay">₹0</div>
-          <div class="upi-id">UPI: 9819969682@hdfc</div>
+          <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID">9819969682@hdfc</div>
           <div
             style="background:#f0f4ff;border-radius:8px;padding:8px 10px;margin:10px 0;font-size:0.73rem;color:#444;text-align:left;">
             <span data-i18n-html="payment_note_label">📝 <strong>Payment note:</strong></span> <span id="upiNoteDisplay"
@@ -3330,6 +3358,16 @@
           </div>
           <a id="upiDeepLink" href="#" class="btn btn-primary"
             style="text-decoration:none;margin-top:6px;font-size:1rem;">👆 Tap here to pay via UPI</a>
+          
+          <div style="background:#fff4e5; border:1px solid #ffe8cc; border-radius:10px; padding:10px 12px; margin-top:12px; text-align:left; line-height:1.4;">
+            <div style="font-size:0.78rem; color:#d9480f; font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              ⚠️ Unable to pay via the button?
+            </div>
+            <div style="font-size:0.75rem; color:#862e08;">
+              Tap the <strong>UPI ID</strong> above to copy it, pay manually in GPay/PhonePe, then confirm below.<br>
+              <span class="mr-note" style="display:block; margin-top:4px; font-weight:500;">वरील UPI ID वर क्लिक करून कॉपी करा, GPay/PhonePe मध्ये पेस्ट करून पेमेंट करा आणि मग खाली टिक करा.</span>
+            </div>
+          </div>
           <div class="upi-or" data-i18n="upi_or">or</div>
           <!-- COD Button Removed -->
           <div style="margin-top:14px;">
@@ -3706,6 +3744,25 @@
         console.warn("GA tracking error", e);
       }
     };
+
+    function copyUPI() {
+      const vpa = "9819969682@hdfc";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(vpa).then(() => {
+          toast("📋 UPI ID Copied! Now paste it in your payment app.", 4000);
+        }).catch(() => {
+          // Fallback if clipboard API fails
+          const el = document.createElement("input"); el.value = vpa; document.body.appendChild(el);
+          el.select(); document.execCommand("copy"); document.body.removeChild(el);
+          toast("📋 UPI ID Copied! Now paste it in your payment app.", 4000);
+        });
+      } else {
+        const el = document.createElement("input"); el.value = vpa; document.body.appendChild(el);
+        el.select(); document.execCommand("copy"); document.body.removeChild(el);
+        toast("📋 UPI ID Copied! Now paste it in your payment app.", 4000);
+      }
+      trackGA("upi_id_copied");
+    }
 
     async function syncWalletValue() {
       if (!S.phone) return;
@@ -5151,9 +5208,8 @@
       }
       const name = (S.profile?.name || 'Customer').trim();
       const phone = (S.phone || '').trim();
-      const tr = "SKW" + Date.now();
-      // Added mode=02 and removed mc=5812 for better personal VPA stability
-      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}&tr=${tr}&mode=02`;
+      // Removed tr and mode=02 to treat as P2P (fixes bank rejections)
+      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
 
       $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
       $('walletUpiLink').href = upiData;
@@ -5214,9 +5270,8 @@
 
       $(noteId).textContent = note;
 
-      const tr = "SKO" + Date.now();
-      // Added mode=02 and removed mc=5812 for better personal VPA stability
-      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&tr=${tr}&mode=02`;
+      // Removed tr and mode=02 to treat as P2P (fixes bank rejections)
+      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
       
       const qrEl = $(qid);
       qrEl.innerHTML = "";
