@@ -3002,6 +3002,33 @@ function markOrdersStatus(body) {
 }
 
 // ── DELETED OBSOLETE ADMIN CANCEL ORDER (Merged with main) ──
+/**
+ * Marks a specific order as 'Packed' in the SK_Orders sheet.
+ * Called by the Kitchen Dashboard (kitchen.html) via APPS_SCRIPT_URL.
+ */
+function markOrderPacked(body) {
+  var id = body.submissionId;
+  if (!id) return {success:false, error: "submissionId required"};
+
+  var ss    = getSpreadsheet();
+  var ws    = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var hIdx  = headerIndex(ws);
+  var rows  = getAllRows(ws);
+  
+  if (hIdx.Packed === undefined) return {success:false, error: "Packed column not found"};
+
+  var order = rows.find(function(r) {
+    return String(r.Submission_ID) === String(id);
+  });
+
+  if (order) {
+    ws.getRange(order._row, hIdx.Packed).setValue(true);
+    return {success:true};
+  }
+  
+  return {success:false, error: "Order not found"};
+}
+
 // ── ANALYTICS ─────────────────────────────────────────────────────────────────
 function getAnalytics(p) {
   var dateFrom = p.dateFrom, dateTo = p.dateTo;
