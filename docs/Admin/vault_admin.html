@@ -4628,11 +4628,22 @@ async function quickOrderStandard(phone, name, rawItems, favName, mealType) {
 
   sLoading(true, 'Placing order as On Account…');
   try {
+    const customer = _custData.find(c => c.phone === phone);
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
         _action: 'processOrder', pin: S.sessionPin,
-        profile: { phone, name },
+        profile: { 
+          phone, name,
+          area:           customer?.area || "",
+          wing:           customer?.wing || "",
+          flat:           customer?.flat || "",
+          floor:          customer?.floor || "",
+          society:        customer?.society || "",
+          maps:           customer?.maps || "",
+          landmark:       customer?.landmark || "",
+          delivery_point: customer?.delivery_point || ""
+        },
         orders: [{ date, meals: [{ type: meal, items: itemList, subtotal }] }],
         payment_method: 'On Account',
         payment_status: 'On Account'
@@ -4730,7 +4741,18 @@ async function placeBulkOrders(customer, selectedDates, templates) {
       body: JSON.stringify({
         _action: "processOrder",
         pin: S.sessionPin,
-        profile: { phone: customer.phone, name: customer.name },
+        profile: { 
+          phone: customer.phone, 
+          name: customer.name,
+          area:           customer.area || "",
+          wing:           customer.wing || "",
+          flat:           customer.flat || "",
+          floor:          customer.floor || "",
+          society:        customer.society || "",
+          maps:           customer.maps || "",
+          landmark:       customer.landmark || "",
+          delivery_point: customer.delivery_point || ""
+        },
         orders: orders,
         payment_method: "Wallet",
         payment_status: "Paid"

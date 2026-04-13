@@ -2712,7 +2712,15 @@ function getCustomerList() {
         standardOrder: c.Standard_Order || "",
         feeExempt: (String(c.Fee_Exempt).trim() === "Yes") ? "Yes" : "No",
         onAccount: (String(c.On_Account).trim() === "Yes") ? "Yes" : "No",
-        billingCycle: c.Billing_Cycle || "Daily"
+        billingCycle: c.Billing_Cycle || "Daily",
+        // Address profiles
+        wing:    c.Wing || "",
+        flat:    c.Flat || "",
+        floor:   c.Floor || "",
+        society: c.Society || "",
+        maps:    c.Maps_Link || "",
+        landmark: c.Landmark || "",
+        delivery_point: c.Delivery_Point || ""
       };
     }
   });
@@ -2743,7 +2751,14 @@ function getCustomerList() {
         standardOrder: cMap[normP] ? cMap[normP].standardOrder : "",
         Fee_Exempt:    cMap[normP] ? cMap[normP].feeExempt : "No",
         onAccount:     cMap[normP] ? cMap[normP].onAccount : "No",
-        billingCycle:  cMap[normP] ? cMap[normP].billingCycle : "Daily"
+        billingCycle:  cMap[normP] ? cMap[normP].billingCycle : "Daily",
+        wing:    cMap[normP] ? cMap[normP].wing : "",
+        flat:    cMap[normP] ? cMap[normP].flat : "",
+        floor:   cMap[normP] ? cMap[normP].floor : "",
+        society: cMap[normP] ? cMap[normP].society : "",
+        maps:    cMap[normP] ? cMap[normP].maps : "",
+        landmark: cMap[normP] ? cMap[normP].landmark : "",
+        delivery_point: cMap[normP] ? cMap[normP].delivery_point : ""
       };
     }
     map[phone].orderCount++;
@@ -2865,9 +2880,19 @@ function getCustomerHistory(phone) {
   var onAccount = custMatch ? (String(custMatch.On_Account).trim() === "Yes" ? "Yes" : "No") : "No";
   var billingCycle = custMatch ? (custMatch.Billing_Cycle || "Daily") : "Daily";
 
-  return {success:true, phone:phone, name:name, area:area, payFreq:payFreq,
-          orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length,
-          standardOrder: standardOrder, Fee_Exempt: feeExempt, On_Account: onAccount, Billing_Cycle: billingCycle};
+  return {
+    success:true, phone:phone, name:name, area:area, payFreq:payFreq,
+    orders:orders, totalSpent:totalSpent, pending:pending, orderCount:orders.length,
+    standardOrder: standardOrder, Fee_Exempt: feeExempt, On_Account: onAccount, Billing_Cycle: billingCycle,
+    // Add full address profile
+    wing:    custMatch ? (custMatch.Wing || "") : "",
+    flat:    custMatch ? (custMatch.Flat || "") : "",
+    floor:   custMatch ? (custMatch.Floor || "") : "",
+    society: custMatch ? (custMatch.Society || "") : "",
+    maps:    custMatch ? (custMatch.Maps_Link || "") : "",
+    landmark: custMatch ? (custMatch.Landmark || "") : "",
+    delivery_point: custMatch ? (custMatch.Delivery_Point || "") : ""
+  };
 }
 
 // ── GET DATE PAYMENTS ─────────────────────────────────────────────────────────
