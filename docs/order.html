@@ -4287,11 +4287,19 @@
           try {
             const ma = JSON.parse(S.profile.meal_addresses);
             S.mealAddrs = ma;
-            // If any meal has a different area than primary, it's not "same address"
-            if ((ma.Breakfast && ma.Breakfast.area !== S.profile.area) ||
-              (ma.Lunch && ma.Lunch.area !== S.profile.area) ||
-              (ma.Dinner && ma.Dinner.area !== S.profile.area)) {
-              same = false;
+            // Check ALL fields for differences to correctly set S.sameAddr
+            const meals = ["Breakfast", "Lunch", "Dinner"];
+            const fields = ["area", "wing", "flat", "floor", "society"];
+            for (const m of meals) {
+              if (ma[m]) {
+                for (const f of fields) {
+                  if (ma[m][f] !== undefined && ma[m][f] !== S.profile[f]) {
+                    same = false;
+                    break;
+                  }
+                }
+              }
+              if (!same) break;
             }
           } catch (e) { console.warn("Error parsing meal_addresses", e); }
         }
@@ -5305,6 +5313,10 @@
             subtotal: mObj.subtotal,
             address: isMealPickup ? "Self Pickup (A 104, Shree laxmi vihar society)" : buildAddr(mAddr.wing, mAddr.flat, mAddr.floor, mAddr.society, mAddr.area, mAddr.delivery_point),
             area: isMealPickup ? "Self Pickup" : mAddr.area, 
+            wing: isMealPickup ? "" : (mAddr.wing || ""),
+            flat: isMealPickup ? "" : (mAddr.flat || ""),
+            floor: isMealPickup ? "" : (mAddr.floor || ""),
+            society: isMealPickup ? "" : (mAddr.society || ""),
             delivery_point: mAddr.delivery_point, 
             maps: isMealPickup ? "" : (mAddr.maps || ""), 
             landmark: isMealPickup ? "" : (mAddr.landmark || "")
@@ -5319,6 +5331,7 @@
           wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society,
           delivery_point: S.profile.delivery_point,
           area: S.profile.area, maps: S.profile.maps, landmark: S.profile.landmark,
+          meal_addresses: JSON.stringify(S.mealAddrs),
           payment_preference: S.profile.payment_preference, isFirstTime: S.isFirstTime
         },
         orders,
