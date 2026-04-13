@@ -1034,7 +1034,7 @@ function submitOrder(body) {
       const mealCredit = submissionDayFoodTotal > 0 ? (totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
       
       const discAmt = getDisc(sub);
-      const inflationSurcharge = Math.ceil(sub / 10);
+      const inflationSurcharge = Math.ceil(sub / 20);
       
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
