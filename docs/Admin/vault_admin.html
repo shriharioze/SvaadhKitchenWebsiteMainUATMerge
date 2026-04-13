@@ -1344,11 +1344,12 @@ const GLOBAL_STAPLE_PRICES = {
   // Breads (Underscore version)
   "Chapati": 9, "Without_Oil_Chapati": 8, "Phulka": 7, "Ghee_Phulka": 10,
   "Jowar_Bhakri": 20, "Bajra_Bhakri": 20,
-  // Breads (Space version for UI compatibility)
-  "Without Oil Chapati": 8, "Ghee Phulka": 10, "Jowar Bhakri": 20, "Bajra Bhakri": 20,
+  // Breads (Display versions)
+  "Without Oil Chapati": 8, "W/O Oil Chapati": 8, "Ghee Phulka": 10, "Jowar Bhakri": 20, "Bajra Bhakri": 20,
   // Sabji (Standard)
   "Dry_Sabji_Mini": 22, "Dry_Sabji_Full": 45, "Curry_Sabji_Mini": 22, "Curry_Sabji_Full": 45,
   "Dry Sabji Mini": 22, "Dry Sabji Full": 45, "Curry Sabji Mini": 22, "Curry Sabji Full": 45,
+  "Dry Sabji (Mini)": 22, "Dry Sabji (Full)": 45, "Curry Sabji (Mini)": 22, "Curry Sabji (Full)": 45,
   // Basics
   "Dal": 22, "Rice": 12, "Salad": 6, "Curd": 12,
   // Legacy colKey aliases
@@ -4472,14 +4473,18 @@ function _calcSubtotal(itemsObj) {
     const n = Number(qty)||0;
     if (n <= 0) return;
     
-    // Exact match in staples (with underscores or spaces)
+    // 1. Exact match in staples (with underscores, spaces, or labels like W/O)
     if (GLOBAL_STAPLE_PRICES[key]) { 
       sub += GLOBAL_STAPLE_PRICES[key] * n; 
       return; 
     }
     
-    // Normalize key (spaces to underscores) and retry staple lookup
-    const normKey = key.replace(/\s+/g, '_');
+    // 2. Normalize key (spaces/slashes/parens/etc) and retry staple lookup
+    // e.g., "W/O Oil Chapati" -> "Without_Oil_Chapati"
+    let normKey = key.replace(/\s+/g, '_')
+                     .replace(/W\/O/g, 'Without_Oil')
+                     .replace(/[()]/g, ''); // strip parens
+    
     if (GLOBAL_STAPLE_PRICES[normKey]) {
       sub += GLOBAL_STAPLE_PRICES[normKey] * n;
       return;
