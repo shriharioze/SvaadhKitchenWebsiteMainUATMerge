@@ -3211,7 +3211,7 @@ function tendayShareWhatsApp() {
   if (!pending.length) { toast("No pending amounts to share!"); return; }
   let msg = `*Svaadh Kitchen — Bill Summary*\n📅 ${from} to ${to}\n\n`;
   pending.forEach(c => { msg += `• ${c.name}: ₹${c.pending} pending\n`; });
-  msg += `\n*Total Outstanding: ₹${_tendayData.grandPending}*\n\nPlease settle at your earliest convenience 🙏\nUPI: 9819969682@hdfc`;
+  msg += `\n*Total Outstanding: ₹${_tendayData.grandPending}*\n\nPlease settle at your earliest convenience 🙏\nUPI: svaadhkitchen.36727659@hdfcbank`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 }
 
@@ -4107,7 +4107,7 @@ function generateBillPDF(cust) {
     </table>
   </div>
   <div class="bill-footer">
-    Pay via UPI &nbsp;<strong>9819969682@hdfc</strong> (Svaadh Kitchen)<br><br>
+    Pay via UPI &nbsp;<strong>svaadhkitchen.36727659@hdfcbank</strong> (Svaadh Kitchen)<br><br>
     Thank you for being our valued customer! 🙏
   </div>
 </div>
