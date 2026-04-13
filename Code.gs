@@ -2143,8 +2143,9 @@ function getDriverOrders(date) {
       : String(r.Order_Date).trim();
     if (d !== date) return;
     if (String(r.Payment_Status) === "Cancelled") return;
+    // var area = String(r.Area || "").trim();
+    // if (area.toLowerCase().includes("pickup")) return;
     var area = String(r.Area || "").trim();
-    if (area.toLowerCase().includes("pickup")) return;
     var meal = String(r.Meal_Type || "");
     if (!meals[meal]) return;
     var sid = String(r.Submission_ID || "");

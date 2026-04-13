@@ -397,7 +397,7 @@ function setSyncBadge() {
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderAll(data) {
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
-    const raw = ((data.meals || {})[meal] || []).filter(o => o.area && !o.area.toLowerCase().includes("pickup"));
+    const raw = ((data.meals || {})[meal] || []);
     // Sort: Undelivered first, then Delivered (sorted by delivery time)
     const orders = [
       ...raw.filter(o => !o.deliveredAt),
@@ -508,9 +508,12 @@ function renderCard(o, i, meal) {
     <div class="cust-name">${o.name || "—"}</div>
     <div class="cust-phone">${hasPhone ? "📞 "+o.phone : ""}</div>
     <div class="address-box">
-      📍 ${o.address || "Address not available"}
-      ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
-      ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}
+      ${(o.area && o.area.toLowerCase().includes("pickup")) 
+        ? `<div style="color:#d32f2f; font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">🏠 SELF PICKUP</div><div style="font-size:0.8rem; color:#666;">Customer will pick up from kitchen</div>`
+        : `📍 ${o.address || "Address not available"}
+          ${o.area ? `<br><span style="color:#888;font-size:0.72rem;">📌 ${o.area}</span>` : ""}
+          ${o.landmark ? `<div class="landmark">🏢 Landmark: <span>${o.landmark}</span></div>` : ""}`
+      }
     </div>
     
     <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
@@ -524,7 +527,7 @@ function renderCard(o, i, meal) {
       ${hasPhone
         ? `<a class="btn-call" href="tel:${o.phone}">📞 Call</a>`
         : `<span class="btn-call" style="background:#ccc;pointer-events:none;">No number</span>`}
-      ${hasMap
+      ${(hasMap && !(o.area && o.area.toLowerCase().includes("pickup")))
         ? `<a class="btn-maps" href="${o.maps}" target="_blank">🗺 Maps</a>`
         : `<span class="btn-maps disabled">No map</span>`}
       ${hasPhone
