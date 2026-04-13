@@ -188,7 +188,7 @@ const BUSINESS_CONTEXT = {
   },
   payment: {
     options: ["Svaadh Wallet (Prepaid)", "UPI", "Prepaid Wallet Billing"],
-    upi_id: "svaadhkitchen@hdfc",
+    upi_id: "9819969682@hdfc",
     prepaid_wallet: "Prepaid Wallet Billing operates as a prepaid wallet. Customers must maintain a top-up balance, and orders are deducted immediately."
   },
   ordering: {
@@ -910,7 +910,6 @@ function submitOrder(body) {
   // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Garden")
   const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
   const DELIVERY  = 10;
-  const FREE_THR  = 150;
 
   const submissionIds = [];
   
@@ -948,7 +947,14 @@ function submitOrder(body) {
   for (const order of orders) {
     const orderDate = order.date;
     const existingDateInfo = (existingDayTotals[orderDate] || {});
-    
+
+    // Calculate meal count for this date to determine dynamic free delivery threshold
+    const mealsThisSubmission = order.meals.filter(m => (Number(m.subtotal) || 0) > 0).map(m => m.type);
+    const existingMeals = Object.keys(existingDateInfo).filter(mType => (Number(existingDateInfo[mType].subtotal) || 0) > 0);
+    const allMealsOnDate = Array.from(new Set([...mealsThisSubmission, ...existingMeals]));
+    const totalMealsCount = allMealsOnDate.length;
+    const dynamicFreeThreshold = totalMealsCount <= 1 ? 100 : 150;
+
     // Calculate total food subtotal for this specific submission's date
     const submissionDayFoodTotal = order.meals.reduce((s, m) => s + (Number(m.subtotal) || 0), 0);
     // Combine with already placed orders for this date
@@ -994,7 +1000,7 @@ function submitOrder(body) {
       
       // Delivery & Fee logic (matches frontend)
       const isPickup  = (mealArea.toLowerCase().includes("pickup"));
-      const isDayFree = (combinedDayTotal >= FREE_THR);
+      const isDayFree = (combinedDayTotal >= dynamicFreeThreshold);
       const isFreeArea = freeAreaNames.includes(mealArea);
 
       // VIP Fee Exemption

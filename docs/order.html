@@ -3294,12 +3294,10 @@
       <div class="card" style="padding-bottom:12px;">
         <h2 data-i18n="step4_title">🍱 Choose Your Meals</h2>
         <div class="info-box" style="margin-top:4px;font-size:0.74rem;line-height:1.6;" data-i18n-html="step3_tip">
-          🚚 <strong>Free delivery</strong> if meal total ≥ ₹100 (or Bhosale Garden) &nbsp;·&nbsp; 🎉 <strong>5%
+          🚚 <strong>Free delivery</strong> if total ≥ ₹100 (for 1 meal) or ≥ ₹150 (for 2+ meals) &nbsp;·&nbsp; 🎉 <strong>5%
             off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
         </div>
-        <p class="mr-note" style="margin-bottom:0;">🚚 जेवणाची रक्कम ₹१०० पेक्षा जास्त असेल तर <strong>मोफत
-            डिलिव्हरी</strong> · 🎉 ₹३०० पेक्षा जास्त — <strong>५% सूट</strong> · ₹४५० पेक्षा जास्त — <strong>७.५%
-            सूट</strong></p>
+        <p class="mr-note" style="margin-bottom:0;">🚚 १ जेवण असल्यास ₹१०० वर <strong>मोफत डिलिव्हरी</strong>, २ किंवा अधिक असल्यास ₹१५० वर मोफत &nbsp;·&nbsp; 🎉 ₹३०० वर <strong>५% सूट</strong> · ₹४५० वर <strong>७.५% सूट</strong></p>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
         <div id="dateTabsWrap"
@@ -3622,7 +3620,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const UPI_VPA = "9819969682@hdfc";
+    const UPI_VPA = "9930748908@okbizaxis";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Garden"];   // populated dynamically from API
     const DELIVERY_CHARGE = 10;
@@ -4930,7 +4928,10 @@
         }
 
         // Discount & Fee Waiver logic based on combined day total
-        const isDayFree = (combinedDayTotal >= FREE_THRESHOLD) || S.profile.feeExempt;
+        const mealsToday = ["Breakfast", "Lunch", "Dinner"].filter(m => (dayOrders[m]?.subtotal > 0) || (existDay[m]?.subtotal > 0));
+        const totalMealsOnDate = mealsToday.length;
+        const dynamicThreshold = totalMealsOnDate <= 1 ? 100 : 150;
+        const isDayFree = (combinedDayTotal >= dynamicThreshold) || S.profile.feeExempt;
 
         // Suppress "Add more for Free Delivery" banner if all ordered meals are Self Pickup
         const allPickup = ["Breakfast","Lunch","Dinner"].every(m => {
@@ -4944,9 +4945,9 @@
             <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
           </div>`;
         } else if (!isDayFree && !allPickup) {
-          const diff = FREE_THRESHOLD - combinedDayTotal;
+          const diff = dynamicThreshold - combinedDayTotal;
           html += `<div style="font-size:0.72rem;color:#27ae60;background:#e8f5e9;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-weight:500;border:1px solid #c8e6c9;">
-            🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> on all meals!
+            🚚 Add <strong>₹${diff}</strong> more to this day's order for <strong>Free Delivery</strong> (Current threshold: ₹${dynamicThreshold} for ${totalMealsOnDate} meal${totalMealsOnDate > 1 ? 's' : ''})!
           </div>`;
         }
 
@@ -5077,7 +5078,7 @@
           if (daySmallFeeCredit > 0) creditParts.push(`₹${daySmallFeeCredit} small order fee`);
           let creditDesc = creditParts.join(' and ');
 
-          html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total reached ₹${FREE_THRESHOLD}, we have credited back the ${creditDesc} paid for earlier orders today!', 7000)">
+          html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Since your daily food total reached ₹${dynamicThreshold}, we have credited back the ${creditDesc} paid for earlier orders today!', 7000)">
         <span>🏷️ Combined Day Fee Credits (Refund)</span><span>−₹${totalCredits}</span></div>`;
         }
         if (discAmt > 0) {
@@ -5260,52 +5261,48 @@
 
       $(amtId).textContent = `₹${amount}`;
 
-      // Build smart UPI note: name + dates
-      // Simplified note for best compatibility across UPI apps (GPay etc)
       const note = `Svaadh ${S.phone.slice(-4)}`;
       $(noteId).textContent = note;
 
-      // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
-      const upiStr = `upi://pay?pa=${UPI_VPA}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+      // Split UPI IDs: HDFC for QR/Copy, Axis for Deep Link
+      const hdfcVpa = "9819969682@hdfc";
+      const axisVpa = "9930748908@okbizaxis";
+
+      const qrUpiStr   = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+      const deepUpiStr = `upi://pay?pa=${axisVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
       
       const qrEl = $(qid);
       qrEl.innerHTML = "";
-      new QRCode(qrEl, { text: upiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(qrEl, { text: qrUpiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
 
-      // Make the QR code clickable
-      qrEl.style.cursor = "pointer";
-      qrEl.title = "Tap to pay via any UPI app";
-      // Always use anchor click for proper Android Intent handling (fixes GPay blocking navigation)
-      qrEl.onclick = () => { $(linkId).click(); };
+      // Disable QR click as requested
+      qrEl.style.cursor = "default";
+      qrEl.title = "Please use the 'Pay via UPI App' button below";
+      qrEl.onclick = null;
 
-      // iOS: upi:// deep link doesn't work — show copy button instead
       const deepLinkBtn = $(linkId);
       if (isIOS()) {
         deepLinkBtn.removeAttribute("href");
         deepLinkBtn.textContent = t('upi_copy_label');
         deepLinkBtn.onclick = (e) => {
           e.preventDefault();
-          navigator.clipboard?.writeText(UPI_VPA).then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
+          navigator.clipboard?.writeText(hdfcVpa).then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
             .catch(() => {
-              // Fallback for older iOS
-              const el = document.createElement("input"); el.value = UPI_VPA; document.body.appendChild(el);
+              const el = document.createElement("input"); el.value = hdfcVpa; document.body.appendChild(el);
               el.select(); document.execCommand("copy"); document.body.removeChild(el);
               toast(t('upi_copied_toast', { amt: amount }), 3500);
             });
         };
-        // Show iOS-specific instructions below the QR
         const upiIdEl = $("upiDeepLink").closest(".upi-section")?.querySelector(".upi-id");
         if (upiIdEl) upiIdEl.insertAdjacentHTML("afterend",
           `<div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:8px;padding:8px 10px;font-size:0.75rem;color:#78350f;margin:8px 0;text-align:left;">
         ${t('ios_hint', { amt: amount })}
       </div>`);
       } else {
-        deepLinkBtn.href = upiStr;
+        deepLinkBtn.href = deepUpiStr;
         deepLinkBtn.onclick = null;
         deepLinkBtn.textContent = `👆 Pay ₹${amount} via UPI App`;
       }
-
-      // codBtn event handlers removed
     }
 
 
