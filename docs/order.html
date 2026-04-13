@@ -5265,9 +5265,9 @@
       const note = `Svaadh ${S.phone.slice(-4)}`;
       $(noteId).textContent = note;
 
-      // Split UPI IDs: HDFC for QR/Copy, Axis for Deep Link
+      // Split UPI IDs: HDFC for QR/Copy, Merchant VPA for Deep Link
       const hdfcVpa = "9819969682@hdfc";
-      const axisVpa = "9930748908@okbizaxis";
+      const merchantVpa = "svaadhkitchen.36727659@hdfcbank";
       const payeeName = "Svaadh Kitchen";
       const mccCode = "5812"; // Standard for Restaurants/Tiffin Services
 
@@ -5275,7 +5275,7 @@
       
       // Deep link with merchant trust parameters (mc, pn, tr, mode) to avoid GPay "Risky" flag
       const txRef = `SK${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      const deepUpiStr = `upi://pay?pa=${axisVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
+      const deepUpiStr = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
       
       const qrEl = $(qid);
       qrEl.innerHTML = "";
