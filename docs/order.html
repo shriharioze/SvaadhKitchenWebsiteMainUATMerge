@@ -5208,8 +5208,9 @@
       }
       const name = (S.profile?.name || 'Customer').trim();
       const phone = (S.phone || '').trim();
-      // Removed tr and mode=02 to treat as P2P (fixes bank rejections)
-      const upiData = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
+      const note = `Svaadh Wallet: ${phone.slice(-4)}`;
+      // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
+      const upiData = `upi://pay?pa=${UPI_VPA}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
 
       $('walletQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
       $('walletUpiLink').href = upiData;
@@ -5270,8 +5271,8 @@
 
       $(noteId).textContent = note;
 
-      // Removed tr and mode=02 to treat as P2P (fixes bank rejections)
-      const upiStr = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+      // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
+      const upiStr = `upi://pay?pa=${UPI_VPA}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
       
       const qrEl = $(qid);
       qrEl.innerHTML = "";
