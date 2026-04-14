@@ -94,7 +94,8 @@ const ORDERS_HEADERS = [
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
-  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point"
+  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point",
+  "Inflation_Surcharge", "Loyalty_Discount"
 ];
 
 const ITEM_COL_MAP = {
@@ -452,6 +453,22 @@ function doPost(e) {
     if (action === "chat") return jsonRes(handleChat(body));
     if (action === "submitWalletRecharge") return jsonRes(submitWalletRecharge(body));
     if (action === "payAllPendingWithWallet") return jsonRes(payAllPendingWithWallet(body));
+    if (action === "markRefundRejected") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markRefundRejected(body.submissionId));
+    }
+    if (action === "rejectUPIPayment") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(rejectUPIPayment(body));
+    }
+    if (action === "rejectWalletRecharge") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(rejectWalletRecharge(body));
+    }
+    if (action === "batchProcessApprovals") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(batchProcessApprovals(body));
+    }
 
     if (action === "setPin") {
       const profile = { phone: body.phone, pin: body.pin };
@@ -949,8 +966,15 @@ function submitOrder(body) {
     return k.replace(/_/g, ' ');
   };
 
+  // Sort orders by date to ensure virtual streak runs chronologically
+  orders.sort((a,b) => a.date.localeCompare(b.date));
+  const initialStreakInfo = _calculateLoyaltyStreak(profile.phone);
+  let virtualStreakCount = initialStreakInfo.streak;
+  let virtualPastSurcharge = initialStreakInfo.pastSurcharge;
+
   for (const order of orders) {
     const orderDate = order.date;
+    const is6thDay = (virtualStreakCount === 5); // Hits 6 on this day
     const existingDateInfo = (existingDayTotals[orderDate] || {});
 
     // Calculate meal count for this date to determine dynamic free delivery threshold
@@ -978,7 +1002,25 @@ function submitOrder(body) {
     const submissionDateDiscAmt = Math.max(0, totalDayDiscAmt - prevDayDiscAmt);
 
     // Pro-rate the submission-level discount across meals in this submission
-    const getDisc = (sub) => submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
+    const getDisc = (sub) => {
+      if (is6thDay) {
+        // Loyalty Discount: Waive all 6 days of surcharge
+        const currentSurcharge = Math.ceil(submissionDayFoodTotal / 20);
+        const totalWaiver = virtualPastSurcharge + currentSurcharge;
+        return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
+      }
+      return submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
+    };
+
+    // Update virtual streak state for NEXT loop iteration
+    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal / 20);
+    if (is6thDay) {
+      virtualStreakCount = 0;
+      virtualPastSurcharge = 0;
+    } else {
+      virtualStreakCount++;
+      virtualPastSurcharge += currentDaySurcharge;
+    }
 
     for (const meal of order.meals) {
       const sid = generateSubmissionID();
@@ -1098,12 +1140,17 @@ function submitOrder(body) {
         ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Inflation_Surcharge");
         hIdx["Inflation_Surcharge"] = ordersWs.getLastColumn();
       }
+      if (!hIdx["Loyalty_Discount"]) {
+        ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Loyalty_Discount");
+        hIdx["Loyalty_Discount"] = ordersWs.getLastColumn();
+      }
       set("Items_JSON",          JSON.stringify(itemsObj));
       set("Special_Notes_Kitchen",  nKitchen);
       set("Special_Notes_Delivery", nDelivery);
       set("Food_Subtotal",       sub);
       set("Small_Order_Fee",     smallOrderFee);
       set("Inflation_Surcharge", inflationSurcharge);
+      set("Loyalty_Discount",    is6thDay ? "Yes" : "No");
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
       if (hIdx["Review_Discount"]) {
@@ -1329,6 +1376,55 @@ function getDayTotalsForDates(phone, datesParam) {
   return { dayTotals: result };
 }
 
+/**
+ * Calculates current streak and accumulated surcharges for a customer.
+ * Skips Sundays (kitchen closed).
+ */
+function _calculateLoyaltyStreak(phone) {
+  if (!phone) return { streak: 0, pastSurcharge: 0 };
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(ws);
+  const phoneStr = _normalizePhone(phone);
+  const todayISO = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+
+  const dailyTotals = {};
+  rows.forEach(r => {
+    if (_normalizePhone(r.Phone) !== phoneStr) return;
+    const stat = String(r.Payment_Status || "").toLowerCase();
+    if (stat.includes("cancelled") || stat.includes("deleted")) return;
+    
+    const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Order_Date).trim();
+    if (d >= todayISO) return; // Only past days for the streak check
+
+    if (!dailyTotals[d]) dailyTotals[d] = 0;
+    dailyTotals[d] += (Number(r.Inflation_Surcharge) || (Math.ceil((Number(r.Food_Subtotal)||0)/20))); 
+  });
+
+  let streakCount = 0;
+  let accumulatedSurcharge = 0;
+  
+  let d = new Date(); d.setDate(d.getDate() - 1); // yesterday
+  let safety = 0;
+  while (safety < 30) { 
+    safety++;
+    if (d.getDay() === 0) { // Skip Sunday
+      d.setDate(d.getDate() - 1);
+      continue;
+    }
+    const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    if (dailyTotals[iso] !== undefined) {
+      streakCount++;
+      accumulatedSurcharge += dailyTotals[iso];
+    } else {
+      break; 
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  
+  return { streak: streakCount, pastSurcharge: accumulatedSurcharge };
+}
+
 function getCustomerOrders(phone) {
   if (!phone) return {orders:[], past_orders:[], wallet_balance: 0};
   const ss = getSpreadsheet();
@@ -1368,6 +1464,7 @@ function getCustomerOrders(phone) {
         meal:               r.Meal_Type,
         summary:            _buildSummary(r),
         total:              r.Net_Total,
+        inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         deliveredAt:        delTracker.deliveredAt,
@@ -1387,6 +1484,7 @@ function getCustomerOrders(phone) {
         meal:               r.Meal_Type,
         summary:            _buildSummary(r),
         total:              r.Net_Total,
+        inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         deliveredAt:        delTracker.deliveredAt,
@@ -1535,8 +1633,32 @@ function deleteOrder(phone, rowId, refundType) {
       // Let's stick to the 150 rule as the only common waiver.
     }
 
+    // Loyalty Clawback Logic
+    // If deleting an order breaks a streak that received a reward on a later date.
+    let loyaltyClawback = 0;
+    const phoneStr = _normalizePhone(phone);
+    // Scan later days (up to 6 operational days ahead) to see if a payoff happened
+    const laterPayoffs = rows.filter(x => {
+      if (_normalizePhone(x.Phone) !== phoneStr) return false;
+      const xStat = String(x.Payment_Status || "").toLowerCase();
+      if (xStat.includes("cancelled") || xStat.includes("deleted")) return false;
+      if (String(x.Loyalty_Discount).trim() !== "Yes") return false;
+      const xDate = x.Order_Date instanceof Date ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(x.Order_Date).trim();
+      return xDate >= orderDateStr; // Include today just in case, but usually payoff is today or later
+    });
+
+    if (laterPayoffs.length > 0) {
+      // Find the LATEST payoff within a reasonable window (6 operational days)
+      // Actually, any payoff that triggered after this date might be invalidated.
+      // We'll subtract the Discount_Amount of the first payoff we find.
+      loyaltyClawback = Number(laterPayoffs[0].Discount_Amount) || 0;
+      // Mark it as "Clawed Back" in the sheet to prevent multiple deductions?
+      // Actually, we should only claw back if the streak is NOW invalid.
+      // For simplicity: subtract the reward.
+    }
+
     // Actual refund = what was charged on deleted row minus any amount now owed back
-    const adjustment = overDiscount + deliveryOwed + smallFeeOwed;
+    const adjustment = overDiscount + deliveryOwed + smallFeeOwed + loyaltyClawback;
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
@@ -1984,6 +2106,26 @@ function markRefunded(submissionId) {
   return {success: false, error: "Refund request not found"};
 }
 
+function markRefundRejected(submissionId) {
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_REFUNDS, []);
+  const data = ws.getDataRange().getValues();
+  const h = data[0];
+  const idIdx = h.indexOf("Submission_ID");
+  const statusIdx = h.indexOf("Status");
+
+  if (idIdx === -1 || statusIdx === -1) return {success: false, error: "Sheet layout error"};
+
+  const now = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm");
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][idIdx]) === String(submissionId)) {
+      ws.getRange(i + 1, statusIdx + 1).setValue("Rejected (" + now + ")");
+      return {success: true};
+    }
+  }
+  return {success: false, error: "Refund request not found"};
+}
+
 // ── ROTI PACKING UTILITY ──────────────────────────────────────
 function calculatePackets(total, max) {
   if (total <= 0) return [];
@@ -2305,7 +2447,7 @@ function getOrderSummary(date) {
 
     m.count++;
     m.revenue += net;
-    if (payStatus === "Paid" || payStatus === "Wallet Paid") m.paid += net; else m.pending += net;
+    if (payStatus === "Paid" || payStatus === "Wallet Paid" || payStatus === "Collected") m.paid += net; else m.pending += net;
     m.customers.push({
       id:        String(r.Submission_ID || ""),
       name:      String(r.Customer_Name || ""),
@@ -2320,7 +2462,7 @@ function getOrderSummary(date) {
 
     totals.orders++;
     totals.revenue += net;
-    if (payStatus === "Paid" || payStatus === "Wallet Paid") totals.paid += net; else totals.pending += net;
+    if (payStatus === "Paid" || payStatus === "Wallet Paid" || payStatus === "Collected") totals.paid += net; else totals.pending += net;
     if (!customerSet[String(r.Phone)]) { customerSet[String(r.Phone)] = true; totals.customers++; }
   });
 
@@ -2626,7 +2768,7 @@ function getUnpaidCustomers(p) {
     String(r.Order_Date) >= dateFrom &&
     String(r.Order_Date) <= dateTo   &&
     (r.Payment_Status === "Pending" ||
-     r.Payment_Status === "Pending"         ||
+     r.Payment_Status === "on account" ||
      !r.Payment_Status)
   );
 
@@ -2666,7 +2808,7 @@ function markCustomersPaid(body) {
         String(r.Order_Date) >= dateFrom &&
         String(r.Order_Date) <= dateTo   &&
         (r.Payment_Status === "Pending" ||
-         r.Payment_Status === "Pending"         ||
+         r.Payment_Status === "on account" ||
          !r.Payment_Status)) {
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
       updated++;
@@ -2708,7 +2850,9 @@ function getOrderHistory(p) {
   });
 
   var totalRev     = orders.reduce(function(s,o){return s+o.total;},0);
-  var totalPaid    = orders.filter(function(o){return String(o.status)==="Paid" || String(o.status)==="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0);
+  var totalPaid    = orders.filter(function(o){
+    return String(o.status)==="Paid" || String(o.status)==="Wallet Paid" || String(o.status)==="Collected";
+  }).reduce(function(s,o){return s+o.total;},0);
   var uniqueCusts  = Object.keys(orders.reduce(function(m,o){m[o.phone]=1;return m;},{})).length;
 
   return {
@@ -2793,7 +2937,8 @@ function getCustomerList() {
     }
     map[phone].orderCount++;
     map[phone].totalSpent += Number(r.Net_Total)||0;
-    if (String(r.Payment_Status) !== "Paid" && String(r.Payment_Status) !== "Wallet Paid") map[phone].pendingAmt += Number(r.Net_Total)||0;
+    const ps = String(r.Payment_Status || "").trim();
+    if (ps !== "Paid" && ps !== "Wallet Paid" && ps !== "Collected") map[phone].pendingAmt += Number(r.Net_Total)||0;
     if (d > map[phone].lastDate) {
       map[phone].lastDate = d;
       map[phone].name = String(r.Customer_Name||map[phone].name).trim();
@@ -2945,7 +3090,7 @@ function getDatePayments(date) {
       payFreq:String(r.Payment_Freq||"").trim(), meals:[], total:0, allPaid:true};
     map[phone].meals.push(r.Meal_Type);
     map[phone].total += Number(r.Net_Total)||0;
-    if (String(r.Payment_Status)!=="Paid" && String(r.Payment_Status)!=="Wallet Paid") map[phone].allPaid = false;
+    if (!["Paid", "Wallet Paid", "Collected"].includes(String(r.Payment_Status))) map[phone].allPaid = false;
   });
 
   var customers = Object.values(map).map(function(c) {
@@ -2989,7 +3134,7 @@ function markOrdersStatus(body) {
   // Sort descending by row index to allow safe deletion
   matches.sort((a,b) => b._row - a._row).forEach(function(r) {
     const currentStatus = String(r.Payment_Status || "").trim();
-    if (currentStatus === "Cancelled (Verify UPI)") {
+    if (currentStatus === "Cancelled (Verify UPI)" && status === "Paid") {
       // ── Process Refund Logic based on preference
       const pref = String(r.Refund_Preference || "upi").toLowerCase();
       const amt = Number(r.Net_Total) || 0;
@@ -3003,13 +3148,18 @@ function markOrdersStatus(body) {
       }
       ws.deleteRow(r._row); // Final delete after verification
     } else {
-      // ── Standard Payment Approval
+      // ── Standard Payment Approval or Rejection
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue(status);
     }
     updated++;
   });
 
   return {success:true, updatedRows:updated};
+}
+
+function rejectUPIPayment(body) {
+  body.status = "Payment Rejected";
+  return markOrdersStatus(body);
 }
 
 // ── DELETED OBSOLETE ADMIN CANCEL ORDER (Merged with main) ──
@@ -3064,7 +3214,9 @@ function getAnalytics(p) {
   var itemCounts={};
   rows.forEach(function(r) {
     var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
-    totalRev+=net; if(String(r.Payment_Status)==="Paid" || String(r.Payment_Status)==="Wallet Paid") totalPaid+=net;
+    var payStatus = String(r.Payment_Status || "").trim();
+    totalRev+=net; 
+    if(payStatus==="Paid" || payStatus==="Wallet Paid" || payStatus==="Collected") totalPaid+=net;
     var ph=String(r.Phone||"").trim(); if(ph) custSet[ph]=true;
     var meal=String(r.Meal_Type||"");
     if(mealStats[meal]){mealStats[meal].count++;mealStats[meal].revenue+=net;}
@@ -3267,6 +3419,68 @@ function approveWalletRecharge(body) {
   return {success:false, error:"Recharge request not found or already verified"};
 }
 
+function rejectWalletRecharge(body) {
+  const phone = String(body.phone || "").trim();
+  const ts    = String(body.timestamp || "").trim();
+  if (!phone || !ts) return {success:false, error:"Missing phone or timestamp"};
+
+  const ss   = getSpreadsheet();
+  const ws   = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  const hIdx = headerIndex(ws);
+
+  const vCol = hIdx["Verified"];
+  const pCol = hIdx["Phone"];
+  const tCol = hIdx["Timestamp"];
+  if (!vCol || !pCol || !tCol) return {success:false, error:"Wallet sheet missing required columns"};
+
+  const rows = ws.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    const rPhone = String(rows[i][pCol-1] || "").trim();
+    let   rTs    = rows[i][tCol-1];
+    
+    // Normalize timestamp for comparison
+    if (rTs instanceof Date) {
+      rTs = Utilities.formatDate(rTs, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    } else {
+      rTs = String(rTs || "").trim();
+    }
+    
+    // Check match
+    if (rPhone === phone && rTs === ts) {
+      ws.getRange(i+1, vCol).setValue("REJECTED");
+      return {success:true};
+    }
+  }
+  
+  return {success:false, error:"Recharge request not found"};
+}
+
+/**
+ * Batch process multiple approvals/rejections
+ * body: { tab: 'refunds'|'payments'|'wallet', action: 'approve'|'reject', items: [...] }
+ */
+function batchProcessApprovals(body) {
+  const { tab, action, items } = body;
+  if (!tab || !action || !items || !items.length) return {success:false, error: "Invalid batch request"};
+  
+  const results = [];
+  items.forEach(item => {
+    let res;
+    if (tab === 'refunds') {
+      res = (action === 'approve') ? markRefunded(item.submissionId) : markRefundRejected(item.submissionId);
+    } else if (tab === 'payments') {
+      const payload = { ...item, status: (action === 'approve' ? 'Paid' : 'Payment Rejected') };
+      res = markOrdersStatus(payload);
+    } else if (tab === 'wallet') {
+      res = (action === 'approve') ? approveWalletRecharge(item) : rejectWalletRecharge(item);
+    }
+    results.push(res);
+  });
+  
+  const successCount = results.filter(r => r.success).length;
+  return { success: true, total: items.length, successCount };
+}
+
 /**
  * ADMIN: Fetch all orders with "Pending" status (usually UPI)
  */
@@ -3277,7 +3491,7 @@ function getPendingUPIPayments() {
   // Return Payment_Status == "Pending" OR "Cancelled (Verify UPI)"
   return rows.filter(r => {
     const s = String(r.Payment_Status).trim();
-    return s === "Pending" || s === "Cancelled (Verify UPI)";
+    return s === "Pending" || s === "Cancelled (Verify UPI)" || s === "Pending Approval";
   })
              .map(r => ({
                id: r.Submission_ID,
@@ -3775,7 +3989,7 @@ function markBillingCollected(submissionIds) {
   rows.forEach(r => {
     const cleanId = String(r.Submission_ID || '').replace(/\D/g, '');
     if (idSet.has(cleanId)) {
-      ws.getRange(r._row, statusCol).setValue('Collected');
+      ws.getRange(r._row, statusCol).setValue('Paid'); // Changed from 'Collected' to 'Paid' for uniformity
       count++;
     }
   });

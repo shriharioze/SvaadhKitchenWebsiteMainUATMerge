@@ -776,6 +776,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .billing-chip.active { border-color: var(--red); background: var(--red-soft); color: var(--red); }
 .billing-chip:hover:not(.active) { border-color: var(--muted); }
 
+/* Approvals Multi-select & Batch Actions */
+.batch-actions-bar {
+  display: none; align-items: center; gap: 12px; padding: 10px 16px;
+  background: var(--gold-soft); border: 1px solid var(--gold-border);
+  border-radius: var(--radius); margin-bottom: 16px; animation: slideDown 0.2s ease-out;
+}
+.batch-actions-bar.on { display: flex; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.batch-count { font-weight: 700; color: var(--gold); font-size: 0.85rem; }
+.approve-row-btn { background: var(--green); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+.approve-row-btn:hover { background: #245f3e; transform: translateY(-1px); }
+.reject-row-btn { background: var(--red); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+.reject-row-btn:hover { background: #a93226; transform: translateY(-1px); }
+
 </style>
 </head>
 <body>
@@ -1232,8 +1246,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
         <!-- SUB-PAGE: REFUNDS -->
         <div class="approval-panel active" id="panelRefunds">
-          <div style="margin-bottom:16px;">
+          <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
             <button class="btn-primary" onclick="loadRefunds()">↺ Refresh Requests</button>
+            <div id="batchRefunds" class="batch-actions-bar">
+              <span class="batch-count" id="batchRefundCount">0 items selected</span>
+              <button class="approve-row-btn" onclick="handleBatchAction('refunds', 'approve')">✅ Approve Selected</button>
+              <button class="reject-row-btn" onclick="handleBatchAction('refunds', 'reject')">❌ Reject Selected</button>
+            </div>
           </div>
           <div id="refundsContent">
             <div class="empty-msg">Click Refresh to load refund requests</div>
@@ -1243,7 +1262,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <!-- SUB-PAGE: PAYMENTS (Pending UPI) -->
         <div class="approval-panel" id="panelPayments">
           <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-            <button class="btn-primary" onclick="loadPendingPayments()">↺ Refresh Payments</button>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button class="btn-primary" onclick="loadPendingPayments()">↺ Refresh Payments</button>
+              <div id="batchPayments" class="batch-actions-bar">
+                <span class="batch-count" id="batchPaymentCount">0 items selected</span>
+                <button class="approve-row-btn" onclick="handleBatchAction('payments', 'approve')">✅ Approve Selected</button>
+                <button class="reject-row-btn" onclick="handleBatchAction('payments', 'reject')">❌ Reject Selected</button>
+              </div>
+            </div>
             <div style="font-size:0.75rem; color:var(--muted);">Orders with "Pending" status (requires manual verification)</div>
           </div>
           <div id="pendingPaymentsContent">
@@ -1254,7 +1280,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <!-- SUB-PAGE: WALLET RECHARGES -->
         <div class="approval-panel" id="panelWallet">
           <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-            <button class="btn-primary" onclick="loadPendingRecharges()">↺ Refresh Recharges</button>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button class="btn-primary" onclick="loadPendingRecharges()">↺ Refresh Recharges</button>
+              <div id="batchWallet" class="batch-actions-bar">
+                <span class="batch-count" id="batchWalletCount">0 items selected</span>
+                <button class="approve-row-btn" onclick="handleBatchAction('wallet', 'approve')">✅ Approve Selected</button>
+                <button class="reject-row-btn" onclick="handleBatchAction('wallet', 'reject')">❌ Reject Selected</button>
+              </div>
+            </div>
             <div style="font-size:0.75rem; color:var(--muted);">Unverified wallet additions from Customers</div>
           </div>
           <div id="pendingRechargesContent">
@@ -1379,6 +1412,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 <!-- Replaced by shared modals-svaadh.js and modals-svaadh.css -->
 
 <script>
+const isPaidStatus = s => ["Paid", "Wallet Paid", "Collected"].includes(s);
 /**
  * Modern Admin Confirmation UI (Wrapper for sConfirm)
  */
@@ -2493,7 +2527,7 @@ function renderOrderSummary(data) {
     <div class="stat-card"><div class="sv">${totals.orders}</div><div class="sl">Total Orders</div></div>
     <div class="stat-card"><div class="sv">${totals.customers}</div><div class="sl">Customers</div></div>
     <div class="stat-card green"><div class="sv">${fmtMoney(totals.revenue)}</div><div class="sl">Total Revenue</div></div>
-    <div class="stat-card green"><div class="sv">${fmtMoney(totals.paid)}</div><div class="sl">Collected</div></div>
+    <div class="stat-card green"><div class="sv">${fmtMoney(totals.paid)}</div><div class="sl">Paid</div></div>
     <div class="stat-card orange"><div class="sv">${fmtMoney(totals.pending)}</div><div class="sl">Pending</div></div>
   </div>`;
 
@@ -2504,7 +2538,7 @@ function renderOrderSummary(data) {
     if (!m) return;
 
     const payBadge = s => {
-      if (s === "Paid" || s === "Wallet Paid") return `<span class="pay-badge paid">✓ Paid</span>`;
+      if (isPaidStatus(s)) return `<span class="pay-badge paid">✓ Paid</span>`;
       return `<span class="pay-badge pending">⏳ Pending</span>`;
     };
 
@@ -3155,7 +3189,7 @@ function renderTenday(data) {
   </div>`;
 
   const rows = data.customers.map(c => {
-    const isPaid = c.status==="Paid";
+    const isPaid = isPaidStatus(c.status);
     return `<tr>
       <td><strong>${c.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${c.phone}</span></td>
       <td style="text-align:center;">${c.orders}</td>
@@ -3828,7 +3862,7 @@ function renderPayments(data) {
     <div class="pay-sum-card"><div class="sv">${data.customers.length}</div><div class="sl">Customers</div></div>
   </div>`;
   const rows = data.customers.map(c => {
-    const isPaid = c.status === "Paid";
+    const isPaid = isPaidStatus(c.status);
     return `<tr id="payrow_${c.phone}">
       <td><strong>${c.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${c.phone}</span></td>
       <td style="font-size:.8rem;">${c.meals.join(", ")}</td>
@@ -3983,8 +4017,8 @@ function renderBillingCards(customers, cycle) {
     const addrParts = [c.wing && `Wing ${c.wing}`, c.flat && `Flat ${c.flat}`, c.floor && `${c.floor} Floor`, c.society, c.area].filter(Boolean).join(', ');
 
     const bulkBtn = cycle !== 'Daily'
-      ? `<button class="btn-mark-collected" onclick="markBillingCollectedJS(${JSON.stringify(allSids)},'${c.phone}')">✅ Mark All Collected</button>`
-      : `<button class="btn-mark-collected" onclick="markSelectedCollected('${c.phone}')">✅ Mark Selected Collected</button>`;
+      ? `<button class="btn-mark-collected" onclick="markBillingPaidJS(${JSON.stringify(allSids)},'${c.phone}')">✅ Mark All Paid</button>`
+      : `<button class="btn-mark-collected" onclick="markSelectedPaid('${c.phone}')">✅ Mark Selected Paid</button>`;
 
     return `<div class="billing-cust-card" id="billingCard_${c.phone.replace(/\D/g,'')}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
@@ -4007,11 +4041,11 @@ function renderBillingCards(customers, cycle) {
   }).join('');
 }
 
-async function markBillingCollectedJS(sids, phone) {
+async function markBillingPaidJS(sids, phone) {
   if (!sids || !sids.length) { toast('No orders selected.'); return; }
-  const ok = await sConfirm(`Mark ${sids.length} order(s) as Collected for ₹${sids.length} entries?`, 'Confirm Collection', '✅');
+  const ok = await sConfirm(`Mark ${sids.length} order(s) as Paid?`, 'Confirm Payment', '✅');
   if (!ok) return;
-  sLoading(true, 'Marking as Collected…');
+  sLoading(true, 'Updating payment status…');
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -4019,7 +4053,7 @@ async function markBillingCollectedJS(sids, phone) {
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    toast(`✅ ${data.count} order(s) marked as Collected!`);
+    toast(`✅ ${data.count} order(s) marked as Paid!`);
     loadBillingTab(_currentBillingCycle);
   } catch(e) {
     toast('Error: ' + e.message);
@@ -4028,11 +4062,11 @@ async function markBillingCollectedJS(sids, phone) {
   }
 }
 
-async function markSelectedCollected(phone) {
+async function markSelectedPaid(phone) {
   const checked = [...document.querySelectorAll(`.billing-chk[data-phone="${phone}"]:checked`)];
   if (!checked.length) { toast('Please tick at least one order.'); return; }
   const sids = checked.map(el => el.dataset.sid);
-  await markBillingCollectedJS(sids, phone);
+  await markBillingPaidJS(sids, phone);
 }
 
 function generateBillPDF(cust) {
@@ -4151,11 +4185,13 @@ async function loadPendingPayments() {
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending UPI payments to verify. ✅</div>`;
       sLoading(false);
+      updateBatchBar('payments');
       return;
     }
 
     let html = `<div class="pay-table-wrap"><table class="pay-table">
       <thead><tr>
+        <th style="width:40px;"><input type="checkbox" id="selectAllPayments" onclick="toggleSelectAll('payments')"></th>
         <th>Customer</th>
         <th>Order</th>
         <th>Amount</th>
@@ -4168,7 +4204,12 @@ async function loadPendingPayments() {
       const pref = String(p.refund_preference || "upi").toLowerCase();
       const prefLabel = pref === "wallet" ? "💼 Wallet" : "💸 UPI";
       
-      html += `<tr style="${rowStyle}">
+      html += `<tr style="${rowStyle}" class="payment-row">
+        <td>
+          <input type="checkbox" class="payment-check" 
+                 data-phone="${p.phone}" data-date="${p.date}" data-sid="${p.id}" data-iscancelled="${isCancelled}" data-name="${p.customer}" data-amount="${p.amount}"
+                 onchange="updateBatchBar('payments')">
+        </td>
         <td>
           <div style="font-weight:700;">${p.customer}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${p.phone}</div>
@@ -4180,17 +4221,37 @@ async function loadPendingPayments() {
         </td>
         <td style="font-weight:700;">₹${p.amount}</td>
         <td>
-          <button class="${isCancelled ? 'btn-orange':'btn-green'}" 
-                  style="${isCancelled ? 'background:#f57c00;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
-                  onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled}, '${p.customer}', ${p.amount})">
-            ${isCancelled ? 'Verify & Refund' : 'Confirm Paid'}
-          </button>
+          <div style="display:flex;gap:6px;">
+            <button class="approve-row-btn" 
+                    style="${isCancelled ? 'background:#f57c00;':''}"
+                    onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled}, '${p.customer}', ${p.amount})">
+              ${isCancelled ? 'Verify & Refund' : 'Confirm Paid'}
+            </button>
+            <button class="reject-row-btn" onclick="rejectUPIPayment('${p.phone}', '${p.date}', '${p.id}', '${p.customer}')">Reject</button>
+          </div>
         </td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
-    sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+    sLoading(false);
+    updateBatchBar('payments');
+  } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+}
+
+async function rejectUPIPayment(phone, date, sid, name) {
+  if (!(await showUIConfirm(`Reject payment for ${name}? This will mark it as "Payment Rejected".`, "Reject Payment", "❌"))) return;
+  sLoading(true, "Rejecting payment...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body: JSON.stringify({_action:"rejectUPIPayment", pin:S.sessionPin, phone, date, sid})});
+    const data = await res.json();
+    if (data.success) {
+      toast("Payment Rejected ❌");
+      await loadPendingPayments();
+      refreshApprovalCounts();
+    } else throw new Error(data.error);
+  } catch(e) { sLoading(false); toast("Error: " + e.message); }
 }
 
 async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", amt=0) {
@@ -4226,11 +4287,13 @@ async function loadPendingRecharges() {
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending wallet recharges. ✅</div>`;
       sLoading(false);
+      updateBatchBar('wallet');
       return;
     }
 
     let html = `<div class="pay-table-wrap"><table class="pay-table">
       <thead><tr>
+        <th style="width:40px;"><input type="checkbox" id="selectAllWallet" onclick="toggleSelectAll('wallet')"></th>
         <th>Customer</th>
         <th>Amount</th>
         <th>Requested At</th>
@@ -4238,7 +4301,12 @@ async function loadPendingRecharges() {
       </tr></thead>
       <tbody>`;
     data.forEach(r => {
-      html += `<tr>
+      html += `<tr class="wallet-row">
+        <td>
+          <input type="checkbox" class="wallet-check" 
+                 data-phone="${r.Phone}" data-timestamp="${r.Timestamp}" data-amount="${r.Amount}" data-name="${r.Customer_Name}"
+                 onchange="updateBatchBar('wallet')">
+        </td>
         <td>
           <div style="font-weight:700;">${r.Customer_Name}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
@@ -4246,13 +4314,97 @@ async function loadPendingRecharges() {
         <td style="font-weight:700;color:var(--green);">₹${r.Amount}</td>
         <td style="font-size:0.8rem;color:var(--muted);">${r.Timestamp}</td>
         <td>
-          <button class="btn-primary" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount}, '${r.Customer_Name}')">Activate Credits</button>
+          <div style="display:flex;gap:6px;">
+            <button class="approve-row-btn" onclick="activateWalletRecharge('${r.Phone}', '${r.Timestamp}', ${r.Amount}, '${r.Customer_Name}')">Activate Credits</button>
+            <button class="reject-row-btn" onclick="rejectWalletRecharge('${r.Phone}', '${r.Timestamp}', '${r.Customer_Name}')">Reject</button>
+          </div>
         </td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
-    sLoading(false); } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+    sLoading(false);
+    updateBatchBar('wallet');
+  } catch(e) { sLoading(false); wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`; }
+}
+
+async function rejectWalletRecharge(phone, timestamp, name) {
+  if (!(await showUIConfirm(`Reject wallet recharge for ${name}?`, "Reject Recharge", "❌"))) return;
+  sLoading(true, "Rejecting recharge...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
+      body: JSON.stringify({ _action: "rejectWalletRecharge", pin: S.sessionPin, phone, timestamp }) });
+    const data = await res.json();
+    if (data.success) {
+      toast("Recharge Rejected ❌");
+      await loadPendingRecharges();
+      refreshApprovalCounts();
+    } else throw new Error(data.error);
+  } catch(e) { sLoading(false); toast("Error: " + e.message); }
+}
+
+/**
+ * Multi-select Logic
+ */
+function toggleSelectAll(tabId) {
+  const master = $(`selectAll${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
+  const key = tabId.replace(/s$/, ""); // 'refund', 'payment', 'wallet'
+  const checks = document.querySelectorAll(`.${key}-check`);
+  checks.forEach(c => c.checked = master.checked);
+  updateBatchBar(tabId);
+}
+
+function updateBatchBar(tabId) {
+  const key = tabId.replace(/s$/, ""); 
+  const checks = document.querySelectorAll(`.${key}-check`);
+  const selected = Array.from(checks).filter(c => c.checked).length;
+  const bar = $(`batch${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
+  
+  if (bar) {
+    if (selected > 0) {
+      bar.classList.add('on');
+      const labelId = `batch${key.charAt(0).toUpperCase() + key.slice(1)}Count`;
+      const label = $(labelId);
+      if (label) label.textContent = `${selected} items selected`;
+    } else {
+      bar.classList.remove('on');
+    }
+  }
+}
+
+async function handleBatchAction(tabId, actionType) {
+  const checks = document.querySelectorAll(`.${tabId.slice(0,-1)}-check, .${tabId}-check`);
+  const selectedItems = Array.from(checks).filter(c => c.checked).map(c => ({...c.dataset}));
+  if (!selectedItems.length) return;
+
+  const actionLabel = actionType === 'approve' ? 'APPROVE' : 'REJECT';
+  const icon = actionType === 'approve' ? '✅' : '❌';
+  if (!(await showUIConfirm(`Are you sure you want to ${actionLabel} ${selectedItems.length} selected items?`, `Batch ${actionLabel}`, icon))) return;
+
+  sLoading(true, `Processing ${selectedItems.length} items...`);
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        _action: "batchProcessApprovals",
+        pin: S.sessionPin,
+        tab: tabId,
+        action: actionType,
+        items: selectedItems
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast(`${data.successCount} of ${data.total} items processed! ${icon}`);
+      if (tabId === 'refunds') await loadRefunds();
+      else if (tabId === 'payments') await loadPendingPayments();
+      else if (tabId === 'wallet') await loadPendingRecharges();
+      refreshApprovalCounts();
+    } else throw new Error(data.error);
+  } catch(e) {
+    sLoading(false);
+    toast("Batch Error: " + e.message, 4000);
+  }
 }
 
 async function activateWalletRecharge(phone, timestamp, amt, name) {
@@ -4285,11 +4437,13 @@ async function loadRefunds() {
     if (!data.length) {
       wrap.innerHTML = `<div class="empty-msg">No pending UPI refund requests. ✅</div>`;
       sLoading(false);
+      updateBatchBar('refunds');
       return;
     }
 
     let html = `<div class="pay-table-wrap"><table class="pay-table">
       <thead><tr>
+        <th style="width:40px;"><input type="checkbox" id="selectAllRefunds" onclick="toggleSelectAll('refunds')"></th>
         <th>Customer</th>
         <th>Amount</th>
         <th>Order Details</th>
@@ -4306,7 +4460,12 @@ async function loadRefunds() {
       const rowStyle = isUnverified ? 'background:#fff9c4; border-left: 4px solid #f57f17;' : '';
       
       const ts = new Date(r.Timestamp).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
-      html += `<tr style="${rowStyle}">
+      html += `<tr style="${rowStyle}" class="refund-row">
+        <td>
+          <input type="checkbox" class="refund-check" 
+                 data-sid="${r.Submission_ID}" data-name="${r.Name}" data-amount="${r.Amount}"
+                 onchange="updateBatchBar('refunds')">
+        </td>
         <td>
           <div style="font-weight:700;">${r.Name}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${r.Phone}</div>
@@ -4322,21 +4481,42 @@ async function loadRefunds() {
         </td>
         <td style="font-size:0.75rem;color:var(--muted);">${ts}</td>
         <td>
-          <button class="${isUnverified ? 'btn-orange':'btn-green'}" 
-                  style="${isUnverified ? 'background:#f57f17;color:white;border:none;padding:8px 12px;border-radius:6px;font-weight:600;':''}"
-                  onclick="markAsRefunded('${r.Submission_ID}', '${r.Name}', ${r.Amount})">
-            ${isUnverified ? 'Verify & Refund' : 'Apply Refund'}
-          </button>
+          <div style="display:flex;gap:6px;">
+            <button class="approve-row-btn" 
+                    style="${isUnverified ? 'background:#f57f17;':''}"
+                    onclick="markAsRefunded('${r.Submission_ID}', '${r.Name}', ${r.Amount})">
+              ${isUnverified ? 'Verify & Refund' : 'Apply Refund'}
+            </button>
+            <button class="reject-row-btn" onclick="rejectRefund('${r.Submission_ID}', '${r.Name}')">Reject</button>
+          </div>
         </td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
     wrap.innerHTML = html;
     sLoading(false);
+    updateBatchBar('refunds');
   } catch(e) {
     sLoading(false);
     wrap.innerHTML = `<div class="empty-msg" style="color:var(--red);">Error: ${e.message}</div>`;
   }
+}
+
+async function rejectRefund(subId, name) {
+  if (!(await showUIConfirm(`Reject refund request for ${name}?`, "Reject Refund", "❌"))) return;
+  sLoading(true, "Rejecting refund...");
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ _action: "markRefundRejected", pin: S.sessionPin, submissionId: subId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast("Refund Rejected ❌");
+      await loadRefunds();
+      refreshApprovalCounts();
+    } else throw new Error(data.error);
+  } catch(e) { sLoading(false); toast("Error: " + e.message); }
 }
 
 async function markAsRefunded(subId, name, amt) {

@@ -3348,7 +3348,7 @@
           </p>
           <div id="qrcode" style="margin:14px auto 0;"></div>
           <div class="upi-amount" id="upiAmountDisplay">₹0</div>
-          <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID">9819969682@hdfc</div>
+          <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID">svaadhkitchen.36727659@hdfcbank</div>
           <div
             style="background:#f0f4ff;border-radius:8px;padding:8px 10px;margin:10px 0;font-size:0.73rem;color:#444;text-align:left;">
             <span data-i18n-html="payment_note_label">📝 <strong>Payment note:</strong></span> <span id="upiNoteDisplay"
@@ -3744,7 +3744,7 @@
     };
 
     function copyUPI() {
-      const vpa = "9819969682@hdfc";
+      const vpa = UPI_VPA;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(vpa).then(() => {
           toast("📋 UPI ID Copied! Now paste it in your payment app.", 4000);
@@ -4311,7 +4311,10 @@
           }
         }
 
-        if (S.step === 0) goNext();
+        if (S.step === 0) {
+          loadExistingOrders(S.phone);
+          goNext();
+        }
       } else {
         S.isFirstTime = true;
         $("returningBadge").innerHTML = "";
@@ -4893,6 +4896,11 @@
       let html = "", grandTotal = 0;
       let pCount = S.profile?.promoCount;
       let promoTracker = (pCount !== null && !isNaN(pCount)) ? Number(pCount) : 0;
+      
+      // Virtual Streak Tracking for multi-date cart
+      let virtualStreakCount = S.loyaltyInfo?.count || 0;
+      let virtualPastSurcharge = S.loyaltyInfo?.surcharge || 0;
+
       for (const date of S.selectedDates) {
         const dayOrders = S.orders[date] || {};
         let dayFoodTotal = 0;
@@ -4911,8 +4919,21 @@
         const existingDiscountTotal = Object.values(existDay).reduce((s, m) => s + (m.discount_applied || 0), 0);
         const existingEntitledDiscount = Math.round(existingDayFoodTotal * discRate);
         const retroDiscountCredit = Math.max(0, existingEntitledDiscount - existingDiscountTotal);
-        // Audit Fix #4: Cap discount at current food total to prevent negative bills
-        const discAmt = Math.min(dayFoodTotal, Math.round(dayFoodTotal * discRate) + retroDiscountCredit);
+        
+        const is6thDay = (virtualStreakCount === 5);
+        let discAmt = 0;
+        let loyaltyWaiverTotal = 0;
+
+        if (is6thDay) {
+          // Loyalty Discount triggers on Day 6
+          const currentDaySurcharge = Math.ceil(dayFoodTotal / 20);
+          loyaltyWaiverTotal = virtualPastSurcharge + currentDaySurcharge;
+          discAmt = loyaltyWaiverTotal;
+          discLabel = "Loyalty Streak Reward (6 Days)";
+        } else {
+          // Audit Fix #4: Cap discount at current food total to prevent negative bills
+          discAmt = Math.min(dayFoodTotal, Math.round(dayFoodTotal * discRate) + retroDiscountCredit);
+        }
 
         // Prepare discount note for display
         let discNote = discLabel;
@@ -4943,6 +4964,10 @@
         if (S.profile.feeExempt) {
           html += `<div style="font-size:0.75rem;color:#d35400;background:#fff3e0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-weight:700;border:1.5px dashed #ffb74d;display:flex;align-items:center;gap:8px;">
             <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
+          </div>`;
+        } else if (is6thDay) {
+          html += `<div style="font-size:0.75rem;color:#2c3e50;background:#f1c40f;background:linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.2rem;">🎉</span> <span><strong>Amazing Regular!</strong> Since you ordered for 6 consecutive days, we've waived today's bill by <strong>₹${loyaltyWaiverTotal}</strong> (sum of surcharges for 6 days). Thank you!</span>
           </div>`;
         } else if (!isDayFree && !allPickup) {
           const diff = dynamicThreshold - combinedDayTotal;
@@ -5069,6 +5094,16 @@
         const totalCredits = dayDeliveryCredit + daySmallFeeCredit;
         const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal;
         grandTotal += dayTotal;
+
+        // Update virtual streak for NEXT date in this cart
+        const daySurcharge = Math.ceil(dayFoodTotal / 20);
+        if (is6thDay) {
+          virtualStreakCount = 0;
+          virtualPastSurcharge = 0;
+        } else {
+          virtualStreakCount++;
+          virtualPastSurcharge += daySurcharge;
+        }
 
         html += `<div style="margin-top:18px; padding-top:12px; border-top: 1.5px dashed #eee;">`;
 
@@ -5317,6 +5352,7 @@
     // PLACE ORDER
     // ═══════════════════════════════════════════════════════════
     async function placeOrder(settleAll = false) {
+      if (S.isPlacingOrder) return;
       const isWalletOrder = S.paymentChoice === "Wallet";
       const isOnAccountOrder = S.paymentChoice === "OnAccount";
       
@@ -5345,7 +5381,10 @@
       const placeConfirmed = await sConfirm(reviewMsg, "Review Your Bill", "🧾", "कृपया तुमची ऑर्डर तपासा आणि पुष्टी करा.");
       if (!placeConfirmed) return;
 
-      sBtnLoading($("btnNext"), true, t('loading_placing'));
+      const btn = $("btnNext");
+      S.isPlacingOrder = true;
+      btn.style.pointerEvents = "none";
+      sBtnLoading(btn, true, t('loading_placing'));
       const orders = [];
       for (const date of S.selectedDates) {
         const meals = [];
@@ -5394,6 +5433,8 @@
         clearTimeout(_pTid);
         const data = await res.json();
         sBtnLoading($("btnNext"), false);
+        S.isPlacingOrder = false;
+        $("btnNext").style.pointerEvents = "auto";
         if (data.success) {
           S.isPlaced = true;
           if (payload.payment_status === "Pending") {
@@ -5407,6 +5448,8 @@
       } catch (err) {
         clearTimeout(_pTid);
         sBtnLoading($("btnNext"), false);
+        S.isPlacingOrder = false;
+        $("btnNext").style.pointerEvents = "auto";
         if (err.name === "AbortError") { toast(t('toast_server_timeout'), 6000); }
         else { await sAlert("Error: " + err.message, "Placement Failed", "❌"); }
       }
@@ -5542,6 +5585,48 @@
     // Track which sections are open (initial state: Upcoming open, Past closed)
     window.orderViewState = { upcoming: true, past: false };
 
+    /**
+     * Calculates the current consecutive ordering streak and total past surcharges.
+     * Skips Sundays.
+     */
+    function calculateLoyaltyStreak(pastOrders) {
+      if (!pastOrders || pastOrders.length === 0) return { count: 0, surcharge: 0 };
+      
+      const dailyTotals = {};
+      const allOrders = [...(S.existingOrders || []), ...(pastOrders || [])];
+      
+      allOrders.forEach(r => {
+        const stat = String(r.payment_status || "").toLowerCase();
+        if (stat.includes("cancelled") || stat.includes("deleted")) return;
+        
+        const d = r.date;
+        if (!dailyTotals[d]) dailyTotals[d] = 0;
+        dailyTotals[d] += Number(r.inflation_surcharge) || 0;
+      });
+
+      let count = 0;
+      let surcharge = 0;
+      let d = new Date(); d.setDate(d.getDate() - 1); 
+      let safety = 0;
+
+      while (safety < 30) {
+        safety++;
+        if (d.getDay() === 0) { // Skip Sunday
+          d.setDate(d.getDate() - 1);
+          continue;
+        }
+        const iso = d.toISOString().split('T')[0];
+        if (dailyTotals[iso] !== undefined) {
+          count++;
+          surcharge += dailyTotals[iso];
+        } else {
+          break;
+        }
+        d.setDate(d.getDate() - 1);
+      }
+      return { count, surcharge };
+    }
+
     async function loadExistingOrders(phone) {
       const upcomingWrap = $("manageOrdersList");
       const pastWrap = $("pastOrdersList");
@@ -5551,6 +5636,10 @@
       try {
         const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
         const data = await res.json();
+        
+        S.existingOrders = data.orders || [];
+        S.pastOrders = data.past_orders || [];
+        S.loyaltyInfo = calculateLoyaltyStreak(S.pastOrders);
 
         // Render Wallet Dash wrap
         const wb = Number(data.wallet_balance) || 0;
