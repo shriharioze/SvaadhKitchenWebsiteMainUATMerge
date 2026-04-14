@@ -465,6 +465,9 @@ function renderMealPanel(orders, meal) {
   const timeReached = hour >= (SLOT_TIMES[meal] || 0);
   const canStart = isToday && timeReached;
   
+  // Detect if delivery trip already started for this meal
+  const isEnRoute = orders.some(o => o.enRouteAt);
+  
   const fmtSlotTime = (t) => {
     const h = Math.floor(t), m = (t % 1) * 60;
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
@@ -473,14 +476,25 @@ function renderMealPanel(orders, meal) {
   const statusMsg = !isToday ? "Future delivery cannot be started" : 
                     (!timeReached ? `Opening at ${fmtSlotTime(SLOT_TIMES[meal])}` : "");
 
+  // Determine Button State
+  let btnClass = canStart ? 'green' : '';
+  let btnText = canStart ? `🚀 Start ${meal} Delivery` : `🔒 ${meal} Locked`;
+  let btnAttr = !canStart ? 'disabled style="background:#888;box-shadow:none;opacity:0.6;"' : 'style="padding:10px 14px;font-size:0.85rem;box-shadow:0 3px 10px rgba(39,174,96,0.3);"';
+
+  if (isEnRoute) {
+    btnClass = "green done";
+    btnText = `🚗 ${meal} Out for Delivery`;
+    btnAttr = 'disabled style="padding:10px 14px;font-size:0.85rem;box-shadow:none;opacity:0.8;"';
+  }
+
   const routeBar = `<div class="route-bar" id="routeBar_${meal}" style="border-bottom:2.5px solid #c0392b;">
-    <button class="route-btn ${canStart ? 'green' : ''}" 
+    <button class="route-btn ${btnClass}" 
             onclick="markAllEnRoute('${meal}')" 
             id="startBtn_${meal}" 
-            ${!canStart ? 'disabled style="background:#888;box-shadow:none;opacity:0.6;"' : 'style="padding:10px 14px;font-size:0.85rem;box-shadow:0 3px 10px rgba(39,174,96,0.3);"'}>
-      ${canStart ? `🚀 Start ${meal} Delivery` : `🔒 ${meal} Locked`}
+            ${btnAttr}>
+      ${btnText}
     </button>
-    ${statusMsg ? `<span style="font-size:0.7rem;color:#c0392b;font-weight:700;margin-left:4px;">${statusMsg}</span>` : ""}
+    ${(!isEnRoute && statusMsg) ? `<span style="font-size:0.7rem;color:#c0392b;font-weight:700;margin-left:4px;">${statusMsg}</span>` : ""}
     ${canOptimize
       ? `<button class="route-btn" onclick="optimizeRoute('${meal}')">🗺 Optimize Route</button>`
       : ""}

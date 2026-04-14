@@ -3576,6 +3576,9 @@
       </div>
     </div>
 
+    <div style="text-align:center; padding: 30px 0 10px; color: #999; font-size: 0.7rem; font-weight: 500;">
+      Svaadh Kitchen <span id="verLabel"></span>
+    </div>
   </div><!-- /container -->
 
   <!-- BOTTOM NAV -->
@@ -3660,6 +3663,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+    const APP_VERSION = "v24.04.14.01";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6181,7 +6185,23 @@
 
 
     document.addEventListener("DOMContentLoaded", () => {
-      console.log("Svaadh Kitchen v3.1.2 Loaded - Wallet & PWA Fixes");
+      // One-time hard refresh to ensure latest fixes
+      (function() {
+        const savedVer = localStorage.getItem("sk_force_refresh_ver");
+        if (savedVer !== APP_VERSION) {
+          // Safety: Only refresh if no items in cart
+          const orders = JSON.parse(localStorage.getItem('sk_orders') || '{}');
+          if (Object.keys(orders).length === 0) {
+            localStorage.setItem("sk_force_refresh_ver", APP_VERSION);
+            console.log("Svaadh Kitchen: Force refreshing for latest updates...");
+            location.reload(true);
+            return;
+          }
+        }
+      })();
+
+      if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
+      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Wallet & PWA Fixes`);
       applyThemeIcon();
       loadAreas();
       updateNav();
