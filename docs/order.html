@@ -3304,6 +3304,7 @@
             style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
         </h2>
         <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">📅 View This Week's Menu</button>
+        <div id="step3ReviewPromo"></div>
 
         <div class="info-box" id="cutoffInfoBox">
           <strong>Order cutoff times:</strong><br>
@@ -4227,6 +4228,34 @@
         sLoading(false);
 
         if (data.hasPin) {
+                 const fn = S.profile.firstName || "Customer";
+        const pc = S.profile.promoCount;
+
+        const isReviewed = (pc === "Exhausted" || (pc !== null && !isNaN(pc) && Number(pc) > 0));
+        const wantPromoHtml = isReviewed ? `
+      <div style="margin-top:4px; font-size:0.72rem; color:#f59e0b; font-weight:700; cursor:pointer;" onclick="window.open('https://g.page/r/CasEH8gGAhzLEBM/review', '_blank')">Thank you for the 5-star rating! ❤️</div>
+    ` : `
+      <div style="margin-top:4px; font-size:0.72rem; color:#f59e0b; font-weight:700; cursor:pointer;" onclick="window.open('https://g.page/r/CasEH8gGAhzLEBM/review', '_blank')">🎁 Want 10% OFF? Click here</div>
+    `;
+
+        $("returningBadge").innerHTML = `<div class="customer-badge">
+      <div class="avatar">${fn.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="cname">${t('welcome_back', { name: fn })}</div>
+        <div class="csub">${t('welcome_back_hint')}</div>
+        ${wantPromoHtml}
+      </div></div>
+    </div>`;
+
+        // GLOBAL REVIEW PROMO (Banner Style)
+        const promoBannerHtml = showReviewPromoBanner();
+        if ($("reviewRewardWrap")) $("reviewRewardWrap").innerHTML = promoBannerHtml;
+        if ($("step3ReviewPromo")) $("step3ReviewPromo").innerHTML = promoBannerHtml;
+
+        // Discount details notification
+        if (typeof pc === "number" && pc > 0) {
+          // If they have active credits, we can show a small note too, but the banner above covers it.
+        } "grayscale(100%)";
           S.authMode = "verify";
           const parts = (data.name || "").trim().split(" ");
           const firstName = parts[0] || "";
@@ -4325,19 +4354,10 @@
       </div></div>
     </div>`;
 
-        // REVIEW REWARD NOTIFICATION
-        if (typeof pc === "number" && pc > 0) {
-          $("reviewRewardWrap").innerHTML = `
-        <div class="reward-box">
-          <div class="icon">🎁</div>
-          <div style="flex:1;">
-            <div class="rtitle">Thank you for your Review!</div>
-            <div class="rsub">You have <strong>${pc}</strong> discount credits left. A 10% discount will be applied to your food subtotal for the next ${pc} meals.</div>
-          </div>
-        </div>`;
-        } else {
-          $("reviewRewardWrap").innerHTML = "";
-        }
+        // GLOBAL REVIEW PROMO (Banner Style)
+        const promoBannerHtml = showReviewPromoBanner();
+        if ($("reviewRewardWrap")) $("reviewRewardWrap").innerHTML = promoBannerHtml;
+        if ($("step3ReviewPromo")) $("step3ReviewPromo").innerHTML = promoBannerHtml;
 
         // Finalize Success screen banners
         if ($("successReviewPromo")) {
