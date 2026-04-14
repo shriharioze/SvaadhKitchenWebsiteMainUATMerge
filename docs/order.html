@@ -55,7 +55,7 @@
   "email": "svaadh.kitchen@gmail.com",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Bhosale Garden",
+    "streetAddress": "Bhosale Nagar",
     "addressLocality": "Hadapsar",
     "addressRegion": "Pune, Maharashtra",
     "postalCode": "411028",
@@ -2754,7 +2754,7 @@
         </div>
         <div class="how-info-box">
           <div class="hi-label" data-i18n="how_delivery_label">🚚 Delivery & Fees</div>
-          <div class="hi-val">Free in Bhosale Garden<br>₹10/meal elsewhere if order &lt; ₹100<br><strong>₹10 Small Order
+          <div class="hi-val">Free in Bhosale Nagar<br>₹10/meal elsewhere if order &lt; ₹100<br><strong>₹10 Small Order
               Fee for Lunch/Dinner if bill &lt; ₹50</strong></div>
           <p class="mr-note">भोसले गार्डन — मोफत डिलिव्हरी · इतर ठिकाणी ₹१०/जेवण (जर ऑर्डर ₹१०० पेक्षा कमी असेल)</p>
         </div>
@@ -3000,10 +3000,10 @@
               <label data-i18n="label_area">Delivery Area *</label>
               <select id="areaSelect" onchange="syncSingleAddr()">
                 <option value="" data-i18n="select_area_ph">— Select area —</option>
-                <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-                <option value="Magarpatta">🏙️ Magarpatta</option>
-                <option value="Amanora">🏢 Amanora Township</option>
-                <option value="DP Road">🛣️ DP Road</option>
+                <option value="Bhosale Nagar">Bhosale Nagar (Free Delivery)</option>
+                <option value="Magarpatta">Magarpatta</option>
+                <option value="Amanora">Amanora Town</option>
+                <option value="DP Road">DP Road</option>
                 <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
               </select>
             </div>
@@ -3083,10 +3083,10 @@
                 <label data-i18n="label_area_simple">Area</label>
                 <select id="bf_areaSelect" onchange="togglePickupUI('bf', this.value)">
                   <option value="" data-i18n="select_area_ph">— Select area —</option>
-                  <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-                  <option value="Magarpatta">🏙️ Magarpatta</option>
-                  <option value="Amanora">🏢 Amanora Township</option>
-                  <option value="DP Road">🛣️ DP Road</option>
+                  <option value="Bhosale Nagar">Bhosale Nagar (Free Delivery)</option>
+                  <option value="Magarpatta">Magarpatta</option>
+                  <option value="Amanora">Amanora Town</option>
+                  <option value="DP Road">DP Road</option>
                   <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
                 </select>
               </div>
@@ -3150,10 +3150,10 @@
                 <label data-i18n="label_area_simple">Area</label>
                 <select id="l_areaSelect" onchange="togglePickupUI('l', this.value)">
                   <option value="" data-i18n="select_area_ph">— Select area —</option>
-                  <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-                  <option value="Magarpatta">🏙️ Magarpatta</option>
-                  <option value="Amanora">🏢 Amanora Township</option>
-                  <option value="DP Road">🛣️ DP Road</option>
+                  <option value="Bhosale Nagar">Bhosale Nagar (Free Delivery)</option>
+                  <option value="Magarpatta">Magarpatta</option>
+                  <option value="Amanora">Amanora Town</option>
+                  <option value="DP Road">DP Road</option>
                   <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
                 </select>
               </div>
@@ -3217,10 +3217,10 @@
                 <label data-i18n="label_area_simple">Area</label>
                 <select id="d_areaSelect" onchange="togglePickupUI('d', this.value)">
                   <option value="" data-i18n="select_area_ph">— Select area —</option>
-                  <option value="Bhosale Garden">🏠 Bhosale Garden (Free Delivery)</option>
-                  <option value="Magarpatta">🏙️ Magarpatta</option>
-                  <option value="Amanora">🏢 Amanora Township</option>
-                  <option value="DP Road">🛣️ DP Road</option>
+                  <option value="Bhosale Nagar">Bhosale Nagar (Free Delivery)</option>
+                  <option value="Magarpatta">Magarpatta</option>
+                  <option value="Amanora">Amanora Town</option>
+                  <option value="DP Road">DP Road</option>
                   <option value="Self Pickup">📦 Self Pickup (No Charges)</option>
                 </select>
               </div>
@@ -3269,6 +3269,8 @@
             onclick="event.stopPropagation();toast('Tap multiple dates to seamlessly plan your meals for the whole week in advance!',6000)"
             style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
         </h2>
+        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">📅 View This Week's Menu</button>
+
         <div class="info-box" id="cutoffInfoBox">
           <strong>Order cutoff times:</strong><br>
           🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:30 AM &nbsp;|&nbsp; 🌙 Dinner: before 5:00
@@ -3622,7 +3624,7 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
-    let FREE_AREAS = ["Bhosale Garden"];   // populated dynamically from API
+    let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
     const DELIVERY_CHARGE = 10;
     const FREE_THRESHOLD = 150;
     const DISC_T1 = { min: 300, rate: 0.05 };
@@ -3815,7 +3817,7 @@
       <strong>🔐 Security:</strong> 4-digit PIN to secure your wallet<br>
       <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ', '')}</strong>: Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
       <strong>💰 ${t('how_discounts_label').replace('💰 ', '')}</strong>: 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
-      <strong>🚚 ${t('how_delivery_label').replace('🚚 ', '')}</strong>: Free in Bhosale Garden · ₹10/meal elsewhere (Waived if Self Pickup)<br>
+      <strong>🚚 ${t('how_delivery_label').replace('🚚 ', '')}</strong>: Free in Bhosale Nagar · ₹10/meal elsewhere (Waived if Self Pickup)<br>
       <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50 (Waived if Self Pickup)<br>
       <strong>📈 Market Surcharge:</strong> ₹1 per ₹20 of food bill<br>
       <strong>📍 Address:</strong> Each meal can go to a different location<br>
@@ -3843,7 +3845,7 @@
       { q: "How do discounts work?", a: "If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen." },
       { q: "What is Prepaid Wallet Billing?", a: "Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!" },
       { q: "Can I edit or delete my order?", a: "Editing an existing order is not possible. If you need to make corrections, please <strong>delete</strong> the existing order and place a <strong>new</strong> one with the correct items. This ensures total accuracy in our kitchen. Credits from deletions will be automatically refunded to your Svaadh Wallet or UPI as per your preference." },
-      { q: "Do you offer self-pickup?", a: "Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small order fee are <strong>completely waived</strong> for pickup orders. Free delivery also applies to 🏠 Bhosale Garden and 📍 Triveni Nagar." },
+      { q: "Do you offer self-pickup?", a: "Yes! You can select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small order fee are <strong>completely waived</strong> for pickup orders. Free delivery also applies to 🏠 Bhosale Nagar and 📍 Triveni Nagar." },
     ];
 
     function buildFAQ() {
@@ -4345,19 +4347,33 @@
           try {
             const ma = JSON.parse(S.profile.meal_addresses);
             S.mealAddrs = ma;
-            // Check ALL fields for differences to correctly set S.sameAddr
+
             const meals = ["Breakfast", "Lunch", "Dinner"];
             const fields = ["area", "wing", "flat", "floor", "society"];
+
+            // Check if stored Meal JSON actually contains any data
+            let hasAnyMealAddr = false;
             for (const m of meals) {
-              if (ma[m]) {
-                for (const f of fields) {
-                  if (ma[m][f] !== undefined && ma[m][f] !== S.profile[f]) {
-                    same = false;
-                    break;
+              if (ma[m] && ma[m].area) { hasAnyMealAddr = true; break; }
+            }
+
+            if (!hasAnyMealAddr && S.profile.area) {
+              // Stored per-meal JSON is blank, but primary profile has an address
+              // Defaults to TRUE to fix the "Nilesh Mutthe" bug where addresses were lost on login
+              same = true;
+            } else {
+              // Canonical comparison: flip to false if any field differs from the primary profile
+              for (const m of meals) {
+                if (ma[m]) {
+                  for (const f of fields) {
+                    if (ma[m][f] !== undefined && ma[m][f] !== S.profile[f]) {
+                      same = false;
+                      break;
+                    }
                   }
                 }
+                if (!same) break;
               }
-              if (!same) break;
             }
           } catch (e) { console.warn("Error parsing meal_addresses", e); }
         }
@@ -4551,6 +4567,15 @@
       S.profile.delivery_point = $("deliveryPointSelection").value;
       S.profile.maps = $("mapsInput").value.trim();
       S.profile.landmark = $("landmarkInput").value.trim();
+
+      // IMPORTANT: Also keep S.mealAddrs in sync so that the saved JSON isn't stale/blank
+      const def = {
+        area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat,
+        floor: S.profile.floor, society: S.profile.society,
+        delivery_point: S.profile.delivery_point, maps: S.profile.maps, landmark: S.profile.landmark
+      };
+      S.mealAddrs = { Breakfast: { ...def }, Lunch: { ...def }, Dinner: { ...def } };
+
       togglePickupUI("single", area);
     }
 
@@ -5068,7 +5093,7 @@
             const netTotal = creditTotal + chargeTotal;
             const bundleLabel = creditItems.length > 0
               ? `🏷️ Credits & Charges (${mealExtras.length} items)`
-              : `🚚 Delivery & Extra Charges (${mealExtras.length} items)`;
+              : `🚚 Charges (${mealExtras.length} items)`;
             html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
           <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
             <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon open">▶</span></span>
@@ -5412,6 +5437,11 @@
         });
         if (meals.length) orders.push({ date, meals });
       }
+
+      if (S.sameAddr) {
+        syncSingleAddr(); // Final safety sync to ensure S.mealAddrs is consistent with S.profile before saving
+      }
+
       const payload = {
         profile: {
           name: S.profile.name, phone: S.phone,

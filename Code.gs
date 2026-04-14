@@ -144,17 +144,17 @@ const BUSINESS_CONTEXT = {
   name: "Svaadh Kitchen",
   type: "Cloud Kitchen",
   tagline: "Wholesome homemade vegetarian meals, straight from our kitchen to your plate.",
-  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals since August 2023 (over 2.5 years). We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We deliver exclusively to 15 areas in Hadapsar: Bhosale Garden, Magarpatta, Amanora, DP Road, Triveni Nagar, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi (till Yash Honda), Pune-Solapur Road (till Gadital), Vihar Chowk, Mandai, and Gadital. Delivery is FREE for Bhosale Garden and Triveni Nagar. All other areas have a nominal ₹10 fee if the order is below ₹100. Self Pickup is always free.",
+  about: "Svaadh Kitchen is a home-based vegetarian cloud kitchen in Hadapsar, Pune, serving fresh and wholesome homemade meals since August 2023 (over 2.5 years). We specialize in homemade vegetarian food, offering breakfast, lunch, and dinner with a changing daily sabji menu. We deliver exclusively to 15 areas in Hadapsar: Bhosale Nagar, Magarpatta, Amanora, DP Road, Triveni Nagar, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi (till Yash Honda), Pune-Solapur Road (till Gadital), Vihar Chowk, Mandai, and Gadital. Delivery is FREE for Bhosale Nagar and Triveni Nagar. All other areas have a nominal ₹10 fee if the order is below ₹100. Self Pickup is always free.",
   vision: "To make homemade vegetarian meals easily accessible and affordable for everyone, while maintaining taste, quality, and consistency.",
   locations_served: [
-    "Bhosale Garden", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar", 
+    "Bhosale Nagar", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar", 
     "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", 
     "Vaiduwadi (Till Yash Honda Only)", "Pune-Solapur Road (Till Gadital Only)", "Vihar Chowk", "Mandai (Hadapsar Mandai)", "Gadital"
   ],
   order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:30 AM", dinner: "before 5:00 PM", closed_on: "Sunday" },
   delivery: {
-    free_areas: ["Bhosale Garden", "Triveni Nagar", "Self Pickup"],
-    charge: "₹10 per meal for other listed areas if subtotal is below ₹100. Free for Bhosale Garden, Triveni Nagar and Self Pickup always.",
+    free_areas: ["Bhosale Nagar", "Triveni Nagar", "Self Pickup"],
+    charge: "₹10 per meal for other listed areas if subtotal is below ₹100. Free for Bhosale Nagar, Triveni Nagar and Self Pickup always.",
     outside_policy: "We only deliver in the listed Hadapsar areas. We DO NOT deliver to areas like Kothrud, Baner, Viman Nagar, etc."
   },
   menu: {
@@ -929,7 +929,7 @@ function submitOrder(body) {
   // Build the header→index map once
   const hIdx = headerIndex(ordersWs);
 
-  // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Garden")
+  // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Nagar")
   const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
   const DELIVERY  = 10;
 
@@ -1995,21 +1995,21 @@ function _updateLedger(ss, profile, orders) {
 const AREAS_HEADERS = ["Area_Name", "Area_Label", "Free_Delivery"];
 
 const DEFAULT_AREAS = [
-  ["Bhosale Garden",  "🏠 Bhosale Garden (Free Delivery)",            "TRUE"],
-  ["Triveni Nagar",   "📍 Triveni Nagar (Free Delivery)",             "TRUE"],
-  ["Magarpatta",      "🏙️ Magarpatta",                               "FALSE"],
-  ["Amanora",         "🏢 Amanora Town",                              "FALSE"],
-  ["DP Road",         "🛣️ DP Road",                                   "FALSE"],
-  ["Malwadi",         "📍 Malwadi",                                   "FALSE"],
-  ["SadeSatraNali",   "📍 SadeSatraNali",                             "FALSE"],
-  ["Kirtane Baug",    "📍 Kirtane Baug",                              "FALSE"],
-  ["Tupe Patil Road", "🛣️ Tupe Patil Road",                          "FALSE"],
-  ["BG Shirke Road",  "🏢 BG Shirke Road",                            "FALSE"],
-  ["Vaiduwadi",       "📍 Vaiduwadi (Till Yash Honda Only)",          "FALSE"],
-  ["Solapur Road",    "🛣️ Pune-Solapur Road (Till Gadital Only)",     "FALSE"],
-  ["Vihar Chowk",     "📍 Vihar Chowk",                               "FALSE"],
-  ["Mandai",          "📍 Hadapsar Mandai",                           "FALSE"],
-  ["Gadital",         "📍 Gadital",                                   "FALSE"],
+  ["Amanora",         "Amanora Town",                              "FALSE"],
+  ["BG Shirke Road",  "BG Shirke Road",                            "FALSE"],
+  ["Bhosale Nagar",   "Bhosale Nagar (Free Delivery)",             "TRUE"],
+  ["DP Road",         "DP Road",                                   "FALSE"],
+  ["Gadital",         "Gadital",                                   "FALSE"],
+  ["Mandai",          "Hadapsar Mandai",                           "FALSE"],
+  ["Kirtane Baug",    "Kirtane Baug",                              "FALSE"],
+  ["Magarpatta",      "Magarpatta",                                "FALSE"],
+  ["Malwadi",         "Malwadi",                                   "FALSE"],
+  ["Pune-Solapur Road", "Pune-Solapur Road (Till Gadital Only)",   "FALSE"],
+  ["SadeSatraNali",   "SadeSatraNali",                             "FALSE"],
+  ["Triveni Nagar",   "Triveni Nagar (Free Delivery)",             "TRUE"],
+  ["Tupe Patil Road", "Tupe Patil Road",                           "FALSE"],
+  ["Vaiduwadi",       "Vaiduwadi (Till Yash Honda Only)",          "FALSE"],
+  ["Vihar Chowk",     "Vihar Chowk",                               "FALSE"],
   ["Pickup",          "📦 Self Pickup (Waives all fees)",             "TRUE"]
 ];
 
@@ -2693,7 +2693,7 @@ function buildSystemPrompt(extraMenu) {
   const prompt = "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
     +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
     +" AREAS: " + B.locations_served.join(", ") + ".\n"
-    +" DELIVERY POLICY: FREE for Bhosale Garden, Triveni Nagar, and Self Pickup. Other areas ₹10/meal if subtotal < ₹100. "
+    +" DELIVERY POLICY: FREE for Bhosale Nagar, Triveni Nagar, and Self Pickup. Other areas ₹10/meal if subtotal < ₹100. "
     + B.delivery.outside_policy + "\n"
     +" PRIVACY & SECURITY: DO NOT disclose user phone numbers, PINs, transaction IDs, UPI details, or specific refund info. If a user asks about their payment or refund, tell them to check their 'Svaadh Wallet' or 'View/Edit existing orders' dashboard, or message us on WhatsApp at " + B.contact.whatsapp + ".\n"
     + todayLine + (extraMenu || "")
@@ -3706,12 +3706,12 @@ function seedTestData() {
     const testData = [
       { date: tStr, meal: "Breakfast", name: "Rahul Deshpande", area: "Magarpatta", society: "Pentagon 1", wing: "B", flat: "402", items: {"Kanda Poha": 2}, total: 70, notes: "Less spicy please" },
       { date: tStr, meal: "Breakfast", name: "Anjali Singh", area: "Amanora", society: "Tower 13", wing: "C", flat: "1805", items: {"Ghee Upma": 1, "Thalipeeth": 1}, total: 90, notes: "Extra chutney" },
-      { date: tStr, meal: "Lunch", name: "Amit Kulkarni", area: "Bhosale Garden", society: "Laxmi Vihar", wing: "A", flat: "104", items: {"Chapati": 3, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 71, notes: "Deliver at gate" },
+      { date: tStr, meal: "Lunch", name: "Amit Kulkarni", area: "Bhosale Nagar", society: "Laxmi Vihar", wing: "A", flat: "104", items: {"Chapati": 3, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 71, notes: "Deliver at gate" },
       { date: tStr, meal: "Lunch", name: "Sneha Patil", area: "Magarpatta", society: "Cosmos", wing: "E", flat: "P-5", items: {"Phulka": 2, "Curry_Sabji_Full": 1, "Rice": 1}, total: 77, notes: "" },
       { date: tStr, meal: "Dinner", name: "Mayur Joshi", area: "DP Road", society: "Riverview", wing: "F", flat: "901", items: {"Jowar_Bhakri": 2, "Curry_Sabji_Mini": 1}, total: 62, notes: "Ring bell and leave" },
       { date: mStr, meal: "Breakfast", name: "Priya Rao", area: "Magarpatta", society: "Pentagon 3", wing: "A", flat: "610", items: {"Sabudana Khichdi": 1}, total: 40, notes: "" },
       { date: mStr, meal: "Lunch", name: "Vikram Shah", area: "Amanora", society: "Adreno", wing: "1", flat: "1502", items: {"Ghee_Phulka": 4, "Dry_Sabji_Full": 1, "Salad": 1}, total: 100, notes: "Call on arrival" },
-      { date: mStr, meal: "Dinner", name: "Svaadh Test", area: "Bhosale Garden", society: "Self Pickup", wing: "-", flat: "-", items: {"Chapati": 2, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 62, notes: "I will pick up" }
+      { date: mStr, meal: "Dinner", name: "Svaadh Test", area: "Bhosale Nagar", society: "Self Pickup", wing: "-", flat: "-", items: {"Chapati": 2, "Dry_Sabji_Mini": 1, "Dal": 1}, total: 62, notes: "I will pick up" }
     ];
 
     testData.forEach((d, idx) => {
@@ -4086,7 +4086,7 @@ function _deriveMapsLink(addr, society) {
     "Samarth Shrushti": "https://maps.app.goo.gl/1eLo6vz3mTWu1BXB8",
     "Grevillea": "https://maps.app.goo.gl/ppTArZ12auPnRR5E8",
     "Orient Garden": "https://maps.app.goo.gl/vFrsEoijMPVV7a3U7",
-    "Bhosale Garden": "https://maps.app.goo.gl/5MzXtAZmtZvD9D9o6",
+    "Bhosale Nagar": "https://maps.app.goo.gl/5MzXtAZmtZvD9D9o6",
     "Amar Ornate": "https://maps.app.goo.gl/mtFcV35i5gpPz4BG7",
     "DSK Sunderban": "https://maps.app.goo.gl/xu4fiGtFLbgp3Kxs9",
     "Aruna Girls PG": "https://maps.app.goo.gl/FUxKBQ6iQKt64ji36",
