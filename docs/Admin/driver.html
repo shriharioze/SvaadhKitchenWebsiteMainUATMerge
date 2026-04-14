@@ -452,10 +452,18 @@ function renderMealPanel(orders, meal) {
     return `<div class="empty"><div class="empty-icon">😴</div>No deliveries for ${meal}</div>`;
   }
 
+  const selectedDate = document.getElementById("datePicker").value;
+  const localEnRouteKey = `sk_enroute_${selectedDate}_${meal}`;
+  const isLocallyEnRoute = localStorage.getItem(localEnRouteKey) === 'true';
+
+  // Apply persistence override immediately
+  if (isLocallyEnRoute) {
+    orders.forEach(o => { if (!o.deliveredAt) o.enRouteAt = o.enRouteAt || new Date().toISOString(); });
+  }
+
   // Count geocodable orders for route button
   const canOptimize = orders.some(o => extractCoords(o));
 
-  const selectedDate = document.getElementById("datePicker").value;
   const today = todayIST();
   const nowRaw = new Date(new Date().getTime() + 5.5*3600000);
   const hour = nowRaw.getUTCHours() + nowRaw.getUTCMinutes()/60;
@@ -465,7 +473,7 @@ function renderMealPanel(orders, meal) {
   const timeReached = hour >= (SLOT_TIMES[meal] || 0);
   const canStart = isToday && timeReached;
   
-  // Detect if delivery trip already started for this meal
+  // Detect if delivery trip already started for this meal (now includes localStorage check)
   const isEnRoute = orders.some(o => o.enRouteAt);
   
   const fmtSlotTime = (t) => {
@@ -659,6 +667,10 @@ async function markAllEnRoute(meal) {
     orders.forEach(o => {
       if (submissionIds.includes(o.submissionId)) o.enRouteAt = enRouteAt;
     });
+
+    // Persist Started state
+    const selectedDate = document.getElementById("datePicker").value;
+    localStorage.setItem(`sk_enroute_${selectedDate}_${meal}`, 'true');
 
     btn.className = "route-btn green done";
     btn.innerHTML = `🚗 ${meal} Out for Delivery`;

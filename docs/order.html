@@ -2796,6 +2796,12 @@
               style="color:#c0392b;font-weight:600;">+91 93222 46765</a><br>Call: <a
               href="tel:9930748908">9930748908</a> / <a href="tel:9819969682">9819969682</a></div>
         </div>
+        <div class="how-info-box" style="background: #fff8e1; border-color: #ffd54f;">
+          <div class="hi-label" style="color: #856404;">🎁 Review Reward</div>
+          <div class="hi-val" style="color: #92400e; font-size: 0.72rem;">
+            Get <strong>10% OFF</strong> on 3 orders! <a href="https://g.page/r/CasEH8gGAhzLEBM/review" target="_blank" style="color: #c0392b; font-weight: 700;">Review now →</a>
+          </div>
+        </div>
       </div>
     </div>
     <div class="how-footer">
@@ -3663,7 +3669,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v24.04.14.01";
+    const APP_VERSION = "v24.04.15.01";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4105,6 +4111,11 @@
       }
       if (S.step === 4) { await placeOrder(); return; }
       S.step++; updateNav(); window.scrollTo(0, 0);
+    }
+    function goToStep(s) {
+      S.step = s;
+      updateNav();
+      window.scrollTo(0, 0);
     }
     async function validate(step) {
       if (step === 0) {
@@ -4785,10 +4796,17 @@
       const MEALS = ["Breakfast", "Lunch", "Dinner"];
       const ICONS = { Breakfast: "🌅", Lunch: "☀️", Dinner: "🌙" };
       const ov = menu.cutoff_overrides || {};
+      const DEFAULTS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
+      const getCutoffTxt = (meal, def) => {
+        const override = parseFloat(ov[meal]);
+        if (isNaN(override)) return t('cutoff_default', { time: def });
+        const key = override < DEFAULTS[meal] ? 'cutoff_reduced' : 'cutoff_extended';
+        return t(key, { time: fmtHour(override) });
+      };
       const cutoffTxt = {
-        Breakfast: ov.Breakfast ? t('cutoff_extended', { time: fmtHour(ov.Breakfast) }) : t('cutoff_default', { time: '7:00 AM' }),
-        Lunch: ov.Lunch ? t('cutoff_extended', { time: fmtHour(ov.Lunch) }) : t('cutoff_default', { time: '9:30 AM' }),
-        Dinner: ov.Dinner ? t('cutoff_extended', { time: fmtHour(ov.Dinner) }) : t('cutoff_default', { time: '5:00 PM' }),
+        Breakfast: getCutoffTxt('Breakfast', '7:00 AM'),
+        Lunch: getCutoffTxt('Lunch', '9:30 AM'),
+        Dinner: getCutoffTxt('Dinner', '5:00 PM'),
       };
       $("mealSelectionContent").innerHTML = MEALS.map(meal => {
         const isAvail = avail[meal], sub = S.orders[date]?.[meal]?.subtotal || 0;

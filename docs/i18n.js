@@ -177,6 +177,7 @@
     ph_notes_delivery: "Special instructions for driver staff (optional)",
     cutoff_default: "Cutoff {time}",
     cutoff_extended: "Extended to {time}",
+    cutoff_reduced: "Reduced to {time}",
     day_total: "Day Total",
     bill_grand_total: "Grand Total",
     grand_total: "Grand Total",

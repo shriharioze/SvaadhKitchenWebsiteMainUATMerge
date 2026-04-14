@@ -1386,12 +1386,27 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                 </select>
               </div>
               <div>
-                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Net Amount (₹) <span style="color:var(--red); font-size: 0.65rem;">(On Account)</span></label>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Payment Method</label>
+                <select id="manualPaymentMethod" class="billing-input" style="width:100%;" onchange="toggleManualBillingCycle()">
+                  <option value="UPI">💳 UPI</option>
+                  <option value="On Account">📝 On Account</option>
+                </select>
+              </div>
+              <div id="manualBillingCycleWrap" style="display:none;">
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Billing Cycle</label>
+                <select id="manualBillingCycle" class="billing-input" style="width:100%;">
+                  <option value="Daily">📅 Daily</option>
+                  <option value="Weekly">📆 Weekly</option>
+                  <option value="Monthly">🗓️ Monthly</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;">Net Amount (₹) <span id="manualAmountNote" style="color:var(--muted); font-size: 0.65rem;">(UPI)</span></label>
                 <input type="number" id="manualAmount" placeholder="0" class="billing-input" style="width:100%;">
               </div>
               <div style="margin-top:10px;">
                 <button class="btn-primary" id="manualSubmitBtn" onclick="submitManualEntry()" style="width:100%;padding:12px;font-size:1rem;">
-                  🚀 Mark On Account
+                  🚀 Submit Order
                 </button>
               </div>
               <div style="font-size:0.7rem;color:var(--muted);text-align:center;">
@@ -5017,12 +5032,14 @@ async function placeBulkOrders(customer, selectedDates, templates) {
 // MANUAL ENTRY PAGE
 // ════════════════════════════════════════════════════════
 async function submitManualEntry() {
-  const date   = document.getElementById('manualDate').value;
-  const name   = document.getElementById('manualName').value.trim();
-  const phone  = document.getElementById('manualPhone').value.trim();
-  const amount = document.getElementById('manualAmount').value;
-  const meal   = document.getElementById('manualMealType').value;
-  const btn    = document.getElementById('manualSubmitBtn');
+  const date      = document.getElementById('manualDate').value;
+  const name      = document.getElementById('manualName').value.trim();
+  const phone     = document.getElementById('manualPhone').value.trim();
+  const amount    = document.getElementById('manualAmount').value;
+  const meal      = document.getElementById('manualMealType').value;
+  const payMethod = document.getElementById('manualPaymentMethod').value;
+  const cycle     = document.getElementById('manualBillingCycle').value;
+  const btn       = document.getElementById('manualSubmitBtn');
 
   if (!date || !name || !phone || !amount) {
     sAlert('Please fill all required fields.', 'Missing Info', '⚠️');
@@ -5037,7 +5054,12 @@ async function submitManualEntry() {
     return;
   }
 
-  const ok = await sConfirm(`Add "On Account" order for ${name} (₹${amount})?`, 'Confirm Manual Entry', '🚀');
+  // Automated Status Mapping
+  // UPI -> Pending, On Account -> On Account
+  const payStatus = (payMethod === 'UPI') ? 'Pending' : 'On Account';
+  const displayCycle = (payMethod === 'On Account') ? ` (${cycle})` : '';
+
+  const ok = await sConfirm(`Add "${payMethod}${displayCycle}" order for ${name} (₹${amount})?\n\nStatus will be set to: ${payStatus}`, 'Confirm Manual Entry', '🚀');
   if (!ok) return;
 
   sBtnLoading(btn, true, 'Submitting…');
@@ -5051,27 +5073,46 @@ async function submitManualEntry() {
         name: name,
         phone: phone,
         amount: amount,
-        mealType: meal
+        mealType: meal,
+        paymentMethod: payMethod,
+        billingCycle: (payMethod === 'On Account' ? cycle : 'Daily'),
+        paymentStatus: payStatus
       })
     });
     const data = await res.json();
     sBtnLoading(btn, false);
     if (!data.success) throw new Error(data.error || 'Submission failed');
 
-    toast('Manual "On Account" order logged successfully! ✅');
-    
-    // Reset fields except date
+    sAlert(`Order logged successfully!\nStatus: ${payStatus}`, 'Success', '✅');
+    // Clear form
     document.getElementById('manualName').value = '';
     document.getElementById('manualPhone').value = '';
     document.getElementById('manualAmount').value = '';
     
   } catch(e) {
     sBtnLoading(btn, false);
-    sAlert('Error: ' + e.message, 'Failed', '❌');
+    sAlert(e.message, 'Error', '❌');
   }
 }
 
-
+function toggleManualBillingCycle() {
+  const method = document.getElementById('manualPaymentMethod').value;
+  const wrap = document.getElementById('manualBillingCycleWrap');
+  const note = document.getElementById('manualAmountNote');
+  if (method === 'On Account') {
+    wrap.style.display = 'block';
+    if (note) {
+      note.textContent = '(On Account)';
+      note.style.color = 'var(--red)';
+    }
+  } else {
+    wrap.style.display = 'none';
+    if (note) {
+      note.textContent = '(UPI)';
+      note.style.color = 'var(--muted)';
+    }
+  }
+}
 </script>
 </body>
 </html>
