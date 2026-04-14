@@ -3981,6 +3981,7 @@
       $("btnNext").disabled = !ok; $("btnNext").style.opacity = ok ? "1" : "0.45";
     }
     function goBack() { if (S.step > 0) { S.step--; updateNav(); window.scrollTo(0, 0); } }
+    function goToStep(n) { S.step = n; updateNav(); window.scrollTo(0, 0); }
     async function goNext() {
       if ($("btnNext").dataset.locked === "payment") {
         toast("Please tick the confirmation box to proceed.");
@@ -5637,8 +5638,8 @@
       return `
     <div style="margin-bottom:14px; background:linear-gradient(135deg,#fff9db,#fffde7); border:1.5px dashed #fcc419; padding:12px; border-radius:12px; display:flex; align-items:center; gap:12px;">
       <div style="font-size:1.5rem;">🎁</div>
-      <div style="flex:1;">
-        <div style="font-weight:700; font-size:0.85rem; color:#856404;">Get 10% OFF on 3 Orders!</div>
+      <div style="flex:1; cursor:pointer;" onclick="window.open('https://g.page/r/CasEH8gGAhzLEBM/review', '_blank')">
+        <div style="font-weight:700; font-size:0.85rem; color:#856404; text-decoration:underline;">Get 10% OFF on 3 Orders!</div>
         <div style="font-size:0.75rem; color:#92400e; margin-top:2px;">Leave us a 5-star review to unlock your reward.</div>
       </div>
       <a href="https://g.page/r/CasEH8gGAhzLEBM/review" target="_blank" style="background:#f59e0b; color:white; padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:700; text-decoration:none;">Review</a>
