@@ -2349,6 +2349,34 @@
       color: #fbbf24;
     }
 
+    .wa-group-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 12px;
+      padding: 12px;
+      text-decoration: none;
+      color: #2e7d32;
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+
+    .wa-group-banner:hover {
+      background: #c8e6c9;
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .wa-group-banner {
+      background: #1b2e1b;
+      border-color: #2d4d2d;
+      color: #81c784;
+    }
+
     @keyframes slideUp {
       from {
         transform: translateY(100%)
@@ -2910,6 +2938,9 @@
         </div>
         <p class="text-sm" style="margin-top:8px;" data-i18n="phone_hint">We'll load your saved details if you've
           ordered before.</p>
+        <a href="https://chat.whatsapp.com/JvcTY6Bn7CgCFQJkdlLVoc?mode=gi_t" target="_blank" class="wa-group-banner" style="margin-top:16px;">
+          <span>📲 Join group for daily menu, updates and reminders</span>
+        </a>
       </div>
       <!-- FAQ for returning users -->
       <div class="card" id="faqCard">
@@ -2940,6 +2971,9 @@
 
       <!-- Name + payment -->
       <div class="card">
+        <a href="https://chat.whatsapp.com/JvcTY6Bn7CgCFQJkdlLVoc?mode=gi_t" target="_blank" class="wa-group-banner">
+          <span>📲 Join group for daily menu, updates and reminders</span>
+        </a>
         <h2 data-i18n="step2_details_title">👤 Your Details</h2>
         <div id="returningBadge"></div>
         <div id="reviewRewardWrap"></div>
@@ -3466,6 +3500,9 @@
           <p data-i18n="success_msg">Your order is confirmed. Fresh food, on time, every time.</p>
           <div class="order-ref"><span data-i18n="order_id_label">Order ID:</span> <strong
               id="orderIdDisplay">—</strong></div>
+          <a href="https://chat.whatsapp.com/JvcTY6Bn7CgCFQJkdlLVoc?mode=gi_t" target="_blank" class="wa-group-banner" style="margin: 16px 0; justify-content: center;">
+            <span>📲 Join group for daily menu, updates and reminders</span>
+          </a>
 
           <div id="successSummary" class="success-summary-box"></div>
 
@@ -4736,11 +4773,11 @@
 
         return `<div class="meal-section ${lockedClass}">
       ${isAddrMissing ? `
-        <div class="meal-locked-overlay">
+        <div class="meal-locked-overlay" onclick="goToStep(1)" style="cursor:pointer;">
            <div class="meal-locked-msg">
              <div style="font-size:1.4rem;margin-bottom:8px;">📍</div>
              <div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">Address Missing</div>
-             <div style="font-size:0.72rem;color:#666;line-height:1.4;">Add <b>${meal}</b> address in Step 2 to order items.</div>
+             <div style="font-size:0.72rem;color:#666;line-height:1.4;">Click here to add address to enable ordering</div>
            </div>
         </div>
       ` : ""}
