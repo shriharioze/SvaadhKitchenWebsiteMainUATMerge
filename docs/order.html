@@ -5483,12 +5483,17 @@
       });
       reviewMsg += `</div><div style="font-size:1rem; font-weight:bold; margin-top:12px; color:#c0392b;">Grand Total: ₹${S.grandTotal}</div>`;
 
-      const placeConfirmed = await sConfirm(reviewMsg, "Review Your Bill", "🧾", "कृपया तुमची ऑर्डर तपासा आणि पुष्टी करा.");
-      if (!placeConfirmed) return;
-
       const btn = $("btnNext");
       S.isPlacingOrder = true;
       btn.style.pointerEvents = "none";
+
+      const placeConfirmed = await sConfirm(reviewMsg, "Review Your Bill", "🧾", "कृपया तुमची ऑर्डर तपासा आणि पुष्टी करा.");
+      if (!placeConfirmed) {
+        S.isPlacingOrder = false;
+        btn.style.pointerEvents = "auto";
+        return;
+      }
+
       sBtnLoading(btn, true, t('loading_placing'));
       const orders = [];
       for (const date of S.selectedDates) {
