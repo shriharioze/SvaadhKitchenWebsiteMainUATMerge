@@ -979,6 +979,47 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           </div>
         </div>
 
+        <!-- PANEL: MARK ITEMS OUT OF STOCK -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">🚫</span>
+            <span class="meal-card-title">Mark Items Out of Stock</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
+              Mark items as sold out per meal. Customers see a "Sold Out" badge and cannot add those items. Saved with the menu.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+              <div>
+                <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">🌅 BREAKFAST</div>
+                <div id="oosBreakfastGrid"></div>
+              </div>
+              <div>
+                <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">☀️ LUNCH</div>
+                <div id="oosLunchGrid"></div>
+              </div>
+              <div>
+                <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">🌙 DINNER</div>
+                <div id="oosDinnerGrid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: STOP ACCEPTING ORDERS -->
+        <div class="meal-card">
+          <div class="meal-card-head">
+            <span class="meal-icon">🔒</span>
+            <span class="meal-card-title">Stop Accepting Orders</span>
+          </div>
+          <div class="meal-card-body">
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
+              Toggle a meal OFF to block new orders for this date entirely, regardless of cutoff time.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;" id="ordersClosedPanel"></div>
+          </div>
+        </div>
+
       </div><!-- /pageMenu -->
 
       <!-- PAGE: MANAGE LISTS -->
@@ -1508,6 +1549,8 @@ let S = {
   dinnerDry:      "",
   dinnerCurry:    "",
   menuDirty:      false, // true when unsaved changes exist on the menu page
+  oosItems:       { Breakfast: [], Lunch: [], Dinner: [] },
+  ordersClosed:   {},   // { Breakfast:bool, Lunch:bool, Dinner:bool }
 };
 
 // ── RATE LIMITING ──
@@ -1693,6 +1736,9 @@ function selectDate(iso) {
     document.getElementById("cutoffBf").value = co.Breakfast ? String(co.Breakfast) : "";
     document.getElementById("cutoffL").value  = co.Lunch     ? String(co.Lunch)     : "";
     document.getElementById("cutoffD").value  = co.Dinner    ? String(co.Dinner)    : "";
+    // Load OOS and orders closed state
+    S.oosItems     = existing.oos_items     || { Breakfast: [], Lunch: [], Dinner: [] };
+    S.ordersClosed = existing.orders_closed || {};
   } else {
     // Default-on items checked
     S.bfMaster.filter(m => m.default_on).forEach(m => { S.checkedBf[m.id] = true; });
@@ -1700,6 +1746,9 @@ function selectDate(iso) {
     document.getElementById("cutoffBf").value = "";
     document.getElementById("cutoffL").value  = "";
     document.getElementById("cutoffD").value  = "";
+    // Reset OOS and orders closed
+    S.oosItems     = { Breakfast: [], Lunch: [], Dinner: [] };
+    S.ordersClosed = {};
   }
 
   // Update hero date
@@ -1720,6 +1769,8 @@ function selectDate(iso) {
 
   renderBfGrid();
   renderSabjiLists();
+  renderOOSPanel();
+  renderOrdersClosedPanel();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1745,6 +1796,7 @@ function toggleBf(id) {
   S.checkedBf[id] = !S.checkedBf[id];
   setMenuDirty(true);
   renderBfGrid();
+  renderOOSPanel(); // keep breakfast OOS grid in sync with checked items
 }
 
 // ════════════════════════════════════════════════════════
@@ -1776,6 +1828,102 @@ function selectSabji(key, name) {
 }
 
 // ════════════════════════════════════════════════════════
+// OOS ITEMS PANEL
+// ════════════════════════════════════════════════════════
+const OOS_FIXED_ITEMS = [
+  { label:"Chapati",             colKey:"Chapati" },
+  { label:"Without Oil Chapati", colKey:"Without Oil Chapati" },
+  { label:"Phulka",              colKey:"Phulka" },
+  { label:"Ghee Phulka",         colKey:"Ghee Phulka" },
+  { label:"Jowar Bhakri",        colKey:"Jowar Bhakri" },
+  { label:"Bajra Bhakri",        colKey:"Bajra Bhakri" },
+  { label:"Dry Sabji Mini",      colKey:"Dry Sabji Mini" },
+  { label:"Dry Sabji Full",      colKey:"Dry Sabji Full" },
+  { label:"Curry Sabji Mini",    colKey:"Curry Sabji Mini" },
+  { label:"Curry Sabji Full",    colKey:"Curry Sabji Full" },
+  { label:"Dal",                 colKey:"Dal" },
+  { label:"Rice",                colKey:"Rice" },
+  { label:"Salad",               colKey:"Salad" },
+  { label:"Curd",                colKey:"Curd" },
+];
+
+function renderOOSPanel() {
+  const bfItems = S.bfMaster
+    .filter(m => S.checkedBf[m.id])
+    .map(m => ({ label: m.name, colKey: m.name }));
+  renderOOSGrid("Breakfast", "oosBreakfastGrid", bfItems);
+  renderOOSGrid("Lunch",     "oosLunchGrid",     OOS_FIXED_ITEMS);
+  renderOOSGrid("Dinner",    "oosDinnerGrid",     OOS_FIXED_ITEMS);
+}
+
+function renderOOSGrid(meal, gridId, items) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  if (!items.length) {
+    grid.innerHTML = `<div style="font-size:.75rem;color:var(--muted);padding:4px 0;">No items set for this date yet.</div>`;
+    return;
+  }
+  const mealOOS = (S.oosItems[meal] || []);
+  grid.innerHTML = items.map(item => {
+    const isOOS = mealOOS.includes(item.colKey);
+    return `<div class="bf-item ${isOOS ? 'on' : ''}"
+                 style="${isOOS ? 'border-color:#e74c3c;background:#fdf0ee;' : ''}margin-bottom:6px;cursor:pointer;"
+                 onclick="toggleOOS('${meal}','${item.colKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
+      <div class="bf-check" style="${isOOS ? 'background:#e74c3c;color:#fff;' : ''}">${isOOS ? '✕' : ''}</div>
+      <div class="bf-item-info">
+        <div class="name">${item.label}</div>
+        <div class="price" style="color:${isOOS ? '#e74c3c' : 'var(--muted)'};">${isOOS ? 'Sold Out' : 'In Stock'}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleOOS(meal, colKey) {
+  if (!S.oosItems[meal]) S.oosItems[meal] = [];
+  const idx = S.oosItems[meal].indexOf(colKey);
+  if (idx >= 0) S.oosItems[meal].splice(idx, 1);
+  else S.oosItems[meal].push(colKey);
+  setMenuDirty(true);
+  const gridId = meal === "Breakfast" ? "oosBreakfastGrid"
+               : meal === "Lunch"     ? "oosLunchGrid"
+               :                        "oosDinnerGrid";
+  const items = meal === "Breakfast"
+    ? S.bfMaster.filter(m => S.checkedBf[m.id]).map(m => ({ label: m.name, colKey: m.name }))
+    : OOS_FIXED_ITEMS;
+  renderOOSGrid(meal, gridId, items);
+}
+
+// ════════════════════════════════════════════════════════
+// ORDERS CLOSED PANEL
+// ════════════════════════════════════════════════════════
+function renderOrdersClosedPanel() {
+  const panel = document.getElementById("ordersClosedPanel");
+  if (!panel) return;
+  const meals = [
+    { key:"Breakfast", icon:"🌅" },
+    { key:"Lunch",     icon:"☀️" },
+    { key:"Dinner",    icon:"🌙" },
+  ];
+  panel.innerHTML = meals.map(m => {
+    const isClosed = !!S.ordersClosed[m.key];
+    return `<div style="text-align:center;">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">${m.icon} ${m.key}</div>
+      <button class="toggle ${isClosed ? '' : 'on'}"
+              onclick="toggleOrdersClosed('${m.key}')"></button>
+      <div style="font-size:.72rem;margin-top:6px;font-weight:600;color:${isClosed ? '#e74c3c' : 'var(--green)'};">
+        ${isClosed ? 'Closed' : 'Open'}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleOrdersClosed(meal) {
+  S.ordersClosed[meal] = !S.ordersClosed[meal];
+  setMenuDirty(true);
+  renderOrdersClosedPanel();
+}
+
+// ════════════════════════════════════════════════════════
 // SAVE DAILY MENU
 // ════════════════════════════════════════════════════════
 async function saveCurrentMenu() {
@@ -1799,6 +1947,8 @@ async function saveCurrentMenu() {
     cutoff_breakfast:   document.getElementById("cutoffBf").value || null,
     cutoff_lunch:       document.getElementById("cutoffL").value  || null,
     cutoff_dinner:      document.getElementById("cutoffD").value  || null,
+    oos_items:          S.oosItems,
+    orders_closed:      S.ordersClosed,
   };
 
   try {
@@ -1834,6 +1984,8 @@ async function saveCurrentMenu() {
       dinner_dry:       S.dinnerDry,
       dinner_curry:     S.dinnerCurry,
       cutoff_overrides: cutoffOverrides,
+      oos_items:        S.oosItems,
+      orders_closed:    S.ordersClosed,
     };
     if (idx >= 0) S.menuEntries[idx] = entry; else S.menuEntries.push(entry);
 

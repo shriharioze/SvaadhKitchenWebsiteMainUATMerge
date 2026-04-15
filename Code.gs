@@ -590,7 +590,8 @@ function initSchema() {
   getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
-    "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner"
+    "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
+    "OOS_JSON","Orders_Closed"
   ]);
   getOrCreateTab(ss, TAB_BF_MASTER, ["ID","Name","Price","Active"]);
   getOrCreateTab(ss, TAB_SABJI,     ["ID","Name","Type","Active"]);
@@ -723,54 +724,6 @@ function _calculateWalletBalance(phone) {
   return Math.round(balance * 100) / 100;
 }
 
-function saveMenu(body) {
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_MENU, [
-    "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
-    "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner"
-  ]);
-  const rows = ws.getDataRange().getValues();
-  const headers = rows[0];
-  const dIdx = headers.indexOf("Date");
-  
-  if (dIdx === -1) return {success:false, error:"Date column missing in SK_Daily_Menu"};
-
-  const dateStr = body.date;
-  let existingRow = -1;
-  for (let i = 1; i < rows.length; i++) {
-    let rDate = rows[i][dIdx];
-    if (rDate instanceof Date) rDate = Utilities.formatDate(rDate, "Asia/Kolkata", "yyyy-MM-dd");
-    if (String(rDate).trim() === dateStr) {
-      existingRow = i + 1;
-      break;
-    }
-  }
-
-  const newRow = new Array(headers.length).fill("");
-  const setVal = (h, val) => {
-    const idx = headers.indexOf(h);
-    if (idx >= 0) newRow[idx] = val;
-  };
-
-  setVal("Date", dateStr);
-  setVal("Breakfast_JSON", JSON.stringify(body.breakfast || []));
-  setVal("Lunch_Dry", body.lunch_dry || "");
-  setVal("Lunch_Curry", body.lunch_curry || "");
-  setVal("Dinner_Dry", body.dinner_dry || "");
-  setVal("Dinner_Curry", body.dinner_curry || "");
-  setVal("Cutoff_Breakfast", body.cutoff_breakfast || "");
-  setVal("Cutoff_Lunch", body.cutoff_lunch || "");
-  setVal("Cutoff_Dinner", body.cutoff_dinner || "");
-
-  if (existingRow >= 0) {
-    ws.getRange(existingRow, 1, 1, newRow.length).setValues([newRow]);
-  } else {
-    ws.appendRow(newRow);
-  }
-  return {success:true};
-}
-
-
 // ── GET MENU ─────────────────────────────────────────────────
 function getMenu(dateStr) {
   const ss = getSpreadsheet();
@@ -790,7 +743,9 @@ function getMenu(dateStr) {
 
   if (!r) return {
     breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
-    cutoff_overrides:{}
+    cutoff_overrides:{},
+    oos_items: { Breakfast: [], Lunch: [], Dinner: [] },
+    orders_closed: {}
   };
 
   const co = {};
@@ -812,13 +767,21 @@ function getMenu(dateStr) {
     }
   });
 
+  let oosItems = { Breakfast: [], Lunch: [], Dinner: [] };
+  try { if (r && r.OOS_JSON) oosItems = JSON.parse(r.OOS_JSON); } catch(e) {}
+
+  let ordersClosed = {};
+  try { if (r && r.Orders_Closed) ordersClosed = JSON.parse(r.Orders_Closed); } catch(e) {}
+
   return {
     breakfast:    finalBreakfast,
     lunch_dry:    r ? (r.Lunch_Dry || "") : "",
     lunch_curry:  r ? (r.Lunch_Curry || "") : "",
     dinner_dry:   r ? (r.Dinner_Dry || "") : "",
     dinner_curry: r ? (r.Dinner_Curry || "") : "",
-    cutoff_overrides: co
+    cutoff_overrides: co,
+    oos_items:    oosItems,
+    orders_closed: ordersClosed
   };
 }
 
@@ -1816,6 +1779,10 @@ function getAdminData() {
     if (r.Cutoff_Dinner)    co.Dinner    = Number(r.Cutoff_Dinner);
     let breakfast = [];
     try { if (r.Breakfast_JSON) breakfast = JSON.parse(r.Breakfast_JSON); } catch(e) {}
+    let oosItems = { Breakfast: [], Lunch: [], Dinner: [] };
+    try { if (r.OOS_JSON) oosItems = JSON.parse(r.OOS_JSON); } catch(e) {}
+    let ordersClosed = {};
+    try { if (r.Orders_Closed) ordersClosed = JSON.parse(r.Orders_Closed); } catch(e) {}
     return {
       date:             d,
       breakfast:        breakfast,
@@ -1824,6 +1791,8 @@ function getAdminData() {
       dinner_dry:       r.Dinner_Dry   || "",
       dinner_curry:     r.Dinner_Curry || "",
       cutoff_overrides: co,
+      oos_items:        oosItems,
+      orders_closed:    ordersClosed,
     };
   });
 
@@ -1833,7 +1802,12 @@ function getAdminData() {
 // ── ADMIN: SAVE MENU ─────────────────────────────────────────
 function saveMenu(body) {
   const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_MENU, []);
+  // Always pass full headers so schema self-heals if initSchema() was never run
+  const ws = getOrCreateTab(ss, TAB_MENU, [
+    "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
+    "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
+    "OOS_JSON","Orders_Closed"
+  ]);
   const rows = getAllRows(ws);
   const hIdx = headerIndex(ws);
 
@@ -1860,6 +1834,8 @@ function saveMenu(body) {
     body.cutoff_breakfast || body.cutoffBf    || "",
     body.cutoff_lunch     || body.cutoffL     || "",
     body.cutoff_dinner    || body.cutoffD     || "",
+    JSON.stringify(body.oos_items    || { Breakfast: [], Lunch: [], Dinner: [] }),
+    JSON.stringify(body.orders_closed || {}),
   ];
 
   if (existing) {

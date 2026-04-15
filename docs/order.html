@@ -3826,12 +3826,25 @@
 
     function getMealAvailability(dateStr) {
       const today = todayISO();
-      if (dateStr > today) return { Breakfast: true, Lunch: true, Dinner: true };
-      if (dateStr < today) return { Breakfast: false, Lunch: false, Dinner: false };
-      const ov = S.menuCache[dateStr]?.cutoff_overrides || {};
-      const cur = { Breakfast: ov.Breakfast ?? CUTOFFS.Breakfast, Lunch: ov.Lunch ?? CUTOFFS.Lunch, Dinner: ov.Dinner ?? CUTOFFS.Dinner };
-      const ist = getIST(), h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
-      return { Breakfast: h < cur.Breakfast, Lunch: h < cur.Lunch, Dinner: h < cur.Dinner };
+      const menu = S.menuCache[dateStr] || {};
+      const closed = menu.orders_closed || {};
+      let base;
+      if (dateStr < today) {
+        base = { Breakfast: false, Lunch: false, Dinner: false };
+      } else if (dateStr > today) {
+        base = { Breakfast: true, Lunch: true, Dinner: true };
+      } else {
+        const ov = menu.cutoff_overrides || {};
+        const cur = { Breakfast: ov.Breakfast ?? CUTOFFS.Breakfast, Lunch: ov.Lunch ?? CUTOFFS.Lunch, Dinner: ov.Dinner ?? CUTOFFS.Dinner };
+        const ist = getIST(), h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
+        base = { Breakfast: h < cur.Breakfast, Lunch: h < cur.Lunch, Dinner: h < cur.Dinner };
+      }
+      // Admin-closed meals are blocked even on future dates
+      return {
+        Breakfast: base.Breakfast && !closed.Breakfast,
+        Lunch:     base.Lunch     && !closed.Lunch,
+        Dinner:    base.Dinner    && !closed.Dinner,
+      };
     }
     function fmtHour(h) { const hh = Math.floor(h), mm = Math.round((h - hh) * 60), ampm = hh < 12 ? "AM" : "PM", hr = hh > 12 ? hh - 12 : (hh || 12); return `${hr}:${String(mm).padStart(2, "0")} ${ampm}`; }
     function getPeriodLabel() { const t = getIST(), d = t.getUTCDate(); if (d <= 10) return "1st – 10th"; if (d <= 20) return "11th – 20th"; const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); return `21st – ${last}th`; }
@@ -4727,8 +4740,8 @@
       $("mealSelectionContent").innerHTML = `<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">${t('loading_menu')}</p></div>`;
       await Promise.all(S.selectedDates.map(async date => {
         if (!S.menuCache[date]) {
-          try { const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); }
-          catch { S.menuCache[date] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} }; }
+          try { const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); console.log('[DEBUG] menuCache[' + date + ']:', JSON.stringify({oos_items: S.menuCache[date].oos_items, orders_closed: S.menuCache[date].orders_closed})); }
+          catch (fetchErr) { console.error('[DEBUG] fetch failed for', date, fetchErr); S.menuCache[date] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} }; }
         }
         if (!S.orders[date]) {
           const def = { area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society, maps: S.profile.maps, landmark: S.profile.landmark };
@@ -4829,7 +4842,7 @@
           <span class="meal-icon">${ICONS[meal]}</span>
           <div>
             <div class="meal-title">${meal}</div>
-            <div class="meal-cutoff-txt">${isAvail ? cutoffTxt[meal] : t('cutoff_passed_meal', { meal })}</div>
+            <div class="meal-cutoff-txt">${isAvail ? cutoffTxt[meal] : ((S.menuCache[date]?.orders_closed || {})[meal] ? 'Not accepting orders' : t('cutoff_passed_meal', { meal }))}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -4839,7 +4852,16 @@
       </div>
       ${isAvail
             ? `<div class="meal-body ${(sub > 0 && !isAddrMissing) ? "open" : ""}" id="mb_${date}_${meal}">${buildMealBody(date, meal, menu)}</div>`
-            : `<div class="meal-locked">${t('cutoff_passed_meal', { meal })}</div>`}
+            : (() => {
+                const isClosed = !!(S.menuCache[date]?.orders_closed || {})[meal];
+                const msg = isClosed
+                  ? `<div style="font-size:1.3rem;margin-bottom:8px;">🔒</div>
+                     <div style="font-weight:700;font-size:0.85rem;margin-bottom:4px;">Not Accepting Orders</div>
+                     <div style="font-size:0.72rem;color:#666;">Orders for ${meal} are not available on this date.</div>`
+                  : `<div style="font-size:1.3rem;margin-bottom:8px;">⏰</div>
+                     <div style="font-weight:700;font-size:0.85rem;">${t('cutoff_passed_meal', { meal })}</div>`;
+                return `<div class="meal-locked" style="text-align:center;padding:24px 16px;">${msg}</div>`;
+              })()}
     </div>`;
       }).join("");
       refreshAllQtys(date);
@@ -4885,6 +4907,17 @@
       return html;
     }
     function itemRow(date, meal, name, price, colKey) {
+      const menu = S.menuCache[date] || {};
+      const mealOOS = (menu.oos_items || {})[meal] || [];
+      const isOOS = mealOOS.includes(colKey);
+      if (isOOS) {
+        return `<div class="item-row" style="opacity:0.45;pointer-events:none;">
+    <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
+    <div class="qty-control">
+      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Sold Out</span>
+    </div>
+  </div>`;
+      }
       const qty = S.orders[date]?.[meal]?.items?.[colKey] || 0;
       const eid = `qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_");
       return `<div class="item-row">
