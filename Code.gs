@@ -4139,53 +4139,116 @@ function _deriveMapsLink(addr, society) {
 
 // ── SUBMIT MANUAL ORDER (Admin Feature) ────────────────────
 function submitManualOrder(body) {
-  const ss = getSpreadsheet();
-  const ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  const custWs   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
-  
-  const phone = String(body.phone || "").trim();
-  const name  = body.name || "Manual Customer";
-  const amount = Number(body.amount) || 0;
-  const date   = body.date || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
-  const mealType = body.mealType || "Other";
-  
+  const ss        = getSpreadsheet();
+  const ordersWs  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const custWs    = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+
+  const phone     = String(body.phone    || "").trim();
+  const name      = String(body.name     || "").trim();
+  const amount    = Number(body.amount)  || 0;
+  const date      = body.date || Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  const mealType  = body.mealType  || "Other";
+  const payMethod = body.paymentMethod || body.payMethod || "UPI";  // "UPI" | "On Account" | "Cash"
+  const billingCycle = body.billingCycle || "Daily"; // only used when creating/updating for On Account
+
   if (!phone || amount <= 0) throw new Error("Invalid phone or amount");
-  
-  // 1. Ensure customer exists with Daily Billing and On Account enabled
-  const profile = { 
-    phone: phone, 
-    name: name, 
-    billingCycle: "Daily", 
-    onAccount: "Yes",
-    payment_preference: "10 days billing" // Mark as on-account preference
-  };
-  _upsertCustomer(ss, profile);
-  
-  // 2. Append to SK_Orders
+
+  // ── 1. Look up existing customer ───────────────────────────
+  const custRows = getAllRows(custWs);
+  const pStr     = _normalizePhone(phone);
+  const existing = custRows.find(r => _normalizePhone(r.Phone) === pStr);
+
+  // ── 2. Update / create customer record ─────────────────────
+  if (existing) {
+    // Always safe to update name if provided, nothing else unless On Account
+    const custHIdx = headerIndex(custWs);
+    const updCell  = (col, val) => { if (custHIdx[col]) custWs.getRange(existing._row, custHIdx[col]).setValue(val); };
+
+    if (name) updCell("Customer_Name", name);
+
+    if (payMethod === "On Account") {
+      // Mark On Account = Yes
+      updCell("On_Account", "Yes");
+      // Only change billing cycle if the existing one is NOT Monthly (never downgrade)
+      const existingCycle = String(existing.Billing_Cycle || "").trim();
+      if (existingCycle !== "Monthly") {
+        updCell("Billing_Cycle", billingCycle);
+      }
+    }
+    // For UPI/Cash: do NOT touch On_Account, Billing_Cycle, or any other field
+    SpreadsheetApp.flush();
+
+  } else {
+    // New customer — create a minimal record; leave address/area/etc blank
+    // so they can self-register later and fill in details naturally.
+    const newCustProfile = {
+      phone:    phone,
+      name:     name || "",
+      // Address fields intentionally omitted (blank)
+    };
+    if (payMethod === "On Account") {
+      newCustProfile.onAccount    = "Yes";
+      newCustProfile.billingCycle = billingCycle;
+    }
+    // For UPI/Cash: On_Account defaults to "No", Billing_Cycle to "Daily" (schema defaults)
+    _upsertCustomer(ss, newCustProfile);
+  }
+
+  // ── 3. Pull customer address for order row (if they exist) ─
+  const custRecord = existing || (() => {
+    // Re-fetch after insert so we get the row
+    const freshRows = getAllRows(custWs);
+    return freshRows.find(r => _normalizePhone(r.Phone) === pStr);
+  })();
+  const custAddress = custRecord
+    ? [custRecord.Wing && `Wing ${custRecord.Wing}`, custRecord.Flat && `Flat ${custRecord.Flat}`,
+       custRecord.Floor && `${custRecord.Floor} Floor`, custRecord.Society, custRecord.Area]
+       .filter(Boolean).join(", ")
+    : "";
+  const custArea    = custRecord ? (custRecord.Area    || "") : "";
+  const custSociety = custRecord ? (custRecord.Society || "") : "";
+  const custMaps    = custRecord ? (custRecord.Maps_Link || "") : "";
+
+  // ── 4. Determine Payment_Method + Payment_Status for order row
+  let orderPayMethod, orderPayStatus;
+  if (payMethod === "On Account") {
+    orderPayMethod = "On Account";
+    orderPayStatus = "On Account";
+  } else if (payMethod === "Cash") {
+    orderPayMethod = "Cash";
+    orderPayStatus = "Paid";
+  } else {
+    // UPI (default)
+    orderPayMethod = "UPI";
+    orderPayStatus = "Pending";
+  }
+
+  // ── 5. Append order row ────────────────────────────────────
   const hIdx = headerIndex(ordersWs);
-  const row = new Array(ORDERS_HEADERS.length).fill("");
-  const set = (colName, val) => {
-    const idx = hIdx[colName];
-    if (idx) row[idx - 1] = val;
-  };
-  
-  // Generate a unique ID in the same format as regular orders but prefixed with M-
-  // e.g. SK-20260415-M-7392  — date-stamped and random, clearly a manual entry
+  const row  = new Array(ORDERS_HEADERS.length).fill("");
+  const set  = (colName, val) => { const i = hIdx[colName]; if (i) row[i - 1] = val; };
+
+  // Generate a unique ID: SK-YYYYMMDD-M-XXXX (M = manual, easy to identify)
   const _midDate = Utilities.formatDate(getISTDate(), "Asia/Kolkata", "yyyyMMdd");
   const _midRand = Math.floor(Math.random() * 9000) + 1000;
   const sid = `SK-${_midDate}-M-${_midRand}`;
-  set("Submission_ID", sid);
-  set("Submitted_At",  getISTTimestamp());
-  set("Order_Date",   date);
-  set("Meal_Type",    mealType);
-  set("Customer_Name", name);
-  set("Phone",         phone);
-  set("Food_Subtotal", amount);
-  set("Net_Total",     amount);
-  set("Payment_Method", "On Account");
-  set("Payment_Status", "On Account");
+
+  set("Submission_ID",  sid);
+  set("Submitted_At",   getISTTimestamp());
+  set("Order_Date",     date);
+  set("Meal_Type",      mealType);
+  set("Customer_Name",  name || (custRecord && custRecord.Customer_Name) || "");
+  set("Phone",          phone);
+  set("Food_Subtotal",  amount);
+  set("Net_Total",      amount);
+  set("Payment_Method", orderPayMethod);
+  set("Payment_Status", orderPayStatus);
+  set("Address",        custAddress);
+  set("Area",           custArea);
+  set("Society",        custSociety);
+  set("Maps_Link",      custMaps);
   set("Source",         "Admin Manual Entry");
-  
+
   ordersWs.appendRow(row);
   return { success: true, sid: sid };
 }
