@@ -87,7 +87,7 @@
     payment_warning_html: "⚠️ <strong>Please confirm only after payment is complete.</strong><br><span style=\"color:#78350f;\">Each transaction is verified manually. Please do not mark as paid before completing payment.</span>",
     upi_scan_hint: "Scan QR code <strong>or</strong> tap the button below to pay",
     payment_note_label: "📝 <strong>Payment note:</strong>",
-    step5_wallet_title: "💼 Svaadh Wallet Balance",
+    step5_wallet_title: "💳 Svaadh Wallet Balance",
     paid_confirm_label: "✅ Payment complete — I confirm payment has been made",
 
     // ── Step 5 — Prepaid Wallet Hissab ────────────────────────

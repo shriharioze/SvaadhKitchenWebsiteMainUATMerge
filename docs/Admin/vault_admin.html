@@ -1282,7 +1282,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="approvals-nav">
           <button class="approvals-tab active" id="tabRefunds" onclick="switchApprovalTab('refunds')">💸 Refunds</button>
           <button class="approvals-tab" id="tabPayments" onclick="switchApprovalTab('payments')">💳 UPI Payments</button>
-          <button class="approvals-tab" id="tabWallet" onclick="switchApprovalTab('wallet')">💼 Wallet Recharges</button>
+          <button class="approvals-tab" id="tabWallet" onclick="switchApprovalTab('wallet')">💳 Wallet Recharges</button>
         </div>
 
         <!-- SUB-PAGE: REFUNDS -->
@@ -4109,7 +4109,7 @@ async function refreshApprovalCounts() {
     
     if (r) r.innerHTML = `💸 Refunds ${data.refunds > 0 ? `[${data.refunds}]` : ''}`;
     if (p) p.innerHTML = `💳 UPI Payments ${data.payments > 0 ? `[${data.payments}]` : ''}`;
-    if (w) w.innerHTML = `💼 Wallet Recharges ${data.wallet > 0 ? `[${data.wallet}]` : ''}`;
+    if (w) w.innerHTML = `💳 Wallet Recharges ${data.wallet > 0 ? `[${data.wallet}]` : ''}`;
   } catch(e) { console.warn("Count refresh failed", e); }
 }
 
@@ -4381,7 +4381,7 @@ async function loadPendingPayments() {
       const isCancelled = p.status === "Cancelled (Verify UPI)";
       const rowStyle = isCancelled ? 'background:#fff3e0; border-left: 4px solid #f57c00;' : '';
       const pref = String(p.refund_preference || "upi").toLowerCase();
-      const prefLabel = pref === "wallet" ? "💼 Wallet" : "💸 UPI";
+      const prefLabel = pref === "wallet" ? "💳 Wallet" : "💸 UPI";
       
       html += `<tr style="${rowStyle}" class="payment-row">
         <td>
@@ -4587,7 +4587,7 @@ async function handleBatchAction(tabId, actionType) {
 }
 
 async function activateWalletRecharge(phone, timestamp, amt, name) {
-  if (!(await showUIConfirm(`Activate ₹${amt} credits for ${name || phone}?`, "Activate Credits", "💼"))) return;
+  if (!(await showUIConfirm(`Activate ₹${amt} credits for ${name || phone}?`, "Activate Credits", "💳"))) return;
   sLoading(true, "Activating credits...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
@@ -4634,7 +4634,7 @@ async function loadRefunds() {
     data.forEach(r => {
       const isUnverified = (r.Status === "Verification Required");
       const mode = String(r.Refund_Mode || "upi").toLowerCase();
-      const modeIcon = mode === "wallet" ? "💼" : "💸";
+      const modeIcon = mode === "wallet" ? "💳" : "💸";
       const modeLabel = mode === "wallet" ? "Wallet" : "Original UPI";
       const rowStyle = isUnverified ? 'background:#fff9c4; border-left: 4px solid #f57f17;' : '';
       

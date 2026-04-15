@@ -3365,7 +3365,7 @@
 
       <!-- WALLET -->
       <div class="card" id="walletCard" style="display:none;">
-        <h2 data-i18n="step5_wallet_title">💼 Pre-paid Svaadh Wallet</h2>
+        <h2 data-i18n="step5_wallet_title">💳 Pre-paid Svaadh Wallet</h2>
         <div style="background:#f0faf4;border:1.5px solid #b7e4c7;border-radius:10px;padding:12px;margin-bottom:6px;">
           <div style="font-size:0.85rem;color:#1a6640;font-weight:600;">Available Balance: <span
               id="walletBalDisplay">₹0</span></div>
@@ -3403,7 +3403,7 @@
             style="text-decoration:none;margin-top:6px;font-size:0.95rem; line-height: 1.4; padding: 12px; height: auto;">👆 Pay via UPI App<br><span style="font-size: 0.7rem; opacity: 0.85; font-weight: 400;">(Based on User's feedback, Recommended: HDFC Bank App or CRED UPI)</span></a>
           
           <div style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, #f0faf4, #ffffff); border: 1.5px solid #b7e4c7; border-radius: 12px; font-size: 0.85rem; color: #1a6640; line-height: 1.5; text-align: left; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 2px 10px rgba(26, 102, 64, 0.06);">
-            <div style="font-size: 1.6rem;">💼</div>
+            <div style="font-size: 1.6rem;">💳</div>
             <div style="flex: 1;">
               <div style="font-weight: 800; color: #1a6640; margin-bottom: 2px;">Try Svaadh Wallet!</div>
               <div style="font-size: 0.76rem; color: #2d6a4f;">Tired of manual payments? Recharge once and enjoy <strong>1-tap seamless ordering</strong>. No more waiting, no more daily screenshots!</div>
@@ -3434,7 +3434,7 @@
             </label>
           </div>
           <div id="walletSwitchBackWrap" style="display:none; text-align:center; margin-top:16px; padding-top:4px;">
-            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💼 Switch back to Wallet Pay (₹<span
+            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💳 Switch back to Wallet Pay (₹<span
                 id="switchBackWalletBal">0</span> available)</a>
           </div>
         </div>
@@ -6043,7 +6043,7 @@
       let refundType = "none";
       if (totalPaid > 0) {
         if (isWalletPaid) {
-          await sAlert(`₹${totalPaid} will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💼");
+          await sAlert(`₹${totalPaid} will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💳");
           refundType = "wallet";
         } else {
           const choice = await sPromptRefund(`You paid ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "तुमचे पैसे वॉलेटमध्ये परत हवे आहेत का?", { wallet: "Wallet (Instant)" });
@@ -6070,7 +6070,7 @@
             const msg = isPending
               ? "Cancellation successful! Refund will be added to your Svaadh Wallet within 3 working days after Admin verification."
               : "Cancellation successful! Refund added to your Svaadh Wallet.";
-            await sAlert(msg, "Done", "💼");
+            await sAlert(msg, "Done", "💳");
           } else if (refundType !== "none") {
             await sAlert("Cancellation successful! Refund request submitted.", "Done", "💸");
           } else {
