@@ -2543,6 +2543,7 @@ async function generateLabels() {
         <div>
           <div class="lname">${l.name}</div>
           <div class="lsummary">${l.summary}</div>
+          <div class="larea">${l.area || ""}</div>
           ${l.notes ? `<div class="lnotes">📝 ${l.notes}</div>` : ""}
         </div>
         <div class="lnum">#${i+1}</div>
@@ -2949,9 +2950,10 @@ function renderLabelPreview(orders, meal, lang, date) {
       <div>
         <div class="lname">Name: ${o.name}</div>
         <div class="lsummary">${summary}</div>
+        <div class="larea">${o.area || ""}</div>
         ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
       </div>
-      <div class="lnum">#${i+1} · ${o.area}</div>
+      <div class="lnum">#${i+1}</div>
     </div>`;
   });
   preview.innerHTML = html;
@@ -3021,14 +3023,13 @@ async function saveLabelsToDrive() {
         const BY = idx * BLOCK;   // block top y
         const summary = getItemSummary(order, meal, lang);
 
-        // Name (bold)
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         const nameLines = doc.splitTextToSize("Name: " + order.name, TW);
-        let y = BY + 7;
+        let y = BY + 6;
         doc.text(nameLines, LM, y);
-        y += nameLines.length * 5 + 1.5;
+        y += nameLines.length * 5 + 0.5;
 
         // Summary
         doc.setFont("helvetica", "normal");
@@ -3036,6 +3037,12 @@ async function saveLabelsToDrive() {
         const sumLines = doc.splitTextToSize(summary, TW);
         doc.text(sumLines, LM, y);
         y += sumLines.length * 4 + 1;
+
+        // Area
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.text(order.area || "", LM, y);
+        y += 4;
 
         // Notes
         if (order.notes) {
@@ -3088,12 +3095,17 @@ async function saveLabelsToDrive() {
 
         // Name
         ctx.fillStyle = "#000";
-        let y = cvWrap("Name: " + order.name, true, mm(3.0), mm(LM), BY + mm(5.5), mm(4.2));
-        y += mm(1);
+        let y = cvWrap("Name: " + order.name, true, mm(3.0), mm(LM), BY + mm(5.0), mm(4.2));
+        y += mm(0.5);
 
         // Summary
         ctx.fillStyle = "#222";
         y = cvWrap(summary, false, mm(2.6), mm(LM), y, mm(3.6));
+        y += mm(0.5);
+
+        // Area
+        ctx.fillStyle = "#000";
+        y = cvWrap(order.area || "", true, mm(2.8), mm(LM), y, mm(3.8));
 
         // Notes
         if (order.notes) {

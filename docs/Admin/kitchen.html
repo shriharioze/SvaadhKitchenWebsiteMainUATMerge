@@ -663,8 +663,10 @@
       align-items: flex-start;
     }
     .label-card .lname { font-weight: 700; font-size: 0.9rem; color: #222; }
-    .label-card .lnotes { font-size: 0.72rem; color: #e67e22; margin-top: 3px; }
-    .label-card .lnum { font-size: 0.65rem; color: #ccc; white-space: nowrap; margin-left:10px; padding-top:2px; }
+    .label-card .lsummary { font-size: 0.78rem; color: #444; }
+    .label-card .larea { font-weight: 700; font-size: 0.78rem; color: #333; margin-top: 2px; }
+    .label-card .lnotes { font-size: 0.68rem; color: #e67e22; margin-top: 3px; }
+    .label-card .lnum { font-size: 0.62rem; color: #ccc; white-space: nowrap; margin-left:10px; padding-top:2px; }
     
     .download-btn {
       background: #27ae60;
@@ -1840,9 +1842,10 @@
               <div>
                 <div class="lname">Name: ${o.name}</div>
                 <div class="lsummary">${summary}</div>
+                <div class="larea">${o.area || ""}</div>
                 ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
               </div>
-              <div class="lnum">#${i + 1} · ${o.area}</div>
+              <div class="lnum">#${i + 1}</div>
             </div>`;
         });
         preview.innerHTML = html;
@@ -1910,16 +1913,19 @@
           currentLabels.forEach((order, idx) => {
             const BY = idx * BLOCK;
             const summary = getBulkItemSummary(order, meal, lang);
-            doc.setFont("helvetica", "bold"); doc.setFontSize(14); // 11 + 3
+            doc.setFont("helvetica", "bold"); doc.setFontSize(13); 
             const nameL = doc.splitTextToSize("Name: " + order.name, TW);
-            let y = BY + 7; doc.text(nameL, LM, y);
-            y += nameL.length * 5 + 1.5;
-            doc.setFont("helvetica", "normal"); doc.setFontSize(12); // 9 + 3
+            let y = BY + 6; doc.text(nameL, LM, y);
+            y += nameL.length * 5 + 0.5;
+            doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); 
             const sumL = doc.splitTextToSize(summary, TW);
             doc.text(sumL, LM, y);
             y += sumL.length * 4 + 1;
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+            doc.text(order.area || "", LM, y);
+            y += 4.5;
             if (order.notes) {
-              doc.setFontSize(11); doc.setTextColor(184, 96, 0); // 8 + 3
+              doc.setFontSize(9); doc.setTextColor(184, 96, 0); 
               doc.text("* " + order.notes, LM, Math.min(y, BY + LH - 2));
               doc.setTextColor(0, 0, 0);
             }
@@ -1949,11 +1955,13 @@
             const BY = mm(idx * BLOCK);
             const summary = getBulkItemSummary(order, meal, lang);
             ctx.fillStyle = "#000";
-            let y = cvWrap("Name: " + order.name, true, mm(3.8), mm(LM), BY + mm(5.5), mm(4.8)); // slightly larger sizes
-            y += mm(1); ctx.fillStyle = "#222";
-            y = cvWrap(summary, false, mm(3.3), mm(LM), y, mm(4.2));
+            let y = cvWrap("Name: " + order.name, true, mm(3.4), mm(LM), BY + mm(5.0), mm(4.4)); 
+            y += mm(0.5); ctx.fillStyle = "#222";
+            y = cvWrap(summary, false, mm(3.0), mm(LM), y, mm(3.8));
+            y += mm(0.5); ctx.fillStyle = "#000";
+            y = cvWrap(order.area || "", true, mm(3.2), mm(LM), y, mm(4.0));
             if (order.notes) {
-              ctx.fillStyle = "#b86000"; ctx.font = `${mm(2.8)}px ${devFont}`;
+              ctx.fillStyle = "#b86000"; ctx.font = `${mm(2.4)}px ${devFont}`;
               ctx.fillText("* " + order.notes, mm(LM), Math.min(y, BY + mm(LH - 2)));
             }
             if (idx < n - 1) {
