@@ -3995,10 +3995,12 @@ function markBillingCollected(submissionIds) {
   if (!statusCol) return { success: false, error: 'Payment_Status column not found' };
 
   let count = 0;
-  const idSet = new Set(submissionIds.map(id => String(id).replace(/\D/g, '')));
+  // Compare IDs exactly (trimmed) — do NOT strip non-digits; manual order IDs
+  // contain mixed alphanumeric characters and digit-stripping causes false matches.
+  const idSet = new Set(submissionIds.map(id => String(id).trim()));
 
   rows.forEach(r => {
-    const cleanId = String(r.Submission_ID || '').replace(/\D/g, '');
+    const cleanId = String(r.Submission_ID || '').trim();
     if (idSet.has(cleanId)) {
       ws.getRange(r._row, statusCol).setValue('Paid'); // Changed from 'Collected' to 'Paid' for uniformity
       count++;
@@ -4167,7 +4169,11 @@ function submitManualOrder(body) {
     if (idx) row[idx - 1] = val;
   };
   
-  const sid = "M" + Date.now().toString(36).toUpperCase();
+  // Generate a unique ID in the same format as regular orders but prefixed with M-
+  // e.g. SK-20260415-M-7392  — date-stamped and random, clearly a manual entry
+  const _midDate = Utilities.formatDate(getISTDate(), "Asia/Kolkata", "yyyyMMdd");
+  const _midRand = Math.floor(Math.random() * 9000) + 1000;
+  const sid = `SK-${_midDate}-M-${_midRand}`;
   set("Submission_ID", sid);
   set("Submitted_At",  getISTTimestamp());
   set("Order_Date",   date);
