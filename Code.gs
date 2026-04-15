@@ -972,6 +972,22 @@ function submitOrder(body) {
   let virtualStreakCount = initialStreakInfo.streak;
   let virtualPastSurcharge = initialStreakInfo.pastSurcharge;
 
+  // Pre-fetch existing orders once for duplicate detection
+  const allOrderRows = getAllRows(ordersWs);
+  const _dupNowMs = Date.now();
+  const _FIVE_MIN_MS = 5 * 60 * 1000;
+  const _normPhone = _normalizePhone(profile.phone);
+  // Normalize an items object to a stable JSON signature (sorted keys)
+  const _itemsSig = (obj) => JSON.stringify(
+    Object.keys(obj).sort().reduce((a, k) => { a[k] = obj[k]; return a; }, {})
+  );
+  // Normalize a date value that may be a Date object or a string
+  const _normDate = (d) => {
+    if (!d) return "";
+    if (d instanceof Date) return Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    return String(d).trim().substring(0, 10);
+  };
+
   for (const order of orders) {
     const orderDate = order.date;
     const is6thDay = (virtualStreakCount === 5); // Hits 6 on this day
@@ -1201,6 +1217,25 @@ function submitOrder(body) {
           const finalCol = (masterMap[canonical]) ? masterMap[canonical] : canonical;
           set(finalCol, qty);
         });
+      }
+
+      // Duplicate guard: same phone + date + meal_type + identical items within 5 minutes → skip
+      const _incomingSig = _itemsSig(itemsObj);
+      const _dupRow = allOrderRows.find(r => {
+        if (_normalizePhone(r.Phone) !== _normPhone) return false;
+        if (_normDate(r.Order_Date) !== _normDate(orderDate)) return false;
+        if (r.Meal_Type !== mealType) return false;
+        const rMs = r.Submitted_At ? new Date(r.Submitted_At).getTime() : 0;
+        if (!rMs || (_dupNowMs - rMs) > _FIVE_MIN_MS) return false;
+        try {
+          const stored = typeof r.Items_JSON === "string" ? JSON.parse(r.Items_JSON) : (r.Items_JSON || {});
+          return _itemsSig(stored) === _incomingSig;
+        } catch(e) { return false; }
+      });
+      if (_dupRow) {
+        submissionIds[submissionIds.length - 1] = _dupRow.Submission_ID || sid;
+        console.log("Duplicate order skipped: " + _normPhone + " / " + orderDate + " / " + mealType);
+        continue;
       }
 
       ordersWs.appendRow(row);
