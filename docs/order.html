@@ -2266,12 +2266,13 @@
 
     .wm-btn {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 3px;
       background: linear-gradient(135deg, #fff7ed, #fff);
       border: 1.5px solid #fbbf24;
       border-radius: 12px;
-      padding: 10px 16px;
+      padding: 12px 16px;
       font-size: 0.84rem;
       font-weight: 600;
       color: #92400e;
@@ -2281,6 +2282,8 @@
       justify-content: center;
       transition: all 0.2s;
       margin-top: 10px;
+      text-align: center;
+      line-height:1.3;
     }
 
     .wm-btn:hover {
@@ -2968,7 +2971,10 @@
         </button>
       </div>
       <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:none;background:transparent;">
-        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn">📅 View This Week's Tentative Menu (Subject to change based on market availability)</button>
+        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn">
+          <span>📅 View This Week's Tentative Menu</span>
+          <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
+        </button>
       </div>
     </div>
 
@@ -3309,7 +3315,10 @@
             onclick="event.stopPropagation();toast('Tap multiple dates to seamlessly plan your meals for the whole week in advance!',6000)"
             style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
         </h2>
-        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">📅 View This Week's Tentative Menu (Subject to change based on market availability)</button>
+        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">
+          <span>📅 View This Week's Tentative Menu</span>
+          <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
+        </button>
         <div id="step3ReviewPromo"></div>
 
         <div class="info-box" id="cutoffInfoBox">
