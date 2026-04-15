@@ -14,6 +14,29 @@ const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
 const CODE_VERSION   = 14.1; // Prepaid Standard (Legacy Removal)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
+
+// ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
+// Set PAYMENT_GATEWAY_ENABLED = true ONLY in the Dev Apps Script project
+// (where SHEET_ID points to the dev sheet).
+// On the live project this stays false — gateway code is completely skipped.
+const PAYMENT_GATEWAY_ENABLED = false;
+
+// HDFC SmartGATEWAY credentials — set these in Script Properties, never hardcode.
+// Keys to add in Script Properties once test kit arrives:
+//   HDFC_MERCHANT_ID   — assigned by HDFC on TID release
+//   HDFC_TERMINAL_ID   — TID from HDFC
+//   HDFC_SECRET_KEY    — secret key for request signing
+//   HDFC_ENV           — "test" | "live"
+//   HDFC_TEST_URL      — sandbox endpoint URL (from test kit)
+//   HDFC_LIVE_URL      — production endpoint URL
+const HDFC_MERCHANT_ID = SP.getProperty("HDFC_MERCHANT_ID") || "";
+const HDFC_TERMINAL_ID = SP.getProperty("HDFC_TERMINAL_ID") || "";
+const HDFC_SECRET_KEY  = SP.getProperty("HDFC_SECRET_KEY")  || "";
+const HDFC_ENV         = SP.getProperty("HDFC_ENV")         || "test";
+const HDFC_BASE_URL    = HDFC_ENV === "live"
+  ? (SP.getProperty("HDFC_LIVE_URL") || "")
+  : (SP.getProperty("HDFC_TEST_URL") || "");
+// ─────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
 
 // Sheet tab names
