@@ -3476,48 +3476,25 @@
         </div>
       </div>
 
-      <!-- ON ACCOUNT CARD (Unified Flow) -->
+      <!-- ON ACCOUNT CARD -->
       <div class="card" id="onAccountCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
         <div class="wallet-confirm-card" style="background: linear-gradient(135deg, #1565c0, #134e91);">
           <div class="wc-label">Total amount</div>
           <div class="wc-amount" id="onAccountDeductAmount">₹0</div>
-          <div class="wc-balance" id="onAccountCycle" style="background:rgba(255,255,255,0.15); border:none;"> Authorized: On Account (<span id="onAccountCycleDisplay">Daily</span>)</div>
+          <div class="wc-balance" id="onAccountCycle" style="background:rgba(255,255,255,0.15); border:none;">On Account · <span id="onAccountCycleDisplay">Daily</span> billing</div>
         </div>
         <div class="card" style="margin-top:-10px; border-top-left-radius:0; border-top-right-radius:0;">
-          <div style="background:#e3f2fd; border:1px solid #90caf9; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#0d47a1; line-height:1.6;">
-            💡 You can pay now via UPI <b>OR</b> settle later at the end of your billing cycle.
+          <div style="background:#e8f4fd; border:1px solid #90caf9; border-radius:12px; padding:16px; text-align:center;">
+            <div style="font-size:1.4rem; margin-bottom:8px;">📋</div>
+            <div style="font-size:0.88rem; font-weight:700; color:#0d47a1; margin-bottom:6px;">Your bill will be shared at the end of your billing cycle</div>
+            <div style="font-size:0.76rem; color:#1565c0; line-height:1.5;">No payment needed right now. We'll send you a summary based on your <b><span id="onAccountCycleDisplay2">Daily</span> billing</b> preference.</div>
           </div>
 
-          <div class="upi-section" style="padding:0; box-shadow:none; border:none; background:none;">
-            <p class="text-sm" style="font-size:0.75rem; color:#666; margin-bottom:10px;">👇 Use QR below ONLY if paying via UPI right now:</p>
-            <div id="qrcodeOnAccount" style="margin:0 auto;"></div>
-            <div class="upi-amount" id="upiAmountDisplayOnAccount" style="font-size:1.1rem; margin-top:8px;">₹0</div>
-            
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; margin:10px 0; font-size:0.71rem; color:#4a5568; text-align:left;">
-              <span data-i18n-html="payment_note_label">📝 <strong>Note:</strong></span> <span id="upiNoteDisplayOnAccount" style="color:#1e40af; font-weight:600;"></span>
-            </div>
-
-            <a id="upiDeepLinkOnAccount" href="#" class="btn btn-primary" style="text-decoration:none; margin:0; font-size:0.85rem; padding:8px 12px; height:auto; background:#1e40af; border-color:#1e40af;">👆 Tap to Pay via UPI App</a>
-            
-            <div style="margin-top:18px; padding:12px; background:#fff; border:1px dashed #cbd5e0; border-radius:10px;">
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin-bottom:0; text-align:left;">
-                <input type="checkbox" id="onAccountConfirmCheck" style="margin-top:3px; width:auto; accent-color:#1e40af;">
-                <div style="display:flex; flex-direction:column;">
-                  <span style="font-size:0.82rem; font-weight:700; color:#1a202c;">✅ I have paid via UPI now</span>
-                  <span style="font-size:0.7rem; color:#718096;">(Order will be marked as UPI/Pending)</span>
-                </div>
-              </label>
-              
-              <div style="margin:8px 0; border-top:1px solid #edf2f7; padding-top:8px; font-size:0.65rem; color:#64748b; font-weight:700; text-align:center;">OR</div>
-              
-              <div style="font-size:0.78rem; font-weight:600; color:#1e3a8a; line-height:1.4; display:flex; align-items:center; justify-content:center; gap:6px;">
-                 <span>📦 Settle later as <b>On Account</b></span>
-              </div>
-            </div>
-
-            <div style="text-align:center; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-               <a href="javascript:togglePaymentMode('UPI')" style="font-size:0.72rem; color:#7f8c8d; text-decoration:underline;">I am not On Account, let me choose another method</a>
-            </div>
+          <div style="margin-top:14px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:12px; background:#f0f7ff; border:1px solid #90caf9; border-radius:10px;">
+              <input type="checkbox" id="onAccountConfirmCheck" style="margin-top:2px; width:auto; accent-color:#1565c0;">
+              <div style="font-size:0.82rem; font-weight:600; color:#0d47a1; line-height:1.4;">I understand this order will be added to my On Account balance</div>
+            </label>
           </div>
         </div>
       </div>
@@ -5319,9 +5296,7 @@
           $("onAccountCard").style.display = "block";
           $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
           $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
-          // Update the switch link if it exists
-          const upiLink = $("onAccountCard").querySelector("a[href*='togglePaymentMode']");
-          if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+          $("onAccountCycleDisplay2").textContent = S.profile.billingCycle || "Daily";
         } else if (wb >= grandTotal && grandTotal > 0) {
           S.paymentChoice = "Wallet";
           $("walletConfirmCard").style.display = "block";
@@ -5339,9 +5314,7 @@
         $("paymentCard").style.display = "block";
       }
 
-      if (S.paymentChoice === "OnAccount") {
-        setupUPI(grandTotal, true);
-      }
+
 
       if (S.paymentChoice === "UPI") {
         // Show switch back links if applicable
