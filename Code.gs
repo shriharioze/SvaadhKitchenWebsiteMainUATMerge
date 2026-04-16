@@ -805,14 +805,16 @@ function getWeeklyMenu() {
     menuMap[d] = x;
   });
 
-  // Generate standard Mon-Sat week (starting Apr 13)
-  const now = new Date();
-  const dIdx = now.getDay();
-  const diff = now.getDate() - dIdx + (dIdx === 0 ? -6 : 1);
-  const startMonday = new Date(now.setDate(diff));
+  // Generate days starting from TODAY through the rest of the week (up to 6 days)
+  const today = getISTDate();
+  const todayStr = Utilities.formatDate(today, "Asia/Kolkata", "yyyy-MM-dd");
+  // Find how many days remain from today until Saturday (day 6); min 1, max 6
+  const todayDow = today.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const daysUntilSat = todayDow === 0 ? 6 : (6 - todayDow); // days remaining in week incl. today
+  const numDays = Math.min(6, daysUntilSat + 1);
   const days = [];
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(startMonday);
+  for (let i = 0; i < numDays; i++) {
+    const d = new Date(today);
     d.setDate(d.getDate() + i);
     const dateStr = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
     const dayName = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
