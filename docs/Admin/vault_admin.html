@@ -886,7 +886,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div class="meal-card-head">
             <span class="meal-icon">☀️</span>
             <span class="meal-card-title">Lunch</span>
-            <span class="meal-cutoff">Order cutoff: 9:30 AM</span>
+            <span class="meal-cutoff">Order cutoff: 9:00 AM</span>
           </div>
           <div class="meal-card-body">
             <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for lunch.</p>
@@ -908,7 +908,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div class="meal-card-head">
             <span class="meal-icon">🌙</span>
             <span class="meal-card-title">Dinner</span>
-            <span class="meal-cutoff">Order cutoff: 5:00 PM</span>
+            <span class="meal-cutoff">Order cutoff: 4:30 PM</span>
           </div>
           <div class="meal-card-body">
             <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for dinner.</p>
@@ -932,50 +932,34 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
             <span class="meal-card-title">Extend Cutoff Times Today</span>
           </div>
           <div class="meal-card-body">
-            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Leave blank to use defaults (Breakfast 7AM · Lunch 9:30AM · Dinner 5PM). Enter a new time below to extend for this date only.</p>
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Leave blank to use defaults (Breakfast 7:00 AM · Lunch 9:00 AM · Dinner 4:30 PM). Pick any time — we'll show ⚡ Early or 🔓 Extended to customers.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌅 Breakfast until</label>
-                <select id="cutoffBf" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (7:00 AM)</option>
-                  <option value="6.5">6:30 AM</option>
-                  <option value="6.75">6:45 AM</option>
-                  <option value="7.5">7:30 AM</option>
-                  <option value="8">8:00 AM</option>
-                  <option value="8.5">8:30 AM</option>
-                  <option value="9">9:00 AM</option>
-                </select>
+                <input type="time" id="cutoffBf" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffBf','cutoffBfBadge',7)">
+                <div id="cutoffBfBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 7:00 AM</div>
               </div>
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">☀️ Lunch until</label>
-                <select id="cutoffL" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (9:30 AM)</option>
-                  <option value="9">9:00 AM</option>
-                  <option value="9.167">9:10 AM</option>
-                  <option value="9.25">9:15 AM</option>
-                  <option value="9.333">9:20 AM</option>
-                  <option value="9.667">9:40 AM</option>
-                  <option value="9.75">9:45 AM</option>
-                  <option value="9.833">9:50 AM</option>
-                  <option value="10">10:00 AM</option>
-                </select>
+                <input type="time" id="cutoffL" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffL','cutoffLBadge',9)">
+                <div id="cutoffLBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 9:00 AM</div>
               </div>
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌙 Dinner until</label>
-                <select id="cutoffD" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (5:00 PM)</option>
-                  <option value="16.5">4:30 PM</option>
-                  <option value="16.667">4:40 PM</option>
-                  <option value="16.75">4:45 PM</option>
-                  <option value="16.833">4:50 PM</option>
-                  <option value="17.167">5:10 PM</option>
-                  <option value="17.25">5:15 PM</option>
-                  <option value="17.333">5:20 PM</option>
-                  <option value="17.5">5:30 PM</option>
-                </select>
+                <input type="time" id="cutoffD" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffD','cutoffDBadge',16.5)">
+                <div id="cutoffDBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 4:30 PM</div>
               </div>
             </div>
-            <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">These are saved with the menu when you click <strong>Save Menu</strong> above. Customers will see the new cutoff time on the order page.</p>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Saved with the menu when you click <strong>Save Menu</strong>. ⚡ Early = before default · 🔓 Extended = after default.</p>
           </div>
         </div>
 
@@ -1731,11 +1715,14 @@ function selectDate(iso) {
     S.lunchCurry = existing.lunch_curry;
     S.dinnerDry  = existing.dinner_dry;
     S.dinnerCurry= existing.dinner_curry;
-    // Load cutoff overrides into selects
+    // Load cutoff overrides into time inputs
     const co = existing.cutoff_overrides || {};
-    document.getElementById("cutoffBf").value = co.Breakfast ? String(co.Breakfast) : "";
-    document.getElementById("cutoffL").value  = co.Lunch     ? String(co.Lunch)     : "";
-    document.getElementById("cutoffD").value  = co.Dinner    ? String(co.Dinner)    : "";
+    document.getElementById("cutoffBf").value = co.Breakfast ? decimalToTime(co.Breakfast) : "";
+    document.getElementById("cutoffL").value  = co.Lunch     ? decimalToTime(co.Lunch)     : "";
+    document.getElementById("cutoffD").value  = co.Dinner    ? decimalToTime(co.Dinner)    : "";
+    updateCutoffBadge("cutoffBf","cutoffBfBadge",7);
+    updateCutoffBadge("cutoffL","cutoffLBadge",9);
+    updateCutoffBadge("cutoffD","cutoffDBadge",16.5);
     // Load OOS and orders closed state
     S.oosItems     = existing.oos_items     || { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = existing.orders_closed || {};
@@ -1746,6 +1733,7 @@ function selectDate(iso) {
     document.getElementById("cutoffBf").value = "";
     document.getElementById("cutoffL").value  = "";
     document.getElementById("cutoffD").value  = "";
+    ["cutoffBfBadge","cutoffLBadge","cutoffDBadge"].forEach(id => { document.getElementById(id).innerHTML = ""; });
     // Reset OOS and orders closed
     S.oosItems     = { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = {};
@@ -1944,9 +1932,9 @@ async function saveCurrentMenu() {
     lunch_curry:        S.lunchCurry,
     dinner_dry:         S.dinnerDry,
     dinner_curry:       S.dinnerCurry,
-    cutoff_breakfast:   document.getElementById("cutoffBf").value || null,
-    cutoff_lunch:       document.getElementById("cutoffL").value  || null,
-    cutoff_dinner:      document.getElementById("cutoffD").value  || null,
+    cutoff_breakfast:   timeToDecimal(document.getElementById("cutoffBf").value) || null,
+    cutoff_lunch:       timeToDecimal(document.getElementById("cutoffL").value)  || null,
+    cutoff_dinner:      timeToDecimal(document.getElementById("cutoffD").value)  || null,
     oos_items:          S.oosItems,
     orders_closed:      S.ordersClosed,
   };
@@ -2351,6 +2339,38 @@ function isMealCancellable(dateStr, meal) {
   };
   return time < (cutoffs[meal] || 0);
 }
+// ── CUTOFF TIME HELPERS ─────────────────────────────────────
+// Convert "HH:MM" → decimal hours  e.g. "09:00" → 9, "16:30" → 16.5
+function timeToDecimal(val) {
+  if (!val) return null;
+  const [h, m] = val.split(":").map(Number);
+  if (isNaN(h)) return null;
+  return h + (m || 0) / 60;
+}
+// Convert decimal hours → "HH:MM"  e.g. 16.5 → "16:30", 9 → "09:00"
+function decimalToTime(dec) {
+  if (dec === null || dec === undefined || dec === "") return "";
+  const h = Math.floor(dec);
+  const m = Math.round((dec - h) * 60);
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+// Show ⚡ Early / 🔓 Extended / ✅ Default badge next to each time input
+function updateCutoffBadge(inputId, badgeId, defaultDecimal) {
+  const val = document.getElementById(inputId).value;
+  const badge = document.getElementById(badgeId);
+  if (!val) { badge.innerHTML = ""; return; }
+  const dec = timeToDecimal(val);
+  if (dec === null) { badge.innerHTML = ""; return; }
+  if (dec < defaultDecimal) {
+    badge.innerHTML = '<span style="color:#e67e22;background:#fff3e0;padding:2px 8px;border-radius:99px;">⚡ Early cutoff</span>';
+  } else if (dec > defaultDecimal) {
+    badge.innerHTML = '<span style="color:#27ae60;background:#e8f5e9;padding:2px 8px;border-radius:99px;">🔓 Extended</span>';
+  } else {
+    badge.innerHTML = '<span style="color:#888;background:#f5f5f5;padding:2px 8px;border-radius:99px;">✅ Same as default</span>';
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
 function toast(msg, ms=2500) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
