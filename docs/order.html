@@ -2949,6 +2949,8 @@
     <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode"
       style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
     <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
+    <button onclick="showGuideHub()"
+      style="position:absolute;top:10px;right:50px;padding:5px 10px;font-size:0.7rem;font-weight:700;border-radius:10px;background:#fff;border:1.5px solid #7f8c8d;color:#555;cursor:pointer;z-index:10;">📖 Guide</button>
   </div>
 
   <!-- QUICK ACTION BAR (LOGGED IN ONLY) -->
@@ -2967,8 +2969,6 @@
       <button onclick="showManageOrders()" class="bill-chip-btn"
         style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋
         Manage Orders</button>
-      <button onclick="showPricingInfo()"
-        style="padding:6px 10px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #7f8c8d; color:#555; cursor:pointer;">💡 How Billing Works</button>
       <button onclick="logoutCustomer()"
         style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
     </div>
@@ -3795,6 +3795,76 @@
       </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════
+         GUIDE HUB MODAL
+    ════════════════════════════════════════════ -->
+    <div id="guideHubPanel" class="bill-modal-overlay" style="display:none;z-index:10003;" onclick="if(event.target===this)hideGuideHub()">
+      <div class="bill-modal-sheet" style="max-height:85vh;overflow-y:auto;padding-top:12px;">
+        <div class="bm-handle" onclick="hideGuideHub()"><span></span></div>
+        <div style="padding:4px 18px 20px;">
+          <h3 style="font-size:1.05rem;font-weight:700;color:#2d2d2d;margin-bottom:4px;">📖 Guide to Order</h3>
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Everything you need to know — tap any topic.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button onclick="hideGuideHub();showPricingInfo()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">💡</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">How Billing Works</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Delivery charges, discounts, surcharge, loyalty reward</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('wallet')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">👛</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">How Wallet Works</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Load credits, 1-tap ordering, check balance</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('firsttime')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🆕</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">First Time Order Guide</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Step-by-step from phone number to delivery</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('cancellation')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">❌</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Cancellation & Changes</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Cutoff times, how to delete, refund process</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('delivery')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🚴</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Delivery Areas & Timing</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">All 15 areas, free delivery zones, self pickup</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('menu')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🍱</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Understanding the Menu</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Make-your-own-meal, daily sabji, breakfast rotation</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('tracking')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">📍</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Tracking & Managing Orders</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Order status, out for delivery, upcoming orders</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('multiday')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">📅</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Ordering for Multiple Days</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Weekly planning, copy meals, advance orders</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+          </div>
+          <button onclick="hideGuideHub()" style="width:100%;margin-top:18px;padding:12px;background:#f5f5f5;border:1.5px solid #ddd;border-radius:10px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         INDIVIDUAL GUIDE MODAL (shared shell)
+    ════════════════════════════════════════════ -->
+    <div id="guideDetailPanel" class="bill-modal-overlay" style="display:none;z-index:10004;" onclick="if(event.target===this)hideGuideDetail()">
+      <div class="bill-modal-sheet" style="max-height:92vh;overflow-y:auto;padding-top:12px;">
+        <div class="bm-handle" onclick="hideGuideDetail()"><span></span></div>
+        <div style="padding:4px 18px 20px;">
+          <button onclick="hideGuideDetail();showGuideHub()" style="background:none;border:none;color:#888;font-size:0.78rem;cursor:pointer;padding:0;margin-bottom:12px;">‹ Back to Guides</button>
+          <div id="guideDetailContent"></div>
+          <button onclick="hideGuideDetail();showGuideHub()" style="width:100%;margin-top:18px;padding:12px;background:#f5f5f5;border:1.5px solid #ddd;border-radius:10px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">Got it ✓</button>
+        </div>
+      </div>
+    </div>
+
     <div style="text-align:center; padding: 30px 0 10px; color: #999; font-size: 0.7rem; font-weight: 500;">
       Svaadh Kitchen <span id="verLabel"></span>
     </div>
@@ -3888,7 +3958,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.07";
+    const APP_VERSION = "v26.04.16.08";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5916,6 +5986,342 @@
     function hidePricingInfo() {
       $("pricingInfoPanel").style.display = "none";
       document.body.style.overflow = "";
+    }
+
+    // ── GUIDE HUB ────────────────────────────────────────────
+    function showGuideHub() {
+      $("guideHubPanel").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function hideGuideHub() {
+      $("guideHubPanel").style.display = "none";
+      document.body.style.overflow = "";
+    }
+    function showGuideDetail() {
+      $("guideDetailPanel").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function hideGuideDetail() {
+      $("guideDetailPanel").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    const GUIDES = {
+      wallet: {
+        title: "👛 How Wallet Works",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Svaadh Wallet is the fastest way to order — load once, order with one tap.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💰 What is Svaadh Wallet?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              A prepaid credit system linked to your phone number. You load money in advance and each order is automatically deducted — no UPI scan needed every time.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📲 How to Load Wallet</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              1. On the order page, tap the <b>wallet balance chip</b> (top right, Step 2 onwards)<br>
+              2. Enter the amount (minimum <b>₹100</b>)<br>
+              3. Pay via UPI to our ID: <b>svaadhkitchen.36727659@hdfcbank</b><br>
+              4. Submit the recharge request — our team verifies and credits within a few hours<br><br>
+              <span style="background:#e8f8f0;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#1e8449;">
+                ✅ You'll see the balance update once it's verified. You can still place orders while waiting — just pay via UPI for that order.
+              </span>
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⚡ How Orders Are Deducted</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              When you reach the payment step, if your wallet has enough balance, it's automatically selected.<br>
+              Check the confirm box → Place Order → done. No QR, no UPI app needed.<br><br>
+              Your balance is always shown at the top right of the order form from Step 2 onwards.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🔄 Refunds to Wallet</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              If you cancel an order that was paid via Wallet, the amount is automatically credited back to your Svaadh Wallet balance — usually instantly.<br><br>
+              If you prefer a UPI refund instead, contact us on WhatsApp.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Tip:</b> Keeping ₹200–₹300 loaded means you can order for the whole week without thinking about payments.
+            </div>
+          </div>`
+      },
+
+      firsttime: {
+        title: "🆕 First Time Order Guide",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Your first order in under 2 minutes — here's exactly what to do.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${[
+              ["1","Enter Your Phone Number","Your 10-digit mobile number is your identity — no username or password needed. If you're new, you'll be asked to set a 4-digit PIN to protect your account."],
+              ["2","Add Your Delivery Address","Enter your Wing, Flat number, Society, and Area. You can set different addresses for Breakfast, Lunch, and Dinner if needed — or use the same address for all."],
+              ["3","Pick Your Dates","Tap on one or more dates on the calendar. You can order for today, tomorrow, or the whole week in one go. Dates with orders already placed are highlighted."],
+              ["4","Build Your Meal","For each date, choose your meals — Breakfast, Lunch, and/or Dinner. Pick exactly what you want à la carte: Chapati, Sabji, Dal, Rice, etc. Today's sabji is shown live."],
+              ["5","Review Your Bill","See your full itemised bill with all charges and discounts applied automatically. Check the total before paying."],
+              ["6","Pay & Confirm","Pay via UPI QR shown on screen, or use your Svaadh Wallet balance for 1-tap checkout. Once confirmed, your order is placed!"]
+            ].map(([n,title,desc]) => `
+              <div style="display:flex;gap:12px;align-items:flex-start;background:#f8f9fa;border-radius:12px;padding:12px 14px;">
+                <div style="min-width:28px;height:28px;border-radius:50%;background:#c0392b;color:#fff;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${n}</div>
+                <div><div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:3px;">${title}</div><div style="font-size:0.76rem;color:#555;line-height:1.6;">${desc}</div></div>
+              </div>`).join("")}
+          </div>
+
+          <div style="background:#e8f4fd;border:1px solid #90caf9;border-radius:12px;padding:12px 14px;margin-top:14px;">
+            <div style="font-size:0.78rem;color:#0d47a1;line-height:1.7;">
+              📌 <b>Cutoff times to remember:</b><br>
+              Breakfast — before <b>7:00 AM</b><br>
+              Lunch — before <b>9:30 AM</b><br>
+              Dinner — before <b>5:00 PM</b><br>
+              Kitchen is <b>closed on Sundays</b>.
+            </div>
+          </div>`
+      },
+
+      cancellation: {
+        title: "❌ Cancellation & Changes",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Need to cancel or change something? Here's how.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏰ Cancellation Cutoff Times</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              You can cancel for <b>free</b> before these times:<br>
+              <b>Breakfast</b> → before 7:00 AM<br>
+              <b>Lunch</b> → before 9:30 AM<br>
+              <b>Dinner</b> → before 5:00 PM<br><br>
+              After the cutoff, the order is being prepared and <b>cannot be cancelled</b>.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🗑️ How to Cancel an Order</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              1. Tap <b>Manage Orders</b> button on the order page<br>
+              2. Find the upcoming order you want to cancel<br>
+              3. Tap the <b>Delete</b> button on that order<br>
+              4. Confirm the cancellation<br><br>
+              <span style="background:#fdecea;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#c0392b;">
+                ⚠️ Direct editing is not possible. To change items — delete the order and place a new one before the cutoff.
+              </span>
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💸 Refund After Cancellation</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Wallet payments:</b> Credited back to your Svaadh Wallet instantly.<br>
+              <b>UPI payments:</b> A refund request is raised. Our team processes it within 1–2 working days. You'll receive it back to your original UPI account.<br><br>
+              If you don't hear back in 2 days, WhatsApp us at <b>+91 93222 46765</b>.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Pro tip:</b> If your order shows on the order page but you're unsure it went through, always check <b>Manage Orders</b> first before placing again.
+            </div>
+          </div>`
+      },
+
+      delivery: {
+        title: "🚴 Delivery Areas & Timing",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">We deliver to 15 areas in Hadapsar. Here's everything you need to know.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🆓 Always Free Delivery</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Bhosale Nagar</b> · <b>Triveni Nagar</b> · <b>Self Pickup</b><br>
+              These areas never have a delivery charge regardless of order amount.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📍 All Delivery Areas</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              Magarpatta · Amanora · DP Road · Malwadi · SadeSatraNali · Kirtane Baug · Tupe Patil Road · BG Shirke Road · Vaiduwadi (till Yash Honda) · Pune-Solapur Road (till Gadital) · Vihar Chowk · Mandai · Gadital<br><br>
+              <b>₹10 delivery charge</b> per meal applies for these areas if your day's food total is below the free threshold (₹100 for 1 meal, ₹150 for 2+ meals).
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏰ Delivery Timings</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              <b>Breakfast:</b> ~8:30 AM – 9:45 AM<br>
+              <b>Lunch:</b> ~10:30 AM – 1:30 PM<br>
+              <b>Dinner:</b> ~6:00 PM – 9:00 PM<br><br>
+              Exact timing may vary slightly by area. Once your order is dispatched, you'll see <b>Out for Delivery</b> in Manage Orders.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📦 Self Pickup</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Pickup from: <b>A 104, Shree Laxmi Vihar Society, Bhosale Nagar, Hadapsar</b><br>
+              Select "Self Pickup" as your area when ordering — no delivery charge applies.<br>
+              Collect at the same delivery timings as above.
+            </div>
+          </div>
+
+          <div style="background:#fdecea;border:1px solid #f5c6c0;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#c0392b;line-height:1.7;">
+              ❌ We do <b>not</b> deliver outside the listed Hadapsar areas (e.g., Kothrud, Baner, Viman Nagar, Koregaon Park, etc.)
+            </div>
+          </div>`
+      },
+
+      menu: {
+        title: "🍱 Understanding the Menu",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">No fixed thali here — you build your own meal every day.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🎯 Make Your Own Meal</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Pick exactly what you want, in the quantities you want. No bundle, no thali, no wastage.<br><br>
+              <b>Breads:</b> Chapati ₹9 · Without Oil Chapati ₹9 · Phulka ₹9 · Ghee Phulka ₹10 · Jowar Bhakri ₹20 · Bajra Bhakri ₹20<br>
+              <b>Sabji:</b> Dry Mini ₹22 · Dry Full ₹45 · Curry Mini ₹22 · Curry Full ₹45<br>
+              <b>Basics:</b> Dal ₹22 · Rice ₹12 · Salad ₹6 · Curd ₹12
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #f39c12;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🥘 Daily Sabji (Changes Every Day)</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              The dry sabji and curry sabji change daily based on what's fresh and in season.<br>
+              Today's sabji is <b>shown live</b> on the order form when you pick Lunch or Dinner.<br>
+              You can also check the <b>This Week's Menu</b> button on the homepage for upcoming sabjis.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🌅 Breakfast (Rotating Daily)</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Breakfast items rotate daily — ₹35 to ₹70 per serving.<br>
+              Includes: Kanda Poha, Ghee Upma, Sabudana Khichdi, Sheera, Dadpe Pohe, Methi Thepla, Thalipeeth, Idli Chutney, Masala Dosa, and more.<br>
+              Made with <b>Pure Ghee</b>. <b>Curd (50g ₹12)</b> available as an add-on.<br>
+              Check the order form for today's breakfast options.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🙏 Special Dietary Needs</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Oil-free:</b> Without Oil Chapati available.<br>
+              <b>Millet options:</b> Jowar Bhakri and Bajra Bhakri available daily.<br><br>
+              We use <b>Pure Ghee</b> and <b>Groundnut refined oil</b>. 100% Pure Vegetarian kitchen.
+            </div>
+          </div>
+
+          `
+      },
+
+      tracking: {
+        title: "📍 Tracking & Managing Orders",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Stay on top of your orders — from placement to delivery.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📋 Opening Manage Orders</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Tap <b>Manage Orders</b> (top right of the order page after login).<br>
+              You'll see all your upcoming orders for the next few days, and recent past orders below.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🚗 Delivery Status</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Each order row shows a status badge:<br><br>
+              <b>🕐 Upcoming</b> — order is placed and scheduled<br>
+              <b>🚗 Out for Delivery</b> — driver has picked up and is on the way<br>
+              <b>✅ Delivered</b> — marked as delivered by driver<br><br>
+              You don't need to refresh — just reopen Manage Orders to see the latest status.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💳 Wallet Balance</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Your Svaadh Wallet balance is shown at the top of the Manage Orders panel.<br>
+              You can also submit a wallet recharge request from there.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏱️ Server Timeout During Ordering?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              If you see a "Request Timed Out" message, <b>do not place the order again immediately</b>.<br>
+              First open <b>Manage Orders</b> and check if your order appears there.<br>
+              ✅ Order visible → you're all set, don't resubmit.<br>
+              ❌ Order not visible → safe to place again.
+            </div>
+          </div>`
+      },
+
+      multiday: {
+        title: "📅 Ordering for Multiple Days",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Plan your whole week in one go — saves time every morning.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📆 Selecting Multiple Dates</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              On the calendar (Step 3), tap multiple dates — they'll all be highlighted.<br>
+              You then set the meals for <b>each date separately</b>. Navigate between dates using the date tabs at the top of the meal selection screen.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#f39c12;margin-bottom:8px;">📋 Copy Meal Feature</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Built a meal you like? Use the <b>Copy</b> button to copy that meal's items to one or more other selected dates.<br>
+              Great for ordering the same lunch all week — set it once, copy to the rest.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💰 Discounts Across Multiple Days</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Discounts are calculated <b>per day</b>, not per order. Each day's food total is assessed independently.<br>
+              If one day's total reaches ₹300 → 5% off that day. Another day at ₹250 → no discount that day.<br><br>
+              The 6th-day loyalty reward also tracks across multi-day orders.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📅 How Far in Advance Can I Order?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              You can order up to <b>6 days ahead</b> (Mon–Sat of the current week shown on the calendar).<br>
+              Sundays are not available — kitchen is closed.<br>
+              Dates that have already passed their cutoff time are automatically disabled.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Tip:</b> Order for the full week on Sunday night / Monday morning — you won't have to think about it again, and you'll likely hit the ₹300+ discount threshold on most days!
+            </div>
+          </div>`
+      }
+    };
+
+    function showGuide(key) {
+      const g = GUIDES[key];
+      if (!g) return;
+      $("guideDetailContent").innerHTML = `
+        <h3 style="font-size:1rem;font-weight:700;color:#2d2d2d;margin-bottom:4px;">${g.title}</h3>
+        ${g.html}`;
+      showGuideDetail();
     }
 
     function showReviewPromoBanner() {
