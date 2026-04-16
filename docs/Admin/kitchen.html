@@ -663,8 +663,8 @@
       align-items: flex-start;
     }
     .label-card .lname { font-weight: 700; font-size: 0.9rem; color: #222; }
-    .label-card .lsummary { font-size: 0.78rem; color: #444; }
-    .label-card .larea { font-weight: 700; font-size: 0.78rem; color: #333; margin-top: 2px; }
+    .label-card .lsummary { font-size: 0.78rem; color: #444; line-height: 1.4; }
+    .label-card .larea { font-size: 0.62rem; color: #888; margin-top: 3px; letter-spacing: 0.02em; }
     .label-card .lnotes { font-size: 0.68rem; color: #e67e22; margin-top: 3px; }
     .label-card .lnum { font-size: 0.62rem; color: #ccc; white-space: nowrap; margin-left:10px; padding-top:2px; }
     
@@ -1840,9 +1840,9 @@
           html += `
             <div class="label-card">
               <div>
-                <div class="lname">Name: ${o.name}</div>
+                <div class="lname">${o.name}</div>
                 <div class="lsummary">${summary}</div>
-                <div class="larea">${o.area || ""}</div>
+                ${o.area ? `<div class="larea">📍 ${o.area}</div>` : ''}
                 ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
               </div>
               <div class="lnum">#${i + 1}</div>
