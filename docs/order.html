@@ -3674,7 +3674,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.01";
+    const APP_VERSION = "v26.04.16.02";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5585,7 +5585,16 @@
         sBtnLoading($("btnNext"), false);
         S.isPlacingOrder = false;
         $("btnNext").style.pointerEvents = "auto";
-        if (err.name === "AbortError") { toast(t('toast_server_timeout'), 6000); }
+        if (err.name === "AbortError") {
+          await sAlert(
+            `The server took too long to respond — this can happen occasionally.\n\n` +
+            `<b>Before placing the order again:</b>\n` +
+            `👉 Go to <b>Manage Orders</b> and check if your order already appears there.\n\n` +
+            `✅ <b>Order visible?</b> You're all set — do NOT place it again.\n` +
+            `❌ <b>Order not visible?</b> Go ahead and place it again.`,
+            "Request Timed Out", "⏱️"
+          );
+        }
         else { await sAlert("Error: " + err.message, "Placement Failed", "❌"); }
       }
     }
