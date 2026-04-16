@@ -3449,6 +3449,34 @@
         </div>
       </div>
 
+      <!-- ════════════════════════════════════════════════
+           HDFC GATEWAY PAYMENT CARD
+           Hidden by default — shown only when PAYMENT_GATEWAY_ENABLED = true
+           (detected via getConfig on page load)
+      ════════════════════════════════════════════════ -->
+      <div class="card" id="hdfcGatewayCard" style="display:none;">
+        <h2>🏦 Pay Securely via HDFC</h2>
+        <div style="background:#e8f5e9;border:1.5px solid #81c784;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.82rem;color:#1b5e20;line-height:1.6;">
+          ✅ You'll be redirected to HDFC's secure payment page.<br>
+          Supports <strong>UPI · Cards · Net Banking</strong> — all in one place.
+        </div>
+        <div id="hdfcGatewayAmount"
+          style="font-size:2rem;font-weight:800;color:#1a6640;text-align:center;margin:10px 0 18px;">₹0</div>
+
+        <button id="hdfcPayBtn" onclick="hdfc_initiatePayment()"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:0.3px;box-shadow:0 4px 14px rgba(13,71,161,0.35);">
+          🔒 Pay ₹<span id="hdfcPayBtnAmt">0</span> via HDFC Gateway
+        </button>
+        <p style="font-size:0.7rem;color:#888;text-align:center;margin-top:8px;">
+          Secured by HDFC SmartGateway · 256-bit SSL
+        </p>
+
+        <div style="text-align:center;margin-top:10px;">
+          <a href="javascript:togglePaymentMode('UPI')"
+            style="font-size:0.75rem;color:#666;text-decoration:underline;">Pay via UPI manually instead</a>
+        </div>
+      </div>
+
       <!-- WALLET CONFIRMATION CARD -->
       <div class="card" id="walletConfirmCard"
         style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
@@ -3697,7 +3725,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_yJ8__7phuGfdSvclc5FVdpuM7WHffq4ybPrxYJUBp1frhiN1HZA2lcNUGSqlm1INHg/exec"; // DEV — Svaadh Kitchen Dev project
-    const APP_VERSION = "v24.04.15.01";
+    const APP_VERSION = "v26.04.16.09-hdfc";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5306,6 +5334,7 @@
       $("walletConfirmCard").style.display = "none";
       $("onAccountCard").style.display = "none";
       $("paymentCard").style.display = "none";
+      if ($("hdfcGatewayCard")) $("hdfcGatewayCard").style.display = "none";
       
       // Reset confirmations
       if ($("walletConfirmCheck")) $("walletConfirmCheck").checked = false;
@@ -5342,6 +5371,9 @@
       if (S.paymentChoice === "OnAccount") {
         setupUPI(grandTotal, true);
       }
+
+      // If gateway is enabled and payment is UPI, swap to gateway card
+      if (S.paymentChoice === "UPI") hdfc_showGatewayIfEnabled();
 
       if (S.paymentChoice === "UPI") {
         // Show switch back links if applicable
@@ -5624,6 +5656,7 @@
       $("summaryCard").style.display = "none";
       $("paymentCard").style.display = "none";
       $("walletConfirmCard").style.display = "none";
+      if ($("hdfcGatewayCard")) $("hdfcGatewayCard").style.display = "none";
 
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id.toUpperCase();
@@ -6254,6 +6287,264 @@
     }
 
 
+    /* ═══════════════════════════════════════════════════════════
+       HDFC SMARTGATEWAY — FRONTEND INTEGRATION
+       All functions are no-ops when gateway is disabled.
+       S.gatewayEnabled is set once on page load via getConfig.
+    ═══════════════════════════════════════════════════════════ */
+
+    /**
+     * Called once on DOMContentLoaded.
+     * Fetches backend config to know if gateway is live.
+     * Also checks if we just returned from an HDFC payment (return URL params).
+     */
+    async function hdfc_init() {
+      // 1. Check for return URL params first (customer coming back from HDFC)
+      hdfc_handleReturnParams();
+
+      // 2. Fetch gateway config from backend
+      try {
+        const res  = await fetch(`${APPS_SCRIPT_URL}?action=getConfig`);
+        const data = await res.json();
+        S.gatewayEnabled = !!(data && data.gateway_enabled);
+        S.gatewayEnv     = (data && data.gateway_env) || "test";
+        console.log(`HDFC Gateway: ${S.gatewayEnabled ? "ENABLED (" + S.gatewayEnv + ")" : "disabled"}`);
+      } catch (e) {
+        S.gatewayEnabled = false;
+        console.warn("Could not fetch gateway config:", e.message);
+      }
+    }
+
+    /**
+     * Called when step 5 (payment) is rendered.
+     * Shows HDFC gateway card instead of UPI if gateway is enabled
+     * and customer's payment choice is UPI (not wallet/on-account).
+     */
+    function hdfc_showGatewayIfEnabled() {
+      if (!S.gatewayEnabled) return;
+      if (S.paymentChoice === "Wallet" || S.paymentChoice === "OnAccount") return;
+
+      // Hide the manual UPI card, show the gateway card
+      if ($("paymentCard")) $("paymentCard").style.display = "none";
+      if ($("hdfcGatewayCard")) {
+        $("hdfcGatewayCard").style.display = "block";
+        const amt = S.grandTotal || 0;
+        if ($("hdfcGatewayAmount")) $("hdfcGatewayAmount").textContent = "₹" + amt;
+        if ($("hdfcPayBtnAmt"))     $("hdfcPayBtnAmt").textContent     = amt;
+      }
+    }
+
+    /**
+     * Initiates an HDFC gateway payment.
+     * 1. Builds a temp order_id
+     * 2. Calls backend hdfc_createSession
+     * 3. Redirects customer to HDFC payment page
+     */
+    async function hdfc_initiatePayment() {
+      if (!S.gatewayEnabled) {
+        await sAlert("Payment gateway is not available right now. Please use UPI.", "Gateway Unavailable", "⚠️");
+        return;
+      }
+
+      const btn = $("hdfcPayBtn");
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ Creating secure session…"; }
+
+      // Generate a unique gateway order ID for this session
+      // Format: SK-YYYYMMDD-G-XXXX  (G = Gateway)
+      const now      = new Date();
+      const datePart = now.getFullYear().toString().slice(-2)
+                     + String(now.getMonth() + 1).padStart(2, "0")
+                     + String(now.getDate()).padStart(2, "0");
+      const rand     = Math.floor(Math.random() * 9000) + 1000;
+      const tempId   = `SK-${datePart}-G-${rand}`;
+
+      // Store temp ID so we can match it when HDFC redirects back
+      S.hdfcPendingOrderId = tempId;
+      sessionStorage.setItem("sk_hdfc_pending_id",    tempId);
+      sessionStorage.setItem("sk_hdfc_pending_amount", String(S.grandTotal));
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            _action:     "hdfc_createSession",
+            phone:       S.phone,
+            name:        S.profile.name || "Customer",
+            amount:      S.grandTotal,
+            order_id:    tempId,
+            description: `Svaadh Kitchen Order — ${S.phone}`
+          })
+        });
+        const data = await res.json();
+
+        if (data.success && data.payment_url) {
+          // Redirect customer to HDFC HyperCheckout
+          window.location.href = data.payment_url;
+        } else {
+          throw new Error(data.error || "Could not create payment session.");
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled    = false;
+          btn.innerHTML   = "🔒 Pay ₹<span id='hdfcPayBtnAmt'>" + (S.grandTotal || 0) + "</span> via HDFC Gateway";
+        }
+        await sAlert(
+          "Could not reach payment gateway. Please try UPI payment instead.\n\nError: " + err.message,
+          "Gateway Error", "❌"
+        );
+      }
+    }
+
+    /**
+     * Called on page load — checks if URL has HDFC return params.
+     * HDFC redirects back to order.html with ?hdfc_order_id=...&hdfc_status=...&hdfc_sig=...
+     *
+     * If params are present, verifies with backend and shows result modal.
+     */
+    async function hdfc_handleReturnParams() {
+      const params    = new URLSearchParams(window.location.search);
+      const orderId   = params.get("hdfc_order_id")  || params.get("order_id");
+      const status    = params.get("hdfc_status")    || params.get("status");
+      const signature = params.get("hdfc_sig")       || params.get("signature");
+
+      if (!orderId || !status) return;   // Not a gateway return, normal page load
+
+      // Clean up URL immediately so user doesn't see ugly params
+      window.history.replaceState({}, "", window.location.pathname);
+
+      // Show a loading indicator
+      await sAlert(
+        "Verifying your payment with HDFC… Please wait.",
+        "Verifying Payment", "⏳"
+      );
+
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            _action:   "hdfc_verifyReturn",
+            order_id:  orderId,
+            status:    status,
+            signature: signature || ""
+          })
+        });
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        if (data.paid) {
+          // Payment confirmed — place the actual Svaadh order now
+          // Retrieve pending order context from sessionStorage
+          const pendingId  = sessionStorage.getItem("sk_hdfc_pending_id");
+          sessionStorage.removeItem("sk_hdfc_pending_id");
+          sessionStorage.removeItem("sk_hdfc_pending_amount");
+
+          if (pendingId && pendingId === orderId) {
+            // Mark payment method as Gateway for the order submission
+            S.hdfcPaymentVerified = true;
+            S.hdfcGatewayOrderId  = orderId;
+            // Auto-submit the order with Gateway as payment method
+            await hdfc_submitVerifiedOrder(orderId, status);
+          } else {
+            await sAlert(
+              "Payment of ₹" + (sessionStorage.getItem("sk_hdfc_pending_amount") || "?") + " confirmed!\n\nYour order ID: " + orderId,
+              "Payment Successful ✅", "🎉"
+            );
+          }
+        } else {
+          await sAlert(
+            "Your payment could not be confirmed (Status: " + status + ").\n\nIf money was deducted, please WhatsApp us at +91 93222 46765 with your order ID: " + orderId,
+            "Payment Not Confirmed", "⚠️"
+          );
+        }
+      } catch (err) {
+        await sAlert(
+          "Could not verify payment. If money was deducted, please WhatsApp us at +91 93222 46765 with order ID: " + orderId + "\n\nError: " + err.message,
+          "Verification Error", "❌"
+        );
+      }
+    }
+
+    /**
+     * After HDFC confirms payment, submits the actual Svaadh order
+     * with payment_method = "Gateway" and payment_status = "Paid".
+     * This is called automatically after hdfc_handleReturnParams verifies payment.
+     *
+     * @param {string} gatewayOrderId  The order_id used with HDFC
+     * @param {string} hdfcStatus      The HDFC status string (e.g. "CHARGED")
+     */
+    async function hdfc_submitVerifiedOrder(gatewayOrderId, hdfcStatus) {
+      sLoading(true, "Placing your order…");
+
+      const orders = [];
+      for (const date of (S.selectedDates || [])) {
+        const meals = [];
+        ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
+          const mObj = S.orders[date] && S.orders[date][meal];
+          if (!mObj || mObj.subtotal <= 0) return;
+          const items = Object.entries(mObj.items).filter(([, q]) => q > 0)
+            .map(([colKey, qty]) => ({ colKey, qty }));
+          const mAddr = getMealAddr(meal);
+          const isPickup = (mAddr.area && mAddr.area.toLowerCase().includes("pickup"));
+          meals.push({
+            type: meal, items,
+            notesKitchen:  mObj.notesKitchen  || "",
+            notesDelivery: mObj.notesDelivery || "",
+            subtotal: mObj.subtotal,
+            address:  isPickup ? "Self Pickup (A 104, Shree laxmi vihar society)" : buildAddr(mAddr.wing, mAddr.flat, mAddr.floor, mAddr.society, mAddr.area, mAddr.delivery_point),
+            area:     isPickup ? "Self Pickup" : mAddr.area,
+            wing: isPickup ? "" : (mAddr.wing  || ""),
+            flat: isPickup ? "" : (mAddr.flat  || ""),
+            floor:isPickup ? "" : (mAddr.floor || ""),
+            society:  isPickup ? "" : (mAddr.society || ""),
+            delivery_point: mAddr.delivery_point,
+            maps:     isPickup ? "" : (mAddr.maps     || ""),
+            landmark: isPickup ? "" : (mAddr.landmark || "")
+          });
+        });
+        if (meals.length) orders.push({ date, meals });
+      }
+
+      const payload = {
+        profile: {
+          name: S.profile.name, phone: S.phone,
+          address: buildAddr(S.profile.wing, S.profile.flat, S.profile.floor, S.profile.society, S.profile.area, S.profile.delivery_point),
+          wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor,
+          society: S.profile.society, area: S.profile.area,
+          maps: S.profile.maps, landmark: S.profile.landmark,
+          meal_addresses: JSON.stringify(S.mealAddrs),
+          payment_preference: S.profile.payment_preference,
+          isFirstTime: S.isFirstTime
+        },
+        orders,
+        payment_method: "Gateway (HDFC)",
+        payment_status: "Paid",
+        gateway_order_id: gatewayOrderId,
+        gateway_status:   hdfcStatus,
+        settle_all: false
+      };
+
+      try {
+        const res  = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        sLoading(false);
+        if (data.success) {
+          S.isPlaced = true;
+          showSuccess(data.submissionId || gatewayOrderId);
+        } else {
+          throw new Error(data.error || "Order submission failed after payment.");
+        }
+      } catch (err) {
+        sLoading(false);
+        await sAlert(
+          "⚠️ Your payment was received but we could not place the order automatically.\n\nPlease WhatsApp us at +91 93222 46765 with:\n• Phone: " + S.phone + "\n• Gateway Order ID: " + gatewayOrderId + "\n\nWe will place the order manually.",
+          "Order Placement Failed", "❌"
+        );
+      }
+    }
+
+    /* ─── END HDFC FRONTEND INTEGRATION ─────────────────────── */
+
     document.addEventListener("DOMContentLoaded", () => {
       // One-time hard refresh to ensure latest fixes
       (function() {
@@ -6273,6 +6564,7 @@
       if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
       console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Wallet & PWA Fixes`);
       applyThemeIcon();
+      hdfc_init();   // Check gateway config + handle any HDFC return URL params
       loadAreas();
       updateNav();
       initCalendar();
