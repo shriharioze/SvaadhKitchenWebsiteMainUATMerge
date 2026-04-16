@@ -4378,7 +4378,9 @@ function hdfc_createSession(body) {
     udf3:                   "svaadh_kitchen"
   };
 
-  const authToken = Utilities.base64Encode(HDFC_MERCHANT_ID + ":" + HDFC_API_KEY);
+  // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
+  // Merchant ID goes in a separate x-merchantid header (NOT in the auth string)
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
 
   const options = {
     method:      "post",
@@ -4400,7 +4402,13 @@ function hdfc_createSession(body) {
     console.log("HDFC createSession [" + respCode + "]:", JSON.stringify(respBody));
 
     if (respCode !== 200 && respCode !== 201) {
-      return { error: "HDFC session creation failed (HTTP " + respCode + "): " + (respBody.error_message || respBody.user_message || "Unknown error") };
+      // Error details can be nested under error_info in Juspay responses
+      const errMsg = (respBody.error_info && respBody.error_info.user_message)
+        || respBody.user_message
+        || respBody.error_message
+        || respBody.error_info
+        || "Unknown error";
+      return { error: "HDFC session creation failed (HTTP " + respCode + "): " + errMsg };
     }
 
     const paymentUrl = (respBody.payment_links && respBody.payment_links.web)
