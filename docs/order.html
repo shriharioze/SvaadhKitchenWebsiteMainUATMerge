@@ -3950,6 +3950,34 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- REFRESH NUDGE BANNER — shown once per session -->
+  <div id="refreshNudge" style="
+    display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+    background:#1a1a2e; color:#fff; border-radius:14px; padding:11px 16px 11px 14px;
+    font-size:0.78rem; line-height:1.5; z-index:9999; max-width:320px; width:90%;
+    box-shadow:0 6px 24px rgba(0,0,0,0.28); display:none;
+    animation: nudgeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:1.2rem;flex-shrink:0;">✨</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;margin-bottom:2px;">You're on the latest version</div>
+        <div style="font-size:0.72rem;color:#ccc;">For the best experience, try a quick refresh if anything looks off.</div>
+      </div>
+      <button onclick="dismissRefreshNudge()"
+        style="background:none;border:none;color:#aaa;font-size:1.1rem;cursor:pointer;padding:0;margin-left:4px;flex-shrink:0;line-height:1;">✕</button>
+    </div>
+    <button onclick="location.reload(true); dismissRefreshNudge();"
+      style="margin-top:10px;width:100%;padding:7px;background:#e74c3c;border:none;border-radius:8px;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;">
+      🔄 Refresh Now
+    </button>
+  </div>
+  <style>
+    @keyframes nudgeIn {
+      from { opacity:0; transform:translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+  </style>
+
   <script>
 
     // Replaced with shared modals-svaadh.js logic
@@ -3958,7 +3986,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.08";
+    const APP_VERSION = "v26.04.16.10";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4070,6 +4098,15 @@
       return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
     };
     const formatDate = ds => new Date(ds + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    function dismissRefreshNudge() {
+      const nudge = $("refreshNudge");
+      if (!nudge) return;
+      nudge.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      nudge.style.opacity = "0";
+      nudge.style.transform = "translateX(-50%) translateY(10px)";
+      setTimeout(() => { nudge.style.display = "none"; }, 300);
+    }
+
     function toast(msg, ms = 2500) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), ms); }
 
     const trackGA = (name, params = {}) => {
@@ -6884,6 +6921,19 @@
       if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
       console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Wallet & PWA Fixes`);
       applyThemeIcon();
+
+      // Show refresh nudge once per browser session
+      if (!sessionStorage.getItem("sk_nudge_shown")) {
+        setTimeout(() => {
+          const nudge = $("refreshNudge");
+          if (nudge) {
+            nudge.style.display = "block";
+            sessionStorage.setItem("sk_nudge_shown", "1");
+            setTimeout(dismissRefreshNudge, 8000); // auto-dismiss after 8s
+          }
+        }, 1500);
+      }
+
       loadAreas();
       updateNav();
       initCalendar();
