@@ -5,35 +5,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
+  <meta name="author" content="Svaadh Kitchen">
 
-  <!-- PWA & Mobile Web App settings -->
+  <!-- PWA & Mobile Web App -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e74c3c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Svaadh">
+  <meta name="apple-mobile-web-app-title" content="Svaadh Kitchen">
 
-  <title>Order Online - Svaadh Kitchen | Homemade Vegetarian Food Delivery Hadapsar Pune</title>
-  <meta name="description"
-    content="Order fresh homemade vegetarian breakfast, lunch & dinner online from Svaadh Kitchen, Hadapsar Pune. Build your own meal — chapati, sabji, dal, rice & more. Free delivery on orders above ₹100. No app needed.">
-  <meta name="keywords"
-    content="order food online hadapsar, tiffin service pune, homemade food delivery, vegetarian food order, svaadh kitchen order, cloud kitchen hadapsar, lunch delivery pune, dinner delivery hadapsar, breakfast delivery pune, chapati sabji order online">
+  <title>Order Homemade Vegetarian Food Online | Svaadh Kitchen Hadapsar, Pune</title>
+  <meta name="description" content="Order fresh homemade vegetarian meals from Svaadh Kitchen, Hadapsar Pune. Choose from Breakfast, Lunch & Dinner — Chapati, Dal, Sabji, Rice & more. Build your own meal à la carte. Free delivery above ₹100. No app needed. Order now!">
+  <meta name="keywords" content="order food online hadapsar, tiffin service pune hadapsar, homemade food delivery hadapsar, vegetarian tiffin hadapsar, svaadh kitchen order, cloud kitchen hadapsar pune, lunch delivery hadapsar, dinner delivery hadapsar, breakfast delivery hadapsar, chapati sabji dal rice order online, magarpatta food delivery, amanora food delivery, bhosale nagar food delivery, homemade dal chawal pune, daily meal delivery pune">
   <link rel="canonical" href="https://www.svaadhkitchen.in/order.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Order Homemade Vegetarian Meals Online - Svaadh Kitchen Hadapsar">
-  <meta property="og:description"
-    content="Build your own meal — chapati, sabji, dal, rice & more. Fresh homemade food delivered to your doorstep in Hadapsar, Pune. No app needed!">
+  <meta property="og:title" content="Order Homemade Vegetarian Meals Online | Svaadh Kitchen Hadapsar Pune">
+  <meta property="og:description" content="Build your own meal — Chapati, Sabji, Dal, Rice & more. Fresh homemade food delivered to your door in Hadapsar, Pune. Free delivery above ₹100. No app needed!">
   <meta property="og:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://www.svaadhkitchen.in/order.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Svaadh Kitchen">
+  <meta property="og:locale" content="en_IN">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Order Homemade Vegetarian Meals - Svaadh Kitchen Hadapsar Pune">
-  <meta name="twitter:description"
-    content="Fresh homemade food delivered daily. Build your own meal online — no app needed!">
+  <meta name="twitter:title" content="Order Homemade Vegetarian Meals | Svaadh Kitchen Hadapsar Pune">
+  <meta name="twitter:description" content="Fresh homemade food delivered daily in Hadapsar, Pune. Build your own meal — Chapati, Dal, Sabji, Rice. No app needed!">
   <meta name="twitter:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
 
   <!-- Favicon -->
@@ -43,16 +43,17 @@
   <link rel="stylesheet" href="modals-svaadh.css">
   <script src="modals-svaadh.js"></script>
 
-  <!-- Structured Data: FoodEstablishment -->
+  <!-- Structured Data: FoodEstablishment + Menu -->
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FoodEstablishment",
   "name": "Svaadh Kitchen",
-  "description": "Order homemade vegetarian meals online — breakfast, lunch & dinner delivered daily in Hadapsar, Pune",
+  "description": "Homemade vegetarian cloud kitchen in Hadapsar, Pune. Fresh breakfast, lunch and dinner delivered daily. Make-your-own-meal — no fixed thali.",
   "url": "https://www.svaadhkitchen.in/order.html",
-  "telephone": "+919930748908, +919819969682",
+  "telephone": ["+919930748908", "+919819969682"],
   "email": "svaadh.kitchen@gmail.com",
+  "image": "https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Bhosale Nagar",
@@ -66,21 +67,38 @@
     "latitude": "18.5089",
     "longitude": "73.9260"
   },
-  "servesCuisine": ["Vegetarian", "Indian", "Maharashtrian", "North Indian"],
+  "servesCuisine": ["Vegetarian", "Indian", "Maharashtrian", "North Indian", "Jain"],
   "priceRange": "₹",
   "currenciesAccepted": "INR",
-  "paymentAccepted": "UPI",
+  "paymentAccepted": "UPI, Prepaid Wallet, On Account",
   "openingHours": "Mo-Sa 07:00-21:00",
+  "areaServed": [
+    "Bhosale Nagar", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar",
+    "Malwadi", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road",
+    "Vaiduwadi", "Vihar Chowk", "Mandai", "Gadital", "Hadapsar", "Pune"
+  ],
   "hasMenu": {
     "@type": "Menu",
     "hasMenuSection": [
       {
         "@type": "MenuSection",
+        "name": "Breakfast",
+        "hasMenuItem": [
+          {"@type": "MenuItem", "name": "Kanda Poha", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Ghee Upma", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Sabudana Khichdi", "offers": {"@type": "Offer", "priceCurrency": "INR"}}
+        ]
+      },
+      {
+        "@type": "MenuSection",
         "name": "Breads",
         "hasMenuItem": [
           {"@type": "MenuItem", "name": "Chapati", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Without Oil Chapati", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Phulka", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
           {"@type": "MenuItem", "name": "Ghee Phulka", "offers": {"@type": "Offer", "price": "10", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Jowar Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Jowar Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Bajra Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}}
         ]
       },
       {
@@ -99,6 +117,7 @@
         "hasMenuItem": [
           {"@type": "MenuItem", "name": "Dal", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
           {"@type": "MenuItem", "name": "Rice", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Salad", "offers": {"@type": "Offer", "price": "6", "priceCurrency": "INR"}},
           {"@type": "MenuItem", "name": "Curd", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}}
         ]
       }
@@ -130,6 +149,96 @@
   "itemListElement": [
     {"@type": "ListItem", "position": 1, "name": "Svaadh Kitchen", "item": "https://www.svaadhkitchen.in/"},
     {"@type": "ListItem", "position": 2, "name": "Order Online", "item": "https://www.svaadhkitchen.in/order.html"}
+  ]
+}
+</script>
+
+  <!-- Structured Data: FAQPage -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I order from Svaadh Kitchen?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Visit svaadhkitchen.in/order.html, enter your phone number, add your delivery address, pick your dates, choose your meals à la carte (Breakfast, Lunch, Dinner), and pay via UPI or Svaadh Wallet. No app download needed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are the order cutoff times?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Breakfast orders must be placed before 7:00 AM, Lunch before 9:30 AM, and Dinner before 5:00 PM."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which areas in Hadapsar do you deliver to?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We deliver to 15 areas in Hadapsar: Bhosale Nagar (free delivery), Triveni Nagar (free delivery), Magarpatta, Amanora, DP Road, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi (till Yash Honda), Pune-Solapur Road (till Gadital), Vihar Chowk, Mandai, and Gadital. Self Pickup is also available free of charge."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are your delivery charges?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Delivery is free for orders above ₹100. A nominal charge of ₹10 applies for orders below ₹100. Bhosale Nagar and Triveni Nagar always have free delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What meals and items are available?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We offer a Make-Your-Own-Meal system — no fixed thali. Lunch and Dinner: Chapati ₹9, Ghee Phulka ₹10, Jowar Bhakri ₹20, Bajra Bhakri ₹20, Dry Sabji Mini ₹22, Dry Sabji Full ₹45, Curry Sabji Mini ₹22, Curry Sabji Full ₹45, Dal ₹22, Rice ₹12, Salad ₹6, Curd ₹12. Breakfast rotates daily — Kanda Poha, Upma, Sabudana Khichdi, Sheera and more."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What payment methods are accepted?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We accept UPI payments and Svaadh Wallet (prepaid credits for 1-tap instant ordering). Regular customers can also use On Account billing with daily, weekly, or monthly settlement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Svaadh Wallet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Svaadh Wallet is a prepaid credit system. Load a minimum of ₹100 via UPI and your balance auto-deducts with each order — no need to scan a QR every time. Your balance is always visible on the order page."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer discounts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — 5% discount on orders above ₹300 and 7.5% discount on orders above ₹450. Discounts apply automatically. Earn an extra 10% off your next order by leaving a 5-star Google review."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I track my delivery in real time?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Open the Manage Orders section on our website. Once our driver marks your order as dispatched, the status changes to Out for Delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I cancel or modify my order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You can cancel before the cutoff time (Breakfast: 7 AM, Lunch: 9:30 AM, Dinner: 5 PM) through the Manage Orders section. Editing is not available — delete and re-place with changes instead."
+      }
+    }
   ]
 }
 </script>
@@ -3674,7 +3783,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.06";
+    const APP_VERSION = "v26.04.16.07";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
