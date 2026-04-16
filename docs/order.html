@@ -286,20 +286,6 @@
       font-weight: 700;
     }
 
-    .beta-badge {
-      display: inline-block;
-      background: #fff3cd;
-      color: #856404;
-      font-size: 0.5rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      padding: 2px 6px;
-      border-radius: 4px;
-      vertical-align: middle;
-      margin-left: 6px;
-      border: 1px solid #ffc107;
-    }
-
     .page-header p {
       font-size: 0.74rem;
       opacity: 0.85;
@@ -374,7 +360,7 @@
       background: white;
       border-radius: 14px;
       padding: 20px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
       border: 1px solid #f0ebe6;
     }
@@ -1891,7 +1877,13 @@
     }
 
     [data-theme="dark"] .upi-id {
-      color: #888;
+      background: #1e1e1e;
+      border-color: #3a3a3a;
+      color: #7eb8f7;
+    }
+    [data-theme="dark"] .upi-id:hover {
+      background: #252525;
+      border-color: #555;
     }
 
     [data-theme="dark"] .wallet-confirm-card {
@@ -1912,9 +1904,13 @@
     }
 
     [data-theme="dark"] #authActionsWrap button {
-      background: #2a2a2a;
-      border-color: #444;
-      color: #e0e0e0;
+      background: #2a2a2a !important;
+      border-color: #444 !important;
+      color: #ddd !important;
+    }
+    [data-theme="dark"] #authActionsWrap button:first-child {
+      border-color: #c0392b !important;
+      color: #ff6b6b !important;
     }
 
     /* ═══════════════════════════════════════════
@@ -2944,7 +2940,7 @@
   <!-- HEADER -->
   <div class="page-header" style="position:relative; padding-bottom: 14px;">
     <h1><img src="images/svaadh-kitchen-hero.PNG" class="header-logo-img" alt="logo">Svaadh Kitchen <span
-        class="beta-badge">BETA</span></h1>
+        ></h1>
     <p data-i18n="header_tagline">Home-cooked food, made for you</p>
     <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode"
       style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
@@ -3497,12 +3493,11 @@
           <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before
             completing payment.</span>
         </div>
-        <p class="mr-note" style="color:#a05c00;margin-bottom:14px;">⚠️ पेमेंट पूर्ण केल्यानंतरच खाली टिक करा. प्रत्येक
-          व्यवहार तपासला जातो — आधी टिक करू नका.</p>
+        <p class="mr-note" style="font-size:0.72rem;color:#a05c00;margin-bottom:14px;padding:6px 10px;background:#fffbea;border-radius:8px;border-left:3px solid #f59e0b;">पेमेंट पूर्ण केल्यानंतरच खाली टिक करा — आधी टिक करू नका.</p>
         <div class="upi-section">
-          <p class="text-sm" data-i18n-html="upi_scan_hint" style="font-weight: 600; color: #444;">Scan the QR code to pay manually <strong>or</strong> use the button below</p>
+          <p class="text-sm" style="font-size:0.8rem;color:#666;text-align:center;margin-bottom:4px;">Scan QR or tap button to pay</p>
           <div id="qrcode" style="margin:14px auto 0; border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: fit-content; border-radius: 12px;"></div>
-          <div class="upi-amount" id="upiAmountDisplay" style="margin-top: 15px; font-size: 1.8rem; color: #1a6640;">₹0</div>
+          <div class="upi-amount" id="upiAmountDisplay" style="margin-top:16px;margin-bottom:4px;font-size:2rem;font-weight:800;color:#1a6640;letter-spacing:-0.5px;">₹0</div>
           
           <div style="margin: 12px 0 15px;">
             <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID" style="cursor:pointer; font-weight:800; color:#1a3c8f; font-size: 0.95rem; letter-spacing: 0.5px;">
@@ -3513,7 +3508,8 @@
 
 
           <a id="upiDeepLink" href="#" class="btn btn-primary"
-            style="text-decoration:none;margin-top:6px;font-size:0.95rem; line-height: 1.4; padding: 12px; height: auto;">👆 Pay via UPI App<br><span style="font-size: 0.7rem; opacity: 0.85; font-weight: 400;">(Based on User's feedback, Recommended: HDFC Bank App or CRED UPI)</span></a>
+            style="text-decoration:none;margin-top:6px;font-size:1rem;font-weight:700;padding:14px;height:auto;letter-spacing:0.2px;">👆 Pay via UPI App</a>
+          <p style="font-size:0.68rem;color:#888;text-align:center;margin-top:4px;">Recommended: HDFC Bank App or CRED UPI</p>
           
           <div style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, #f0faf4, #ffffff); border: 1.5px solid #b7e4c7; border-radius: 12px; font-size: 0.85rem; color: #1a6640; line-height: 1.5; text-align: left; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 2px 10px rgba(26, 102, 64, 0.06);">
             <div style="font-size: 1.6rem;">💳</div>
@@ -3526,13 +3522,16 @@
             </div>
           </div>
 
-          <div style="background:#fff4e5; border:1px solid #ffe8cc; border-radius:10px; padding:10px 12px; margin-top:12px; text-align:left; line-height:1.4;">
-            <div style="font-size: 0.78rem; color: #d63384; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              ⚠️ Pay button not working?
-            </div>
-            <div style="font-size:0.75rem; color:#862e08;">
-              Tap the <strong>UPI ID</strong> above to copy it, pay manually in any UPI app, then confirm below.<br>
-              <span class="mr-note" style="display:block; margin-top:4px; font-weight:500;">वरील UPI ID वर क्लिक करून कॉपी करा, GPay/PhonePe मध्ये पेस्ट करून पेमेंट करा आणि मग खाली टिक करा.</span>
+          <div style="margin-top:12px;">
+            <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'▾':'▴';"
+              style="background:none;border:none;font-size:0.75rem;color:#999;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin:0 auto;">
+              ⚠️ Pay button not working? <span>▾</span>
+            </button>
+            <div style="display:none;background:#fff4e5;border:1px solid #ffe8cc;border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;line-height:1.5;">
+              <div style="font-size:0.75rem;color:#862e08;">
+                Tap the <strong>UPI ID</strong> above to copy it, then paste and pay in any UPI app.<br>
+                <span class="mr-note" style="display:block;margin-top:4px;">वरील UPI ID कॉपी करा, GPay/PhonePe मध्ये पेस्ट करा, पेमेंट करा — मग खाली टिक करा.</span>
+              </div>
             </div>
           </div>
           <div class="upi-or" data-i18n="upi_or">or</div>
@@ -3946,9 +3945,9 @@
   <!-- REFRESH NUDGE BANNER — shown once per session -->
   <div id="refreshNudge" style="
     display:none; position:fixed; bottom:86px; left:50%; transform:translateX(-50%);
-    background:#1a1a2e; color:#fff; border-radius:14px; padding:11px 16px 11px 14px;
-    font-size:0.78rem; line-height:1.5; z-index:9999; max-width:320px; width:90%;
-    box-shadow:0 6px 24px rgba(0,0,0,0.28);
+    background:#1a1a2e; color:#fff; border-radius:16px; padding:14px 16px 14px 14px;
+    font-size:0.8rem; line-height:1.6; z-index:9999; max-width:320px; width:90%;
+    box-shadow:0 8px 32px rgba(0,0,0,0.32);
     animation: nudgeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <span style="font-size:1.2rem;flex-shrink:0;">✨</span>
@@ -3979,7 +3978,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.11";
+    const APP_VERSION = "v26.04.16.12";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
