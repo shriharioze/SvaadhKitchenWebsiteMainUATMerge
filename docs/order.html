@@ -2949,37 +2949,30 @@
     <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode"
       style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
     <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
-    <button onclick="showGuideHub()"
-      style="position:absolute;top:10px;right:50px;padding:5px 10px;font-size:0.7rem;font-weight:700;border-radius:10px;background:#fff;border:1.5px solid #7f8c8d;color:#555;cursor:pointer;z-index:10;">📖 Guide</button>
+    <!-- Guide button: visible pre-login (floats under tagline), hidden once action bar appears -->
+    <button id="headerGuideBtn" onclick="showGuideHub()"
+      style="margin-top:6px;padding:4px 12px;font-size:0.68rem;font-weight:700;border-radius:8px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.5);color:#fff;cursor:pointer;display:inline-block;">📖 Guide to Order</button>
   </div>
 
-  <!-- QUICK ACTION BAR (LOGGED IN ONLY) -->
+  <!-- QUICK ACTION BAR (LOGGED IN ONLY) — single compact row -->
   <div id="quickButtonBar"
-    style="display:none; background:#fff; border-bottom:1px solid #eee; padding: 12px 16px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:400; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <div id="walletChip" onclick="openWalletRecharge()"
-        style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0;">
-        <span>💼 Wallet:</span>
-        <span id="headerWalletBalance">₹0</span>
-        <span
-          style="border-left:1px solid #c8e6c9; padding-left:4px; margin-left:2px; color:#2e7d32; font-size:0.8rem;">+</span>
-      </div>
+    style="display:none; background:#fff; border-bottom:1px solid #eee; padding:8px 12px; align-items:center; justify-content:space-between; gap:6px; position:sticky; top:0; z-index:400; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+
+    <!-- Wallet chip (left) -->
+    <div id="walletChip" onclick="openWalletRecharge()"
+      style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:5px 10px; font-size:0.72rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:4px; cursor:pointer; flex-shrink:0; white-space:nowrap;">
+      💼 <span id="headerWalletBalance">₹0</span>
+      <span style="border-left:1px solid #c8e6c9; padding-left:4px; color:#2e7d32; font-size:0.75rem;">+</span>
     </div>
-    <div id="authActionsWrap" style="display:flex; align-items:center; gap:8px;">
-      <button onclick="showManageOrders()" class="bill-chip-btn"
-        style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋
-        Manage Orders</button>
+
+    <!-- Action buttons (right) -->
+    <div id="authActionsWrap" style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+      <button onclick="showManageOrders()"
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b; white-space:nowrap; cursor:pointer;">📋 Orders</button>
+      <button onclick="showGuideHub()"
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #7f8c8d; color:#555; white-space:nowrap; cursor:pointer;">📖 Guide</button>
       <button onclick="logoutCustomer()"
-        style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
-    </div>
-    <div
-      style="width:100%; display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:8px; border-top:1px solid #f5f5f5; padding-top:8px;">
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSegGilECpH3x6jY0SmkfGlYbEQO9hPXfphpfy2prS6b-bSjGg/viewform?usp=header"
-        target="_blank" class="feedback-link">🗣️ Feedback</a>
-      <a href="https://forms.gle/sx563zFVvehuWvKbA" target="_blank" class="feedback-link satisfaction-link">🍱 Rate Meal
-        & Service</a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLScqR82ZRF4R4h0Ea2P7U1WMo5ipenx-eM7R7WPXYKaM_4HShw/viewform?usp=header"
-        target="_blank" class="feedback-link bug-link">🐞 Report Bug</a>
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; white-space:nowrap; cursor:pointer;">↩ Out</button>
     </div>
   </div>
 
@@ -3952,10 +3945,10 @@
 
   <!-- REFRESH NUDGE BANNER — shown once per session -->
   <div id="refreshNudge" style="
-    display:none; position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+    display:none; position:fixed; bottom:86px; left:50%; transform:translateX(-50%);
     background:#1a1a2e; color:#fff; border-radius:14px; padding:11px 16px 11px 14px;
     font-size:0.78rem; line-height:1.5; z-index:9999; max-width:320px; width:90%;
-    box-shadow:0 6px 24px rgba(0,0,0,0.28); display:none;
+    box-shadow:0 6px 24px rgba(0,0,0,0.28);
     animation: nudgeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <span style="font-size:1.2rem;flex-shrink:0;">✨</span>
@@ -3986,7 +3979,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.16.10";
+    const APP_VERSION = "v26.04.16.11";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4661,6 +4654,8 @@
     function handleLoginSuccess(profileData, isNew) {
       sLoading(false); // Hide any active "Logging you in" loader
       if ($("authActionsWrap")) $("authActionsWrap").style.display = "flex";
+      // Hide header Guide button once logged in — it's now in the action bar
+      if ($("headerGuideBtn")) $("headerGuideBtn").style.display = "none";
       if (profileData) {
         const parts = (profileData.name || "").trim().split(" ");
         const fn = parts[0] || "";
