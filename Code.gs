@@ -16,9 +16,10 @@ const CODE_VERSION   = 14.1; // Prepaid Standard (Legacy Removal)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
-// Set PAYMENT_GATEWAY_ENABLED = true ONLY in the Dev Apps Script project.
-// On the live project this stays false — all gateway code is completely skipped.
-const PAYMENT_GATEWAY_ENABLED = false;
+// Controlled via Script Properties — never hardcoded.
+// In Dev Apps Script: add Script Property  PAYMENT_GATEWAY_ENABLED = true
+// Live project never has this property set → evaluates to false automatically.
+const PAYMENT_GATEWAY_ENABLED = (SP.getProperty("PAYMENT_GATEWAY_ENABLED") === "true");
 
 // ── HDFC SmartGATEWAY — Script Properties reference ─────────
 // Add all of these in Apps Script → Project Settings → Script Properties.
