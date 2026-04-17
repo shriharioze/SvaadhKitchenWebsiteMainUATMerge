@@ -151,7 +151,7 @@ const BUSINESS_CONTEXT = {
     "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", 
     "Vaiduwadi (Till Yash Honda Only)", "Pune-Solapur Road (Till Gadital Only)", "Vihar Chowk", "Mandai (Hadapsar Mandai)", "Gadital"
   ],
-  order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:30 AM", dinner: "before 5:00 PM", closed_on: "Sunday" },
+  order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:00 AM", dinner: "before 4:30 PM", closed_on: "Sunday" },
   delivery: {
     free_areas: ["Bhosale Nagar", "Triveni Nagar", "Self Pickup"],
     charge: "₹10 per meal for other listed areas if subtotal is below ₹100. Free for Bhosale Nagar, Triveni Nagar and Self Pickup always.",
@@ -1523,7 +1523,7 @@ function deleteOrder(phone, rowId, refundType) {
   let msg = "Order deleted successfully";
   const today = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
   const hourIST = now.getHours() + now.getMinutes() / 60;
-  const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
+  const CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
 
   const r = rows.find(x => {
     // Deep Normalization: Keep only digits to handle commas, decimals (123.0), or scientific notation
@@ -1555,6 +1555,7 @@ function deleteOrder(phone, rowId, refundType) {
   if (pStatStr === "paid" || pStatStr === "wallet paid") {
     const custName = r.Customer_Name || "Customer";
     const ordersWs2 = ws; // same sheet
+    const hIdx = headerIndex(ws); // needed for updating remaining rows
     const deleteDate = orderDateStr;
     const deleteMeal = String(r.Meal_Type).trim();
 
@@ -1580,7 +1581,8 @@ function deleteOrder(phone, rowId, refundType) {
     const newRate = discRate(remainingDaySubtotal);
 
     // Calc over-discount on remaining orders: they received discount at oldRate
-    // but now only deserve newRate
+    // but now only deserve newRate. Also update those rows in the sheet so that
+    // a same-day reorder sees the corrected prevDayDiscAmt and gets the right discount.
     let overDiscount = 0;
     if (oldRate > newRate) {
       const overOnRemaining = sameDayRows.reduce((s, x) => {
@@ -1590,6 +1592,25 @@ function deleteOrder(phone, rowId, refundType) {
         return s + (oldD - newD);
       }, 0);
       overDiscount = overOnRemaining;
+
+      // ── Update remaining rows so their stored Discount_Amount and Net_Total
+      //    reflect the new (lower) tier. This ensures any re-order on the same
+      //    day computes prevDayDiscAmt correctly and gives the right discount.
+      if (overDiscount > 0) {
+        const discColIdx  = hIdx["Discount_Amount"];
+        const netColIdx   = hIdx["Net_Total"];
+        sameDayRows.forEach(x => {
+          const xSub      = Number(x.Food_Subtotal)      || 0;
+          const xSurcharge= Number(x.Inflation_Surcharge)|| 0;
+          const xDelivery = Number(x.Delivery_Charge)    || 0;
+          const xSmallFee = Number(x.Small_Order_Fee)    || 0;
+          const xReviewD  = Number(x.Review_Discount)    || 0;
+          const newDiscAmt= Math.round(xSub * newRate);          // 0 when newRate=0
+          const newNetTotal = xSub + xDelivery + xSmallFee + xSurcharge - newDiscAmt - xReviewD;
+          if (discColIdx) ws.getRange(x._row, discColIdx).setValue(newDiscAmt);
+          if (netColIdx)  ws.getRange(x._row, netColIdx) .setValue(newNetTotal);
+        });
+      }
     }
 
     // Delivery & Fee eligibility for remaining same-day orders
@@ -1657,10 +1678,18 @@ function deleteOrder(phone, rowId, refundType) {
       // For simplicity: subtract the reward.
     }
 
-    // Actual refund = what was charged on deleted row minus any amount now owed back
+    // Actual refund = gross (food + surcharge) minus:
+    //   1. This order's own original discount (reclaimed since tier drops or full refund)
+    //   2. Over-discount already given to remaining same-day orders (collected via clawback)
+    //   3. Any delivery / small-order fees now owed by remaining orders
+    //   4. Any loyalty clawback
+    // Using gross instead of Net_Total ensures the surcharge is always included and the
+    // own-discount reversal is applied even when the tier drops.
     const adjustment = overDiscount + deliveryOwed + smallFeeOwed + loyaltyClawback;
-    const rawRefund = Number(r.Net_Total) || 0;
-    const refundAmt = Math.max(0, rawRefund - adjustment);
+    const deletedSurcharge  = Number(r.Inflation_Surcharge) || 0;
+    const deletedOwnDiscount = Number(r.Discount_Amount)    || 0;
+    const gross = (Number(r.Food_Subtotal) || 0) + deletedSurcharge;
+    const refundAmt = Math.max(0, gross - deletedOwnDiscount - adjustment);
 
     // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid, 
     // force this refund to Wallet too (to keep the day's bookkeeping simple).
@@ -2704,7 +2733,7 @@ function buildSystemPrompt(extraMenu) {
   } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
   const prompt = "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
-    +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
+    +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9AM, Dinner<4:30PM."
     +" AREAS: " + B.locations_served.join(", ") + ".\n"
     +" DELIVERY POLICY: FREE for Bhosale Nagar, Triveni Nagar, and Self Pickup. Other areas ₹10/meal if subtotal < ₹100. "
     + B.delivery.outside_policy + "\n"
@@ -3150,8 +3179,55 @@ function markOrdersStatus(body) {
     if (currentStatus === "Cancelled (Verify UPI)" && status === "Paid") {
       // ── Process Refund Logic based on preference
       const pref = String(r.Refund_Preference || "upi").toLowerCase();
-      const amt = Number(r.Net_Total) || 0;
       const custName = r.Customer_Name || "Customer";
+
+      // ── Recompute correct refund using same gross-based logic as hard-cancel ──
+      const scOrderDate = r.Order_Date instanceof Date
+        ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+        : String(r.Order_Date).trim();
+      const scSameDayRows = rows.filter(x => {
+        const xd = x.Order_Date instanceof Date
+          ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+          : String(x.Order_Date).trim();
+        const xStat = String(x.Payment_Status || "").toLowerCase();
+        return String(x.Phone).trim() === String(phone).trim() &&
+               xd === scOrderDate &&
+               String(x.Submission_ID) !== String(r.Submission_ID) &&
+               !xStat.includes("deleted") && !xStat.includes("cancelled");
+      });
+      const scRemaining = scSameDayRows.reduce((s, x) => s + (Number(x.Food_Subtotal) || 0), 0);
+      const scOldTotal  = scRemaining + (Number(r.Food_Subtotal) || 0);
+      const scDiscRate  = (sub) => sub >= 450 ? 0.075 : sub >= 300 ? 0.05 : 0;
+      const scOldRate   = scDiscRate(scOldTotal);
+      const scNewRate   = scDiscRate(scRemaining);
+      let scOverDiscount = 0;
+      if (scOldRate > scNewRate) {
+        scOverDiscount = scSameDayRows.reduce((s, x) => {
+          const xSub = Number(x.Food_Subtotal) || 0;
+          return s + Math.round(xSub * scOldRate) - Math.round(xSub * scNewRate);
+        }, 0);
+        // Also update remaining rows' Discount_Amount + Net_Total
+        if (scOverDiscount > 0) {
+          const scHIdx = headerIndex(ws);
+          const scDiscCol = scHIdx["Discount_Amount"];
+          const scNetCol  = scHIdx["Net_Total"];
+          scSameDayRows.forEach(x => {
+            const xSub      = Number(x.Food_Subtotal)      || 0;
+            const xSurcharge= Number(x.Inflation_Surcharge)|| 0;
+            const xDelivery = Number(x.Delivery_Charge)    || 0;
+            const xSmallFee = Number(x.Small_Order_Fee)    || 0;
+            const xReviewD  = Number(x.Review_Discount)    || 0;
+            const newD      = Math.round(xSub * scNewRate);
+            const newNet    = xSub + xDelivery + xSmallFee + xSurcharge - newD - xReviewD;
+            if (scDiscCol) ws.getRange(x._row, scDiscCol).setValue(newD);
+            if (scNetCol)  ws.getRange(x._row, scNetCol) .setValue(newNet);
+          });
+        }
+      }
+      const scSurcharge   = Number(r.Inflation_Surcharge) || 0;
+      const scOwnDiscount = Number(r.Discount_Amount)     || 0;
+      const scGross       = (Number(r.Food_Subtotal) || 0) + scSurcharge;
+      const amt = Math.max(0, scGross - scOwnDiscount - scOverDiscount);
       
       if (pref === "wallet" && amt > 0) {
         _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
