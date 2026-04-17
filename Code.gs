@@ -886,8 +886,8 @@ function submitOrder(body) {
   const orders    = body.orders  || [];   // [{date, meals:[{type,items,notes,subtotal,area}]}]
 
   const submittedAt  = getISTTimestamp();
-  const payMethod    = body.payment_method  || "UPI";
-  const payStatus    = body.payment_status  || "Pending";
+  let   payMethod    = body.payment_method  || "UPI";
+  let   payStatus    = body.payment_status  || "Pending";
   const firstTime    = profile.isFirstTime ? "Yes" : "No";
   const payFreq      = profile.payment_preference || "Daily Payment";
 
@@ -915,6 +915,15 @@ function submitOrder(body) {
     const rawVal = cRows[cRowIdx].Review_Promo_Count;
     promoCount = (rawVal === "" || rawVal === undefined) ? null : rawVal;
     if (promoCount !== null && !isNaN(promoCount)) promoCount = Number(promoCount);
+
+    // ── On Account override (server-enforced) ──────────────────
+    // If the customer is flagged On_Account in SK_Customers, every order
+    // is automatically set to method "On Account" / status "On Account"
+    // regardless of what the frontend sends.
+    if (String(cRows[cRowIdx].On_Account || "").trim() === "Yes") {
+      payMethod = "On Account";
+      payStatus = "On Account";
+    }
   }
 
   // Pre-fetch masters once for ID -> Name resolution in sheet columns
