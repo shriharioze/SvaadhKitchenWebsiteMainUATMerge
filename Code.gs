@@ -584,6 +584,15 @@ function doPost(e) {
       return jsonRes(hdfc_handleWebhook(body, e));
     }
 
+    // ── HDFC Webhook auto-detect ───────────────────────────────
+    // HDFC's server-side webhook POST will NOT contain _action.
+    // Detect by presence of event_name (Juspay webhook signature field).
+    if (!action && (body.event_name || (body.content && body.content.order))) {
+      console.log("HDFC Webhook auto-detected, event:", body.event_name);
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_handleWebhook(body, e));
+    }
+
     if (action === "hdfc_verifyReturn") {
       // Called by order.html when customer lands back after payment
       if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
