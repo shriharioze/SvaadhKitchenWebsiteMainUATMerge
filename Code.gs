@@ -1624,34 +1624,39 @@ function deleteOrder(phone, rowId, refundType) {
     let smallFeeOwed = 0;
 
     if (oldDaySubtotal >= FREE_THR_D && remainingDaySubtotal < FREE_THR_D) {
-      // 1. Delivery Clawback: sum up delivery on all remaining rows that were waived due to the 150 rule
+      // Day total drops below free-delivery threshold → remaining orders now owe fees.
+      // We claw the amounts from THIS refund, AND update those rows in the sheet so that
+      // if they are later cancelled themselves, the clawback doesn't fire a second time.
+      const delivColIdx   = hIdx["Delivery_Charge"];
+      const smallFeeColIdx = hIdx["Small_Order_Fee"];
+      const netColIdx2    = hIdx["Net_Total"];
+
       sameDayRows.forEach(x => {
         const xArea = x.Area || "";
-        const xSub = Number(x.Food_Subtotal) || 0;
-        if (xSub > 0 && isNonFree(xArea)) {
-          // They should have paid delivery. Check if they were charged 0.
-          if ((Number(x.Delivery_Charge) || 0) === 0) {
-             deliveryOwed += 10;
-          }
+        const xSub  = Number(x.Food_Subtotal) || 0;
+        let netDelta = 0;
+
+        // 1. Delivery Clawback: order was in non-free area but charged ₹0 due to threshold
+        if (xSub > 0 && isNonFree(xArea) && (Number(x.Delivery_Charge) || 0) === 0) {
+          deliveryOwed += 10;
+          netDelta += 10;
+          if (delivColIdx) ws.getRange(x._row, delivColIdx).setValue(10);
         }
-        
-        // 2. Small Order Fee Clawback: if Lunch/Dinner row < 50 and was waived
+
+        // 2. Small Order Fee Clawback: Lunch/Dinner sub < ₹50 was waived due to threshold
         const xMeal = String(x.Meal_Type).trim();
-        if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50) {
-          if ((Number(x.Small_Order_Fee) || 0) === 0) {
-            smallFeeOwed += 10;
-          }
+        if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50
+            && (Number(x.Small_Order_Fee) || 0) === 0) {
+          smallFeeOwed += 10;
+          netDelta += 10;
+          if (smallFeeColIdx) ws.getRange(x._row, smallFeeColIdx).setValue(10);
+        }
+
+        // Update Net_Total on remaining row to reflect newly owed fees (prevents double-clawback)
+        if (netDelta > 0 && netColIdx2) {
+          ws.getRange(x._row, netColIdx2).setValue((Number(x.Net_Total) || 0) + netDelta);
         }
       });
-    } else {
-      // Partial drop handling: If they were always below 150, but a specific meal sub dropped below 100/50?
-      // Actually, the user wants the 150 rule to be the primary toggle now.
-      // But we still need to handle the case where day total was < 150, and they delete an order,
-      // and a specific meal total drops.
-      // Wait, the user said "remove the breakfast delivery free if lunch/dinner ordered, instead put this, 
-      // day's total over ₹150 then free delivery across all."
-      
-      // Let's stick to the 150 rule as the only common waiver.
     }
 
     // Loyalty Clawback Logic
@@ -1678,18 +1683,15 @@ function deleteOrder(phone, rowId, refundType) {
       // For simplicity: subtract the reward.
     }
 
-    // Actual refund = gross (food + surcharge) minus:
-    //   1. This order's own original discount (reclaimed since tier drops or full refund)
-    //   2. Over-discount already given to remaining same-day orders (collected via clawback)
-    //   3. Any delivery / small-order fees now owed by remaining orders
-    //   4. Any loyalty clawback
-    // Using gross instead of Net_Total ensures the surcharge is always included and the
-    // own-discount reversal is applied even when the tier drops.
+    // Refund = Net_Total − adjustment
+    // Net_Total already correctly encodes: food + delivery + fees + surcharge − discount − mealCredit − reviewDiscount
+    // mealCredit (retroactive delivery/fee credit for same-day orders) is baked into Net_Total silently;
+    // using Net_Total as base ensures we never over-refund that credit.
+    // The adjustment claws back over-discount on remaining rows, and delivery/fees now owed
+    // by remaining rows (those amounts are deducted from THIS refund instead of charging customer again).
     const adjustment = overDiscount + deliveryOwed + smallFeeOwed + loyaltyClawback;
-    const deletedSurcharge  = Number(r.Inflation_Surcharge) || 0;
-    const deletedOwnDiscount = Number(r.Discount_Amount)    || 0;
-    const gross = (Number(r.Food_Subtotal) || 0) + deletedSurcharge;
-    const refundAmt = Math.max(0, gross - deletedOwnDiscount - adjustment);
+    const rawRefund = Number(r.Net_Total) || 0;
+    const refundAmt = Math.max(0, rawRefund - adjustment);
 
     // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid, 
     // force this refund to Wallet too (to keep the day's bookkeeping simple).
@@ -3181,7 +3183,8 @@ function markOrdersStatus(body) {
       const pref = String(r.Refund_Preference || "upi").toLowerCase();
       const custName = r.Customer_Name || "Customer";
 
-      // ── Recompute correct refund using same gross-based logic as hard-cancel ──
+      // ── Recompute correct refund at verify time (same logic as hard-cancel) ──
+      // Uses Net_Total as base so mealCredit baked into Net_Total is not over-refunded.
       const scOrderDate = r.Order_Date instanceof Date
         ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
         : String(r.Order_Date).trim();
@@ -3200,15 +3203,16 @@ function markOrdersStatus(body) {
       const scDiscRate  = (sub) => sub >= 450 ? 0.075 : sub >= 300 ? 0.05 : 0;
       const scOldRate   = scDiscRate(scOldTotal);
       const scNewRate   = scDiscRate(scRemaining);
+
+      // Discount over-clawback on remaining rows
       let scOverDiscount = 0;
       if (scOldRate > scNewRate) {
         scOverDiscount = scSameDayRows.reduce((s, x) => {
           const xSub = Number(x.Food_Subtotal) || 0;
           return s + Math.round(xSub * scOldRate) - Math.round(xSub * scNewRate);
         }, 0);
-        // Also update remaining rows' Discount_Amount + Net_Total
         if (scOverDiscount > 0) {
-          const scHIdx = headerIndex(ws);
+          const scHIdx   = headerIndex(ws);
           const scDiscCol = scHIdx["Discount_Amount"];
           const scNetCol  = scHIdx["Net_Total"];
           scSameDayRows.forEach(x => {
@@ -3217,17 +3221,46 @@ function markOrdersStatus(body) {
             const xDelivery = Number(x.Delivery_Charge)    || 0;
             const xSmallFee = Number(x.Small_Order_Fee)    || 0;
             const xReviewD  = Number(x.Review_Discount)    || 0;
-            const newD      = Math.round(xSub * scNewRate);
-            const newNet    = xSub + xDelivery + xSmallFee + xSurcharge - newD - xReviewD;
+            const newD   = Math.round(xSub * scNewRate);
+            const newNet = xSub + xDelivery + xSmallFee + xSurcharge - newD - xReviewD;
             if (scDiscCol) ws.getRange(x._row, scDiscCol).setValue(newD);
             if (scNetCol)  ws.getRange(x._row, scNetCol) .setValue(newNet);
           });
         }
       }
-      const scSurcharge   = Number(r.Inflation_Surcharge) || 0;
-      const scOwnDiscount = Number(r.Discount_Amount)     || 0;
-      const scGross       = (Number(r.Food_Subtotal) || 0) + scSurcharge;
-      const amt = Math.max(0, scGross - scOwnDiscount - scOverDiscount);
+
+      // Delivery/small-fee clawback + row updates
+      let scDeliveryOwed = 0;
+      let scSmallFeeOwed = 0;
+      const scFreeAreas  = getAreas().filter(a => a.free).map(a => a.name);
+      const scIsNonFree  = (area) => !scFreeAreas.includes(area) && area !== "Self Pickup";
+      const scFreeThr    = 150;
+      if (scOldTotal >= scFreeThr && scRemaining < scFreeThr) {
+        const scHIdx2    = headerIndex(ws);
+        const scDelCol   = scHIdx2["Delivery_Charge"];
+        const scSmallCol = scHIdx2["Small_Order_Fee"];
+        const scNetCol2  = scHIdx2["Net_Total"];
+        scSameDayRows.forEach(x => {
+          const xSub  = Number(x.Food_Subtotal) || 0;
+          const xMeal = String(x.Meal_Type).trim();
+          let scNetDelta = 0;
+          if (xSub > 0 && scIsNonFree(x.Area || "") && (Number(x.Delivery_Charge) || 0) === 0) {
+            scDeliveryOwed += 10; scNetDelta += 10;
+            if (scDelCol) ws.getRange(x._row, scDelCol).setValue(10);
+          }
+          if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50
+              && (Number(x.Small_Order_Fee) || 0) === 0) {
+            scSmallFeeOwed += 10; scNetDelta += 10;
+            if (scSmallCol) ws.getRange(x._row, scSmallCol).setValue(10);
+          }
+          if (scNetDelta > 0 && scNetCol2) {
+            ws.getRange(x._row, scNetCol2).setValue((Number(x.Net_Total) || 0) + scNetDelta);
+          }
+        });
+      }
+
+      const scAdj = scOverDiscount + scDeliveryOwed + scSmallFeeOwed;
+      const amt   = Math.max(0, (Number(r.Net_Total) || 0) - scAdj);
       
       if (pref === "wallet" && amt > 0) {
         _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
