@@ -1054,11 +1054,11 @@ function submitOrder(body) {
         });
       }
       const totalDateCredit = dateDeliveryCredit + dateSmallFeeCredit;
-      const mealCredit = submissionDayFoodTotal > 0 ? (totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
-      
+      const mealCredit = submissionDayFoodTotal > 0 ? Math.round(totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
+
       const discAmt = getDisc(sub);
       const inflationSurcharge = Math.ceil(sub / 20);
-      
+
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
       const isNumeric = (typeof promoCount === "number" && !isNaN(promoCount));
@@ -1066,8 +1066,8 @@ function submitOrder(body) {
         reviewDiscount = Math.round(sub * 0.10);
         promoCount--;
       }
-      
-      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount;
+
+      const netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
       meal._reviewDiscount = reviewDiscount; // carry for set() below
 
 
