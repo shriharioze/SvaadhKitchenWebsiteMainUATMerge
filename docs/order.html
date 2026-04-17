@@ -3483,105 +3483,142 @@
       </div>
 
       <!-- UPI (daily customers) -->
-      <div class="card" id="paymentCard">
-        <h2 data-i18n="step5_payment_title">💳 Payment</h2>
-        <div
-          style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:0.78rem;color:#92400e;line-height:1.5;"
-          data-i18n-html="payment_warning_html">
-          ⚠️ <strong>Please confirm only after payment is complete.</strong><br>
-          <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before
-            completing payment.</span>
+      <div id="paymentCard">
+
+        <!-- UPI Header banner -->
+        <div style="background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">UPI Payment</div>
+          <div class="upi-amount" id="upiAmountDisplay" style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff;margin-bottom:12px;">₹0</div>
+          <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.8rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span>📲</span><span>Scan · Tap · Pay</span>
+          </div>
         </div>
-        <p class="mr-note" style="font-size:0.72rem;color:#a05c00;margin-bottom:14px;padding:6px 10px;background:#fffbea;border-radius:8px;border-left:3px solid #f59e0b;">पेमेंट पूर्ण केल्यानंतरच खाली टिक करा — आधी टिक करू नका.</p>
-        <div class="upi-section">
-          <p class="text-sm" style="font-size:0.8rem;color:#666;text-align:center;margin-bottom:4px;">Scan QR or tap button to pay</p>
-          <div id="qrcode" style="margin:14px auto 0; border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: fit-content; border-radius: 12px;"></div>
-          <div class="upi-amount" id="upiAmountDisplay" style="margin-top:16px;margin-bottom:4px;font-size:2rem;font-weight:800;color:#1a6640;letter-spacing:-0.5px;">₹0</div>
-          
-          <div style="margin: 12px 0 15px;">
-            <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID" style="cursor:pointer; font-weight:800; color:#1a3c8f; font-size: 0.95rem; letter-spacing: 0.5px;">
-              UPI ID: svaadhkitchen.36727659@hdfcbank
+
+        <!-- UPI Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(8,145,178,0.10);margin-bottom:8px;">
+
+          <!-- Warning banner -->
+          <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:12px;padding:10px 13px;margin-bottom:14px;font-size:0.77rem;color:#92400e;line-height:1.5;display:flex;gap:8px;align-items:flex-start;">
+            <span style="flex-shrink:0;">⚠️</span>
+            <span><strong>Confirm only after payment is complete.</strong> Each transaction is verified manually.</span>
+          </div>
+
+          <!-- QR + Pay section -->
+          <div style="padding:14px;background:#f0fdfa;border-radius:14px;border:1px solid #99f6e4;margin-bottom:12px;">
+            <p class="text-sm" style="font-size:0.75rem;color:#0f766e;text-align:center;margin-bottom:6px;font-weight:600;">Step 1 — Complete Payment</p>
+            <div id="qrcode" style="margin:0 auto 12px;border:4px solid #fff;box-shadow:0 4px 14px rgba(8,145,178,0.13);width:fit-content;border-radius:12px;"></div>
+
+            <div style="text-align:center;margin-bottom:12px;">
+              <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID"
+                style="cursor:pointer;font-weight:700;color:#0f766e;font-size:0.88rem;letter-spacing:0.3px;display:inline-block;background:#ccfbf1;padding:6px 16px;border-radius:20px;">
+                svaadhkitchen.36727659@hdfcbank
+              </div>
+              <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
             </div>
-            <div style="font-size:0.75rem; color:#7f8c8d; margin-top:2px;">(tap to copy)</div>
-          </div>
 
+            <a id="upiDeepLink" href="#" class="btn btn-primary"
+              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:12px;">
+              👆 Pay via UPI App
+            </a>
+            <p style="font-size:0.68rem;color:#64748b;text-align:center;margin-top:6px;">Recommended: HDFC Bank App or CRED UPI</p>
 
-          <a id="upiDeepLink" href="#" class="btn btn-primary"
-            style="text-decoration:none;margin-top:6px;font-size:1rem;font-weight:700;padding:14px;height:auto;letter-spacing:0.2px;">👆 Pay via UPI App</a>
-          <p style="font-size:0.68rem;color:#888;text-align:center;margin-top:4px;">Recommended: HDFC Bank App or CRED UPI</p>
-          
-          <div style="margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,#f0f4ff,#f8f0ff);border:1.5px solid #c7b8f0;border-radius:12px;text-align:center;line-height:1.6;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">🚀</div>
-            <div style="font-size:0.78rem;font-weight:700;color:#4a3580;margin-bottom:3px;">Payment Gateway Coming Soon!</div>
-            <div style="font-size:0.72rem;color:#6b5aad;line-height:1.55;">We're integrating a seamless one-tap payment experience. Until then, UPI keeps things simple and reliable. Thank you for your patience and love — it truly means the world to us! 💜</div>
-          </div>
-
-          <div style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, #f0faf4, #ffffff); border: 1.5px solid #b7e4c7; border-radius: 12px; font-size: 0.85rem; color: #1a6640; line-height: 1.5; text-align: left; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 2px 10px rgba(26, 102, 64, 0.06);">
-            <div style="font-size: 1.6rem;">💳</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 800; color: #1a6640; margin-bottom: 2px;">Try Svaadh Wallet!</div>
-              <div style="font-size: 0.76rem; color: #2d6a4f;">Tired of manual payments? Recharge once and enjoy <strong>1-tap seamless ordering</strong>. No more waiting, no more daily screenshots!</div>
-              <div style="margin-top: 8px; display: flex; align-items: center; gap: 5px;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #27ae60; cursor: pointer; text-decoration: underline;" onclick="openWalletRecharge()">⚡ Recharge & Pay via Wallet</span>
+            <!-- Pay button not working -->
+            <div style="margin-top:10px;text-align:center;">
+              <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'▾':'▴';"
+                style="background:none;border:none;font-size:0.72rem;color:#94a3b8;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px;">
+                Pay button not working? <span>▾</span>
+              </button>
+              <div style="display:none;background:#fff4e5;border:1px solid #ffe8cc;border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;line-height:1.5;">
+                <div style="font-size:0.75rem;color:#862e08;">
+                  Tap the <strong>UPI ID</strong> above to copy it, then paste and pay in any UPI app.<br>
+                  <span class="mr-note" style="display:block;margin-top:4px;">वरील UPI ID कॉपी करा, GPay/PhonePe मध्ये पेस्ट करा, पेमेंट करा — मग खाली टिक करा.</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div style="margin-top:12px;">
-            <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'▾':'▴';"
-              style="background:none;border:none;font-size:0.75rem;color:#999;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin:0 auto;">
-              ⚠️ Pay button not working? <span>▾</span>
-            </button>
-            <div style="display:none;background:#fff4e5;border:1px solid #ffe8cc;border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;line-height:1.5;">
-              <div style="font-size:0.75rem;color:#862e08;">
-                Tap the <strong>UPI ID</strong> above to copy it, then paste and pay in any UPI app.<br>
-                <span class="mr-note" style="display:block;margin-top:4px;">वरील UPI ID कॉपी करा, GPay/PhonePe मध्ये पेस्ट करा, पेमेंट करा — मग खाली टिक करा.</span>
-              </div>
-            </div>
-          </div>
-          <div class="upi-or" data-i18n="upi_or">or</div>
-          <!-- COD Button Removed -->
-          <div style="margin-top:14px;">
-            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-              <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;"
+          <!-- Step 2: Confirm checkbox -->
+          <div style="margin-bottom:12px;">
+            <p style="font-size:0.75rem;color:#0f766e;font-weight:600;margin-bottom:8px;">Step 2 — Confirm &amp; Place Order</p>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+              <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
                 onchange="checkPaymentConfirmation()">
-              <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has
-                been made</span>
-              <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</span>
+              <div>
+                <span style="font-size:0.81rem;color:#14532d;font-weight:600;" data-i18n="paid_confirm_label">Payment complete — I confirm payment has been made</span>
+                <p class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</p>
+              </div>
             </label>
           </div>
-          <div id="walletSwitchBackWrap" style="display:none; text-align:center; margin-top:16px; padding-top:4px;">
-            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💳 Switch back to Wallet Pay (₹<span
-                id="switchBackWalletBal">0</span> available)</a>
+
+          <!-- Coming soon + wallet promo -->
+          <div style="padding:12px 13px;background:linear-gradient(135deg,#f0f4ff,#f8f0ff);border:1px solid #c7b8f0;border-radius:12px;text-align:center;margin-bottom:10px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#4a3580;margin-bottom:2px;">🚀 Payment Gateway Coming Soon!</div>
+            <div style="font-size:0.7rem;color:#6b5aad;line-height:1.5;">Until then, UPI keeps things simple. Thank you for your patience and love! 💜</div>
+          </div>
+
+          <div style="padding:12px 13px;background:linear-gradient(135deg,#f0faf4,#fff);border:1px solid #b7e4c7;border-radius:12px;display:flex;align-items:flex-start;gap:10px;">
+            <div style="font-size:1.4rem;flex-shrink:0;">💳</div>
+            <div style="flex:1;">
+              <div style="font-weight:800;color:#1a6640;font-size:0.82rem;margin-bottom:2px;">Try Svaadh Wallet!</div>
+              <div style="font-size:0.74rem;color:#2d6a4f;line-height:1.5;">Recharge once — enjoy <strong>1-tap ordering</strong>. No more daily screenshots!</div>
+              <span style="font-size:0.72rem;font-weight:700;color:#27ae60;cursor:pointer;text-decoration:underline;display:inline-block;margin-top:6px;" onclick="openWalletRecharge()">⚡ Recharge &amp; Pay via Wallet</span>
+            </div>
+          </div>
+
+          <p class="mr-note" style="margin-top:10px;font-size:0.7rem;color:#a05c00;text-align:center;">पेमेंट पूर्ण केल्यानंतरच खाली टिक करा — आधी टिक करू नका.</p>
+
+          <div id="walletSwitchBackWrap" style="display:none; text-align:center; margin-top:14px;">
+            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💳 Switch back to Wallet Pay (₹<span id="switchBackWalletBal">0</span> available)</a>
           </div>
         </div>
+
       </div>
 
       <!-- WALLET CONFIRMATION CARD -->
-      <div class="card" id="walletConfirmCard"
-        style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
-        <div class="wallet-confirm-card">
-          <div class="wc-label">Total amount to be deducted</div>
-          <div class="wc-amount" id="walletDeductAmount">₹0</div>
-          <div class="wc-balance" id="walletCheckBalance">Available: ₹0</div>
-        </div>
-        <div class="card" style="margin-top:-10px;">
-          <div
-            style="background:#f0faf4; border:1px solid #b7e4c7; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#1a5c36; line-height:1.6;">
-            ✅ Your balance is sufficient. This order will be instantly confirmed.
+      <div id="walletConfirmCard" style="display:none;">
+
+        <!-- Wallet Header banner -->
+        <div style="background:linear-gradient(135deg,#166534,#16a34a);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Wallet Payment</div>
+          <div style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;margin-bottom:12px;" id="walletDeductAmount">₹0</div>
+          <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.8rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span>💳</span><span id="walletCheckBalance">Available: ₹0</span>
           </div>
-          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#27ae60;"
+        </div>
+
+        <!-- Wallet Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(22,101,52,0.10);margin-bottom:8px;">
+
+          <!-- Balance OK banner -->
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:13px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;margin-bottom:14px;border:1px solid #bbf7d0;">
+            <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#166534,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#fff;">✓</div>
+            <div style="flex:1;">
+              <div style="font-size:0.82rem;font-weight:700;color:#14532d;margin-bottom:2px;">Balance Sufficient — Instant Confirm</div>
+              <div style="font-size:0.77rem;color:#166534;line-height:1.5;">Your Svaadh Wallet has enough balance. No UPI needed — order confirmed the moment you place it.</div>
+            </div>
+            <div style="flex-shrink:0;background:#16a34a;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
+          </div>
+
+          <!-- Confirm checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:12px;">
+            <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
               onchange="checkPaymentConfirmation()">
-            <span style="font-size:0.82rem;">I confirm to pay ₹<span id="walletConfirmLabelAmt">0</span> from my
-              Wallet</span>
+            <div>
+              <span style="font-size:0.81rem;color:#14532d;font-weight:600;">I confirm to deduct ₹<span id="walletConfirmLabelAmt">0</span> from my Wallet</span>
+              <p class="mr-note" style="margin-top:2px;">मी माझ्या वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
+            </div>
           </label>
-          <p class="mr-note" style="margin-top:4px;">मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
-          <div style="text-align:center;margin-top:12px;">
+
+          <div style="text-align:center;">
             <a href="javascript:togglePaymentMode('UPI')"
-              style="font-size:0.75rem;color:#666;text-decoration:underline;">Not now, pay via UPI QR Instead</a>
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay via UPI instead</a>
           </div>
         </div>
+
       </div>
 
       <!-- SPLIT PAYMENT CARD -->
