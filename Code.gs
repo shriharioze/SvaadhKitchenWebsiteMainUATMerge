@@ -35,7 +35,8 @@ const PAYMENT_GATEWAY_ENABLED = (SP.getProperty("PAYMENT_GATEWAY_ENABLED") === "
 //  HDFC_ENV                 │ "test" or "live"
 //  HDFC_TEST_URL            │ Sandbox base URL from HDFC (e.g. https://smartgateway-uat.hdfcbank.com)
 //  HDFC_LIVE_URL            │ Production base URL (e.g. https://smartgateway.hdfcbank.com)
-//  HDFC_RETURN_URL          │ Full URL of order.html (e.g. https://svaadhkitchen.in/order.html)
+//  HDFC_RETURN_URL          │ Apps Script exec URL (NOT order.html — GitHub Pages rejects POST).
+//                           │ doPost detects the HDFC return payload and JS-redirects to order.html.
 //  HDFC_WEBHOOK_URL         │ This Apps Script doPost URL (set in Dashboard → Settings → Webhooks)
 
 const HDFC_MERCHANT_ID      = SP.getProperty("HDFC_MERCHANT_ID")      || "";
@@ -365,7 +366,43 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData.contents);
+    // ── HDFC Return URL Handler ────────────────────────────────
+    // Juspay POSTs payment result to our return URL (GitHub Pages can't accept POST → 405).
+    // We use the Apps Script URL as the return URL instead.
+    // When HDFC posts here with order_id + status (no _action), serve an HTML page
+    // that immediately JS-redirects the browser to order.html with those params as GET params.
+    const rawBody = e.postData ? e.postData.contents : "";
+    let parsedForHdfc = {};
+    try { parsedForHdfc = JSON.parse(rawBody); } catch(_) {}
+    const isHdfcReturn = parsedForHdfc.order_id && parsedForHdfc.status && !parsedForHdfc._action;
+    if (isHdfcReturn) {
+      const params = Object.keys(parsedForHdfc)
+        .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(parsedForHdfc[k]))
+        .join("&");
+      const redirectUrl = "https://svaadhkitchen.in/order.html?" + params;
+      return HtmlService.createHtmlOutput(
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
+        `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
+        `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
+      );
+    }
+    // ── Also handle form-encoded POST (Juspay sometimes sends application/x-www-form-urlencoded)
+    if (!parsedForHdfc.order_id && e.postData && e.postData.type === "application/x-www-form-urlencoded") {
+      const formParams = e.parameter || {};
+      if (formParams.order_id && formParams.status) {
+        const params = Object.keys(formParams)
+          .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(formParams[k]))
+          .join("&");
+        const redirectUrl = "https://svaadhkitchen.in/order.html?" + params;
+        return HtmlService.createHtmlOutput(
+          `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
+          `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
+          `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
+        );
+      }
+    }
+    // ── Normal API actions ─────────────────────────────────────
+    const body = JSON.parse(rawBody);
     const action = body._action || "";
     const pin = body.pin || "";
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
