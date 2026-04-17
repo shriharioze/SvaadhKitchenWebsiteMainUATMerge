@@ -95,7 +95,7 @@ const ORDERS_HEADERS = [
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point",
-  "Inflation_Surcharge", "Loyalty_Discount"
+  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit"
 ];
 
 const ITEM_COL_MAP = {
@@ -603,6 +603,14 @@ function initSchema() {
  * Normalizes phone numbers for reliable comparison across Google Sheets.
  * Handles scientific notation (e.g., 9.87E+9) and trailing decimals (.0).
  */
+// Returns true if the order should be excluded from kitchen/prep counts.
+// "Cancelled (Verify UPI)" = soft-cancel pending admin verification —
+// the customer already requested cancellation, do NOT include in kitchen prep.
+function _isOrderCancelled(paymentStatus) {
+  const s = String(paymentStatus || "").toLowerCase();
+  return s === "cancelled" || s.startsWith("cancelled");
+}
+
 function _normalizePhone(phone) {
   let p = String(phone || "").trim();
   if (p.includes(".")) p = p.split(".")[0];
@@ -1149,22 +1157,49 @@ function submitOrder(body) {
       set("Net_Total",           netTotal);
       
       let pStat = payStatus;
+      let walletCreditUsed = 0;
       // ════ WALLET DEDUCTION LOGIC ════
       if (payMethod === "Wallet") {
         let currentBalance = _calculateWalletBalance(profile.phone);
-        
+
         if (currentBalance >= netTotal) {
           _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true, sid);
           pStat = "Wallet Paid";
+          walletCreditUsed = netTotal;
         } else {
           pStat = "Pending"; // Wallet failed, fallback to pending
+        }
+      } else if (payMethod === "Split") {
+        // Split: deduct wallet portion now, UPI portion remains pending
+        const requestedCredit = Math.min(Number(body.wallet_credit) || 0, netTotal);
+        if (requestedCredit > 0) {
+          const currentBalance = _calculateWalletBalance(profile.phone);
+          if (currentBalance >= requestedCredit) {
+            _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction (Wallet Part)", requestedCredit, true, sid);
+            walletCreditUsed = requestedCredit;
+            pStat = "Pending"; // UPI portion still outstanding
+          } else {
+            // Not enough wallet — fall back to full UPI
+            payMethod = "UPI";
+            pStat = "Pending";
+          }
         }
       } else if (payMethod === "On Account") {
         pStat = "On Account";
       }
-      
+
+      // Self-heal Wallet_Credit column if it doesn't exist yet (no initSchema needed)
+      if (walletCreditUsed > 0 && !hIdx["Wallet_Credit"]) {
+        const newCol = ordersWs.getLastColumn() + 1;
+        ordersWs.getRange(1, newCol).setValue("Wallet_Credit");
+        SpreadsheetApp.flush();
+        // Refresh hIdx so set() can find it
+        Object.assign(hIdx, headerIndex(ordersWs));
+      }
+
       set("Payment_Method",      payMethod);
       set("Payment_Status",      pStat);
+      if (walletCreditUsed > 0) set("Wallet_Credit", walletCreditUsed);
       set("Payment_Freq",        payFreq);
       set("First_Time",          firstTime);
       set("Source",              "WebApp");
@@ -1476,6 +1511,7 @@ function getCustomerOrders(phone) {
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
+        wallet_credit:      Number(r.Wallet_Credit) || 0,
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
@@ -1496,6 +1532,7 @@ function getCustomerOrders(phone) {
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
+        wallet_credit:      Number(r.Wallet_Credit) || 0,
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
@@ -1561,7 +1598,8 @@ function deleteOrder(phone, rowId, refundType) {
 
   // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
-  if (pStatStr === "paid" || pStatStr === "wallet paid") {
+  const isOnAccountOrder = pStatStr === "on account";
+  if (pStatStr === "paid" || pStatStr === "wallet paid" || isOnAccountOrder) {
     const custName = r.Customer_Name || "Customer";
     const ordersWs2 = ws; // same sheet
     const hIdx = headerIndex(ws); // needed for updating remaining rows
@@ -1702,7 +1740,7 @@ function deleteOrder(phone, rowId, refundType) {
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
-    // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid, 
+    // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid,
     // force this refund to Wallet too (to keep the day's bookkeeping simple).
     const hasAnyOtherWalletPaid = sameDayRows.some(x => {
       const typeMatch = String(x.Meal_Type).trim() === deleteMeal;
@@ -1712,11 +1750,25 @@ function deleteOrder(phone, rowId, refundType) {
 
     let finalType = refundType;
     let msgSuffix = "";
-    
+
     // Auto-detect wallet refund if current was wallet paid, overriding passed type
     const currentWasWallet = (pStatStr === "wallet paid");
-    if (currentWasWallet) {
+    const currentWasSplit  = (String(r.Payment_Method || "").trim().toLowerCase() === "split");
+    if (isOnAccountOrder) {
+      // On Account: no cash was collected — just delete the row.
+      // Remaining rows already updated above (discount/delivery recalculation).
+      // On-account balance auto-corrects since it's derived from live sheet rows.
+      msg = "Order removed from your On Account balance.";
+      finalType = "__on_account_handled__"; // skip all refund payout logic
+    } else if (currentWasWallet) {
       finalType = "wallet";
+    } else if (currentWasSplit) {
+      // Split orders: entire refund always goes to Wallet — wallet + UPI portions both back to wallet.
+      if (refundAmt > 0) {
+        _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
+      }
+      msg = `₹${refundAmt} refunded to Wallet`;
+      finalType = "__split_handled__"; // skip normal logic below
     } else if (hasAnyOtherWalletPaid && refundType === "manual_upi") {
       finalType = "wallet";
       msgSuffix = " (Consolidated to Wallet since other items in this meal were Wallet Paid)";
@@ -1736,7 +1788,10 @@ function deleteOrder(phone, rowId, refundType) {
       msg = `₹${refundAmt} refund request raised in Approvals`;
     }
   } 
-  // ── SOFT CANCELLATION FOR UPI ── (Turn 47 feature)
+  // ── SOFT CANCELLATION FOR UPI / SPLIT ──────────────────────────────────────
+  // "Pending" means customer has ALREADY paid (UPI screenshot sent) but admin hasn't verified yet.
+  // For Split orders, "Pending" = wallet was deducted AND UPI payment was sent — must soft-cancel just like UPI.
+  // Admin will verify and then "Verify & Refund" triggers the split refund logic in markOrdersStatus.
   if (String(r.Payment_Status || "").toLowerCase().includes("pending") && (refundType === "wallet" || refundType === "manual_upi")) {
     let hIdx = headerIndex(ws);
     
@@ -1753,12 +1808,26 @@ function deleteOrder(phone, rowId, refundType) {
     
     if (statusCol && prefCol) {
       ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
-      ws.getRange(r._row, prefCol).setValue(refundType);
-      console.info(`SUCCESS: Soft-cancelled row ${r._row} with preference ${refundType}`);
-      return {
-        success: true, 
-        message: "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅"
-      };
+      // Split orders: refund preference is always wallet (full amount back to wallet)
+      const isSoftSplit = String(r.Payment_Method || "").trim().toLowerCase() === "split";
+      ws.getRange(r._row, prefCol).setValue(isSoftSplit ? "wallet" : refundType);
+      console.info(`SUCCESS: Soft-cancelled row ${r._row} with preference ${isSoftSplit ? "wallet (split)" : refundType}`);
+
+      // For split orders: wallet portion is already deducted — refund it immediately.
+      // UPI portion will be added to wallet once admin verifies.
+      let softCancelMsg = "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅";
+      if (isSoftSplit) {
+        const walletCredit = Number(r.Wallet_Credit) || 0;
+        const upiDue = Math.max(0, (Number(r.Net_Total) || 0) - walletCredit);
+        if (walletCredit > 0) {
+          _appendWalletTransaction(phone, r.Customer_Name || "Customer", "Order Cancellation Refund (Wallet Part)", walletCredit, true, String(rowId));
+        }
+        softCancelMsg = upiDue > 0
+          ? `₹${walletCredit} has been refunded to your Wallet instantly. ` +
+            `Once Admin verifies your ₹${upiDue} UPI payment, it will also be added to your Wallet (1-2 days). ✅`
+          : `₹${walletCredit} has been refunded to your Wallet. ✅`;
+      }
+      return { success: true, message: softCancelMsg };
     } else {
       console.error(`FAILED: Missing columns for soft-cancel. StatusCol:${statusCol}, PrefCol:${prefCol}`);
     }
@@ -2384,7 +2453,7 @@ function getDriverOrders(date) {
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
     if (d !== date) return;
-    if (String(r.Payment_Status) === "Cancelled") return;
+    if (_isOrderCancelled(r.Payment_Status)) return;
     // var area = String(r.Area || "").trim();
     // if (area.toLowerCase().includes("pickup")) return;
     var area = String(r.Area || "").trim();
@@ -2463,7 +2532,7 @@ function getOrderSummary(date) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
-    return d === date && String(r.Payment_Status) !== "Cancelled";
+    return d === date && !_isOrderCancelled(r.Payment_Status);
   });
 
   var meals = {};
@@ -2889,7 +2958,7 @@ function getOrderHistory(p) {
 
   var filtered = rows.filter(function(r) {
     var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
+    return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
   });
 
   var orders = filtered.map(function(r) {
@@ -2962,7 +3031,7 @@ function getCustomerList() {
 
   var map = {};
   ordRows.forEach(function(r) {
-    if (String(r.Payment_Status) === "Cancelled") return;
+    if (_isOrderCancelled(r.Payment_Status)) return;
     var phone = String(r.Phone||"").trim();
     if (!phone) return;
     var normP = _normalizePhone(phone);
@@ -3096,7 +3165,7 @@ function getCustomerHistory(phone) {
   var name       = rows.length ? String(rows[0].Customer_Name||"").trim() : "";
   var area       = rows.length ? String(rows[0].Area||"").trim() : "";
   var payFreq    = rows.length ? String(rows[0].Payment_Freq||"").trim() : "";
-  var activeOrders = orders.filter(function(o){return String(o.status)!=="Cancelled";});
+  var activeOrders = orders.filter(function(o){return !_isOrderCancelled(o.status);});
   var totalSpent = Math.round(activeOrders.reduce(function(s,o){return s+o.total;},0));
   var pending    = Math.round(activeOrders.filter(function(o){return String(o.status)!=="Paid" && String(o.status)!=="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0));
 
@@ -3137,7 +3206,7 @@ function getDatePayments(date) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
-  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && String(r.Payment_Status)!=="Cancelled";});
+  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && !_isOrderCancelled(r.Payment_Status);});
 
   var map = {};
   rows.forEach(function(r) {
@@ -3147,7 +3216,7 @@ function getDatePayments(date) {
       payFreq:String(r.Payment_Freq||"").trim(), meals:[], total:0, allPaid:true};
     map[phone].meals.push(r.Meal_Type);
     map[phone].total += Number(r.Net_Total)||0;
-    if (!["Paid", "Wallet Paid", "Collected"].includes(String(r.Payment_Status))) map[phone].allPaid = false;
+    if (!["Paid", "Wallet Paid", "Collected", "On Account"].includes(String(r.Payment_Status))) map[phone].allPaid = false;
   });
 
   var customers = Object.values(map).map(function(c) {
@@ -3172,6 +3241,11 @@ function markOrdersStatus(body) {
   var sid    = body.sid; // Submission ID for precision
   var status = body.status || "Paid";
   if (!date || !phone) return {success:false, error:"date and phone required"};
+
+  // Prevent race-condition double-processing (e.g. admin double-clicks Verify & Refund)
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch(e) { return {success:false, error:"Server busy — please retry"}; }
+  try {
 
   var ss    = getSpreadsheet();
   var ws    = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
@@ -3274,11 +3348,25 @@ function markOrdersStatus(body) {
 
       const scAdj = scOverDiscount + scDeliveryOwed + scSmallFeeOwed;
       const amt   = Math.max(0, (Number(r.Net_Total) || 0) - scAdj);
-      
-      if (pref === "wallet" && amt > 0) {
+
+      // ── Duplicate refund guard (shared for all paths below)
+      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
+      const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
+      const existingRefunds = getAllRows(refWs);
+      const alreadyExists = existingRefunds.some(rx => String(rx.Submission_ID) === String(r.Submission_ID));
+
+      const isSplitOrder = String(r.Payment_Method || "").trim().toLowerCase() === "split";
+
+      if (isSplitOrder) {
+        // Split orders: entire refund always goes to Wallet — simple, no UPI queue.
+        // Wallet portion was already deducted at order time, UPI portion was paid by customer.
+        // Both come back to wallet in full.
+        if (amt > 0) {
+          _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
+        }
+      } else if (pref === "wallet" && amt > 0) {
         _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
-      } else if (pref === "manual_upi" && amt > 0) {
-        const refWs = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"]);
+      } else if (pref === "manual_upi" && amt > 0 && !alreadyExists) {
         refWs.appendRow([r.Submission_ID, phone, custName, amt, r.Meal_Type, date, "Pending", now, "Verified Soft Cancellation", "upi"]);
       }
       ws.deleteRow(r._row); // Final delete after verification
@@ -3290,6 +3378,9 @@ function markOrdersStatus(body) {
   });
 
   return {success:true, updatedRows:updated};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function rejectUPIPayment(body) {
@@ -3336,7 +3427,7 @@ function getAnalytics(p) {
   };
   var rows = getAllRows(ws).filter(function(r) {
     var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
+    return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
   });
   var LUNCH_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
     "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
@@ -3381,7 +3472,7 @@ function getChurnReport(sinceDate) {
   var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
   var map={};
   getAllRows(ws).forEach(function(r){
-    if(String(r.Payment_Status)==="Cancelled")return;
+    if(_isOrderCancelled(r.Payment_Status))return;
     var phone=String(r.Phone||"").trim(); if(!phone)return;
     var d=fmtDate(r.Order_Date);
     if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),lastDate:"",orderCount:0};
@@ -3626,19 +3717,28 @@ function getPendingUPIPayments() {
   // Return Payment_Status == "Pending" OR "Cancelled (Verify UPI)"
   return rows.filter(r => {
     const s = String(r.Payment_Status).trim();
-    return s === "Pending" || s === "Cancelled (Verify UPI)" || s === "Pending Approval";
+    const m = String(r.Payment_Method || "").trim();
+    return s === "Pending" || s === "Cancelled (Verify UPI)" || s === "Pending Approval"
+      || (m === "Split" && s === "Pending"); // Split orders awaiting UPI portion
   })
-             .map(r => ({
-               id: r.Submission_ID,
-               date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
-               customer: r.Customer_Name,
-               phone: r.Phone,
-               amount: r.Net_Total,
-               meal: r.Meal_Type,
-               timestamp: r.Submitted_At,
-               status: r.Payment_Status,
-               refund_preference: r.Refund_Preference || ""
-             }));
+             .map(r => {
+               const walletCredit = Number(r.Wallet_Credit) || 0;
+               const isSplit = String(r.Payment_Method || "").trim() === "Split";
+               return {
+                 id: r.Submission_ID,
+                 date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
+                 customer: r.Customer_Name,
+                 phone: r.Phone,
+                 amount: isSplit ? Math.max(0, (Number(r.Net_Total) || 0) - walletCredit) : r.Net_Total,
+                 full_amount: r.Net_Total,
+                 wallet_credit: walletCredit,
+                 meal: r.Meal_Type,
+                 timestamp: r.Submitted_At,
+                 status: r.Payment_Status,
+                 payment_method: String(r.Payment_Method || ""),
+                 refund_preference: r.Refund_Preference || ""
+               };
+             });
 }
 
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
@@ -3742,7 +3842,7 @@ function adminCancelOrder(body) {
       : String(r.Order_Date).trim();
     const status = String(r.Payment_Status || "").toLowerCase();
     
-    return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && status !== 'cancelled';
+    return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && !status.startsWith('cancelled');
   });
 
   if (!matches.length) return {success:false, error: "No matching orders found"};

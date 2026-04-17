@@ -3584,6 +3584,88 @@
         </div>
       </div>
 
+      <!-- SPLIT PAYMENT CARD -->
+      <div id="splitPayCard" style="display:none;">
+
+        <!-- Header banner -->
+        <div style="background:linear-gradient(135deg,#6c3cf7,#3d8ef5);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <!-- decorative circles -->
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Split Payment</div>
+          <div style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;" id="splitTotalDisplay">₹0</div>
+          <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:5px;">
+              <span style="font-size:0.9rem;">💳</span>
+              <span>₹<span id="splitWalletPart">0</span> Wallet</span>
+            </div>
+            <div style="opacity:0.6;font-size:0.9rem;">+</div>
+            <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:5px;">
+              <span style="font-size:0.9rem;">📲</span>
+              <span>₹<span id="splitUpiPart">0</span> UPI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(108,60,247,0.10);margin-bottom:8px;">
+
+          <!-- Step 1: Wallet -->
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:linear-gradient(135deg,#f3f0ff,#ede9fe);border-radius:14px;margin-bottom:12px;border:1px solid #ddd6fe;">
+            <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#6c3cf7,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;">1</div>
+            <div style="flex:1;">
+              <div style="font-size:0.82rem;font-weight:700;color:#4c1d95;margin-bottom:3px;">Wallet Deduction — Auto</div>
+              <div style="font-size:0.78rem;color:#5b21b6;line-height:1.5;">₹<span id="splitWalletBalDisplay">0</span> from your Svaadh Wallet will be used automatically when you place the order.</div>
+            </div>
+            <div style="flex-shrink:0;background:#6c3cf7;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
+          </div>
+
+          <!-- Step 2: UPI -->
+          <div style="padding:14px;background:#f8faff;border-radius:14px;border:1px solid #dbeafe;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;">2</div>
+              <div>
+                <div style="font-size:0.82rem;font-weight:700;color:#1e3a8a;">Pay via UPI</div>
+                <div style="font-size:0.75rem;color:#3b82f6;">Scan QR · tap button · or use UPI ID</div>
+              </div>
+              <div style="margin-left:auto;font-size:1.5rem;font-weight:900;color:#15803d;letter-spacing:-0.5px;">₹<span id="splitUpiAmtDisplay">0</span></div>
+            </div>
+
+            <p class="text-sm" style="font-size:0.75rem;color:#64748b;text-align:center;margin-bottom:6px;">Scan QR or tap button to pay ₹<span id="splitUpiQrAmt">0</span></p>
+            <div id="splitQrcode" style="margin:0 auto 12px;border:4px solid #fff;box-shadow:0 4px 14px rgba(37,99,235,0.13);width:fit-content;border-radius:12px;"></div>
+
+            <div style="text-align:center;margin-bottom:12px;">
+              <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID"
+                style="cursor:pointer;font-weight:700;color:#1e3a8a;font-size:0.88rem;letter-spacing:0.3px;display:inline-block;background:#dbeafe;padding:6px 16px;border-radius:20px;">
+                svaadhkitchen.36727659@hdfcbank
+              </div>
+              <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
+            </div>
+
+            <a id="splitUpiDeepLink" href="#" class="btn btn-primary"
+              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:12px;">
+              👆 Pay ₹<span id="splitUpiDeepLinkAmt">0</span> via UPI App
+            </a>
+          </div>
+
+          <!-- Confirm checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+            <input type="checkbox" id="splitConfirmCheck" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
+              onchange="checkPaymentConfirmation()">
+            <span style="font-size:0.81rem;color:#14532d;line-height:1.5;font-weight:600;">I confirm ₹<span id="splitWalletConfirmAmt">0</span> Wallet used + paid ₹<span id="splitUpiConfirmAmt">0</span> via UPI</span>
+          </label>
+
+          <p class="mr-note" style="margin-top:8px;text-align:center;">वॉलेटमधून ₹<span id="splitWalletMr">0</span> वजा होईल, बाकी ₹<span id="splitUpiMr">0</span> UPI द्वारे भरा</p>
+
+          <div style="text-align:center;margin-top:10px;">
+            <a href="javascript:togglePaymentMode('UPI')"
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay full ₹<span id="splitFullUpiLink">0</span> via UPI instead</a>
+          </div>
+        </div>
+
+      </div>
+
       <!-- ON ACCOUNT CARD -->
       <div class="card" id="onAccountCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
         <div class="wallet-confirm-card" style="background: linear-gradient(135deg, #1565c0, #134e91);">
@@ -4079,7 +4161,7 @@
       },
       selectedDates: [], menuCache: {}, orders: {},
       calYear: 0, calMonth: 0,
-      grandTotal: 0, runningTotal: 0, walletBalance: 0,
+      grandTotal: 0, runningTotal: 0, walletBalance: 0, walletCredit: 0,
       tempUpiMode: false,
       version: "14.1.17"
     };
@@ -4286,9 +4368,11 @@
       let isChecked = false;
       if (S.paymentChoice === "Wallet") {
         isChecked = $("walletConfirmCheck")?.checked;
+      } else if (S.paymentChoice === "Split") {
+        isChecked = $("splitConfirmCheck")?.checked;
       } else if (S.paymentChoice === "OnAccount") {
         // For On Account, the checkbox is optional (Step 4 & 5)
-        isChecked = true; 
+        isChecked = true;
       } else {
         isChecked = $("paidConfirm")?.checked;
       }
@@ -5239,7 +5323,7 @@
         return `<div class="item-row" style="opacity:0.45;pointer-events:none;">
     <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
     <div class="qty-control">
-      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Sold Out</span>
+      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Order Limit Reached</span>
     </div>
   </div>`;
       }
@@ -5603,10 +5687,12 @@
       $("walletConfirmCard").style.display = "none";
       $("onAccountCard").style.display = "none";
       $("paymentCard").style.display = "none";
-      
+      $("splitPayCard").style.display = "none";
+
       // Reset confirmations
       if ($("walletConfirmCheck")) $("walletConfirmCheck").checked = false;
       if ($("onAccountConfirmCheck")) $("onAccountConfirmCheck").checked = false;
+      if ($("splitConfirmCheck")) $("splitConfirmCheck").checked = false;
       if ($("paidConfirm")) $("paidConfirm").checked = false;
 
       // Determine default payment choice
@@ -5625,6 +5711,23 @@
           $("walletConfirmLabelAmt").textContent = grandTotal;
           const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
           if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+        } else if (wb > 0 && grandTotal > 0 && wb < grandTotal) {
+          // Partial wallet: show Split card as default
+          const upiDue = grandTotal - wb;
+          S.paymentChoice = "Split";
+          S.walletCredit = wb;
+          $("splitPayCard").style.display = "block";
+          $("splitTotalDisplay").textContent = `₹${grandTotal}`;
+          $("splitWalletPart").textContent = wb;
+          $("splitUpiPart").textContent = upiDue;
+          $("splitWalletBalDisplay").textContent = wb;
+          $("splitUpiPartNote").textContent = upiDue;
+          $("splitWalletConfirmAmt").textContent = wb;
+          $("splitUpiConfirmAmt").textContent = upiDue;
+          $("splitUpiMr").textContent = upiDue;
+          $("splitWalletMr").textContent = wb;
+          $("splitFullUpiLink").textContent = grandTotal;
+          setupSplitUPI(upiDue);
         } else {
           S.paymentChoice = "UPI";
           $("paymentCard").style.display = "block";
@@ -5644,7 +5747,13 @@
             sw.style.display = "block";
             const balSpan = $("switchBackWalletBal");
             if (balSpan) balSpan.textContent = wb;
-            // Also need to handle On Account switch back if I had one, but UPI is the fallback usually
+          }
+        } else if (wb > 0 && wb < grandTotal) {
+          // Partial wallet available — show split option
+          const sw = $("walletSwitchBackWrap");
+          if (sw) {
+            sw.style.display = "block";
+            sw.innerHTML = `<a href="javascript:togglePaymentMode('Split')" class="btn-wallet-alt">🔀 Use ₹${wb} Wallet + Pay ₹${grandTotal - wb} via UPI</a>`;
           }
         }
         setupUPI(grandTotal);
@@ -5657,12 +5766,19 @@
       if (mode === "UPI") {
         S.tempUpiMode = true;
         S.paymentChoice = "UPI";
+        S.walletCredit = 0;
+      } else if (mode === "Split") {
+        S.tempUpiMode = false; // allow split branch in buildBillScreen
+        S.paymentChoice = "Split"; // pre-hint; buildBillScreen will confirm
+        S.walletCredit = 0;
       } else if (mode === "Wallet") {
         S.tempUpiMode = false;
         S.paymentChoice = "Wallet";
+        S.walletCredit = 0;
       } else if (mode === "OnAccount") {
         S.tempUpiMode = false;
         S.paymentChoice = "OnAccount";
+        S.walletCredit = 0;
       }
       buildBillScreen();
     }
@@ -5793,22 +5909,71 @@
     }
 
 
+    // ── SPLIT UPI SETUP ──────────────────────────────────────────
+    function setupSplitUPI(amount) {
+      const hdfcVpa     = "svaadhkitchen.36727659@hdfcbank";
+      const merchantVpa = "svaadhkitchen.36727659@hdfcbank";
+      const payeeName   = "Svaadh Kitchen";
+      const mccCode     = "5812";
+      const note        = `Svaadh ${S.phone.slice(-4)}`;
+      const txRef       = `SK${Date.now()}${Math.floor(Math.random()*1000)}`;
+      const qrUpiStr    = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+      const deepUpiStr  = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
+
+      ["splitUpiQrAmt","splitUpiAmtDisplay","splitUpiDeepLinkAmt"].forEach(id => {
+        if ($(id)) $(id).textContent = amount;
+      });
+
+      const qrEl = $("splitQrcode");
+      if (qrEl) {
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, { text: qrUpiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
+        qrEl.style.cursor = "default";
+        qrEl.onclick = null;
+      }
+
+      const btn = $("splitUpiDeepLink");
+      if (btn) {
+        if (isIOS()) {
+          btn.removeAttribute("href");
+          btn.textContent = t('upi_copy_label');
+          btn.onclick = (e) => {
+            e.preventDefault();
+            navigator.clipboard?.writeText(hdfcVpa)
+              .then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
+              .catch(() => {
+                const el = document.createElement("input"); el.value = hdfcVpa;
+                document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
+                toast(t('upi_copied_toast', { amt: amount }), 3500);
+              });
+          };
+        } else {
+          btn.href = deepUpiStr;
+          btn.onclick = null;
+          btn.innerHTML = `👆 Pay ₹${amount} via UPI App<br><span style="font-size:0.72rem;opacity:0.9;font-weight:400;">(Recommended: HDFC Bank App or CRED UPI)</span>`;
+        }
+      }
+    }
+
     // ═══════════════════════════════════════════════════════════
     // PLACE ORDER
     // ═══════════════════════════════════════════════════════════
     async function placeOrder(settleAll = false) {
       if (S.isPlacingOrder) return;
-      const isWalletOrder = S.paymentChoice === "Wallet";
+      const isWalletOrder    = S.paymentChoice === "Wallet";
       const isOnAccountOrder = S.paymentChoice === "OnAccount";
-      
+      const isSplitOrder     = S.paymentChoice === "Split";
+
       let confirmEl;
       if (isWalletOrder) confirmEl = $("walletConfirmCheck");
       else if (isOnAccountOrder) confirmEl = $("onAccountConfirmCheck");
+      else if (isSplitOrder) confirmEl = $("splitConfirmCheck");
       else confirmEl = $("paidConfirm");
 
       if (confirmEl && !confirmEl.checked) {
         if (isWalletOrder) toast("Please confirm wallet deduction");
         else if (isOnAccountOrder) toast("Please confirm 'On Account' placement");
+        else if (isSplitOrder) toast("Please confirm wallet + UPI split payment");
         else toast(t('toast_confirm_payment'));
         return;
       }
@@ -5878,8 +6043,12 @@
           payment_preference: S.profile.payment_preference, isFirstTime: S.isFirstTime
         },
         orders,
-        payment_method: (isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) ? "On Account" : (isWalletOrder ? "Wallet" : "UPI"),
+        payment_method: (isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) ? "On Account"
+                       : isSplitOrder ? "Split"
+                       : (isWalletOrder ? "Wallet" : "UPI"),
         payment_status: ((isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) || isWalletOrder) ? "Paid" : "Pending",
+        // Compute fresh at submission — never rely on potentially stale S.walletCredit
+        wallet_credit: isSplitOrder ? Math.min(Number(S.walletBalance) || 0, Number(S.grandTotal) || 0) : 0,
         settle_all: settleAll
       };
       const _pCtrl = new AbortController(); const _pTid = setTimeout(() => _pCtrl.abort(), 15000);
@@ -5892,7 +6061,10 @@
         $("btnNext").style.pointerEvents = "auto";
         if (data.success) {
           S.isPlaced = true;
-          if (payload.payment_status === "Pending") {
+          if (payload.payment_method === "Split") {
+            const upiDue = payload.wallet_credit ? (S.grandTotal - payload.wallet_credit) : S.grandTotal;
+            await sAlert(`✅ ₹${payload.wallet_credit} deducted from Wallet.\n\n📲 Please complete the remaining ₹${upiDue} via UPI. Admin will verify and confirm your order.`, "Order Placed — UPI Due", "🔀");
+          } else if (payload.payment_status === "Pending") {
             await sAlert(t('toast_payment_submitted'), "Order Placed", "💸");
           } else {
             await sAlert("Your order has been placed successfully!", "Order Success", "✅");
@@ -5926,6 +6098,7 @@
       $("summaryCard").style.display = "none";
       $("paymentCard").style.display = "none";
       $("walletConfirmCard").style.display = "none";
+      $("splitPayCard").style.display = "none";
 
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id.toUpperCase();
@@ -5937,8 +6110,10 @@
         const deduction = Number(S.grandTotal) || 0;
         S.walletBalance = Math.max(0, S.walletBalance - deduction);
         updateWalletBalanceUI(S.walletBalance);
-
-        // Still refresh from server after a short delay to ensure perfect sync
+      } else if (S.paymentChoice === "Split") {
+        const deduction = Number(S.walletCredit) || 0;
+        S.walletBalance = Math.max(0, S.walletBalance - deduction);
+        updateWalletBalanceUI(S.walletBalance);
         setTimeout(refreshWalletBalance, 1500);
       } else {
         // Even for UPI, refresh balance just in case
@@ -6564,10 +6739,12 @@
               const rowTotal = (Number(o.total) || 0);
               if (["paid", "wallet paid"].includes(stat)) totalAmountPaid += rowTotal;
               if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
-              orderDataCache[rid] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: stat, potential_total: rowTotal };
+              const isSplitRow = meth === "split";
+              orderDataCache[rid] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, is_split: isSplitRow, status: stat, potential_total: rowTotal };
             }
           });
-          orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(), potential_total: g.totalSum };
+          const firstMeth = String(fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_method || "").toLowerCase();
+          orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, is_split: firstMeth === "split", status: fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(), potential_total: g.totalSum };
         });
 
         // ── RENDER UPCOMING ──
@@ -6590,12 +6767,18 @@
             let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
               (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
             const payMeth = String(firstRow?.payment_method || "").toLowerCase();
-            const isWalletPay = payMeth.includes("wallet") || stat.toLowerCase().includes("wallet");
+            const isWalletPay = payMeth === "wallet" || stat.toLowerCase().includes("wallet");
             const isOnAccount = payMeth.includes("account") || stat.toLowerCase() === "on account";
-            
+            const isSplit     = payMeth === "split";
+            const walletCredit = Number(firstRow?.wallet_credit) || 0;
+
             let payChip = "";
             if (isOnAccount) {
               payChip = `<div style="display:inline-block;background:#eef2f7;color:#2c3e50;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1d9e6;margin-top:5px;vertical-align:middle;">💳 On Account</div>`;
+            } else if (isSplit && walletCredit > 0) {
+              const upiDue = Math.max(0, (Number(firstRow?.total) || 0) - walletCredit);
+              const splitStat = stat.toLowerCase() === "paid" ? "✅ Paid" : "⏳ UPI Pending";
+              payChip = `<div style="display:inline-block;background:#f5f0ff;color:#5b21b6;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #c4b5fd;margin-top:5px;vertical-align:middle;">🔀 ₹${walletCredit} Wallet + ₹${upiDue} UPI · ${splitStat}</div>`;
             } else if (isWalletPay) {
               payChip = `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>`;
             } else {
@@ -6692,6 +6875,7 @@
       const totalPaid = Number(cached.original_total_paid) || 0;
       const potentialAmt = Number(cached.potential_total) || 0;
       const isWalletPaid = !!cached.is_wallet;
+      const isSplitPay   = !!cached.is_split;
       const isPending = String(cached.status || "").toLowerCase().trim() === "pending";
       const count = allIds.length;
 
@@ -6703,7 +6887,18 @@
       if (!confirmed) return;
 
       let refundType = "none";
-      if (totalPaid > 0) {
+      if (isSplitPay) {
+        // Split: full refund always goes to Wallet — no choice shown
+        if (isPending) {
+          await sAlert(
+            `Your Wallet portion will be refunded instantly.<br><br>The UPI portion will be added to your Wallet once Admin verifies the payment.`,
+            "Refund to Wallet", "💳"
+          );
+        } else {
+          await sAlert(`Full amount will be refunded to your Svaadh Wallet.`, "Refund to Wallet", "💳");
+        }
+        refundType = "wallet";
+      } else if (totalPaid > 0) {
         if (isWalletPaid) {
           await sAlert(`₹${totalPaid} will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💳");
           refundType = "wallet";
