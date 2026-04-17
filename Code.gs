@@ -2343,13 +2343,16 @@ function getDriverOrders(date) {
   var rows = getAllRows(ws);
   var meals = {Breakfast: [], Lunch: [], Dinner: []};
 
-  // Load delivery status from SK_Deliveries tab
+  // Load delivery status from SK_Deliveries tab (both EnRoute_At and Delivered_At)
   var delMap = {};
   var delWs  = ss.getSheetByName("SK_Deliveries");
   if (delWs) {
     getAllRows(delWs).forEach(function(r) {
       var sid = String(r.Submission_ID || "").trim();
-      if (sid) delMap[sid] = String(r.Delivered_At || "");
+      if (sid) delMap[sid] = {
+        deliveredAt: String(r.Delivered_At || ""),
+        enRouteAt:   String(r.EnRoute_At   || "")
+      };
     });
   }
 
@@ -2390,7 +2393,8 @@ function getDriverOrders(date) {
       deliveryPoint: String(r.Delivery_Point || ""),
       maps:          String(r.Maps_Link || ""),
       notes:         String(r.Special_Notes_Delivery || ""),
-      deliveredAt:   delMap[sid] || "",
+      deliveredAt:   (delMap[sid] && delMap[sid].deliveredAt) || "",
+      enRouteAt:     (delMap[sid] && delMap[sid].enRouteAt)   || "",
       amount:        Number(r.Net_Total || r.Food_Subtotal || 0),
       paymentStatus: String(r.Payment_Status || ""),
       mealAddresses: custMap[normP] ? custMap[normP].mealAddresses : ""
