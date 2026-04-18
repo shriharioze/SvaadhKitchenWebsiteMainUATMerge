@@ -288,6 +288,10 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getAnalytics(p));
     }
+    if (action === "adminCreditWallet") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(adminCreditWallet(body));
+    }
     if (action === "getChurnReport") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getChurnReport(p.sinceDate));
@@ -3552,19 +3556,25 @@ function getAnalytics(p) {
     "Jowar_Bhakri":"Jowar Bhakri","Bajra_Bhakri":"Bajra Bhakri","Dry_Sabji_Mini":"Dry Sabji Mini",
     "Dry_Sabji_Full":"Dry Sabji Full","Curry_Sabji_Mini":"Curry Sabji Mini","Curry_Sabji_Full":"Curry Sabji Full",
     "Dal":"Dal","Rice":"Rice","Salad":"Salad","Curd":"Curd"};
-  var totalRev=0, totalPaid=0, custSet={}, dayMap={};
+  var totalRev=0, totalPaid=0, totalDelivery=0, totalSurcharge=0, totalSmallFee=0;
+  var custSet={}, dayMap={};
   var mealStats={Breakfast:{count:0,revenue:0},Lunch:{count:0,revenue:0},Dinner:{count:0,revenue:0}};
   var itemCounts={};
   rows.forEach(function(r) {
     var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
+    var delivery=Number(r.Delivery_Charge)||0;
+    var surcharge=Number(r.Inflation_Surcharge)||0;
+    var smallFee=Number(r.Small_Order_Fee)||0;
     var payStatus = String(r.Payment_Status || "").trim();
-    totalRev+=net; 
-    if(payStatus==="Paid" || payStatus==="Wallet Paid" || payStatus==="Collected") totalPaid+=net;
+    totalRev+=net;
+    totalDelivery+=delivery; totalSurcharge+=surcharge; totalSmallFee+=smallFee;
+    if(payStatus==="Paid"||payStatus==="Wallet Paid"||payStatus==="Collected") totalPaid+=net;
     var ph=String(r.Phone||"").trim(); if(ph) custSet[ph]=true;
     var meal=String(r.Meal_Type||"");
     if(mealStats[meal]){mealStats[meal].count++;mealStats[meal].revenue+=net;}
-    if(!dayMap[d])dayMap[d]={orders:0,revenue:0};
-    dayMap[d].orders++;dayMap[d].revenue+=net;
+    if(!dayMap[d]) dayMap[d]={orders:0,revenue:0,delivery:0,surcharge:0,smallFee:0};
+    dayMap[d].orders++; dayMap[d].revenue+=net;
+    dayMap[d].delivery+=delivery; dayMap[d].surcharge+=surcharge; dayMap[d].smallFee+=smallFee;
     if(meal==="Breakfast"){
       for(var n=1;n<=4;n++){var bi=String(r["BF_Item_"+n]||"").trim(),bq=Number(r["BF_Qty_"+n])||0;if(bi&&bq>0)itemCounts[bi]=(itemCounts[bi]||0)+bq;}
       var cu=Number(r.Curd)||0; if(cu>0)itemCounts["Curd"]=(itemCounts["Curd"]||0)+cu;
@@ -3572,14 +3582,38 @@ function getAnalytics(p) {
       LUNCH_COLS.forEach(function(col){var q=Number(r[col])||0;if(q>0){var dn=COL_DISP[col]||col;itemCounts[dn]=(itemCounts[dn]||0)+q;}});
     }
   });
-  var days=Object.keys(dayMap).sort().map(function(d){return{date:d,orders:dayMap[d].orders,revenue:Math.round(dayMap[d].revenue)};});
-  var topItems=Object.keys(itemCounts).map(function(k){return{name:k,count:Math.round(itemCounts[k])};}).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  var days=Object.keys(dayMap).sort().map(function(d){
+    return{date:d,orders:dayMap[d].orders,revenue:Math.round(dayMap[d].revenue),
+           delivery:Math.round(dayMap[d].delivery),surcharge:Math.round(dayMap[d].surcharge),smallFee:Math.round(dayMap[d].smallFee)};
+  });
+  var allItems=Object.keys(itemCounts).map(function(k){return{name:k,count:Math.round(itemCounts[k])};}).sort(function(a,b){return b.count-a.count;});
+  var topItems=allItems.slice(0,15);
   Object.keys(mealStats).forEach(function(m){mealStats[m].revenue=Math.round(mealStats[m].revenue);});
   return {success:true,
     summary:{orders:rows.length,customers:Object.keys(custSet).length,revenue:Math.round(totalRev),
       paid:Math.round(totalPaid),pending:Math.round(totalRev-totalPaid),
-      avgPerDay:days.length>0?Math.round(totalRev/days.length):0},
-    meals:mealStats,days:days,topItems:topItems};
+      avgPerDay:days.length>0?Math.round(totalRev/days.length):0,
+      delivery:Math.round(totalDelivery),surcharge:Math.round(totalSurcharge),smallFee:Math.round(totalSmallFee)},
+    meals:mealStats,days:days,topItems:topItems,allItems:allItems};
+}
+
+// ── ADMIN WALLET CREDIT ───────────────────────────────────────────────────────
+function adminCreditWallet(body) {
+  var phone  = String(body.phone || "").trim();
+  var amount = Number(body.amount);
+  if (!phone || phone.length < 10) return {success:false, error:"Valid phone required"};
+  if (!amount || amount <= 0)      return {success:false, error:"Amount must be > 0"};
+
+  // Look up customer name
+  var ss      = getSpreadsheet();
+  var profWs  = getOrCreateTab(ss, TAB_PROFILES, []);
+  var profRows = getAllRows(profWs);
+  var profile  = profRows.find(function(r){ return String(r.Phone||"").trim() === phone; });
+  var name     = profile ? (String(profile.Name||"").trim() || "Customer") : "Customer";
+
+  _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
+  var newBalance = _calculateWalletBalance(phone);
+  return {success:true, newBalance: Math.round(newBalance)};
 }
 
 // ── CHURN REPORT ──────────────────────────────────────────────────────────────

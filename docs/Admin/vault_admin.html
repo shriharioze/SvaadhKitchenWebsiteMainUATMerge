@@ -1157,6 +1157,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <button class="chip" onclick="analyticsSetRange(6)">This week</button>
           <button class="chip" onclick="analyticsSetRange(29)">This month</button>
           <button class="chip" onclick="analyticsSetLastMonth()">Last month</button>
+          <button class="chip" onclick="analyticsSetRange(89)">Quarterly</button>
+          <button class="chip" onclick="analyticsSetRange(179)">Semi-annual</button>
+          <button class="chip" onclick="analyticsSetRange(364)">Annual</button>
           <button class="chip" onclick="analyticsSetPeriod('1-10')">1–10</button>
           <button class="chip" onclick="analyticsSetPeriod('11-20')">11–20</button>
           <button class="chip" onclick="analyticsSetPeriod('21-end')">21–end</button>
@@ -1272,6 +1275,30 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="page-header">
           <div class="page-title">Customers <small>All customers, sorted by most recent order</small></div>
         </div>
+
+        <!-- Quick Wallet Credit -->
+        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px;padding:16px 18px;margin-bottom:18px;">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#166534;margin-bottom:12px;">💳 Add Wallet Credit</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:140px;">
+              <div style="font-size:.7rem;color:#166534;font-weight:600;margin-bottom:4px;">Customer Phone</div>
+              <input type="tel" id="wcPhone" placeholder="10-digit number" maxlength="10" inputmode="numeric"
+                style="width:100%;padding:9px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:.85rem;background:#fff;box-sizing:border-box;"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:.7rem;color:#166534;font-weight:600;margin-bottom:4px;">Amount (₹)</div>
+              <input type="number" id="wcAmount" placeholder="e.g. 100" min="1"
+                style="width:100%;padding:9px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:.85rem;background:#fff;box-sizing:border-box;">
+            </div>
+            <button onclick="adminAddWalletCredit()"
+              style="padding:9px 22px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+              ➕ Add Credit
+            </button>
+          </div>
+          <div id="wcStatus" style="margin-top:8px;font-size:.78rem;min-height:18px;"></div>
+        </div>
+
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
           <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="filterCustomers()">
           <button class="btn-primary" onclick="loadCustomers()">↺ Refresh</button>
@@ -3414,10 +3441,10 @@ async function loadAnalytics() {
 function renderAnalytics(data, from, to) {
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
   const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
-  const { summary, meals, days, topItems } = data;
+  const { summary, meals, days, topItems, allItems } = data;
   const maxCount = topItems.length ? topItems[0].count : 1;
 
-  // KPIs
+  // KPIs — revenue
   let html = `<div class="analytics-kpis">
     <div class="kpi-card"><div class="kv">${summary.orders}</div><div class="kl">Orders</div></div>
     <div class="kpi-card"><div class="kv">${summary.customers}</div><div class="kl">Customers</div></div>
@@ -3425,6 +3452,26 @@ function renderAnalytics(data, from, to) {
     <div class="kpi-card green"><div class="kv">${fmtM(summary.paid)}</div><div class="kl">Collected</div></div>
     <div class="kpi-card gold"><div class="kv">${fmtM(summary.pending)}</div><div class="kl">Pending</div></div>
     <div class="kpi-card"><div class="kv">${fmtM(summary.avgPerDay)}</div><div class="kl">Avg / Day</div></div>
+  </div>`;
+
+  // Fee KPIs
+  html += `<div class="analytics-kpis" style="margin-top:-6px;">
+    <div class="kpi-card" style="border-color:#fbbf24;background:#fffbeb;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.delivery||0)}</div>
+      <div class="kl">🚚 Delivery</div>
+    </div>
+    <div class="kpi-card" style="border-color:#f87171;background:#fff1f2;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.surcharge||0)}</div>
+      <div class="kl">📈 Surcharge</div>
+    </div>
+    <div class="kpi-card" style="border-color:#a78bfa;background:#f5f3ff;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.smallFee||0)}</div>
+      <div class="kl">📦 Small Order Fee</div>
+    </div>
+    <div class="kpi-card" style="border-color:#6ee7b7;background:#f0fdf4;">
+      <div class="kv" style="font-size:1rem;">${fmtM((summary.delivery||0)+(summary.surcharge||0)+(summary.smallFee||0))}</div>
+      <div class="kl">Total Fees</div>
+    </div>
   </div>`;
 
   // Meal breakdown
@@ -3440,10 +3487,28 @@ function renderAnalytics(data, from, to) {
   });
   html += `</div>`;
 
-  // Top items
+  // Item Qty Sold — full table
+  if (allItems && allItems.length) {
+    const itemRows = allItems.map((item,i) => `<tr style="${i%2===0?'':'background:var(--bg)'}">
+      <td style="padding:7px 10px;font-size:.82rem;">${item.name}</td>
+      <td style="padding:7px 10px;text-align:right;font-weight:700;font-size:.88rem;">${item.count}</td>
+    </tr>`).join("");
+    html += `<div class="analytics-section">
+      <div class="analytics-section-title">📦 Item Qty Sold</div>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:var(--bg);">
+          <th style="padding:8px 10px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Item</th>
+          <th style="padding:8px 10px;text-align:right;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Qty Sold</th>
+        </tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // Top items bar chart
   if (topItems.length) {
     html += `<div class="analytics-section">
-      <div class="analytics-section-title">🏆 Top Items</div>`;
+      <div class="analytics-section-title">🏆 Top Items (by qty)</div>`;
     topItems.forEach(item => {
       const pct = Math.round((item.count / maxCount) * 100);
       html += `<div class="top-item-row">
@@ -3455,18 +3520,35 @@ function renderAnalytics(data, from, to) {
     html += `</div>`;
   }
 
-  // Day-by-day revenue
-  if (days.length > 1) {
+  // Day-by-day table with fee columns
+  if (days.length > 0) {
     const dayRows = days.map(d => `<tr>
-      <td>${fmtD(d.date)}</td>
-      <td>${d.orders}</td>
+      <td style="white-space:nowrap;">${fmtD(d.date)}</td>
+      <td style="text-align:center;">${d.orders}</td>
       <td style="text-align:right;font-weight:600;">${fmtM(d.revenue)}</td>
+      <td style="text-align:right;color:#d97706;">${d.delivery > 0 ? fmtM(d.delivery) : '—'}</td>
+      <td style="text-align:right;color:#dc2626;">${d.surcharge > 0 ? fmtM(d.surcharge) : '—'}</td>
+      <td style="text-align:right;color:#7c3aed;">${d.smallFee > 0 ? fmtM(d.smallFee) : '—'}</td>
     </tr>`).join("");
     html += `<div class="analytics-section">
-      <div class="analytics-section-title">📅 Revenue by Day</div>
+      <div class="analytics-section-title">📅 Day-wise Breakdown</div>
       <div style="overflow-x:auto;"><table class="day-table">
-        <thead><tr><th>Date</th><th>Orders</th><th style="text-align:right;">Revenue</th></tr></thead>
+        <thead><tr>
+          <th>Date</th><th>Orders</th>
+          <th style="text-align:right;">Revenue</th>
+          <th style="text-align:right;color:#d97706;">🚚 Del.</th>
+          <th style="text-align:right;color:#dc2626;">📈 Surch.</th>
+          <th style="text-align:right;color:#7c3aed;">📦 SmallFee</th>
+        </tr></thead>
         <tbody>${dayRows}</tbody>
+        <tfoot><tr style="font-weight:700;border-top:2px solid var(--border);">
+          <td>Total</td>
+          <td style="text-align:center;">${summary.orders}</td>
+          <td style="text-align:right;">${fmtM(summary.revenue)}</td>
+          <td style="text-align:right;color:#d97706;">${fmtM(summary.delivery||0)}</td>
+          <td style="text-align:right;color:#dc2626;">${fmtM(summary.surcharge||0)}</td>
+          <td style="text-align:right;color:#7c3aed;">${fmtM(summary.smallFee||0)}</td>
+        </tr></tfoot>
       </table></div>
     </div>`;
   }
@@ -3880,6 +3962,28 @@ function renderHistList(list) {
 let _custData = [];
 let _custPayFilter = "all";
 let _custSortKey   = "recent";
+
+async function adminAddWalletCredit() {
+  const phone  = document.getElementById("wcPhone").value.trim();
+  const amount = parseFloat(document.getElementById("wcAmount").value);
+  const status = document.getElementById("wcStatus");
+  if (phone.length < 10) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid 10-digit phone number.</span>`; return; }
+  if (!amount || amount <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid amount.</span>`; return; }
+  status.innerHTML = `<span style="color:#166534;">Adding ₹${amount} to ${phone}…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ action:"adminCreditWallet", phone, amount, pin: S.sessionPin }) });
+    const data = await res.json();
+    if (data.success) {
+      status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ ₹${amount} credited to ${phone}. New balance: ₹${data.newBalance}</span>`;
+      document.getElementById("wcPhone").value  = "";
+      document.getElementById("wcAmount").value = "";
+    } else {
+      status.innerHTML = `<span style="color:#dc2626;">❌ ${data.error || "Failed"}</span>`;
+    }
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ Network error: ${e.message}</span>`;
+  }
+}
 
 async function loadCustomers() {
   const el = document.getElementById("custGridWrap");
