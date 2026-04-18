@@ -3679,7 +3679,7 @@ function adminCreditWallet(body) {
   var profWs  = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   var profRows = getAllRows(profWs);
   var profile  = profRows.find(function(r){ return String(r.Phone||"").trim() === phone; });
-  var name     = profile ? (String(profile.Name||"").trim() || "Customer") : "Customer";
+  var name     = profile ? (String(profile.Customer_Name||"").trim() || "Customer") : "Customer";
 
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
   var newBalance = _calculateWalletBalance(phone);
