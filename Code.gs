@@ -478,6 +478,15 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(batchProcessApprovals(body));
     }
+    if (action === "triggerManualArchive") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(triggerManualArchive(body));
+    }
+    if (action === "setupQuarterlyArchiveTrigger") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      try { setupQuarterlyArchiveTrigger(); return jsonRes({success:true}); }
+      catch(e) { return jsonRes({success:false, error:e.message}); }
+    }
 
     if (action === "setPin") {
       const profile = { phone: body.phone, pin: body.pin };
@@ -731,7 +740,8 @@ function _calculateWalletBalance(phone) {
     // Also check legacy columns where Txn_Type may have been stored in a "Balance" column
     const rType = String(w.Txn_Type || w.Balance || w.Txn_Type || "").trim().toLowerCase();
 
-    if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")) {
+    if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")
+        || rType.includes("carry forward") || rType.includes("carry-forward")) {
       balance += rAmt;
     } else if (rType.includes("order") || rType.includes("deduct") || rType.includes("payment")) {
       balance -= rAmt;
@@ -3674,6 +3684,189 @@ function adminCreditWallet(body) {
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
   var newBalance = _calculateWalletBalance(phone);
   return {success:true, newBalance: Math.round(newBalance)};
+}
+
+// ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────
+/*
+  Archives SK_Orders and SK_Wallet for a given quarter into a new Google
+  Spreadsheet, writes Balance Carry Forward snapshots so wallet balances are
+  preserved, then deletes the archived rows from the main sheet.
+
+  Quarter map:
+    Q1 = Jan–Mar   (archive trigger: April 10)
+    Q2 = Apr–Jun   (archive trigger: July 10)
+    Q3 = Jul–Sep   (archive trigger: October 10)
+    Q4 = Oct–Dec   (archive trigger: January 10 of next year)
+*/
+function archiveQuarter(year, quarter) {
+  var Q = {
+    1: {from: year+"-01-01", to: year+"-03-31", label: "Q1 Jan–Mar"},
+    2: {from: year+"-04-01", to: year+"-06-30", label: "Q2 Apr–Jun"},
+    3: {from: year+"-07-01", to: year+"-09-30", label: "Q3 Jul–Sep"},
+    4: {from: year+"-10-01", to: year+"-12-31", label: "Q4 Oct–Dec"}
+  };
+  var qr = Q[quarter];
+  if (!qr) return {success:false, error:"Invalid quarter — must be 1, 2, 3 or 4"};
+
+  var ss = getSpreadsheet();
+  var fmtDate = function(v) {
+    return v instanceof Date
+      ? Utilities.formatDate(v, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(v || "").trim().slice(0, 10);
+  };
+
+  // ── STEP 1: Create archive spreadsheet ────────────────────────────────────
+  var archiveName = "Svaadh Kitchen Archive — " + qr.label + " " + year;
+  var archiveSS   = SpreadsheetApp.create(archiveName);
+  var log = [];
+
+  // ── STEP 2: Archive SK_Orders ──────────────────────────────────────────────
+  var ordersWs      = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var allOrderData  = ordersWs.getDataRange().getValues();
+  var oHeaders      = allOrderData[0];
+  var oDateIdx      = oHeaders.indexOf("Order_Date");
+
+  // Collect rows that fall in the quarter (track 1-based sheet row numbers)
+  var toArchiveOrders = []; // { sheetRow (1-based), vals }
+  for (var i = 1; i < allOrderData.length; i++) {
+    var d = fmtDate(allOrderData[i][oDateIdx]);
+    if (d >= qr.from && d <= qr.to) {
+      toArchiveOrders.push({sheetRow: i + 1, vals: allOrderData[i]});
+    }
+  }
+
+  if (toArchiveOrders.length > 0) {
+    var archiveOrderSheet = archiveSS.getActiveSheet();
+    archiveOrderSheet.setName("SK_Orders");
+    archiveOrderSheet.getRange(1, 1, 1, oHeaders.length).setValues([oHeaders]);
+    var oData = toArchiveOrders.map(function(r) { return r.vals; });
+    archiveOrderSheet.getRange(2, 1, oData.length, oHeaders.length).setValues(oData);
+    // Verify
+    var oWritten = archiveOrderSheet.getLastRow() - 1;
+    if (oWritten !== toArchiveOrders.length) {
+      return {success:false, error:"Order archive verification failed. Expected "
+        + toArchiveOrders.length + ", got " + oWritten + ". Nothing deleted."};
+    }
+    log.push(toArchiveOrders.length + " orders archived ✓");
+  } else {
+    log.push("No orders found for this quarter.");
+  }
+
+  // ── STEP 3: Archive SK_Wallet ──────────────────────────────────────────────
+  var walletWs     = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  var allWalletData = walletWs.getDataRange().getValues();
+  var wHeaders      = allWalletData[0];
+  var wTsIdx        = wHeaders.indexOf("Timestamp");
+  var wPhoneIdx     = wHeaders.indexOf("Phone");
+  var wNameIdx      = wHeaders.indexOf("Customer_Name");
+
+  var toArchiveWallet = [];
+  for (var j = 1; j < allWalletData.length; j++) {
+    var ts = allWalletData[j][wTsIdx];
+    var wd = fmtDate(ts instanceof Date ? ts : new Date(ts));
+    if (wd >= qr.from && wd <= qr.to) {
+      toArchiveWallet.push({sheetRow: j + 1, vals: allWalletData[j]});
+    }
+  }
+
+  if (toArchiveWallet.length > 0) {
+    var archiveWalletSheet = archiveSS.insertSheet("SK_Wallet");
+    archiveWalletSheet.getRange(1, 1, 1, wHeaders.length).setValues([wHeaders]);
+    var wData = toArchiveWallet.map(function(r) { return r.vals; });
+    archiveWalletSheet.getRange(2, 1, wData.length, wHeaders.length).setValues(wData);
+    var wWritten = archiveWalletSheet.getLastRow() - 1;
+    if (wWritten !== toArchiveWallet.length) {
+      return {success:false, error:"Wallet archive verification failed. Expected "
+        + toArchiveWallet.length + ", got " + wWritten + ". Nothing deleted."};
+    }
+    log.push(toArchiveWallet.length + " wallet transactions archived ✓");
+  } else {
+    log.push("No wallet transactions found for this quarter.");
+  }
+
+  // ── STEP 4: Write Balance Carry Forward snapshots ─────────────────────────
+  // Calculate BEFORE deleting anything — reads full live wallet sheet
+  // Only needed for phones that had activity in this quarter AND have balance > 0
+  var activePhones = {};
+  toArchiveWallet.forEach(function(r) {
+    var ph   = String(r.vals[wPhoneIdx] || "").trim();
+    var name = String(r.vals[wNameIdx]  || "").trim();
+    if (ph) activePhones[ph] = name;
+  });
+
+  var snapshotCount = 0;
+  var snapTime      = new Date();
+  var refId         = "ARCHIVE-Q" + quarter + "-" + year;
+  Object.keys(activePhones).forEach(function(ph) {
+    var balance = _calculateWalletBalance(ph);
+    if (balance > 0) {
+      walletWs.appendRow([ph, activePhones[ph], "Balance Carry Forward",
+                          balance, "TRUE", refId, snapTime]);
+      snapshotCount++;
+    }
+    // balance = 0 → no snapshot needed, no carry-forward required
+  });
+  if (snapshotCount > 0) log.push(snapshotCount + " balance snapshots written ✓");
+
+  // ── STEP 5: Delete archived rows — bottom to top so indices don't shift ───
+  // Wallet rows
+  var wRowNums = toArchiveWallet.map(function(r){return r.sheetRow;})
+                                .sort(function(a,b){return b-a;});
+  wRowNums.forEach(function(rowNum) { walletWs.deleteRow(rowNum); });
+  if (wRowNums.length) log.push(wRowNums.length + " wallet rows deleted from main ✓");
+
+  // Order rows
+  var oRowNums = toArchiveOrders.map(function(r){return r.sheetRow;})
+                                .sort(function(a,b){return b-a;});
+  oRowNums.forEach(function(rowNum) { ordersWs.deleteRow(rowNum); });
+  if (oRowNums.length) log.push(oRowNums.length + " order rows deleted from main ✓");
+
+  return {
+    success:          true,
+    archiveName:      archiveName,
+    archiveUrl:       archiveSS.getUrl(),
+    ordersArchived:   toArchiveOrders.length,
+    walletArchived:   toArchiveWallet.length,
+    snapshots:        snapshotCount,
+    log:              log
+  };
+}
+
+// Called by admin UI — wraps archiveQuarter with PIN check (handled by router)
+function triggerManualArchive(body) {
+  var year    = parseInt(body.year);
+  var quarter = parseInt(body.quarter);
+  if (!year || !quarter) return {success:false, error:"year and quarter required"};
+  return archiveQuarter(year, quarter);
+}
+
+// ── Time-based trigger: auto-archive previous quarter on the 10th ─────────
+// Run setupQuarterlyArchiveTrigger() once from Apps Script editor to register.
+function setupQuarterlyArchiveTrigger() {
+  // Remove any existing trigger for runScheduledArchive
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "runScheduledArchive") ScriptApp.deleteTrigger(t);
+  });
+  // Fire on the 10th of every month at 2 AM IST (Apps Script uses server time ≈ UTC)
+  ScriptApp.newTrigger("runScheduledArchive")
+    .timeBased()
+    .onMonthDay(10)
+    .atHour(21)   // 21:00 UTC = 02:30 IST next day ≈ 2 AM IST on the 10th
+    .create();
+  return "Quarterly archive trigger set — fires on 10th of Apr, Jul, Oct, Jan.";
+}
+
+function runScheduledArchive() {
+  // Determine which quarter just ended based on today's month
+  var now     = new Date();
+  var month   = now.getMonth() + 1; // 1–12
+  var year    = now.getFullYear();
+  var qMap    = {4:1, 7:2, 10:3, 1:4}; // trigger month → quarter to archive
+  var qNum    = qMap[month];
+  if (!qNum) { Logger.log("runScheduledArchive: not an archive month (" + month + "), skipping."); return; }
+  var archiveYear = (month === 1) ? year - 1 : year; // Jan trigger → archive Q4 of last year
+  var result  = archiveQuarter(archiveYear, qNum);
+  Logger.log("Archive result: " + JSON.stringify(result));
 }
 
 // ── CHURN REPORT ──────────────────────────────────────────────────────────────

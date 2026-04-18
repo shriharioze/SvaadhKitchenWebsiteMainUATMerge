@@ -824,6 +824,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
+      <button class="topbar-btn" id="navArchive" onclick="switchPage('archive')">🗄️ Archive</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
@@ -1166,6 +1167,67 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
         <div id="analyticsContent"></div>
       </div><!-- /pageAnalytics -->
+
+      <!-- ════ PAGE: ARCHIVE ════ -->
+      <div class="page" id="pageArchive">
+        <div class="page-header">
+          <div class="page-title">Quarterly Archive <small>Safely archive old orders &amp; wallet data to keep the system fast</small></div>
+        </div>
+        <div style="max-width:560px;margin:0 auto;">
+
+          <!-- Info card -->
+          <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:14px;padding:16px 18px;margin-bottom:18px;font-size:.82rem;color:#0c4a6e;line-height:1.6;">
+            <div style="font-weight:700;font-size:.88rem;margin-bottom:6px;">📦 How it works</div>
+            <ul style="margin:0;padding-left:18px;">
+              <li>Creates a new Google Spreadsheet: <em>Svaadh Kitchen Archive — Q[N] [Year]</em></li>
+              <li>Copies all <strong>SK_Orders</strong> and <strong>SK_Wallet</strong> rows for that quarter</li>
+              <li>Writes <strong>Balance Carry Forward</strong> snapshots so active wallet balances are preserved</li>
+              <li>Deletes the archived rows from the live sheet — keeping it fast and lean</li>
+            </ul>
+            <div style="margin-top:8px;color:#b45309;font-weight:600;">⚠️ This action cannot be undone. Verify your selection before running.</div>
+          </div>
+
+          <!-- Manual archive trigger -->
+          <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+            <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:14px;">🗄️ MANUAL ARCHIVE</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.72rem;font-weight:600;color:#475569;">Year</label>
+                <input type="number" id="archiveYear" min="2024" max="2099" step="1"
+                  style="width:90px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.72rem;font-weight:600;color:#475569;">Quarter</label>
+                <select id="archiveQuarter"
+                  style="padding:8px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="1">Q1 — Jan · Feb · Mar</option>
+                  <option value="2">Q2 — Apr · May · Jun</option>
+                  <option value="3">Q3 — Jul · Aug · Sep</option>
+                  <option value="4">Q4 — Oct · Nov · Dec</option>
+                </select>
+              </div>
+              <button class="btn-primary" onclick="runManualArchive()" style="height:38px;padding:0 18px;">
+                🗄️ Run Archive
+              </button>
+            </div>
+            <div id="archiveStatus"></div>
+          </div>
+
+          <!-- Auto-trigger setup -->
+          <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;">
+            <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">⏰ AUTO-ARCHIVE TRIGGER</div>
+            <div style="font-size:.82rem;color:#475569;margin-bottom:12px;line-height:1.5;">
+              Registers a time-based trigger to run automatically on the <strong>10th of each quarter-end month</strong>
+              (Apr 10, Jul 10, Oct 10, Jan 10). Run this once after deploying a new version.
+            </div>
+            <button class="btn-secondary" onclick="setupAutoTrigger()" style="font-size:.82rem;">
+              ⚙️ Setup Auto-Trigger (run once)
+            </button>
+            <div id="triggerStatus" style="margin-top:8px;"></div>
+          </div>
+
+        </div>
+      </div><!-- /pageArchive -->
 
       <!-- ════ PAGE: WALLET BILLING ════ -->
       <div class="page" id="pageTenday">
@@ -2306,6 +2368,7 @@ async function switchPage(page) {
   document.getElementById("pageOrders").classList.toggle("on", page==="orders");
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
+  document.getElementById("pageArchive").classList.toggle("on", page==="archive");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
@@ -2318,6 +2381,7 @@ async function switchPage(page) {
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
+  document.getElementById("navArchive").classList.toggle("active", page==="archive");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
@@ -2360,6 +2424,7 @@ async function switchPage(page) {
     const at = document.getElementById("analyticsTo");
     if (!af.value) { const ist=getIST(); analyticsSetRange(29); return; }
   }
+  if (page === "archive") { _initArchivePage(); }
   if (page === "tenday") { tendayAutoSelect(); }
   if (page === "payments") {
     const pp = document.getElementById("payDate");
@@ -5748,6 +5813,72 @@ function toggleManualBillingCycle() {
       note.textContent = '(UPI)';
       note.style.color = 'var(--muted)';
     }
+  }
+}
+
+// ── ARCHIVE PANEL ──────────────────────────────────────────────────────────
+function _initArchivePage() {
+  const now = new Date();
+  document.getElementById("archiveYear").value = now.getFullYear();
+  // Default to previous completed quarter
+  const q = Math.floor(now.getMonth() / 3); // 0-based current quarter
+  const prevQ = q === 0 ? 4 : q;
+  document.getElementById("archiveQuarter").value = String(prevQ);
+}
+
+async function runManualArchive() {
+  const year    = parseInt(document.getElementById("archiveYear").value);
+  const quarter = parseInt(document.getElementById("archiveQuarter").value);
+  const statusEl = document.getElementById("archiveStatus");
+
+  if (!year || !quarter || quarter < 1 || quarter > 4) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Please select a valid year and quarter.</div>`;
+    return;
+  }
+
+  const qLabels = { 1:"Jan–Mar", 2:"Apr–Jun", 3:"Jul–Sep", 4:"Oct–Dec" };
+  const confirmMsg = `Archive Q${quarter} ${year} (${qLabels[quarter]})?\n\nThis will:\n• Copy SK_Orders + SK_Wallet rows to a new file\n• Write Balance Carry Forward snapshots\n• DELETE archived rows from the live sheet\n\nThis CANNOT be undone. Proceed?`;
+  if (!confirm(confirmMsg)) return;
+
+  statusEl.innerHTML = `<div style="color:#0369a1;font-size:.82rem;">⏳ Archiving… this may take 30–60 seconds. Please wait.</div>`;
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"triggerManualArchive", year, quarter, pin: S.pin }) }).then(r=>r.json());
+    if (res.error) {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error}</div>`;
+      return;
+    }
+    if (!res.success) {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error || "Archive failed"}</div>`;
+      return;
+    }
+    statusEl.innerHTML = `
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#14532d;line-height:1.7;">
+        <div style="font-weight:700;margin-bottom:4px;">✅ Archive complete!</div>
+        <div>📄 <strong>${res.archiveName}</strong></div>
+        ${res.archiveUrl ? `<div>🔗 <a href="${res.archiveUrl}" target="_blank" style="color:#0369a1;">Open archive file</a></div>` : ""}
+        <div>📦 Orders archived: <strong>${res.ordersArchived}</strong></div>
+        <div>💳 Wallet txns archived: <strong>${res.walletArchived}</strong></div>
+        <div>🏦 Balance snapshots: <strong>${res.snapshots}</strong></div>
+        ${res.log && res.log.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#475569;">View log (${res.log.length} steps)</summary><pre style="font-size:.72rem;margin-top:4px;white-space:pre-wrap;">${res.log.join("\n")}</pre></details>` : ""}
+      </div>`;
+  } catch(e) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
+  }
+}
+
+async function setupAutoTrigger() {
+  const statusEl = document.getElementById("triggerStatus");
+  statusEl.innerHTML = `<div style="color:#0369a1;font-size:.82rem;">⏳ Setting up trigger…</div>`;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"setupQuarterlyArchiveTrigger", pin: S.pin }) }).then(r=>r.json());
+    if (res && res.success) {
+      statusEl.innerHTML = `<div style="color:#166534;font-size:.82rem;">✅ Trigger registered! Auto-archive will run on Apr 10, Jul 10, Oct 10, and Jan 10 each year.</div>`;
+    } else {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${(res && res.error) || "Failed to set up trigger"}</div>`;
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
   }
 }
 </script>
