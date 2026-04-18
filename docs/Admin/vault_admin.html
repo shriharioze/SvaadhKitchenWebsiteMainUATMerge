@@ -1191,21 +1191,49 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="page-header">
           <div class="page-title">Order History <small>Browse all orders by date range</small></div>
         </div>
-        <div class="filter-bar">
+
+        <!-- Quick range chips -->
+        <div class="range-chips" style="margin-bottom:10px;">
+          <button class="chip" onclick="histQuickRange('today')">Today</button>
+          <button class="chip" onclick="histQuickRange('week')">This Week</button>
+          <button class="chip" onclick="histQuickRange('15days')">Last 15 Days</button>
+          <button class="chip" onclick="histQuickRange('month')">This Month</button>
+          <button class="chip" onclick="histQuickRange('lastmonth')">Last Month</button>
+          <button class="chip" onclick="histQuickRange('year')">This Year</button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;">
           <input type="date" id="histFrom" title="From date">
           <span style="color:var(--muted);font-size:.82rem;">to</span>
           <input type="date" id="histTo" title="To date">
-          <select id="histMeal">
+
+          <select id="histMeal" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
             <option value="">All Meals</option>
             <option>Breakfast</option><option>Lunch</option><option>Dinner</option>
           </select>
-          <button class="btn-primary" onclick="loadHistory()">Load</button>
+
+          <select id="histPayStatus" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Statuses</option>
+            <option value="Paid">✓ Paid</option>
+            <option value="Wallet Paid">💳 Wallet Paid</option>
+            <option value="Pending">⏳ Pending</option>
+            <option value="Cancelled">✕ Cancelled</option>
+          </select>
+
+          <select id="histSortSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;" onchange="histApplySortSel()">
+            <option value="date_asc">Date ↑</option>
+            <option value="date_desc">Date ↓</option>
+            <option value="amount_desc">Amount ↓</option>
+            <option value="amount_asc">Amount ↑</option>
+            <option value="name_asc">Name A–Z</option>
+            <option value="meal_asc">Meal</option>
+            <option value="status_asc">Status</option>
+          </select>
+
+          <button class="btn-primary" onclick="loadHistory()">🔍 Load</button>
         </div>
-        <div class="range-chips">
-          <button class="chip" onclick="histSetRange(0)">Today</button>
-          <button class="chip" onclick="histSetRange(6)">Last 7 days</button>
-          <button class="chip" onclick="histSetRange(29)">Last 30 days</button>
-        </div>
+
         <div id="histStats"></div>
         <div id="histTableControls" style="display:none;margin-bottom:12px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -3574,6 +3602,24 @@ function tendayShareWhatsApp() {
 // ════════════════════════════════════════════════════════
 // HISTORY PAGE
 // ════════════════════════════════════════════════════════
+function histQuickRange(mode) {
+  const now = getIST();
+  const y = now.getFullYear(), mo = now.getMonth();
+  let from, to = now;
+  if      (mode === "today")     { from = now; }
+  else if (mode === "week")      { const dow = now.getDay()||7; from = new Date(now); from.setDate(now.getDate()-(dow-1)); }
+  else if (mode === "15days")    { from = new Date(now); from.setDate(now.getDate()-14); }
+  else if (mode === "month")     { from = new Date(y, mo, 1); }
+  else if (mode === "lastmonth") { from = new Date(y, mo-1, 1); to = new Date(y, mo, 0); }
+  else if (mode === "year")      { from = new Date(y, 0, 1); }
+  document.getElementById("histFrom").value = toISO(from);
+  document.getElementById("histTo").value   = toISO(to);
+  // Highlight active chip
+  document.querySelectorAll("#pageHistory .range-chips .chip").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+  loadHistory();
+}
+// Keep legacy shims in case called elsewhere
 function histSetRange(daysBack) {
   const today = getIST();
   const from  = new Date(today); from.setDate(from.getDate() - daysBack);
@@ -3591,6 +3637,12 @@ function histSetPeriod(period) {
   document.getElementById("histFrom").value = toISO(from);
   document.getElementById("histTo").value   = toISO(to);
   loadHistory();
+}
+function histApplySortSel() {
+  const val = document.getElementById("histSortSel").value;
+  const [col, dir] = val.split("_");
+  _histSort = { col: col === "amount" ? "amount" : col === "name" ? "name" : col === "meal" ? "meal" : col === "status" ? "status" : "date", dir: dir || "asc" };
+  renderHistTable();
 }
 let _histAllOrders = [];
 let _histSort = {col:'date', dir:'asc'};
@@ -3610,9 +3662,16 @@ async function loadHistory() {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderHistory&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    // Pre-apply meal filter from dropdown (still reduces dataset)
-    const meal = document.getElementById("histMeal").value;
-    _histAllOrders = meal ? data.orders.filter(o=>o.meal===meal) : data.orders;
+    // Pre-apply meal + status filters from dropdowns
+    const meal      = document.getElementById("histMeal").value;
+    const payStatus = document.getElementById("histPayStatus")?.value || "";
+    let filtered = data.orders;
+    if (meal)      filtered = filtered.filter(o => o.meal === meal);
+    if (payStatus) filtered = filtered.filter(o => o.status === payStatus);
+    _histAllOrders = filtered;
+    // Sync sort dropdown
+    const sortSel = document.getElementById("histSortSel");
+    if (sortSel) { sortSel.value = "date_asc"; }
     _histFilter = "all";
     _histSort   = {col:"date", dir:"asc"};
     // Reset status chips
@@ -3646,6 +3705,11 @@ function setHistFilter(f) {
 function histSortBy(col) {
   if (_histSort.col === col) _histSort.dir = _histSort.dir==="asc" ? "desc" : "asc";
   else { _histSort.col = col; _histSort.dir = "asc"; }
+  // Sync dropdown
+  const sel = document.getElementById("histSortSel");
+  const key = col === "amount" ? "amount" : col;
+  const opt = `${key}_${_histSort.dir}`;
+  if (sel && [...sel.options].some(o => o.value === opt)) sel.value = opt;
   renderHistTable();
 }
 
