@@ -4760,12 +4760,21 @@ function generateBillPDF(cust) {
       <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">₹${o.net}</td>
     </tr>`).join('');
 
+  // Build filename: CustomerName_DD-Mon_to_DD-Mon_SvaadhBill
+  const _firstName = (cust.name || "Customer").trim().split(" ")[0];
+  const _sortedOrders = [...orders];
+  const _fmtFN = d => { if (!d) return ''; const [y,m,day]=d.split('-'); const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${parseInt(day)}-${mo[parseInt(m)-1]}`; };
+  const _fnFrom = _sortedOrders.length ? _fmtFN(_sortedOrders[0].date) : '';
+  const _fnTo   = _sortedOrders.length > 1 ? _fmtFN(_sortedOrders[_sortedOrders.length-1].date) : '';
+  const _period = _fnTo && _fnTo !== _fnFrom ? `${_fnFrom}_to_${_fnTo}` : _fnFrom;
+  const _pdfTitle = `${_firstName}_${_period}_SvaadhBill`;
+
   const billHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Svaadh Kitchen — Bill</title>
+  <title>${_pdfTitle}</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
