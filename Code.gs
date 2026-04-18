@@ -3554,6 +3554,58 @@ function getAnalytics(p) {
     var d = fmtDate(r.Order_Date);
     return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
   });
+
+  // ── Option B: Exact Small Order Fee backfill ──────────────────────────────
+  // Pre-pass 1: build VIP set from profiles (Fee_Exempt = Yes)
+  var profWs   = getOrCreateTab(ss, TAB_PROFILES, []);
+  var profRows = getAllRows(profWs);
+  var vipSet   = {};
+  profRows.forEach(function(pr) {
+    if (pr.Fee_Exempt === "Yes" || pr.Fee_Exempt === true) {
+      vipSet[String(pr.Phone||"").trim()] = true;
+    }
+  });
+
+  // Pre-pass 2: for every phone+date combo, sum food subtotals & count distinct meals
+  // This lets us know if the combined day total reached the free-delivery threshold,
+  // which also waives the small order fee.
+  var dayTotals = {}; // key = phone+"_"+date  →  { foodTotal, mealCount }
+  rows.forEach(function(r) {
+    var ph   = String(r.Phone||"").trim();
+    var d    = fmtDate(r.Order_Date);
+    var food = Number(r.Food_Subtotal)||0;
+    var key  = ph + "_" + d;
+    if (!dayTotals[key]) dayTotals[key] = { foodTotal:0, meals:{} };
+    dayTotals[key].foodTotal += food;
+    dayTotals[key].meals[String(r.Meal_Type||"")] = true;
+  });
+
+  // Helper: calculate small fee for a row using exact rules
+  function calcSmallFee(r) {
+    var stored = r.Small_Order_Fee;
+    // If the column exists and has a numeric value, trust it
+    if (stored !== undefined && stored !== null && stored !== "" && !isNaN(Number(stored))) {
+      return Number(stored);
+    }
+    // Backfill for old rows
+    var meal = String(r.Meal_Type||"");
+    if (meal !== "Lunch" && meal !== "Dinner") return 0; // Breakfast: never charged
+    var food = Number(r.Food_Subtotal)||0;
+    if (food <= 0 || food >= 50) return 0;              // Only charged when sub < ₹50
+    var area = String(r.Area||"").trim();
+    if (area === "Self Pickup") return 0;                // Pickup: waived
+    var ph  = String(r.Phone||"").trim();
+    if (vipSet[ph]) return 0;                            // VIP: waived
+    // Check if combined day food total crossed free-delivery threshold
+    var d   = fmtDate(r.Order_Date);
+    var key = ph + "_" + d;
+    var dt  = dayTotals[key] || {foodTotal:0, meals:{}};
+    var mealCount    = Object.keys(dt.meals).length;
+    var threshold    = mealCount <= 1 ? 100 : 150;
+    if (dt.foodTotal >= threshold) return 0;             // Day crossed threshold: waived
+    return 10;
+  }
+  // ── End backfill helper ───────────────────────────────────────────────────
   var LUNCH_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
     "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
   var COL_DISP = {"Chapati":"Chapati","Without_Oil_Chapati":"WO Chapati","Phulka":"Phulka","Ghee_Phulka":"Ghee Phulka",
@@ -3571,8 +3623,8 @@ function getAnalytics(p) {
     // Backfill surcharge for old rows where Inflation_Surcharge column was blank
     var surchargeRaw=Number(r.Inflation_Surcharge);
     var surcharge = (!isNaN(surchargeRaw) && surchargeRaw > 0) ? surchargeRaw : (food > 0 ? Math.ceil(food/20) : 0);
-    // Small_Order_Fee added later — use if present, else 0 (column may not exist on old rows)
-    var smallFee=Number(r.Small_Order_Fee)||0;
+    // Small_Order_Fee: exact backfill using Option B (checks VIP, pickup, day threshold)
+    var smallFee = calcSmallFee(r);
     var payStatus = String(r.Payment_Status || "").trim();
     totalRev+=net;
     totalDelivery+=delivery; totalSurcharge+=surcharge; totalSmallFee+=smallFee;
