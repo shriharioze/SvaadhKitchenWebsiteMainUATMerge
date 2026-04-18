@@ -466,6 +466,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(rejectUPIPayment(body));
     }
+    if (action === "adminCreditWallet") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(adminCreditWallet(body));
+    }
     if (action === "rejectWalletRecharge") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(rejectWalletRecharge(body));
@@ -3563,7 +3567,11 @@ function getAnalytics(p) {
   rows.forEach(function(r) {
     var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
     var delivery=Number(r.Delivery_Charge)||0;
-    var surcharge=Number(r.Inflation_Surcharge)||0;
+    var food=Number(r.Food_Subtotal)||0;
+    // Backfill surcharge for old rows where Inflation_Surcharge column was blank
+    var surchargeRaw=Number(r.Inflation_Surcharge);
+    var surcharge = (!isNaN(surchargeRaw) && surchargeRaw > 0) ? surchargeRaw : (food > 0 ? Math.ceil(food/20) : 0);
+    // Small_Order_Fee added later — use if present, else 0 (column may not exist on old rows)
     var smallFee=Number(r.Small_Order_Fee)||0;
     var payStatus = String(r.Payment_Status || "").trim();
     totalRev+=net;
