@@ -265,6 +265,7 @@ function doGet(e) {
     }
     if (action === "getPackagingExpenses") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      if (p.from && p.to) return jsonRes(getPackagingExpensesRange(p.from, p.to));
       return jsonRes(getPackagingExpenses(p.date));
     }
     if (action === "getOrderHistory") {
@@ -2704,6 +2705,96 @@ function getPackagingExpenses(date) {
   Object.keys(mealCounts).forEach(function(m) { if (mealCounts[m] > 0) mealsOut[m] = mealCounts[m]; });
 
   return {date: date, orderCount: dayRows.length, meals: mealsOut, items: items, total: total};
+}
+
+// ── PACKAGING EXPENSES — RANGE ───────────────────────────────
+function getPackagingExpensesRange(from, to) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+
+  var rangeRows = rows.filter(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    return d >= from && d <= to && !_isOrderCancelled(r.Payment_Status);
+  });
+
+  // Group by date
+  var byDate = {};
+  rangeRows.forEach(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  var PKG_COSTS = PKG_UNIT_COSTS;
+  var itemOrder = ["Breakfast Box","Delivery Bag","Label / Sticker","Bread Packet",
+                   "Sabji Container (Mini)","Sabji Container (Full)",
+                   "Dal Container","Rice Container","Salad Container","Curd Container"];
+
+  function calcDay(dateStr, dayRows) {
+    var counts = {}, mealCounts = {Breakfast:0, Lunch:0, Dinner:0};
+    function add(key, qty) { if (qty > 0) counts[key] = (counts[key]||0) + qty; }
+    dayRows.forEach(function(r) {
+      var meal = String(r.Meal_Type || "");
+      if (mealCounts[meal] !== undefined) mealCounts[meal]++;
+      add("Label / Sticker", 1);
+      if (meal === "Breakfast") {
+        add("Breakfast Box", 1);
+        add("Curd Container", Number(r.Curd) || 0);
+      } else {
+        add("Delivery Bag", 1);
+        var breadCols = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+        if (breadCols.some(function(c){ return (Number(r[c])||0)>0; })) add("Bread Packet", 1);
+        add("Sabji Container (Mini)", (Number(r.Dry_Sabji_Mini)||0)+(Number(r.Curry_Sabji_Mini)||0));
+        add("Sabji Container (Full)", (Number(r.Dry_Sabji_Full)||0)+(Number(r.Curry_Sabji_Full)||0));
+        add("Dal Container",  Number(r.Dal)||0);
+        add("Rice Container", Number(r.Rice)||0);
+        add("Salad Container",Number(r.Salad)||0);
+        add("Curd Container", Number(r.Curd)||0);
+      }
+    });
+    var items = [], total = 0;
+    itemOrder.forEach(function(key) {
+      var qty = counts[key]||0; if (!qty) return;
+      var unitCost = PKG_COSTS[key]||0, t = qty*unitCost;
+      items.push({name:key, qty:qty, unitCost:unitCost, total:t});
+      total += t;
+    });
+    var mealsOut = {};
+    Object.keys(mealCounts).forEach(function(m){ if(mealCounts[m]>0) mealsOut[m]=mealCounts[m]; });
+    return {date:dateStr, orderCount:dayRows.length, meals:mealsOut, items:items, total:total};
+  }
+
+  // Build per-day results
+  var days = Object.keys(byDate).sort().map(function(d){ return calcDay(d, byDate[d]); });
+
+  // Aggregate totals
+  var aggCounts = {}, aggMeals = {Breakfast:0,Lunch:0,Dinner:0}, aggTotal = 0, aggOrders = 0;
+  days.forEach(function(day) {
+    aggOrders += day.orderCount;
+    aggTotal  += day.total;
+    Object.keys(day.meals).forEach(function(m){ aggMeals[m]=(aggMeals[m]||0)+day.meals[m]; });
+    day.items.forEach(function(it){ aggCounts[it.name]=(aggCounts[it.name]||0)+it.qty; });
+  });
+  var aggItems = [];
+  itemOrder.forEach(function(key) {
+    var qty = aggCounts[key]||0; if (!qty) return;
+    var unitCost = PKG_COSTS[key]||0, t=qty*unitCost;
+    aggItems.push({name:key, qty:qty, unitCost:unitCost, total:t});
+  });
+
+  return {
+    from: from, to: to,
+    orderCount: aggOrders,
+    total: aggTotal,
+    meals: aggMeals,
+    items: aggItems,
+    days: days
+  };
 }
 
 // ── LABEL DRIVE SAVE ─────────────────────────────────────────

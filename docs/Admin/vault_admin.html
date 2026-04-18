@@ -1096,13 +1096,48 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <div class="page" id="pagePackaging">
         <div class="pkg-header">
           <h2 style="margin:0;">📦 Packaging Expenses</h2>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="date" id="pkgDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
-            <button class="save-hero-btn" onclick="loadPackaging()">🔍 Load</button>
-          </div>
         </div>
+
+        <!-- Filter chips -->
+        <div class="range-chips" style="margin-bottom:10px;">
+          <button class="chip" onclick="pkgSetRange('week')">This Week</button>
+          <button class="chip" onclick="pkgSetRange('15days')">Last 15 Days</button>
+          <button class="chip" onclick="pkgSetRange('month')">This Month</button>
+          <button class="chip" onclick="pkgSetRange('lastmonth')">Last Month</button>
+          <button class="chip" onclick="pkgSetRange('year')">This Year</button>
+          <button class="chip" onclick="pkgSetRange('day')">Single Day</button>
+        </div>
+
+        <!-- Date inputs -->
+        <div class="filter-bar" style="margin-bottom:14px;">
+          <div id="pkgSingleWrap" style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--muted);font-weight:600;">Date</label>
+            <input type="date" id="pkgDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+          </div>
+          <div id="pkgRangeWrap" style="display:none;align-items:center;gap:8px;">
+            <input type="date" id="pkgFrom" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <span style="color:var(--muted);font-size:.82rem;">to</span>
+            <input type="date" id="pkgTo" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+          </div>
+
+          <!-- Sort -->
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <label style="font-size:0.78rem;color:var(--muted);font-weight:600;">Sort</label>
+            <select id="pkgSort" onchange="pkgApplySort()" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+              <option value="date_asc">Date ↑</option>
+              <option value="date_desc">Date ↓</option>
+              <option value="cost_desc">Cost ↓</option>
+              <option value="cost_asc">Cost ↑</option>
+              <option value="orders_desc">Orders ↓</option>
+              <option value="orders_asc">Orders ↑</option>
+            </select>
+          </div>
+
+          <button class="save-hero-btn" onclick="loadPackaging()">🔍 Load</button>
+        </div>
+
         <div id="packagingContent">
-          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load</div>
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a period and click Load</div>
         </div>
       </div><!-- /pagePackaging -->
 
@@ -2229,8 +2264,19 @@ async function switchPage(page) {
     loadOrderSummary();
   }
   if (page === "packaging") {
-    const picker = document.getElementById("pkgDatePicker");
-    if (!picker.value) { picker.value = toISO(getIST()); }
+    // Default to This Month on first open
+    if (!document.getElementById("pkgFrom").value) {
+      const fakeEvent = { target: document.querySelector("#pagePackaging .chip:nth-child(3)") };
+      const origEvent = window.event;
+      // Manually set month range without event dependency
+      const now = new Date();
+      _pkgMode = "month";
+      document.getElementById("pkgSingleWrap").style.display = "none";
+      document.getElementById("pkgRangeWrap").style.display  = "flex";
+      document.getElementById("pkgFrom").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+      document.getElementById("pkgTo").value   = toISO(getIST());
+      document.querySelectorAll("#pagePackaging .chip").forEach((c,i)=>c.classList.toggle("active", i===2));
+    }
     loadPackaging();
   }
 
@@ -2322,68 +2368,202 @@ function toast(msg, ms=2500) {
 // ════════════════════════════════════════════════════════
 // PACKAGING EXPENSES PAGE
 // ════════════════════════════════════════════════════════
+// ── PACKAGING: helpers ──────────────────────────────────────
+let _pkgMode = "day";   // "day" | "range"
+let _pkgData = null;    // last fetched data (for re-sort)
+
+function pkgISO(d) { return d.toISOString().slice(0,10); }
+function pkgAddDays(d, n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+
+function pkgSetRange(mode) {
+  _pkgMode = mode;
+  const now = new Date();
+  const toISO = d => pkgISO(d);
+  const single = document.getElementById("pkgSingleWrap");
+  const range  = document.getElementById("pkgRangeWrap");
+  const from   = document.getElementById("pkgFrom");
+  const to     = document.getElementById("pkgTo");
+  const date   = document.getElementById("pkgDatePicker");
+
+  document.querySelectorAll("#pagePackaging .chip").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+
+  if (mode === "day") {
+    single.style.display = "flex"; range.style.display = "none";
+    date.value = toISO(now);
+  } else {
+    single.style.display = "none"; range.style.display = "flex";
+    const today = now;
+    if (mode === "week") {
+      const dow = today.getDay() || 7;
+      from.value = toISO(pkgAddDays(today, 1-dow));
+      to.value   = toISO(today);
+    } else if (mode === "15days") {
+      from.value = toISO(pkgAddDays(today, -14));
+      to.value   = toISO(today);
+    } else if (mode === "month") {
+      from.value = toISO(new Date(today.getFullYear(), today.getMonth(), 1));
+      to.value   = toISO(today);
+    } else if (mode === "lastmonth") {
+      const lm = new Date(today.getFullYear(), today.getMonth()-1, 1);
+      from.value = toISO(lm);
+      to.value   = toISO(new Date(today.getFullYear(), today.getMonth(), 0));
+    } else if (mode === "year") {
+      from.value = toISO(new Date(today.getFullYear(), 0, 1));
+      to.value   = toISO(today);
+    }
+  }
+}
+
 async function loadPackaging() {
-  const date = document.getElementById("pkgDatePicker").value;
-  if (!date) { sAlert("Please pick a date first."); return; }
   const el = document.getElementById("packagingContent");
   el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getPackagingExpenses&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    let url;
+    if (_pkgMode === "day") {
+      const date = document.getElementById("pkgDatePicker").value;
+      if (!date) { sAlert("Please pick a date first."); el.innerHTML=""; return; }
+      url = `${APPS_SCRIPT_URL}?action=getPackagingExpenses&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`;
+    } else {
+      const from = document.getElementById("pkgFrom").value;
+      const to   = document.getElementById("pkgTo").value;
+      if (!from || !to) { sAlert("Please select both From and To dates."); el.innerHTML=""; return; }
+      url = `${APPS_SCRIPT_URL}?action=getPackagingExpenses&from=${from}&to=${to}&pin=${S.sessionPin}&_t=${Date.now()}`;
+    }
+    const res  = await fetch(url);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    el.innerHTML = renderPackaging(data);
+    _pkgData = data;
+    el.innerHTML = _pkgMode === "day" ? renderPackagingDay(data) : renderPackagingRange(data);
   } catch(e) {
     el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${e.message}</p>`;
   }
 }
 
-function renderPackaging(data) {
+function pkgApplySort() {
+  if (!_pkgData || _pkgMode === "day") return;
+  document.getElementById("packagingContent").innerHTML = renderPackagingRange(_pkgData);
+}
+
+// ── PACKAGING: single day ────────────────────────────────────
+function renderPackagingDay(data) {
   const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
   const fmt = v => `₹${Number(v).toFixed(2)}`;
 
-  if (!data.orderCount) {
+  if (!data.orderCount)
     return `<div style="text-align:center;padding:40px;color:#aaa;">😴 No orders for ${fmtDate(data.date)}</div>`;
-  }
 
-  const mealMeta = data.meals || {};
-  let html = `
+  const m = data.meals || {};
+  return `
     <div class="pkg-meta">
       <span>📅 ${fmtDate(data.date)}</span>
       <span>📦 ${data.orderCount} orders total</span>
-      ${mealMeta.Breakfast ? `<span>🌅 Breakfast: ${mealMeta.Breakfast}</span>` : ""}
-      ${mealMeta.Lunch     ? `<span>☀️ Lunch: ${mealMeta.Lunch}</span>` : ""}
-      ${mealMeta.Dinner    ? `<span>🌙 Dinner: ${mealMeta.Dinner}</span>` : ""}
+      ${m.Breakfast ? `<span>🌅 Breakfast: ${m.Breakfast}</span>` : ""}
+      ${m.Lunch     ? `<span>☀️ Lunch: ${m.Lunch}</span>`         : ""}
+      ${m.Dinner    ? `<span>🌙 Dinner: ${m.Dinner}</span>`       : ""}
     </div>
     <table class="pkg-table">
-      <thead>
-        <tr>
-          <th>Packaging Item</th>
-          <th>Units Used</th>
-          <th>Unit Cost</th>
-          <th>Total Cost</th>
+      <thead><tr><th>Packaging Item</th><th>Units</th><th>Unit Cost</th><th>Total</th></tr></thead>
+      <tbody>
+        ${data.items.map(it => `<tr>
+          <td>${it.name}</td>
+          <td style="text-align:right;">${it.qty}</td>
+          <td style="text-align:right;">${fmt(it.unitCost)}</td>
+          <td style="text-align:right;">${fmt(it.total)}</td>
+        </tr>`).join("")}
+        <tr style="font-weight:700;background:#fdf0ee;">
+          <td colspan="3" style="text-align:right;">Grand Total</td>
+          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
         </tr>
-      </thead>
-      <tbody>`;
+      </tbody>
+    </table>
+    <div class="pkg-total-card">
+      <div><div class="label">📦 Total Packaging Cost</div>
+        <div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${fmtDate(data.date)} · ${data.orderCount} orders</div>
+      </div>
+      <div class="value">${fmt(data.total)}</div>
+    </div>`;
+}
 
-  data.items.forEach(item => {
-    html += `<tr>
-      <td>${item.name}</td>
-      <td style="text-align:right;">${item.qty}</td>
-      <td style="text-align:right;">${fmt(item.unitCost)}</td>
-      <td style="text-align:right;">${fmt(item.total)}</td>
-    </tr>`;
-  });
+// ── PACKAGING: range ─────────────────────────────────────────
+function renderPackagingRange(data) {
+  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmt = v => `₹${Number(v).toFixed(2)}`;
+  const m = data.meals || {};
 
-  html += `<tr>
-    <td colspan="3" style="text-align:right;font-weight:700;">Grand Total</td>
-    <td style="text-align:right;font-weight:700;color:#c0392b;">${fmt(data.total)}</td>
-  </tr>`;
-  html += `</tbody></table>`;
+  // Summary stat cards
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#c0392b;">${fmt(data.total)}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Total Cost</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#2980b9;">${data.orderCount}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Total Orders</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#27ae60;">${data.days.length}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Active Days</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#8e44ad;">${data.days.length ? fmt(data.total/data.days.length) : '₹0'}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Avg / Day</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      ${m.Breakfast ? `<div style="background:#fff8ec;border:1px solid #fde8c8;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">🌅 Breakfast: <b>${m.Breakfast}</b> orders</div>` : ""}
+      ${m.Lunch     ? `<div style="background:#f0f9f0;border:1px solid #c8ecc8;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">☀️ Lunch: <b>${m.Lunch}</b> orders</div>` : ""}
+      ${m.Dinner    ? `<div style="background:#f0f0ff;border:1px solid #d0c8f0;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">🌙 Dinner: <b>${m.Dinner}</b> orders</div>` : ""}
+    </div>`;
 
-  html += `<div class="pkg-total-card">
-    <div><div class="label">📦 Total Packaging Cost</div><div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${fmtDate(data.date)} · ${data.orderCount} orders</div></div>
-    <div class="value">${fmt(data.total)}</div>
-  </div>`;
+  // Aggregated items table
+  html += `
+    <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Aggregated Usage — ${fmtDate(data.from)} to ${fmtDate(data.to)}</div>
+    <table class="pkg-table" style="margin-bottom:20px;">
+      <thead><tr><th>Packaging Item</th><th>Total Units</th><th>Unit Cost</th><th>Total Cost</th><th>% of Total</th></tr></thead>
+      <tbody>
+        ${data.items.map(it => `<tr>
+          <td>${it.name}</td>
+          <td style="text-align:right;">${it.qty}</td>
+          <td style="text-align:right;">${fmt(it.unitCost)}</td>
+          <td style="text-align:right;">${fmt(it.total)}</td>
+          <td style="text-align:right;">${data.total ? (it.total/data.total*100).toFixed(1)+'%' : '—'}</td>
+        </tr>`).join("")}
+        <tr style="font-weight:700;background:#fdf0ee;">
+          <td colspan="3" style="text-align:right;">Grand Total</td>
+          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
+          <td style="text-align:right;">100%</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  // Per-day breakdown — sorted
+  const sort = document.getElementById("pkgSort")?.value || "date_asc";
+  let days = [...data.days];
+  if      (sort === "date_asc")    days.sort((a,b) => a.date.localeCompare(b.date));
+  else if (sort === "date_desc")   days.sort((a,b) => b.date.localeCompare(a.date));
+  else if (sort === "cost_desc")   days.sort((a,b) => b.total - a.total);
+  else if (sort === "cost_asc")    days.sort((a,b) => a.total - b.total);
+  else if (sort === "orders_desc") days.sort((a,b) => b.orderCount - a.orderCount);
+  else if (sort === "orders_asc")  days.sort((a,b) => a.orderCount - b.orderCount);
+
+  if (days.length > 0) {
+    html += `<div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Per-Day Breakdown</div>
+    <table class="pkg-table">
+      <thead><tr><th>Date</th><th>Orders</th><th style="text-align:center;">🌅</th><th style="text-align:center;">☀️</th><th style="text-align:center;">🌙</th><th>Cost</th></tr></thead>
+      <tbody>
+        ${days.map(day => `<tr>
+          <td style="white-space:nowrap;">${fmtDate(day.date)}</td>
+          <td style="text-align:right;">${day.orderCount}</td>
+          <td style="text-align:center;color:#e67e22;">${day.meals.Breakfast||"—"}</td>
+          <td style="text-align:center;color:#27ae60;">${day.meals.Lunch||"—"}</td>
+          <td style="text-align:center;color:#8e44ad;">${day.meals.Dinner||"—"}</td>
+          <td style="text-align:right;font-weight:600;">${fmt(day.total)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
 
   return html;
 }
