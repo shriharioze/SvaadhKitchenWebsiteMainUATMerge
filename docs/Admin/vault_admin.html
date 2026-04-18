@@ -823,7 +823,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navManage" onclick="switchPage('manage')">⚙️ Manage Lists</button>
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
-      <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
@@ -1106,50 +1105,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load</div>
         </div>
       </div><!-- /pagePackaging -->
-
-      <!-- PAGE: LABELS -->
-      <div class="page" id="pageLabels">
-        <div class="labels-header">
-          <h2 style="margin:0;">🏷️ Label Generator</h2>
-        </div>
-        <div class="label-controls">
-          <div class="ctrl-group">
-            <label>Date</label>
-            <input type="date" id="labelDate">
-          </div>
-          <div class="ctrl-group">
-            <label>Meal</label>
-            <select id="labelMeal">
-              <option value="Breakfast">🌅 Breakfast</option>
-              <option value="Lunch">☀️ Lunch</option>
-              <option value="Dinner">🌙 Dinner</option>
-            </select>
-          </div>
-          <div class="ctrl-group">
-            <label>Language</label>
-            <select id="labelLang">
-              <option value="English">English (EN)</option>
-              <option value="Devanagari">देवनागरी (MR)</option>
-            </select>
-          </div>
-          <div class="ctrl-group">
-            <label>Gap (mm)</label>
-            <input type="number" id="labelGap" step="0.05" value="2.7" style="width:70px; padding:8px; border:1.5px solid #ddd; border-radius:8px;">
-          </div>
-          <div class="ctrl-group">
-            <label>Mode</label>
-            <select id="labelMode" style="width:100px;">
-              <option value="Full">Real</option>
-              <option value="Test">Test (5)</option>
-            </select>
-          </div>
-          <button class="gen-btn" onclick="generateLabels()">⚡ Generate Labels</button>
-        </div>
-        <div class="label-preview" id="labelPreview">
-          <div style="text-align:center;padding:30px;color:#aaa;font-size:0.85rem;">Select date, meal and language — then Generate</div>
-        </div>
-        <button class="download-btn" id="downloadLabelBtn" onclick="saveLabelsToDrive()">💾 Save to Drive</button>
-      </div><!-- /pageLabels -->
 
 
       <!-- ════ PAGE: ANALYTICS ════ -->
@@ -2240,7 +2195,6 @@ async function switchPage(page) {
   document.getElementById("pageManage").classList.toggle("on", page==="manage");
   document.getElementById("pageOrders").classList.toggle("on", page==="orders");
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
-  document.getElementById("pageLabels").classList.toggle("on", page==="labels");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
@@ -2253,7 +2207,6 @@ async function switchPage(page) {
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
-  document.getElementById("navLabels").classList.toggle("active", page==="labels");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
@@ -2280,17 +2233,7 @@ async function switchPage(page) {
     if (!picker.value) { picker.value = toISO(getIST()); }
     loadPackaging();
   }
-  if (page === "labels") {
-    const picker = document.getElementById("labelDate");
-    if (!picker.value) { picker.value = toISO(getIST()); }
-    // Restore gap
-    const savedGap = localStorage.getItem('sk-label-gap');
-    if (savedGap) document.getElementById('labelGap').value = savedGap;
-    // Save gap on change
-    document.getElementById('labelGap').addEventListener('change', (e) => {
-      localStorage.setItem('sk-label-gap', e.target.value);
-    });
-  }
+
   if (page === "analytics") {
     const af = document.getElementById("analyticsFrom");
     const at = document.getElementById("analyticsTo");
