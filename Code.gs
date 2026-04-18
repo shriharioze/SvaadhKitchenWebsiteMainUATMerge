@@ -3567,7 +3567,7 @@ function getAnalytics(p) {
 
   // ── Option B: Exact Small Order Fee backfill ──────────────────────────────
   // Pre-pass 1: build VIP set from profiles (Fee_Exempt = Yes)
-  var profWs   = getOrCreateTab(ss, TAB_PROFILES, []);
+  var profWs   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   var profRows = getAllRows(profWs);
   var vipSet   = {};
   profRows.forEach(function(pr) {
