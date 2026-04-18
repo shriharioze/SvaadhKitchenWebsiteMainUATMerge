@@ -832,19 +832,19 @@ function getWeeklyMenu() {
     menuMap[d] = x;
   });
 
-  // Generate days starting from TODAY through the rest of the week (up to 6 days)
+  // Show all dates from today onwards that have a menu row set
   const today = getISTDate();
   const todayStr = Utilities.formatDate(today, "Asia/Kolkata", "yyyy-MM-dd");
-  // Find how many days remain from today until Saturday (day 6); min 1, max 6
-  const todayDow = today.getDay(); // 0=Sun,1=Mon,...,6=Sat
-  const daysUntilSat = todayDow === 0 ? 6 : (6 - todayDow); // days remaining in week incl. today
-  const numDays = Math.min(6, daysUntilSat + 1);
+
+  // Collect all future/today dates that have a menu row, sorted ascending
+  const futureDates = Object.keys(menuMap)
+    .filter(d => d >= todayStr)
+    .sort();
+
   const days = [];
-  for (let i = 0; i < numDays; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + i);
-    const dateStr = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
-    const dayName = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
+  futureDates.forEach(dateStr => {
+    const d = new Date(dateStr + "T00:00:00+05:30");
+    const dayName    = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
     const displayDate = Utilities.formatDate(d, "Asia/Kolkata", "dd MMM");
 
     const r = menuMap[dateStr];
@@ -856,7 +856,7 @@ function getWeeklyMenu() {
     // Merge Master + Daily
     const finalBf = [...bfDaily];
     defaultBreakfast.forEach(m => {
-      if (!finalBf.some(d => d.name === m.name)) finalBf.push(m);
+      if (!finalBf.some(x => x.name === m.name)) finalBf.push(m);
     });
 
     days.push({
@@ -864,13 +864,13 @@ function getWeeklyMenu() {
       dayName: dayName,
       displayDate: displayDate,
       breakfast: finalBf,
-      lunch_dry: r ? (r.Lunch_Dry || "") : "",
-      lunch_curry: r ? (r.Lunch_Curry || "") : "",
-      dinner_dry: r ? (r.Dinner_Dry || "") : "",
+      lunch_dry:    r ? (r.Lunch_Dry    || "") : "",
+      lunch_curry:  r ? (r.Lunch_Curry  || "") : "",
+      dinner_dry:   r ? (r.Dinner_Dry   || "") : "",
       dinner_curry: r ? (r.Dinner_Curry || "") : "",
-      menuSet: !!r
+      menuSet: true  // only dates with a menu row are included
     });
-  }
+  });
 
   return { success: true, days: days };
 }
