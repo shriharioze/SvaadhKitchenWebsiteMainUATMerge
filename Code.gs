@@ -3676,7 +3676,7 @@ function adminCreditWallet(body) {
 
   // Look up customer name
   var ss      = getSpreadsheet();
-  var profWs  = getOrCreateTab(ss, TAB_PROFILES, []);
+  var profWs  = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   var profRows = getAllRows(profWs);
   var profile  = profRows.find(function(r){ return String(r.Phone||"").trim() === phone; });
   var name     = profile ? (String(profile.Name||"").trim() || "Customer") : "Customer";

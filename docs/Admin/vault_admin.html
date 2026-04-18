@@ -4036,7 +4036,7 @@ async function adminAddWalletCredit() {
   if (!amount || amount <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid amount.</span>`; return; }
   status.innerHTML = `<span style="color:#166534;">Adding ₹${amount} to ${phone}…</span>`;
   try {
-    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ action:"adminCreditWallet", phone, amount, pin: S.sessionPin }) });
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"adminCreditWallet", phone, amount, pin: S.pin }) });
     const data = await res.json();
     if (data.success) {
       status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ ₹${amount} credited to ${phone}. New balance: ₹${data.newBalance}</span>`;
