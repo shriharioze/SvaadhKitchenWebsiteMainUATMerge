@@ -2363,8 +2363,9 @@ function getKitchenSummary(date) {
       if (cFull > 0) summaryParts.push(cFull + " Full Curry");
 
       if (!m.other) m.other = {Dal:{kg:0, count:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
-      if (!m.riceMatrix) m.riceMatrix = {};
+      if (!m.riceMatrix)  m.riceMatrix  = {};
       if (!m.saladMatrix) m.saladMatrix = {};
+      if (!m.curdMatrix)  m.curdMatrix  = {};
 
       var dalQ = Number(r.Dal)   || 0;
       var riceQ = Number(r.Rice)  || 0;
@@ -2385,6 +2386,10 @@ function getKitchenSummary(date) {
       if (saladQ > 0) {
         var sPacks = calculatePackets(saladQ, 4); // SALAD_LIMIT = 4
         sPacks.forEach(function(p) { m.saladMatrix[p] = (m.saladMatrix[p] || 0) + 1; });
+      }
+      if (curdQ > 0) {
+        var cPacks = calculatePackets(curdQ, 2); // CURD_LIMIT = 2 (50g cups: 1 or 2 per packet)
+        cPacks.forEach(function(p) { m.curdMatrix[p] = (m.curdMatrix[p] || 0) + 1; });
       }
 
       if (dalQ > 0) summaryParts.push(dalQ + " Dal");

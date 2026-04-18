@@ -3428,6 +3428,16 @@
           <p class="mr-note">⏰ <strong>ऑर्डरची शेवटची वेळ:</strong> नाश्ता – सकाळी ७:०० · दुपारचे जेवण – ९:०० · रात्रीचे
             जेवण – सायं ४:३० · रविवार बंद</p>
         </div>
+
+        <!-- Grace period countdown banner — shown only when near/past cutoff for today -->
+        <div id="graceBanner" style="display:none;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;display:none;align-items:center;gap:10px;">
+          <span style="font-size:1.2rem;">⏳</span>
+          <div style="flex:1;">
+            <div id="graceBannerTitle" style="margin-bottom:2px;"></div>
+            <div id="graceBannerSub" style="font-size:0.72rem;font-weight:400;opacity:0.85;"></div>
+          </div>
+          <div id="graceCountdown" style="font-size:1.1rem;font-weight:800;letter-spacing:1px;white-space:nowrap;"></div>
+        </div>
         <div class="calendar-header">
           <button class="cal-nav" id="calPrev">‹</button>
           <h3 id="calMonthTitle"></h3>
@@ -4130,7 +4140,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.18.01";
+    const APP_VERSION = "v26.04.18.05";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4140,6 +4150,151 @@
     const DISC_T2 = { min: 450, rate: 0.075 };
     let CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
     const ICONS = { Breakfast: "🍳", Lunch: "🍱", Dinner: "🍽️" };
+    const GRACE_MINUTES = 5; // extra minutes allowed after cutoff to complete & submit
+
+    // ── Grace Period Session State ───────────────────────────────
+    // graceDeadlines: { meal → Date } computed once when user enters Step 3 today.
+    // If a meal's cutoff was still in the future at that moment, we give them
+    // GRACE_MINUTES after the cutoff to finish and submit.
+    // Once set, deadlines never extend — leaving and re-entering Step 3 doesn't reset.
+    let _graceTimerHandle = null;
+
+    function initGraceDeadlines() {
+      if (!S.graceDeadlines) S.graceDeadlines = {};
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      // Only set deadlines once per session per meal (never re-set)
+      ["Breakfast","Lunch","Dinner"].forEach(meal => {
+        if (S.graceDeadlines[meal]) return; // already set this session
+        const menu = S.menuCache[todayStr];
+        const ov = menu?.cutoff_overrides || {};
+        const cutoffH = ov[meal] ?? CUTOFFS[meal];
+        const cutoffMs = cutoffH * 3600 * 1000; // ms since midnight IST
+        const midnightIST = new Date(ist);
+        midnightIST.setUTCHours(0,0,0,0);
+        const cutoffTime = new Date(midnightIST.getTime() + cutoffMs);
+        // Only set a grace deadline if we arrived before (or at) cutoff
+        // i.e., the user has a legitimate session that started before close
+        if (ist <= cutoffTime) {
+          S.graceDeadlines[meal] = new Date(cutoffTime.getTime() + GRACE_MINUTES * 60 * 1000);
+        }
+        // If already past cutoff when arriving, no grace — meal is simply closed
+      });
+    }
+
+    function getActiveMealsForToday() {
+      // Meals the user has items in for TODAY's date
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      return ["Breakfast","Lunch","Dinner"].filter(meal => {
+        return (S.orders[todayStr]?.[meal]?.subtotal || 0) > 0;
+      });
+    }
+
+    const GRACE_WARN_MINS = 15; // show pre-cutoff warning this many minutes before cutoff
+
+    function checkGraceExpiry() {
+      // Returns null if nothing to show, or an object:
+      // { phase: "warn"|"grace"|"expired", meal, msToClose, msLeft }
+      // "warn"    = still before cutoff but within GRACE_WARN_MINS — show green/blue heads-up
+      // "grace"   = past cutoff, within GRACE_MINUTES window — yellow countdown
+      // "expired" = past cutoff + GRACE_MINUTES — hard lock
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      const ov = S.menuCache[todayStr]?.cutoff_overrides || {};
+      const midnightIST = new Date(ist); midnightIST.setUTCHours(0,0,0,0);
+
+      let mostUrgent = null;
+
+      ["Breakfast","Lunch","Dinner"].forEach(meal => {
+        const cutoffH = ov[meal] ?? CUTOFFS[meal];
+        const cutoffTime = new Date(midnightIST.getTime() + cutoffH * 3600000);
+        const deadline   = S.graceDeadlines?.[meal]; // set when user arrived before cutoff
+
+        const msToClose = cutoffTime - ist;   // negative when past cutoff
+        const msLeft    = deadline ? (deadline - ist) : null; // ms left in grace window
+
+        let phase = null;
+        if (msToClose > 0 && msToClose <= GRACE_WARN_MINS * 60000) {
+          phase = "warn";   // before cutoff but closing soon
+        } else if (msToClose <= 0 && deadline) {
+          phase = msLeft > 0 ? "grace" : "expired";
+        }
+        if (!phase) return;
+
+        const entry = { phase, meal, msToClose, msLeft: msLeft ?? 0, cutoffTime };
+        // Priority: expired > grace > warn; within same phase pick most urgent
+        const rank = { expired: 3, grace: 2, warn: 1 };
+        if (!mostUrgent || rank[entry.phase] > rank[mostUrgent.phase] ||
+            (entry.phase === mostUrgent.phase && entry.msToClose < mostUrgent.msToClose)) {
+          mostUrgent = entry;
+        }
+      });
+      return mostUrgent;
+    }
+
+    function tickGraceBanner() {
+      const banner  = $("graceBanner");
+      const titleEl = $("graceBannerTitle");
+      const subEl   = $("graceBannerSub");
+      const cdEl    = $("graceCountdown");
+      const btn     = $("btnNext");
+
+      const state = checkGraceExpiry();
+
+      if (!state) {
+        if (banner) banner.style.display = "none";
+        if (btn && S.step === 3 && !btn.dataset.locked) { btn.disabled = false; btn.style.opacity = "1"; }
+        return;
+      }
+
+      if (banner) banner.style.display = "flex";
+
+      if (state.phase === "warn") {
+        // Pre-cutoff heads-up — green, no lock
+        const totalSec = Math.ceil(state.msToClose / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2,'0');
+        const ss = String(totalSec % 60).padStart(2,'0');
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;color:#166534;`;
+        if (titleEl) titleEl.textContent = `⏰ ${state.meal} orders close in ${mm}:${ss}`;
+        if (subEl)   subEl.textContent   = `Finish selecting your items and tap Continue before the cutoff.`;
+        if (cdEl)  { cdEl.textContent = `${mm}:${ss}`; cdEl.style.color = "#16a34a"; }
+        if (btn && S.step === 3) { btn.disabled = false; btn.style.opacity = "1"; }
+
+      } else if (state.phase === "grace") {
+        // Past cutoff — yellow/orange countdown
+        const totalSec = Math.ceil(state.msLeft / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2,'0');
+        const ss = String(totalSec % 60).padStart(2,'0');
+        const isUrgent = state.msLeft < 60000;
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:${isUrgent ? 'linear-gradient(135deg,#fff7ed,#ffedd5)' : 'linear-gradient(135deg,#fefce8,#fef9c3)'};border:1.5px solid ${isUrgent ? '#fb923c' : '#fbbf24'};color:${isUrgent ? '#9a3412' : '#78350f'};`;
+        if (titleEl) titleEl.textContent = `🕐 ${state.meal} cutoff just passed — submit before time runs out!`;
+        if (subEl)   subEl.textContent   = `You have a short grace window. Complete your order now.`;
+        if (cdEl)  { cdEl.textContent = `${mm}:${ss}`; cdEl.style.color = isUrgent ? "#dc2626" : "#d97706"; }
+        if (btn && S.step === 3) { btn.disabled = false; btn.style.opacity = "1"; }
+
+      } else {
+        // Expired — hard lock
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1.5px solid #fca5a5;color:#991b1b;`;
+        if (titleEl) titleEl.textContent = `⛔ ${state.meal} orders are now closed for today.`;
+        if (subEl)   subEl.textContent   = `The grace window has passed. Please order for a future date.`;
+        if (cdEl)  { cdEl.textContent = "CLOSED"; cdEl.style.color = "#dc2626"; }
+        if (btn && S.step === 3) { btn.disabled = true; btn.style.opacity = "0.4"; }
+      }
+    }
+
+    function startGraceTimer() {
+      stopGraceTimer();
+      tickGraceBanner(); // immediate paint
+      _graceTimerHandle = setInterval(tickGraceBanner, 1000);
+    }
+
+    function stopGraceTimer() {
+      if (_graceTimerHandle) { clearInterval(_graceTimerHandle); _graceTimerHandle = null; }
+      const banner = $("graceBanner");
+      if (banner) banner.style.display = "none";
+    }
+    // ── End Grace Period ─────────────────────────────────────────
 
     // ═══════════════════════════════════════════════════════════
     // FIXED MENU
@@ -4417,6 +4572,18 @@
       if (s === 3 && !hasAnyOrder()) { $("btnNext").disabled = true; $("btnNext").style.opacity = "0.45"; }
       if (s === 4) { checkPaymentConfirmation(); }
 
+      // Re-render calendar every time user lands on step 2 so admin cutoff overrides
+      // (fetched async on page load) are always applied — avoids stale default cutoff
+      if (s === 2) renderCalendar();
+
+      // Grace period timer — start on Step 3 (meal selection), stop on all other steps
+      if (s === 3) {
+        initGraceDeadlines(); // compute deadlines once (no-op if already set)
+        startGraceTimer();    // start ticking
+      } else {
+        stopGraceTimer();
+      }
+
       // Toggle Quick Button Bar (Wallet, Orders, Logout) only after step 0
       const qb = $("quickButtonBar");
       if (qb) qb.style.display = (s > 0) ? "flex" : "none";
@@ -4477,7 +4644,19 @@
       const ok = hasAnyOrder();
       $("btnNext").disabled = !ok; $("btnNext").style.opacity = ok ? "1" : "0.45";
     }
-    function goBack() { if (S.step > 0) { S.step--; updateNav(); window.scrollTo(0, 0); } }
+    function goBack() {
+      if (S.step <= 0) return;
+      const prevStep = S.step;
+      S.step--;
+      updateNav();
+      // Coming back from bill screen (step 4) to meal selection (step 3):
+      // re-render meal content so items are fully interactive again
+      if (prevStep === 4 && S.selectedDates.length > 0 && $("mealSelectionContent").innerHTML.trim()) {
+        buildDateTabs();
+        renderMealContent(activeDate || S.selectedDates[0]);
+      }
+      window.scrollTo(0, 0);
+    }
     function goToStep(n) { S.step = n; updateNav(); window.scrollTo(0, 0); }
     async function goNext() {
       if ($("btnNext").dataset.locked === "payment") {
@@ -4581,6 +4760,13 @@
           if (!confirmed) return;
         }
         if (!hasAnyOrder()) { toast(t('toast_select_item')); return; }
+
+        // Hard grace-period check before proceeding to bill
+        const _graceState = checkGraceExpiry();
+        if (_graceState?.expired) {
+          toast(`⛔ ${_graceState.meal} orders for today are closed — the 5-minute window after cutoff has passed. You can still order for future dates!`, 6000);
+          return;
+        }
 
         sBtnLoading($("btnNext"), true, t('loading_building'));
         try {
@@ -5514,6 +5700,79 @@
       let virtualStreakCount = S.loyaltyInfo?.count || 0;
       let virtualPastSurcharge = S.loyaltyInfo?.surcharge || 0;
 
+      // ── Pre-compute pass: figure out carry-back credits from streak surplus ──
+      // We need to know how much surplus the streak day generates so we can
+      // retroactively reduce prior days' displayed totals (5th → 4th → 3rd …)
+      const carryBack = {}; // date → ₹ credit applied from streak surplus
+      {
+        let _psc = S.loyaltyInfo?.count || 0, _pps = S.loyaltyInfo?.surcharge || 0, _ppt = promoTracker;
+        const _dayNets = {}; // date → net day total (before carry-back)
+        const _dateOrder = [];
+        for (const _d of S.selectedDates) {
+          const _do = S.orders[_d] || {};
+          let _dft = 0;
+          ["Breakfast","Lunch","Dinner"].forEach(m => _dft += _do[m]?.subtotal || 0);
+          if (_dft === 0) continue;
+          _dateOrder.push(_d);
+          const _ex = existingDayTotals[_d] || {};
+          const _exft = Object.values(_ex).reduce((s,m) => s+(m.subtotal||0), 0);
+          const _cdt = _dft + _exft;
+          let _dr = 0;
+          if (_cdt >= DISC_T2.min) _dr = DISC_T2.rate;
+          else if (_cdt >= DISC_T1.min) _dr = DISC_T1.rate;
+          const _exDisc = Object.values(_ex).reduce((s,m) => s+(m.discount_applied||0), 0);
+          const _retro = Math.max(0, Math.round(_exft*_dr) - _exDisc);
+          const _is6 = (_psc === 5);
+          let _da = 0;
+          if (_is6) {
+            const _cds = Math.ceil(_dft/20);
+            _da = _pps + _cds;
+          } else {
+            _da = Math.min(_dft, Math.round(_dft*_dr) + _retro);
+          }
+          const _totalM = ["Breakfast","Lunch","Dinner"].filter(m=>(_do[m]?.subtotal>0)||(_ex[m]?.subtotal>0)).length;
+          const _dynTh = _totalM<=1 ? 100 : 150;
+          const _isFD = (_cdt >= _dynTh) || S.profile.feeExempt;
+          let _tdel=0, _tsm=0, _tsu=0, _trev=0, _tcred=0;
+          if (_isFD && _exft > 0) {
+            ["Breakfast","Lunch","Dinner"].forEach(m => {
+              _tcred += (_ex[m]?.delivery_charged||0) + (_ex[m]?.small_fee_charged||0);
+            });
+          }
+          ["Breakfast","Lunch","Dinner"].forEach(meal => {
+            const _ms = _do[meal]; const _sub = _ms?.subtotal||0; if (_sub<=0) return;
+            if (_ppt>0) { _trev += Math.round(_sub*0.10); _ppt--; }
+            const _mAddr = getMealAddr(meal);
+            const _isP = _mAddr.area==="Self Pickup";
+            const _isFA = FREE_AREAS.includes(_mAddr.area);
+            const _cms = _sub+(_ex[meal]?.subtotal||0);
+            if (!S.profile.feeExempt&&!_isFD&&!_isP&&(meal==="Lunch"||meal==="Dinner")&&_sub>0&&_cms<50) _tsm+=10;
+            if (!S.profile.feeExempt&&!_isFD&&!_isP&&!_isFA&&_sub>0) _tdel+=DELIVERY_CHARGE;
+            _tsu += Math.ceil(_sub/20);
+          });
+          const _net = _dft - _da + _tdel + _tsm + _tsu - _tcred - _trev;
+          _dayNets[_d] = { net: _net, is6: _is6 };
+          if (_is6) { _psc=0; _pps=0; } else { _psc++; _pps+=Math.ceil(_dft/20); }
+        }
+        // Find streak day surplus and carry backwards
+        let _surplus = 0;
+        for (const _d of _dateOrder) {
+          if (_dayNets[_d].is6 && _dayNets[_d].net < 0) {
+            _surplus = Math.abs(_dayNets[_d].net);
+            break;
+          }
+        }
+        if (_surplus > 0) {
+          for (let _i = _dateOrder.length - 1; _i >= 0 && _surplus > 0; _i--) {
+            const _d = _dateOrder[_i];
+            if (_dayNets[_d].is6) continue; // skip streak day itself
+            const _absorb = Math.min(_surplus, Math.max(0, _dayNets[_d].net));
+            if (_absorb > 0) { carryBack[_d] = (carryBack[_d] || 0) + _absorb; _surplus -= _absorb; }
+          }
+        }
+      }
+      // ── End pre-compute pass ──
+
       for (const date of S.selectedDates) {
         const dayOrders = S.orders[date] || {};
         let dayFoodTotal = 0;
@@ -5538,11 +5797,14 @@
         let loyaltyWaiverTotal = 0;
 
         if (is6thDay) {
-          // Loyalty Discount triggers on Day 6
+          // Loyalty Discount triggers on Day 6: waive all surcharges across 6 days
           const currentDaySurcharge = Math.ceil(dayFoodTotal / 20);
           loyaltyWaiverTotal = virtualPastSurcharge + currentDaySurcharge;
-          discAmt = loyaltyWaiverTotal;
-          discLabel = "Loyalty Streak Reward (6 Days)";
+          // Cap discAmt so this day's total doesn't go below ₹0 (surplus already
+          // distributed to prior days via carryBack in the pre-compute pass above)
+          const grossDayBill = dayFoodTotal; // fees added later; we clamp post-fee
+          discAmt = loyaltyWaiverTotal; // may cause negative dayTotal — handled below
+          discLabel = "🎉 6-Day Streak Reward";
         } else {
           // Audit Fix #4: Cap discount at current food total to prevent negative bills
           discAmt = Math.min(dayFoodTotal, Math.round(dayFoodTotal * discRate) + retroDiscountCredit);
@@ -5579,8 +5841,9 @@
             <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
           </div>`;
         } else if (is6thDay) {
-          html += `<div style="font-size:0.75rem;color:#2c3e50;background:#f1c40f;background:linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);display:flex;align-items:center;gap:10px;">
-            <span style="font-size:1.2rem;">🎉</span> <span><strong>Amazing Regular!</strong> Since you ordered for 6 consecutive days, we've waived today's bill by <strong>₹${loyaltyWaiverTotal}</strong> (sum of surcharges for 6 days). Thank you!</span>
+          html += `<div style="font-size:0.75rem;background:linear-gradient(135deg,#f1c40f,#f39c12);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;box-shadow:0 4px 10px rgba(243,156,18,0.3);display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.4rem;">🎉</span>
+            <span><strong>6-Day Streak!</strong> We're giving back all your market surcharges — ~5% of your food bill, back in your pocket. You've earned it! Total reward: <strong>₹${loyaltyWaiverTotal}</strong></span>
           </div>`;
         } else if (!isDayFree && !allPickup) {
           const diff = dynamicThreshold - combinedDayTotal;
@@ -5705,7 +5968,17 @@
         });
         // 6. Date-level Adjustments (Credits / Discounts)
         const totalCredits = dayDeliveryCredit + daySmallFeeCredit;
-        const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal;
+        let rawDayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal;
+
+        // For streak day: if rawDayTotal < 0, the surplus was already pre-distributed
+        // to prior days via carryBack[]. Clamp this day's total to ₹0.
+        const streakDaySurplus = (is6thDay && rawDayTotal < 0) ? Math.abs(rawDayTotal) : 0;
+        if (is6thDay && rawDayTotal < 0) rawDayTotal = 0;
+
+        // For prior days: apply carry-back credit received from the streak day
+        const cbAmt = carryBack[date] || 0;
+        const dayTotal = rawDayTotal - cbAmt;
+
         grandTotal += dayTotal;
 
         // Update virtual streak for NEXT date in this cart
@@ -5732,6 +6005,11 @@
         if (discAmt > 0) {
           html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)">
         <span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>`;
+        }
+        // Carry-back credit from streak day surplus
+        if (cbAmt > 0) {
+          html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Your 6-day streak discount on Day 6 exceeded that day\\'s bill, so the extra ₹${cbAmt} has been carried back to reduce this day\\'s total!', 7000)">
+        <span>🎁 Streak Carry-back Credit</span><span>−₹${cbAmt}</span></div>`;
         }
 
         html += `  <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
@@ -7209,7 +7487,7 @@
       })();
 
       if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
-      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Fix admin cutoff overrides not reflecting in calendar`);
+      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Grace period cutoff timer + carry-back loyalty`);
       applyThemeIcon();
 
       // Show refresh nudge once per browser session
@@ -7237,7 +7515,15 @@
           const data = await res.json();
           if (data && !data.error) {
             S.menuCache[todayStr] = data;
-            renderCalendar(); // re-render now that real cutoff_overrides are known
+            // Always re-render — if user is already on the calendar step, this
+            // immediately corrects any date that was wrongly disabled by defaults
+            renderCalendar();
+            // If user is already past the calendar step, re-init grace deadlines
+            // so they use the real admin cutoff rather than the default
+            if (S.step === 3 && S.graceDeadlines) {
+              S.graceDeadlines = {}; // force re-compute with real cutoff data
+              initGraceDeadlines();
+            }
           }
         } catch(e) { /* silently ignore — calendar stays with defaults */ }
       })();

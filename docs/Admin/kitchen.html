@@ -562,8 +562,13 @@
       background: #27ae60 !important;
       color: #fff !important;
     }
+    .roti-row-Curd {
+      background: #0891b2 !important;
+      color: #fff !important;
+    }
     .roti-name.val-Rice,
-    .roti-name.val-Salad {
+    .roti-name.val-Salad,
+    .roti-name.val-Curd {
       color: #fff !important;
     }
 
@@ -1355,9 +1360,10 @@
           if (o.Rice && o.Rice.count > 0) packs.push({ count: o.Rice.count, name: "250ml aluminium container for rice" });
         }
 
-        const hasMatrices = (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) || 
-                            (m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || 
-                            (m.saladMatrix && Object.keys(m.saladMatrix).length > 0);
+        const hasMatrices = (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) ||
+                            (m.riceMatrix && Object.keys(m.riceMatrix).length > 0) ||
+                            (m.saladMatrix && Object.keys(m.saladMatrix).length > 0) ||
+                            (m.curdMatrix && Object.keys(m.curdMatrix).length > 0);
 
         if (packs.length > 0 || hasMatrices) {
           html += `<div class="meal-block">
@@ -1395,8 +1401,8 @@
             </div>`;
           }
 
-          if ((m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || (m.saladMatrix && Object.keys(m.saladMatrix).length > 0)) {
-            html += `<div class="matrix-title">Rice & Salad Preparation Matrix</div>
+          if ((m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || (m.saladMatrix && Object.keys(m.saladMatrix).length > 0) || (m.curdMatrix && Object.keys(m.curdMatrix).length > 0)) {
+            html += `<div class="matrix-title">Rice, Salad & Curd Preparation Matrix</div>
             <div class="roti-matrix-wrap">
               <table class="roti-table">
                 <thead>
@@ -1419,6 +1425,14 @@
                       <td class="roti-name val-Salad">को (Salad)</td>
                       ${[1, 2, 3, 4].map(n => {
               const count = m.saladMatrix[n] || 0;
+              return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
+            }).join("")}
+                    </tr>` : ""}
+                  ${m.curdMatrix && Object.keys(m.curdMatrix).length > 0 ? `
+                    <tr class="roti-row-Curd">
+                      <td class="roti-name val-Curd">दही (Curd)</td>
+                      ${[1, 2, 3, 4].map(n => {
+              const count = m.curdMatrix[n] || 0;
               return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
             }).join("")}
                     </tr>` : ""}
