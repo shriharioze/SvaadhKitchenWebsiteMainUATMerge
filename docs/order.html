@@ -4104,7 +4104,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.17.02";
+    const APP_VERSION = "v26.04.18.01";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7151,7 +7151,7 @@
       })();
 
       if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
-      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Split Payment & Payment Card UI Redesign`);
+      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Fix admin cutoff overrides not reflecting in calendar`);
       applyThemeIcon();
 
       // Show refresh nudge once per browser session
@@ -7170,6 +7170,19 @@
       updateNav();
       initCalendar();
       buildFAQ();
+      // Pre-fetch today's menu so cutoff_overrides are available before calendar renders
+      // This re-renders the calendar once real cutoff data arrives from the server
+      (async () => {
+        try {
+          const todayStr = (() => { const t = getIST(); return `${t.getUTCFullYear()}-${String(t.getUTCMonth()+1).padStart(2,'0')}-${String(t.getUTCDate()).padStart(2,'0')}`; })();
+          const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayStr}`);
+          const data = await res.json();
+          if (data && !data.error) {
+            S.menuCache[todayStr] = data;
+            renderCalendar(); // re-render now that real cutoff_overrides are known
+          }
+        } catch(e) { /* silently ignore — calendar stays with defaults */ }
+      })();
       $("phoneInput").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
       $("phoneInput").addEventListener("keydown", e => { if (e.key === "Enter") goNext(); });
       // Close how modal on backdrop click
