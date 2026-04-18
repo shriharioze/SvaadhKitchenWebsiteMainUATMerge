@@ -1275,7 +1275,19 @@ function submitOrder(body) {
     custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(finalValue);
   }
 
-  return {success: true, submissionId: submissionIds[0] || ""};
+  // If loyalty reward exceeded the bill, credit the bonus to wallet
+  const walletBonus = Number(body.wallet_bonus) || 0;
+  if (walletBonus > 0) {
+    try {
+      _appendWalletTransaction(
+        profile.phone || "", profile.name || "Customer",
+        "Loyalty Streak Reward (Excess Credit)",
+        walletBonus, true, submissionIds[0] || ""
+      );
+    } catch(e) { /* non-fatal */ }
+  }
+
+  return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: walletBonus};
 }
 
 

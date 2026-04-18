@@ -3705,6 +3705,32 @@
 
       </div>
 
+      <!-- FREE ORDER CARD (loyalty bonus exceeds bill) -->
+      <div id="freeOrderCard" style="display:none;">
+        <div style="background:linear-gradient(135deg,#065f46,#059669);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Loyalty Reward</div>
+          <div style="font-size:2.8rem;margin-bottom:6px;">🎉</div>
+          <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.5px;">This Order is FREE!</div>
+          <div style="margin-top:10px;background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.82rem;font-weight:700;display:inline-block;">
+            ₹<span id="freeOrderBonus">0</span> → Your Wallet
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(6,95,70,0.10);margin-bottom:8px;">
+          <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid #a7f3d0;">
+            <div style="font-size:0.85rem;font-weight:700;color:#065f46;margin-bottom:6px;">🏆 6-Day Streak Reward Applied!</div>
+            <div style="font-size:0.78rem;color:#047857;line-height:1.6;">Your loyalty reward exceeds today's bill. No payment needed — just confirm below and <strong>₹<span id="freeOrderBonusNote">0</span> will be credited to your Svaadh Wallet</strong> instantly.</div>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+            <input type="checkbox" id="freeOrderConfirmCheck" style="margin-top:2px;width:auto;accent-color:#059669;flex-shrink:0;"
+              onchange="checkPaymentConfirmation()">
+            <div>
+              <span style="font-size:0.81rem;color:#065f46;font-weight:700;">I understand — place this free order &amp; credit ₹<span id="freeOrderBonusCheck">0</span> to my Wallet</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <!-- ON ACCOUNT CARD -->
       <div class="card" id="onAccountCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
         <div class="wallet-confirm-card" style="background: linear-gradient(135deg, #1565c0, #134e91);">
@@ -4410,8 +4436,9 @@
       } else if (S.paymentChoice === "Split") {
         isChecked = $("splitConfirmCheck")?.checked;
       } else if (S.paymentChoice === "OnAccount") {
-        // For On Account, the checkbox is optional (Step 4 & 5)
         isChecked = true;
+      } else if (S.paymentChoice === "Free") {
+        isChecked = $("freeOrderConfirmCheck")?.checked;
       } else {
         isChecked = $("paidConfirm")?.checked;
       }
@@ -5710,13 +5737,28 @@
         html += `  <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
     </div><hr class="bill-divider" style="margin-top:16px;"></div>`;
       }
+      // Handle negative grand total: excess loyalty credit → wallet bonus
+      const walletBonus = grandTotal < 0 ? Math.abs(grandTotal) : 0;
+      S.walletBonus = walletBonus;
+      if (grandTotal < 0) grandTotal = 0;
       S.grandTotal = grandTotal;
+
       // Reset payment confirmation state
-      // codMode removed
       const paidCb = $("paidConfirm"); if (paidCb) paidCb.checked = false;
       const tenCb = $("tenDayConfirm"); if (tenCb) tenCb.checked = false;
-      // codBtn logic removed
-      $("billSummaryContent").innerHTML = html +
+
+      // Show wallet bonus banner in bill if applicable
+      const walletBonusBanner = walletBonus > 0
+        ? `<div style="background:linear-gradient(135deg,#e8f5e9,#f0fdf4);border:1.5px solid #a7f3d0;border-radius:12px;padding:12px 14px;margin:10px 0;display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1.4rem;flex-shrink:0;">🎁</span>
+            <div>
+              <div style="font-weight:800;color:#065f46;font-size:0.88rem;margin-bottom:3px;">₹${walletBonus} Wallet Credit Incoming!</div>
+              <div style="font-size:0.76rem;color:#047857;line-height:1.5;">Your loyalty reward exceeds today's bill. The extra ₹${walletBonus} will be added to your Svaadh Wallet automatically when you place this order.</div>
+            </div>
+           </div>`
+        : "";
+
+      $("billSummaryContent").innerHTML = html + walletBonusBanner +
         `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
 
       const wb = Number(S.walletBalance) || 0;
@@ -5727,6 +5769,7 @@
       $("onAccountCard").style.display = "none";
       $("paymentCard").style.display = "none";
       $("splitPayCard").style.display = "none";
+      $("freeOrderCard").style.display = "none";
 
       // Reset confirmations
       if ($("walletConfirmCheck")) $("walletConfirmCheck").checked = false;
@@ -5736,7 +5779,14 @@
 
       // Determine default payment choice
       if (!S.tempUpiMode) {
-        if (isOnAccount) {
+        if (grandTotal === 0 && walletBonus > 0) {
+          // Loyalty reward exceeds bill — free order, credit goes to wallet
+          S.paymentChoice = "Free";
+          $("freeOrderCard").style.display = "block";
+          ["freeOrderBonus","freeOrderBonusNote","freeOrderBonusCheck"].forEach(id => {
+            const el = $(id); if (el) el.textContent = walletBonus;
+          });
+        } else if (isOnAccount) {
           S.paymentChoice = "OnAccount";
           $("onAccountCard").style.display = "block";
           $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
@@ -6001,17 +6051,20 @@
       const isWalletOrder    = S.paymentChoice === "Wallet";
       const isOnAccountOrder = S.paymentChoice === "OnAccount";
       const isSplitOrder     = S.paymentChoice === "Split";
+      const isFreeOrder      = S.paymentChoice === "Free";
 
       let confirmEl;
       if (isWalletOrder) confirmEl = $("walletConfirmCheck");
       else if (isOnAccountOrder) confirmEl = $("onAccountConfirmCheck");
       else if (isSplitOrder) confirmEl = $("splitConfirmCheck");
+      else if (isFreeOrder) confirmEl = $("freeOrderConfirmCheck");
       else confirmEl = $("paidConfirm");
 
       if (confirmEl && !confirmEl.checked) {
         if (isWalletOrder) toast("Please confirm wallet deduction");
         else if (isOnAccountOrder) toast("Please confirm 'On Account' placement");
         else if (isSplitOrder) toast("Please confirm wallet + UPI split payment");
+        else if (isFreeOrder) toast("Please confirm to place this free order");
         else toast(t('toast_confirm_payment'));
         return;
       }
@@ -6081,12 +6134,13 @@
           payment_preference: S.profile.payment_preference, isFirstTime: S.isFirstTime
         },
         orders,
-        payment_method: (isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) ? "On Account"
+        payment_method: isFreeOrder ? "Wallet"
+                       : isOnAccountOrder ? "On Account"
                        : isSplitOrder ? "Split"
                        : (isWalletOrder ? "Wallet" : "UPI"),
-        payment_status: ((isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) || isWalletOrder) ? "Paid" : "Pending",
-        // Compute fresh at submission — never rely on potentially stale S.walletCredit
+        payment_status: (isFreeOrder || isWalletOrder || isOnAccountOrder) ? "Paid" : "Pending",
         wallet_credit: isSplitOrder ? Math.min(Number(S.walletBalance) || 0, Number(S.grandTotal) || 0) : 0,
+        wallet_bonus:  isFreeOrder ? (Number(S.walletBonus) || 0) : 0,
         settle_all: settleAll
       };
       const _pCtrl = new AbortController(); const _pTid = setTimeout(() => _pCtrl.abort(), 15000);
@@ -6099,7 +6153,10 @@
         $("btnNext").style.pointerEvents = "auto";
         if (data.success) {
           S.isPlaced = true;
-          if (payload.payment_method === "Split") {
+          if (isFreeOrder) {
+            const bonus = data.wallet_bonus || payload.wallet_bonus || 0;
+            await sAlert(`🎉 Your order is placed — completely free thanks to your 6-day loyalty streak!\n\n💳 ₹${bonus} has been credited to your Svaadh Wallet.`, "Free Order Placed!", "🏆");
+          } else if (payload.payment_method === "Split") {
             const upiDue = payload.wallet_credit ? (S.grandTotal - payload.wallet_credit) : S.grandTotal;
             await sAlert(`✅ ₹${payload.wallet_credit} deducted from Wallet.\n\n📲 Please complete the remaining ₹${upiDue} via UPI. Admin will verify and confirm your order.`, "Order Placed — UPI Due", "🔀");
           } else if (payload.payment_status === "Pending") {
@@ -6137,6 +6194,7 @@
       $("paymentCard").style.display = "none";
       $("walletConfirmCard").style.display = "none";
       $("splitPayCard").style.display = "none";
+      $("freeOrderCard").style.display = "none";
 
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id.toUpperCase();
