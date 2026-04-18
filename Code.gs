@@ -3053,16 +3053,25 @@ function getOrderHistory(p) {
   });
 
   var orders = filtered.map(function(r) {
+    var items = {};
+    try { if (r.Items_JSON) items = JSON.parse(r.Items_JSON); } catch(e) {}
     return {
-      id:     r.Submission_ID,
-      date:   fmtDate(r.Order_Date),
-      meal:   r.Meal_Type,
-      name:   r.Customer_Name,
-      phone:  r.Phone,
-      area:   r.Area,
-      total:  Number(r.Net_Total) || 0,
-      status: r.Payment_Status || "Pending",
-      notes:  r.Special_Notes || ""
+      id:             r.Submission_ID,
+      date:           fmtDate(r.Order_Date),
+      meal:           r.Meal_Type,
+      name:           r.Customer_Name,
+      phone:          r.Phone,
+      area:           r.Area || "",
+      wing:           r.Wing || "",
+      flat:           r.Flat || "",
+      total:          Number(r.Net_Total) || 0,
+      gross:          Number(r.Gross_Total) || 0,
+      status:         r.Payment_Status || "Pending",
+      payment_method: r.Payment_Method || "UPI",
+      notes:          r.Special_Notes || "",
+      items:          items,
+      delivery:       Number(r.Delivery_Charge) || 0,
+      discount:       Number(r.Loyalty_Discount) || 0
     };
   });
 

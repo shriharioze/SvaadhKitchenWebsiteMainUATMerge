@@ -1194,54 +1194,74 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 
         <!-- Quick range chips -->
         <div class="range-chips" style="margin-bottom:10px;">
-          <button class="chip" onclick="histQuickRange('today')">Today</button>
-          <button class="chip" onclick="histQuickRange('week')">This Week</button>
-          <button class="chip" onclick="histQuickRange('15days')">Last 15 Days</button>
-          <button class="chip" onclick="histQuickRange('month')">This Month</button>
-          <button class="chip" onclick="histQuickRange('lastmonth')">Last Month</button>
-          <button class="chip" onclick="histQuickRange('year')">This Year</button>
+          <button class="chip" id="hchip-today"     onclick="histQuickRange('today')">Today</button>
+          <button class="chip" id="hchip-week"      onclick="histQuickRange('week')">This Week</button>
+          <button class="chip" id="hchip-15days"    onclick="histQuickRange('15days')">Last 15 Days</button>
+          <button class="chip" id="hchip-month"     onclick="histQuickRange('month')">This Month</button>
+          <button class="chip" id="hchip-lastmonth" onclick="histQuickRange('lastmonth')">Last Month</button>
+          <button class="chip" id="hchip-year"      onclick="histQuickRange('year')">This Year</button>
         </div>
 
-        <!-- Filter bar -->
-        <div class="filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <!-- Filter bar row 1: dates + load -->
+        <div class="filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:8px;">
           <input type="date" id="histFrom" title="From date">
           <span style="color:var(--muted);font-size:.82rem;">to</span>
           <input type="date" id="histTo" title="To date">
+          <button class="btn-primary" onclick="loadHistory()">🔍 Load</button>
+          <!-- View toggle -->
+          <div style="margin-left:auto;display:flex;gap:4px;background:#f0ede8;border-radius:8px;padding:3px;">
+            <button id="hvBtn-table" onclick="histSetView('table')"
+              style="border:none;background:#c0392b;color:#fff;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">⊞ Table</button>
+            <button id="hvBtn-list" onclick="histSetView('list')"
+              style="border:none;background:transparent;color:#666;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">≡ List</button>
+          </div>
+        </div>
 
+        <!-- Filter bar row 2: dropdowns -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;">
           <select id="histMeal" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
             <option value="">All Meals</option>
             <option>Breakfast</option><option>Lunch</option><option>Dinner</option>
           </select>
-
           <select id="histPayStatus" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
             <option value="">All Statuses</option>
             <option value="Paid">✓ Paid</option>
             <option value="Wallet Paid">💳 Wallet Paid</option>
             <option value="Pending">⏳ Pending</option>
-            <option value="Cancelled">✕ Cancelled</option>
           </select>
-
+          <select id="histPayMethod" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Methods</option>
+            <option value="UPI">UPI</option>
+            <option value="Wallet">Wallet</option>
+            <option value="Split">Split</option>
+            <option value="On Account">On Account</option>
+          </select>
+          <select id="histAreaSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Areas</option>
+          </select>
+          <input type="text" id="histSearch" placeholder="🔍 Name / Phone" oninput="histApplyFilters()"
+            style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;min-width:150px;">
           <select id="histSortSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;" onchange="histApplySortSel()">
-            <option value="date_asc">Date ↑</option>
-            <option value="date_desc">Date ↓</option>
+            <option value="date_asc">Date ↑ (oldest)</option>
+            <option value="date_desc">Date ↓ (newest)</option>
             <option value="amount_desc">Amount ↓</option>
             <option value="amount_asc">Amount ↑</option>
             <option value="name_asc">Name A–Z</option>
             <option value="meal_asc">Meal</option>
+            <option value="area_asc">Area</option>
             <option value="status_asc">Status</option>
           </select>
-
-          <button class="btn-primary" onclick="loadHistory()">🔍 Load</button>
+          <button onclick="histResetFilters()" style="padding:6px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.78rem;background:#fff;cursor:pointer;color:var(--muted);">↺ Reset</button>
         </div>
 
         <div id="histStats"></div>
-        <div id="histTableControls" style="display:none;margin-bottom:12px;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Status:</span>
+        <div id="histTableControls" style="display:none;margin-bottom:10px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Filter:</span>
             <button class="chip sel" id="hf-all"     onclick="setHistFilter('all')">All</button>
             <button class="chip"     id="hf-paid"    onclick="setHistFilter('Paid')">✓ Paid</button>
             <button class="chip"     id="hf-pending" onclick="setHistFilter('Pending')">⏳ Pending</button>
-            <span id="histRowCount" style="margin-left:auto;font-size:.78rem;color:var(--muted);"></span>
+            <span id="histRowCount" style="margin-left:auto;font-size:.78rem;font-weight:700;color:var(--muted);"></span>
           </div>
         </div>
         <div id="histTableWrap"></div>
@@ -3602,6 +3622,17 @@ function tendayShareWhatsApp() {
 // ════════════════════════════════════════════════════════
 // HISTORY PAGE
 // ════════════════════════════════════════════════════════
+let _histView = "table"; // "table" | "list"
+
+function histSetView(v) {
+  _histView = v;
+  document.getElementById("hvBtn-table").style.background = v==="table" ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-table").style.color      = v==="table" ? "#fff"    : "#666";
+  document.getElementById("hvBtn-list").style.background  = v==="list"  ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-list").style.color       = v==="list"  ? "#fff"    : "#666";
+  renderHistTable();
+}
+
 function histQuickRange(mode) {
   const now = getIST();
   const y = now.getFullYear(), mo = now.getMonth();
@@ -3614,12 +3645,10 @@ function histQuickRange(mode) {
   else if (mode === "year")      { from = new Date(y, 0, 1); }
   document.getElementById("histFrom").value = toISO(from);
   document.getElementById("histTo").value   = toISO(to);
-  // Highlight active chip
   document.querySelectorAll("#pageHistory .range-chips .chip").forEach(c => c.classList.remove("active"));
   event.target.classList.add("active");
   loadHistory();
 }
-// Keep legacy shims in case called elsewhere
 function histSetRange(daysBack) {
   const today = getIST();
   const from  = new Date(today); from.setDate(from.getDate() - daysBack);
@@ -3639,9 +3668,22 @@ function histSetPeriod(period) {
   loadHistory();
 }
 function histApplySortSel() {
-  const val = document.getElementById("histSortSel").value;
-  const [col, dir] = val.split("_");
-  _histSort = { col: col === "amount" ? "amount" : col === "name" ? "name" : col === "meal" ? "meal" : col === "status" ? "status" : "date", dir: dir || "asc" };
+  const val = document.getElementById("histSortSel")?.value || "date_asc";
+  const parts = val.split("_");
+  const dir = parts.pop();
+  const col = parts.join("_");
+  _histSort = { col, dir };
+  renderHistTable();
+}
+function histApplyFilters() { renderHistTable(); }
+function histResetFilters() {
+  ["histMeal","histPayStatus","histPayMethod","histAreaSel"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+  const s = document.getElementById("histSearch"); if(s) s.value="";
+  document.getElementById("histSortSel").value = "date_asc";
+  _histSort = {col:"date", dir:"asc"};
+  _histFilter = "all";
+  ["all","paid","pending"].forEach(id => document.getElementById("hf-"+id)?.classList.remove("sel"));
+  document.getElementById("hf-all")?.classList.add("sel");
   renderHistTable();
 }
 let _histAllOrders = [];
@@ -3662,16 +3704,19 @@ async function loadHistory() {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderHistory&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    // Pre-apply meal + status filters from dropdowns
-    const meal      = document.getElementById("histMeal").value;
-    const payStatus = document.getElementById("histPayStatus")?.value || "";
-    let filtered = data.orders;
-    if (meal)      filtered = filtered.filter(o => o.meal === meal);
-    if (payStatus) filtered = filtered.filter(o => o.status === payStatus);
-    _histAllOrders = filtered;
+    _histAllOrders = data.orders;
+    _histFilter = "all";
+    _histSort   = {col:"date", dir:"asc"};
+
+    // Populate area dropdown
+    const areas = [...new Set(data.orders.map(o=>o.area).filter(Boolean))].sort();
+    const areaSel = document.getElementById("histAreaSel");
+    if (areaSel) {
+      areaSel.innerHTML = `<option value="">All Areas</option>` + areas.map(a=>`<option value="${a}">${a}</option>`).join("");
+    }
     // Sync sort dropdown
     const sortSel = document.getElementById("histSortSel");
-    if (sortSel) { sortSel.value = "date_asc"; }
+    if (sortSel) sortSel.value = "date_asc";
     _histFilter = "all";
     _histSort   = {col:"date", dir:"asc"};
     // Reset status chips
@@ -3715,9 +3760,24 @@ function histSortBy(col) {
 
 function renderHistTable() {
   const el = document.getElementById("histTableWrap");
-  // Apply status filter
-  let list = _histFilter==="all" ? [..._histAllOrders]
-    : _histAllOrders.filter(o => o.status === _histFilter);
+  // Apply all filters
+  const statusChipFilter = _histFilter;
+  const mealF    = document.getElementById("histMeal")?.value || "";
+  const statusF  = document.getElementById("histPayStatus")?.value || "";
+  const methodF  = document.getElementById("histPayMethod")?.value || "";
+  const areaF    = document.getElementById("histAreaSel")?.value || "";
+  const searchF  = (document.getElementById("histSearch")?.value || "").toLowerCase().trim();
+
+  let list = _histAllOrders.filter(o => {
+    if (statusChipFilter !== "all" && o.status !== statusChipFilter) return false;
+    if (mealF   && o.meal   !== mealF)   return false;
+    if (statusF && o.status !== statusF) return false;
+    if (methodF && (o.payment_method||"") !== methodF) return false;
+    if (areaF   && o.area   !== areaF)   return false;
+    if (searchF && !o.name.toLowerCase().includes(searchF) && !String(o.phone).includes(searchF)) return false;
+    return true;
+  });
+
   // Apply sort
   const {col, dir} = _histSort;
   const mul = dir==="asc" ? 1 : -1;
@@ -3725,13 +3785,15 @@ function renderHistTable() {
     if (col==="date")   return mul * a.date.localeCompare(b.date);
     if (col==="meal")   return mul * a.meal.localeCompare(b.meal);
     if (col==="name")   return mul * a.name.localeCompare(b.name);
-    if (col==="area")   return mul * a.area.localeCompare(b.area);
+    if (col==="area")   return mul * (a.area||"").localeCompare(b.area||"");
     if (col==="amount") return mul * (a.total - b.total);
     if (col==="status") return mul * a.status.localeCompare(b.status);
     return 0;
   });
-  document.getElementById("histRowCount").textContent = `${list.length} row${list.length!==1?"s":""}`;
+  document.getElementById("histRowCount").textContent = `${list.length} order${list.length!==1?"s":""}`;
   if (!list.length) { el.innerHTML=`<div class="no-orders-msg">No orders match the current filters.</div>`; return; }
+
+  if (_histView === "list") { el.innerHTML = renderHistList(list); return; }
 
   const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
@@ -3750,17 +3812,66 @@ function renderHistTable() {
     <td style="white-space:nowrap;">${fmtD(o.date)}</td>
     <td>${mChip(o.meal)}</td>
     <td><strong>${o.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${o.phone}</span></td>
-    <td><span class="area-chip">${o.area}</span></td>
+    <td><span class="area-chip">${o.area||'—'}</span></td>
     <td style="text-align:right;font-weight:700;white-space:nowrap;">${fmtM(o.total)}</td>
     <td>${pBadge(o.status)}</td>
+    <td style="font-size:.72rem;color:var(--muted);">${o.payment_method||'UPI'}</td>
   </tr>`).join("");
   el.innerHTML = `<div class="hist-table-wrap"><table class="hist-table">
     <thead><tr>
       ${th("Date","date")}${th("Meal","meal")}${th("Customer","name")}${th("Area","area")}
-      ${th("Amount","amount","text-align:right;")}${th("Status","status")}
+      ${th("Amount","amount","text-align:right;")}${th("Status","status")}<th>Method</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
+}
+
+function renderHistList(list) {
+  const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+  const mColor = m => m==="Breakfast"?"#e67e22":m==="Lunch"?"#27ae60":"#8e44ad";
+  const mIcon  = m => m==="Breakfast"?"🌅":m==="Lunch"?"☀️":"🌙";
+  const pBg    = s => (s==="Paid"||s==="Wallet Paid") ? "#e8f5e9" : "#fff8ec";
+  const pColor = s => (s==="Paid"||s==="Wallet Paid") ? "#27ae60" : "#e67e22";
+  const pIcon  = s => (s==="Paid"||s==="Wallet Paid") ? "✓" : "⏳";
+  const methodIcon = m => m==="Wallet"?"💳":m==="Split"?"🔀":m==="On Account"?"📋":"📲";
+
+  const cards = list.map(o => {
+    const itemsHtml = o.items && Object.keys(o.items).length
+      ? Object.entries(o.items).filter(([,q])=>Number(q)>0)
+          .map(([name,qty])=>`<span style="display:inline-flex;align-items:center;gap:3px;background:#f5f5f5;border-radius:20px;padding:2px 8px;font-size:.72rem;margin:2px;">${qty}× ${name}</span>`).join("")
+      : `<span style="font-size:.72rem;color:var(--muted);">—</span>`;
+
+    const notesHtml = o.notes ? `<div style="font-size:.72rem;color:#e67e22;margin-top:6px;padding:4px 8px;background:#fff8ec;border-radius:6px;border-left:3px solid #f39c12;">📝 ${o.notes}</div>` : "";
+
+    return `<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,0.07);border-left:4px solid ${mColor(o.meal)};">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <!-- Left: meal + date -->
+        <div style="flex-shrink:0;text-align:center;min-width:60px;">
+          <div style="font-size:1.4rem;">${mIcon(o.meal)}</div>
+          <div style="font-size:.65rem;font-weight:700;color:${mColor(o.meal)};text-transform:uppercase;">${o.meal}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:2px;white-space:nowrap;">${fmtD(o.date)}</div>
+        </div>
+        <!-- Middle: customer + items -->
+        <div style="flex:1;min-width:180px;">
+          <div style="font-weight:800;font-size:.92rem;color:var(--fg);">${o.name}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">${o.phone}${o.area?` · <span style="font-weight:600;color:#555;">${o.area}</span>`:''}${o.wing||o.flat?` · ${[o.wing,o.flat].filter(Boolean).join(' ')}`:''}</div>
+          <div>${itemsHtml}</div>
+          ${notesHtml}
+        </div>
+        <!-- Right: amount + status + method -->
+        <div style="flex-shrink:0;text-align:right;">
+          <div style="font-size:1.2rem;font-weight:900;color:var(--fg);">${fmtM(o.total)}</div>
+          <div style="margin-top:4px;display:inline-block;background:${pBg(o.status)};color:${pColor(o.status)};border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">${pIcon(o.status)} ${o.status}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${methodIcon(o.payment_method)} ${o.payment_method||'UPI'}</div>
+          ${o.discount ? `<div style="font-size:.68rem;color:#27ae60;margin-top:2px;">−${fmtM(o.discount)} discount</div>` : ""}
+          ${o.delivery ? `<div style="font-size:.68rem;color:var(--muted);">+${fmtM(o.delivery)} delivery</div>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<div style="margin-top:4px;">${cards}</div>`;
 }
 
 // ════════════════════════════════════════════════════════
