@@ -298,6 +298,14 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getAnalytics(p));
     }
+    if (action === "getExpenses") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getExpenses(p));
+    }
+    if (action === "getExpenseAnalytics") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getExpenseAnalytics(p));
+    }
     if (action === "adminCreditWallet") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(adminCreditWallet(body));
@@ -490,6 +498,14 @@ function doPost(e) {
     if (action === "batchProcessApprovals") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(batchProcessApprovals(body));
+    }
+    if (action === "saveExpense") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveExpense(body));
+    }
+    if (action === "deleteExpense") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteExpense(body));
     }
     if (action === "triggerManualArchive") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -3727,6 +3743,183 @@ function adminCreditWallet(body) {
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
   var newBalance = _calculateWalletBalance(phone);
   return {success:true, newBalance: Math.round(newBalance)};
+}
+
+// ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────
+const TAB_EXPENSES      = "SK_Expenses";
+const EXPENSES_HEADERS  = [
+  "Expense_ID","Date","Category","Item","Amount","Frequency",
+  "Payment_Mode","Notes","Timestamp"
+];
+
+// Category → sub-items map (also used by frontend for dropdowns)
+var EXPENSE_CATEGORIES = {
+  "🥦 Raw Materials": [
+    "Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)",
+    "Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"
+  ],
+  "📦 Packaging": [
+    "Containers / Boxes","Bags & Covers","Labels & Stickers",
+    "Tissue & Napkins","Other Packaging"
+  ],
+  "⛽ Fuel & Transport": [
+    "Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"
+  ],
+  "👨‍🍳 Staff": [
+    "Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"
+  ],
+  "🔌 Utilities": [
+    "LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"
+  ],
+  "🍳 Kitchen & Equipment": [
+    "Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"
+  ],
+  "📣 Marketing": [
+    "Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"
+  ],
+  "🏦 Finance & Admin": [
+    "Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"
+  ],
+  "📝 Miscellaneous": ["Miscellaneous"]
+};
+
+function saveExpense(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var hIdx = headerIndex(ws);
+  var now  = new Date();
+  var id   = "EXP-" + Utilities.formatDate(now, "Asia/Kolkata", "yyyyMMdd") + "-" + Math.floor(Math.random()*9000+1000);
+
+  var totalCols = ws.getLastColumn();
+  var row = new Array(totalCols).fill("");
+  var set = function(col, val) { if (hIdx[col]) row[hIdx[col]-1] = val; };
+
+  set("Expense_ID",   id);
+  set("Date",         String(body.date || Utilities.formatDate(now,"Asia/Kolkata","yyyy-MM-dd")));
+  set("Category",     String(body.category  || ""));
+  set("Item",         String(body.item      || ""));
+  set("Amount",       Number(body.amount)   || 0);
+  set("Frequency",    String(body.frequency || "One-time"));
+  set("Payment_Mode", String(body.payment_mode || "Cash"));
+  set("Notes",        String(body.notes     || ""));
+  set("Timestamp",    getISTTimestamp());
+
+  ws.appendRow(row);
+  return { success: true, id: id };
+}
+
+function deleteExpense(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = ws.getDataRange().getValues();
+  var idCol = (hIdx["Expense_ID"] || 1) - 1;
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][idCol]).trim() === String(body.id || "").trim()) {
+      ws.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: "Expense not found" };
+}
+
+function getExpenses(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var rows = getAllRows(ws);
+  var from = String(body.from || "");
+  var to   = String(body.to   || "");
+  var filtered = rows.filter(function(r) {
+    var d = String(r.Date || "").trim();
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+  // Sort newest first
+  filtered.sort(function(a,b){ return String(b.Date).localeCompare(String(a.Date)); });
+  return {
+    success: true,
+    expenses: filtered.map(function(r) {
+      return {
+        id:           r.Expense_ID,
+        date:         r.Date,
+        category:     r.Category,
+        item:         r.Item,
+        amount:       Number(r.Amount) || 0,
+        frequency:    r.Frequency,
+        payment_mode: r.Payment_Mode,
+        notes:        r.Notes,
+        timestamp:    r.Timestamp
+      };
+    }),
+    categories: EXPENSE_CATEGORIES
+  };
+}
+
+function getExpenseAnalytics(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var rows = getAllRows(ws);
+  var from = String(body.from || "");
+  var to   = String(body.to   || "");
+
+  var filtered = rows.filter(function(r) {
+    var d = String(r.Date || "").trim();
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+
+  var total       = 0;
+  var byCat       = {};   // category → total
+  var byFreq      = {};   // frequency → total
+  var byPayMode   = {};   // payment mode → total
+  var byDay       = {};   // date → total
+  var topItems    = {};   // item → total
+  var monthlyFixed = 0;   // sum of Monthly-tagged expenses
+
+  filtered.forEach(function(r) {
+    var amt  = Number(r.Amount) || 0;
+    var cat  = String(r.Category || "Other");
+    var freq = String(r.Frequency || "One-time");
+    var pm   = String(r.Payment_Mode || "Cash");
+    var d    = String(r.Date || "").trim();
+    var item = String(r.Item || "Other");
+
+    total += amt;
+    byCat[cat]     = (byCat[cat]     || 0) + amt;
+    byFreq[freq]   = (byFreq[freq]   || 0) + amt;
+    byPayMode[pm]  = (byPayMode[pm]  || 0) + amt;
+    byDay[d]       = (byDay[d]       || 0) + amt;
+    topItems[item] = (topItems[item] || 0) + amt;
+    if (freq === "Monthly") monthlyFixed += amt;
+  });
+
+  var days = Object.keys(byDay).sort().map(function(d) {
+    return { date: d, amount: Math.round(byDay[d]) };
+  });
+
+  var catArr = Object.keys(byCat).sort(function(a,b){ return byCat[b]-byCat[a]; }).map(function(c) {
+    return { category: c, amount: Math.round(byCat[c]) };
+  });
+
+  var itemArr = Object.keys(topItems).sort(function(a,b){ return topItems[b]-topItems[a]; }).slice(0,10).map(function(i) {
+    return { item: i, amount: Math.round(topItems[i]) };
+  });
+
+  return {
+    success:      true,
+    total:        Math.round(total),
+    monthlyFixed: Math.round(monthlyFixed),
+    count:        filtered.length,
+    byCategory:   catArr,
+    byFrequency:  byFreq,
+    byPayMode:    byPayMode,
+    byDay:        days,
+    topItems:     itemArr,
+    categories:   EXPENSE_CATEGORIES
+  };
 }
 
 // ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────

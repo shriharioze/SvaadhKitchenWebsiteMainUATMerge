@@ -737,6 +737,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .btn-mark-collected { display:flex; align-items:center; gap:7px; padding:9px 18px; background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.82rem; font-weight:700; cursor:pointer; font-family:inherit; }
 .btn-mark-collected:hover { background:#245f3e; }
 .billing-empty { text-align:center; padding:48px; color:var(--muted); font-size:.9rem; }
+
+/* ── EXPENSES ── */
+.exp-label { display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;color:#64748b;margin-bottom:5px; }
+.exp-tab { padding:8px 16px;border:none;background:transparent;font-size:.82rem;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0; }
+.exp-tab.active { color:var(--red);border-bottom-color:var(--red); }
+.exp-freq-btn { display:flex;align-items:center;gap:5px;padding:7px 14px;border:1.5px solid #cbd5e1;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;color:#475569;background:#fff;transition:all .15s; }
+.exp-freq-btn:has(input:checked) { border-color:var(--red);background:#fff5f5;color:var(--red); }
+.exp-freq-btn input { display:none; }
+.exp-log-row { display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:.82rem; }
+.exp-log-row:last-child { border-bottom:none; }
+.exp-log-row:hover { background:#fafafa; }
+.exp-cat-badge { font-size:.68rem;padding:3px 9px;border-radius:20px;background:#f1f5f9;color:#475569;font-weight:600;white-space:nowrap; }
+.exp-freq-badge { font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:700; }
+.exp-freq-badge.One-time { background:#f0f9ff;color:#0369a1; }
+.exp-freq-badge.Daily    { background:#fef3c7;color:#92400e; }
+.exp-freq-badge.Weekly   { background:#f0fdf4;color:#166534; }
+.exp-freq-badge.Monthly  { background:#fdf4ff;color:#7e22ce; }
+.exp-kpi { background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center; }
+.exp-kpi-val { font-size:1.3rem;font-weight:800;color:#1a1a1a; }
+.exp-kpi-lbl { font-size:.7rem;color:#64748b;font-weight:600;margin-top:2px; }
+.exp-bar-wrap { background:#f8fafc;border-radius:10px;padding:14px 16px;margin-bottom:10px; }
+.exp-bar-row { display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8rem; }
+.exp-bar-label { width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#374151; }
+.exp-bar-track { flex:1;background:#e2e8f0;border-radius:4px;height:8px; }
+.exp-bar-fill  { height:8px;border-radius:4px;background:var(--red);transition:width .4s; }
+.exp-bar-amt { width:60px;text-align:right;font-weight:700;color:#1a1a1a; }
+
 @media print {
   .bill-print-page { font-family: 'DM Sans', sans-serif; padding: 24px; max-width: 480px; margin: 0 auto; }
   body * { visibility: hidden; }
@@ -823,6 +850,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navManage" onclick="switchPage('manage')">⚙️ Manage Lists</button>
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
+      <button class="topbar-btn" id="navExpenses" onclick="switchPage('expenses')">💸 Expenses</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
       <button class="topbar-btn" id="navArchive" onclick="switchPage('archive')">🗄️ Archive</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
@@ -1142,6 +1170,141 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
       </div><!-- /pagePackaging -->
 
+      <!-- ════ PAGE: EXPENSES ════ -->
+      <div class="page" id="pageExpenses">
+        <div class="page-header">
+          <div class="page-title">💸 Expenses <small>Track all kitchen costs — raw materials, staff, utilities &amp; more</small></div>
+        </div>
+
+        <!-- Tabs: Add / Log / Analytics -->
+        <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:2px solid #f1f5f9;padding-bottom:0;">
+          <button class="exp-tab active" id="expTabAdd"      onclick="switchExpTab('add')">➕ Add Expense</button>
+          <button class="exp-tab"        id="expTabLog"      onclick="switchExpTab('log')">📋 Expense Log</button>
+          <button class="exp-tab"        id="expTabAnalytics" onclick="switchExpTab('analytics')">📊 Analytics</button>
+        </div>
+
+        <!-- ── ADD EXPENSE PANEL ── -->
+        <div id="expPanelAdd">
+          <div style="max-width:560px;">
+
+            <!-- Quick-add recurring templates -->
+            <div id="expRecurringTemplates" style="margin-bottom:16px;display:none;">
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">⚡ QUICK RE-ENTER LAST MONTH</div>
+              <div id="expTemplateChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:20px 22px;">
+
+              <!-- Row 1: Date -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📅 Date</label>
+                <input type="date" id="expDate" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <!-- Row 2: Category -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🗂️ Category</label>
+                <select id="expCategory" onchange="onExpCategoryChange()" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="">— Select category —</option>
+                </select>
+              </div>
+
+              <!-- Row 3: Item -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📝 Item / Specific Expense</label>
+                <select id="expItem" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="">— Select category first —</option>
+                </select>
+              </div>
+
+              <!-- Row 4: Amount + Payment Mode -->
+              <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                  <label class="exp-label">💰 Amount (₹)</label>
+                  <input type="number" id="expAmount" min="1" placeholder="e.g. 450"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+                <div style="flex:1;">
+                  <label class="exp-label">💳 Payment Mode</label>
+                  <select id="expPayMode" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Card">Card</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 5: Frequency -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🔁 Frequency</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="One-time" checked> One-time</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Daily"> Daily</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Weekly"> Weekly</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Monthly"> Monthly</label>
+                </div>
+              </div>
+
+              <!-- Row 6: Notes -->
+              <div style="margin-bottom:18px;">
+                <label class="exp-label">💬 Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <input type="text" id="expNotes" placeholder="e.g. From Mahadik Stores, paid advance…"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <button class="btn-primary" onclick="submitExpense()" style="width:100%;padding:11px;">
+                ➕ Save Expense
+              </button>
+              <div id="expSaveStatus" style="margin-top:8px;font-size:.78rem;min-height:16px;text-align:center;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── EXPENSE LOG PANEL ── -->
+        <div id="expPanelLog" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label class="exp-label">From</label>
+              <input type="date" id="expLogFrom" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <div>
+              <label class="exp-label">To</label>
+              <input type="date" id="expLogTo" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <button class="btn-primary" onclick="loadExpenseLog()" style="padding:9px 18px;">Load</button>
+          </div>
+          <div class="range-chips" style="margin-bottom:14px;">
+            <button class="chip" onclick="expLogSetRange(6)">Week</button>
+            <button class="chip" onclick="expLogSetRange(29)">Month</button>
+            <button class="chip" onclick="expLogSetRange(89)">Quarter</button>
+          </div>
+          <div id="expLogContent"></div>
+        </div>
+
+        <!-- ── ANALYTICS PANEL ── -->
+        <div id="expPanelAnalytics" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label class="exp-label">From</label>
+              <input type="date" id="expAnaFrom" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <div>
+              <label class="exp-label">To</label>
+              <input type="date" id="expAnaTo" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <button class="btn-primary" onclick="loadExpenseAnalytics()" style="padding:9px 18px;">Load</button>
+          </div>
+          <div class="range-chips" style="margin-bottom:14px;">
+            <button class="chip" onclick="expAnaSetRange(6)">Week</button>
+            <button class="chip" onclick="expAnaSetRange(29)">Month</button>
+            <button class="chip" onclick="expAnaSetRange(89)">Quarter</button>
+            <button class="chip" onclick="expAnaSetRange(179)">6 Months</button>
+          </div>
+          <div id="expAnaContent"></div>
+        </div>
+
+      </div><!-- /pageExpenses -->
 
       <!-- ════ PAGE: ANALYTICS ════ -->
       <div class="page" id="pageAnalytics">
@@ -2412,6 +2575,7 @@ async function switchPage(page) {
   document.getElementById("pageOrders").classList.toggle("on", page==="orders");
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
+  document.getElementById("pageExpenses").classList.toggle("on", page==="expenses");
   document.getElementById("pageArchive").classList.toggle("on", page==="archive");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
@@ -2425,6 +2589,7 @@ async function switchPage(page) {
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
+  document.getElementById("navExpenses").classList.toggle("active", page==="expenses");
   document.getElementById("navArchive").classList.toggle("active", page==="archive");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
@@ -2468,7 +2633,8 @@ async function switchPage(page) {
     const at = document.getElementById("analyticsTo");
     if (!af.value) { const ist=getIST(); analyticsSetRange(29); return; }
   }
-  if (page === "archive") { _initArchivePage(); }
+  if (page === "archive")   { _initArchivePage(); }
+  if (page === "expenses")  { initExpensePage(); }
   if (page === "tenday") { tendayAutoSelect(); }
   if (page === "payments") {
     const pp = document.getElementById("payDate");
@@ -5867,6 +6033,348 @@ function toggleManualBillingCycle() {
       note.style.color = 'var(--muted)';
     }
   }
+}
+
+// ── EXPENSES ───────────────────────────────────────────────────────────────
+const EXP_CATEGORIES = {
+  "🥦 Raw Materials":       ["Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)","Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"],
+  "📦 Packaging":           ["Containers / Boxes","Bags & Covers","Labels & Stickers","Tissue & Napkins","Other Packaging"],
+  "⛽ Fuel & Transport":    ["Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"],
+  "👨‍🍳 Staff":              ["Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"],
+  "🔌 Utilities":           ["LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"],
+  "🍳 Kitchen & Equipment": ["Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"],
+  "📣 Marketing":           ["Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"],
+  "🏦 Finance & Admin":     ["Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"],
+  "📝 Miscellaneous":       ["Miscellaneous"]
+};
+
+let _expInitDone    = false;
+let _expLastEntries = []; // cache for recurring templates
+
+function initExpensePage() {
+  // Set default date to today
+  const today = toISO(getIST());
+  if ($("expDate")) $("expDate").value = today;
+
+  // Populate category dropdown
+  const catSel = $("expCategory");
+  if (catSel && catSel.options.length <= 1) {
+    Object.keys(EXP_CATEGORIES).forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat; opt.textContent = cat;
+      catSel.appendChild(opt);
+    });
+  }
+
+  // Default log date range to this month
+  const ist = getIST();
+  const monthStart = `${ist.getFullYear()}-${String(ist.getMonth()+1).padStart(2,"0")}-01`;
+  if ($("expLogFrom") && !$("expLogFrom").value) $("expLogFrom").value = monthStart;
+  if ($("expLogTo")   && !$("expLogTo").value)   $("expLogTo").value   = today;
+  if ($("expAnaFrom") && !$("expAnaFrom").value) $("expAnaFrom").value = monthStart;
+  if ($("expAnaTo")   && !$("expAnaTo").value)   $("expAnaTo").value   = today;
+
+  if (!_expInitDone) {
+    _expInitDone = true;
+    loadRecurringTemplates();
+  }
+}
+
+function switchExpTab(tab) {
+  ["add","log","analytics"].forEach(t => {
+    $(`expTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle("active", t === tab);
+    $(`expPanel${t.charAt(0).toUpperCase()+t.slice(1)}`).style.display = t === tab ? "block" : "none";
+  });
+}
+
+function onExpCategoryChange() {
+  const cat   = $("expCategory").value;
+  const items = EXP_CATEGORIES[cat] || [];
+  const sel   = $("expItem");
+  sel.innerHTML = `<option value="">— Select item —</option>`;
+  items.forEach(it => {
+    const opt = document.createElement("option");
+    opt.value = it; opt.textContent = it;
+    sel.appendChild(opt);
+  });
+}
+
+async function submitExpense() {
+  const date     = $("expDate").value;
+  const category = $("expCategory").value;
+  const item     = $("expItem").value;
+  const amount   = parseFloat($("expAmount").value);
+  const freq     = document.querySelector('input[name="expFreq"]:checked')?.value || "One-time";
+  const payMode  = $("expPayMode").value;
+  const notes    = $("expNotes").value.trim();
+  const status   = $("expSaveStatus");
+
+  if (!date)     { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select a date.</span>`; return; }
+  if (!category) { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select a category.</span>`; return; }
+  if (!item)     { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select an item.</span>`; return; }
+  if (!amount || amount <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid amount.</span>`; return; }
+
+  status.innerHTML = `<span style="color:#64748b;">Saving…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveExpense", pin:S.sessionPin, date, category, item, amount, frequency:freq, payment_mode:payMode, notes
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ Saved! (${data.id})</span>`;
+    // Reset form
+    $("expCategory").value = ""; $("expItem").innerHTML = `<option>— Select category first —</option>`;
+    $("expAmount").value = ""; $("expNotes").value = "";
+    document.querySelector('input[name="expFreq"][value="One-time"]').checked = true;
+    _expInitDone = false; loadRecurringTemplates(); // refresh templates
+    setTimeout(() => { if (status) status.innerHTML = ""; }, 4000);
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ ${e.message}</span>`;
+  }
+}
+
+async function loadRecurringTemplates() {
+  // Load last 90 days of monthly/weekly expenses as quick re-enter chips
+  try {
+    const ist = getIST();
+    const to  = toISO(ist);
+    const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-90); return toISO(d); })();
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenses&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) return;
+    // Keep only recurring entries, deduplicate by item
+    const seen = {}; const templates = [];
+    (data.expenses || []).forEach(e => {
+      if ((e.frequency === "Monthly" || e.frequency === "Weekly") && !seen[e.item]) {
+        seen[e.item] = true;
+        templates.push(e);
+      }
+    });
+    _expLastEntries = templates;
+    renderRecurringTemplates(templates);
+  } catch(e) {}
+}
+
+function renderRecurringTemplates(templates) {
+  const wrap  = $("expRecurringTemplates");
+  const chips = $("expTemplateChips");
+  if (!templates.length) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  chips.innerHTML = templates.slice(0,8).map(e =>
+    `<button onclick="quickReEnter(${JSON.stringify(e).replace(/"/g,'&quot;')})"
+      style="padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:20px;font-size:.75rem;
+             background:#fff;cursor:pointer;color:#374151;font-weight:600;">
+       ${e.category.split(" ")[0]} ${e.item} · ₹${e.amount}
+     </button>`
+  ).join("");
+}
+
+function quickReEnter(e) {
+  // Pre-fill form with last entry values
+  $("expDate").value = toISO(getIST());
+  $("expCategory").value = e.category;
+  onExpCategoryChange();
+  setTimeout(() => { $("expItem").value = e.item; }, 50);
+  $("expAmount").value = e.amount;
+  $("expPayMode").value = e.payment_mode || "Cash";
+  $("expNotes").value = e.notes || "";
+  const radio = document.querySelector(`input[name="expFreq"][value="${e.frequency}"]`);
+  if (radio) radio.checked = true;
+  $("expSaveStatus").innerHTML = `<span style="color:#0369a1;">📋 Pre-filled from last entry — review and save.</span>`;
+  window.scrollTo(0, 0);
+}
+
+// ── EXPENSE LOG ────────────────────────────────────────────────
+function expLogSetRange(days) {
+  const ist = getIST(), to = toISO(ist);
+  const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-days); return toISO(d); })();
+  $("expLogFrom").value = from; $("expLogTo").value = to;
+  loadExpenseLog();
+}
+
+async function loadExpenseLog() {
+  const from = $("expLogFrom").value, to = $("expLogTo").value;
+  const el = $("expLogContent");
+  el.innerHTML = `<div style="text-align:center;padding:30px;color:#94a3b8;">Loading…</div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenses&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    renderExpenseLog(data.expenses || []);
+  } catch(e) {
+    el.innerHTML = `<div style="color:#dc2626;padding:20px;">Error: ${e.message}</div>`;
+  }
+}
+
+function renderExpenseLog(expenses) {
+  const el = $("expLogContent");
+  if (!expenses.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No expenses in this period.</div>`;
+    return;
+  }
+  const total = expenses.reduce((s,e) => s + e.amount, 0);
+  // Group by date
+  const byDate = {};
+  expenses.forEach(e => { if (!byDate[e.date]) byDate[e.date] = []; byDate[e.date].push(e); });
+  const dates = Object.keys(byDate).sort().reverse();
+
+  let html = `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;">
+    <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:.78rem;color:#64748b;font-weight:600;">${expenses.length} entries</span>
+      <span style="font-weight:800;color:#1a1a1a;font-size:.95rem;">Total: ₹${total.toLocaleString("en-IN")}</span>
+    </div>`;
+
+  dates.forEach(date => {
+    const dayTotal = byDate[date].reduce((s,e) => s + e.amount, 0);
+    const [y,m,d] = date.split("-");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const label = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    html += `<div style="padding:8px 16px;background:#f1f5f9;font-size:.75rem;font-weight:700;color:#475569;display:flex;justify-content:space-between;">
+      <span>${label}</span><span>₹${dayTotal.toLocaleString("en-IN")}</span></div>`;
+    byDate[date].forEach(e => {
+      html += `<div class="exp-log-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;color:#1a1a1a;font-size:.83rem;">${e.item}</div>
+          <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+            <span class="exp-cat-badge">${e.category}</span>
+            <span class="exp-freq-badge ${e.frequency}">${e.frequency}</span>
+            ${e.payment_mode ? `<span style="font-size:.65rem;color:#94a3b8;">${e.payment_mode}</span>` : ""}
+            ${e.notes ? `<span style="font-size:.68rem;color:#64748b;font-style:italic;">${e.notes}</span>` : ""}
+          </div>
+        </div>
+        <div style="font-weight:800;color:#1a1a1a;font-size:.9rem;white-space:nowrap;margin-left:8px;">₹${e.amount.toLocaleString("en-IN")}</div>
+        <button onclick="deleteExpenseEntry('${e.id}')" title="Delete"
+          style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.9rem;padding:4px;margin-left:4px;">🗑️</button>
+      </div>`;
+    });
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function deleteExpenseEntry(id) {
+  if (!await sConfirm("Delete this expense entry?", "Confirm", "🗑️")) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"deleteExpense", pin:S.sessionPin, id }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast("✅ Deleted");
+    loadExpenseLog();
+  } catch(e) { toast("Error: " + e.message); }
+}
+
+// ── EXPENSE ANALYTICS ──────────────────────────────────────────
+function expAnaSetRange(days) {
+  const ist = getIST(), to = toISO(ist);
+  const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-days); return toISO(d); })();
+  $("expAnaFrom").value = from; $("expAnaTo").value = to;
+  loadExpenseAnalytics();
+}
+
+async function loadExpenseAnalytics() {
+  const from = $("expAnaFrom").value, to = $("expAnaTo").value;
+  const el = $("expAnaContent");
+  el.innerHTML = `<div style="text-align:center;padding:30px;color:#94a3b8;">Loading…</div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenseAnalytics&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    renderExpenseAnalytics(data);
+  } catch(e) {
+    el.innerHTML = `<div style="color:#dc2626;padding:20px;">Error: ${e.message}</div>`;
+  }
+}
+
+function renderExpenseAnalytics(d) {
+  const el = $("expAnaContent");
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+
+  // KPI cards
+  const dailyAvg = d.byDay.length > 0 ? Math.round(d.total / d.byDay.length) : 0;
+  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;">
+    <div class="exp-kpi"><div class="exp-kpi-val">${fmtM(d.total)}</div><div class="exp-kpi-lbl">Total Spent</div></div>
+    <div class="exp-kpi"><div class="exp-kpi-val">${d.count}</div><div class="exp-kpi-lbl">Entries</div></div>
+    <div class="exp-kpi"><div class="exp-kpi-val">${fmtM(dailyAvg)}</div><div class="exp-kpi-lbl">Daily Average</div></div>
+    <div class="exp-kpi" style="border-color:#c084fc;"><div class="exp-kpi-val" style="color:#7e22ce;">${fmtM(d.monthlyFixed)}</div><div class="exp-kpi-lbl">Monthly Fixed</div></div>
+  </div>`;
+
+  // Category breakdown (bar chart)
+  if (d.byCategory.length) {
+    const maxAmt = d.byCategory[0].amount;
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:12px;">📊 BY CATEGORY</div>`;
+    d.byCategory.forEach(c => {
+      const pct = maxAmt > 0 ? Math.round((c.amount/maxAmt)*100) : 0;
+      html += `<div class="exp-bar-row">
+        <div class="exp-bar-label">${c.category}</div>
+        <div class="exp-bar-track"><div class="exp-bar-fill" style="width:${pct}%"></div></div>
+        <div class="exp-bar-amt">${fmtM(c.amount)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Frequency + Payment mode split
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">`;
+
+  // Frequency
+  html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+    <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">🔁 BY FREQUENCY</div>`;
+  ["Monthly","Weekly","Daily","One-time"].forEach(f => {
+    const amt = d.byFrequency[f] || 0;
+    if (!amt) return;
+    html += `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:6px;">
+      <span class="exp-freq-badge ${f}" style="font-size:.72rem;">${f}</span>
+      <span style="font-weight:700;">${fmtM(amt)}</span></div>`;
+  });
+  html += `</div>`;
+
+  // Payment mode
+  html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+    <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">💳 BY PAYMENT</div>`;
+  Object.entries(d.byPayMode).forEach(([mode, amt]) => {
+    html += `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:6px;">
+      <span style="color:#475569;">${mode}</span>
+      <span style="font-weight:700;">${fmtM(amt)}</span></div>`;
+  });
+  html += `</div></div>`;
+
+  // Top items
+  if (d.topItems.length) {
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">🔝 TOP EXPENSE ITEMS</div>
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse;">`;
+    d.topItems.forEach((it, i) => {
+      html += `<tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:7px 4px;color:#64748b;">${i+1}</td>
+        <td style="padding:7px 4px;font-weight:600;">${it.item}</td>
+        <td style="padding:7px 4px;text-align:right;font-weight:800;">${fmtM(it.amount)}</td>
+      </tr>`;
+    });
+    html += `</table></div>`;
+  }
+
+  // Day-wise trend
+  if (d.byDay.length) {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">📅 DAY-WISE SPENDING</div>
+      <table style="width:100%;font-size:.78rem;border-collapse:collapse;">
+        <thead><tr style="color:#64748b;border-bottom:2px solid #e2e8f0;">
+          <th style="padding:6px 4px;text-align:left;">Date</th>
+          <th style="padding:6px 4px;text-align:right;">Amount</th>
+        </tr></thead><tbody>`;
+    [...d.byDay].reverse().forEach(row => {
+      const [y,m,dy] = row.date.split("-");
+      html += `<tr style="border-bottom:1px solid #f8fafc;">
+        <td style="padding:6px 4px;">${parseInt(dy)} ${months[parseInt(m)-1]} ${y}</td>
+        <td style="padding:6px 4px;text-align:right;font-weight:700;">${fmtM(row.amount)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  el.innerHTML = html || `<div style="text-align:center;padding:40px;color:#94a3b8;">No expense data for this period.</div>`;
 }
 
 // ── ARCHIVE PANEL ──────────────────────────────────────────────────────────
