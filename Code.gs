@@ -327,6 +327,9 @@ function doGet(e) {
       });
     }
     
+    // Keep-alive ping — just wakes GAS, no sheet reads
+    if (action === "ping") return jsonRes({ok: true, t: new Date().toISOString()});
+
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
@@ -3752,6 +3755,29 @@ function logClientError(body) {
   } catch(e) {
     return { success: false }; // never throw — this is logging only
   }
+}
+
+// ── KEEP-ALIVE ────────────────────────────────────────────────────────────────
+// Keeps the GAS instance warm so customers never hit a cold-start timeout.
+// Set up once: Apps Script editor → Triggers → Add Trigger:
+//   Function: keepAlive | Event: Time-based | Type: Minutes timer | Every: 10 minutes
+function keepAlive() {
+  // Intentionally empty — just waking the instance is enough.
+  // GAS logs will show "keepAlive" executions confirming it's running.
+}
+
+// Run this once from Apps Script editor to register the trigger automatically.
+// After that it runs forever — no manual intervention needed.
+function setupKeepAliveTrigger() {
+  // Remove any existing keepAlive trigger first (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "keepAlive") ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger("keepAlive")
+    .timeBased()
+    .everyMinutes(10)
+    .create();
+  Logger.log("keepAlive trigger registered — fires every 10 minutes.");
 }
 
 // ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────
