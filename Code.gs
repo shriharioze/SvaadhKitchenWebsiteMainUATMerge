@@ -306,6 +306,10 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getExpenseAnalytics(p));
     }
+    if (action === "getCustomExpenseCategories") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes({ success:true, categories: getCustomExpenseCategories() });
+    }
     if (action === "getInventoryData") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getInventoryData(p));
@@ -510,6 +514,14 @@ function doPost(e) {
     if (action === "deleteInventoryEntry") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(deleteInventoryEntry(body));
+    }
+    if (action === "saveCustomExpenseCategory") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveCustomExpenseCategory(body));
+    }
+    if (action === "deleteCustomExpenseCategory") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteCustomExpenseCategory(body));
     }
     if (action === "saveExpense") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -3879,6 +3891,39 @@ function deleteInventoryEntry(body) {
     }
   }
   return { success: false, error: "Entry not found" };
+}
+
+// ── EXPENSE CUSTOM CATEGORIES ─────────────────────────────────────────────────
+// Stored in Script Properties as JSON so no extra sheet is needed.
+function getCustomExpenseCategories() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty("CUSTOM_EXP_CATS");
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveCustomExpenseCategory(body) {
+  var category = String(body.category || "").trim();
+  var item     = String(body.item     || "").trim();
+  if (!category) return { success:false, error:"Category required" };
+  var cats = getCustomExpenseCategories();
+  if (!cats[category]) cats[category] = [];
+  if (item && !cats[category].includes(item)) cats[category].push(item);
+  PropertiesService.getScriptProperties().setProperty("CUSTOM_EXP_CATS", JSON.stringify(cats));
+  return { success:true, categories: cats };
+}
+
+function deleteCustomExpenseCategory(body) {
+  var category = String(body.category || "").trim();
+  var item     = String(body.item     || "").trim();
+  var cats = getCustomExpenseCategories();
+  if (item && cats[category]) {
+    cats[category] = cats[category].filter(function(i){ return i !== item; });
+  } else {
+    delete cats[category];
+  }
+  PropertiesService.getScriptProperties().setProperty("CUSTOM_EXP_CATS", JSON.stringify(cats));
+  return { success:true, categories: cats };
 }
 
 // ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────

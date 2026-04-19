@@ -1213,7 +1213,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
               <!-- Row 3: Item -->
               <div style="margin-bottom:14px;">
                 <label class="exp-label">📝 Item / Specific Expense</label>
-                <select id="expItem" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                <select id="expItem" onchange="onExpItemChange()" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
                   <option value="">— Select category first —</option>
                 </select>
               </div>
@@ -6175,25 +6175,14 @@ const EXP_CATEGORIES = {
   "📝 Miscellaneous":       ["Miscellaneous"]
 };
 
-let _expInitDone    = false;
-let _expLastEntries = []; // cache for recurring templates
+let _expInitDone      = false;
+let _expLastEntries   = []; // cache for recurring templates
+let _expCustomCats    = {}; // custom categories from backend
 
 function initExpensePage() {
-  // Set default date to today
   const today = toISO(getIST());
   if ($("expDate")) $("expDate").value = today;
 
-  // Populate category dropdown
-  const catSel = $("expCategory");
-  if (catSel && catSel.options.length <= 1) {
-    Object.keys(EXP_CATEGORIES).forEach(cat => {
-      const opt = document.createElement("option");
-      opt.value = cat; opt.textContent = cat;
-      catSel.appendChild(opt);
-    });
-  }
-
-  // Default log date range to this month
   const ist = getIST();
   const monthStart = `${ist.getFullYear()}-${String(ist.getMonth()+1).padStart(2,"0")}-01`;
   if ($("expLogFrom") && !$("expLogFrom").value) $("expLogFrom").value = monthStart;
@@ -6203,8 +6192,52 @@ function initExpensePage() {
 
   if (!_expInitDone) {
     _expInitDone = true;
-    loadRecurringTemplates();
+    loadExpenseMeta(); // loads custom cats, then populates dropdowns + templates
+  } else {
+    _populateExpCategoryDropdown(); // always re-populate in case custom cats changed
   }
+}
+
+async function loadExpenseMeta() {
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getCustomExpenseCategories&pin=${S.sessionPin}`);
+    const data = await res.json();
+    if (data.success) _expCustomCats = data.categories || {};
+  } catch(e) { _expCustomCats = {}; }
+  _populateExpCategoryDropdown();
+  loadRecurringTemplates();
+}
+
+function _allExpCategories() {
+  // Merge defaults + custom, custom at bottom
+  const merged = { ...EXP_CATEGORIES };
+  Object.entries(_expCustomCats).forEach(([cat, items]) => {
+    if (merged[cat]) {
+      // add any custom items not already in default
+      items.forEach(i => { if (!merged[cat].includes(i)) merged[cat].push(i); });
+    } else {
+      merged[cat] = items;
+    }
+  });
+  return merged;
+}
+
+function _populateExpCategoryDropdown() {
+  const catSel = $("expCategory");
+  if (!catSel) return;
+  const current = catSel.value; // preserve selection if any
+  catSel.innerHTML = `<option value="">— Select category —</option>`;
+  const all = _allExpCategories();
+  Object.keys(all).forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat; opt.textContent = cat;
+    catSel.appendChild(opt);
+  });
+  // Add new category option at bottom
+  const addOpt = document.createElement("option");
+  addOpt.value = "__addcat__"; addOpt.textContent = "➕ Add new category…";
+  catSel.appendChild(addOpt);
+  if (current) catSel.value = current;
 }
 
 function switchExpTab(tab) {
@@ -6215,8 +6248,18 @@ function switchExpTab(tab) {
 }
 
 function onExpCategoryChange() {
-  const cat   = $("expCategory").value;
-  const items = EXP_CATEGORIES[cat] || [];
+  const catSel = $("expCategory");
+  const cat    = catSel.value;
+
+  // "Add new category" selected
+  if (cat === "__addcat__") {
+    catSel.value = "";
+    showAddCustomCategoryModal();
+    return;
+  }
+
+  const all   = _allExpCategories();
+  const items = all[cat] || [];
   const sel   = $("expItem");
   sel.innerHTML = `<option value="">— Select item —</option>`;
   items.forEach(it => {
@@ -6224,6 +6267,54 @@ function onExpCategoryChange() {
     opt.value = it; opt.textContent = it;
     sel.appendChild(opt);
   });
+  // Add custom item option
+  const addOpt = document.createElement("option");
+  addOpt.value = "__additem__"; addOpt.textContent = "➕ Add new item to this category…";
+  sel.appendChild(addOpt);
+}
+
+function onExpItemChange() {
+  const sel = $("expItem");
+  if (sel.value === "__additem__") {
+    sel.value = "";
+    showAddCustomItemModal($("expCategory").value);
+  }
+}
+
+// ── CUSTOM CATEGORY / ITEM MODALS ────────────────────────────
+function showAddCustomCategoryModal() {
+  const name = window.prompt("Enter new category name:\n(e.g. 🚗 Vehicle, 🏠 Rent)");
+  if (!name || !name.trim()) return;
+  const item = window.prompt(`Add a first item under "${name.trim()}":\n(optional — press Cancel to skip)`);
+  _saveCustomCategory(name.trim(), item ? item.trim() : "");
+}
+
+function showAddCustomItemModal(category) {
+  if (!category) { toast("Please select a category first."); return; }
+  const item = window.prompt(`Add new item under "${category}":`);
+  if (!item || !item.trim()) return;
+  _saveCustomCategory(category, item.trim());
+}
+
+async function _saveCustomCategory(category, item) {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveCustomExpenseCategory", pin:S.sessionPin, category, item
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    _expCustomCats = data.categories || {};
+    _populateExpCategoryDropdown();
+    // Auto-select the newly created category and item
+    if ($("expCategory")) $("expCategory").value = category;
+    onExpCategoryChange();
+    if (item && $("expItem")) {
+      setTimeout(() => { $("expItem").value = item; }, 50);
+    }
+    toast(`✅ "${category}${item ? " → "+item : ""}" saved for future use.`);
+  } catch(e) {
+    toast("Error: " + e.message);
+  }
 }
 
 async function submitExpense() {
@@ -6250,7 +6341,8 @@ async function submitExpense() {
     if (!data.success) throw new Error(data.error || "Failed");
     status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ Saved! (${data.id})</span>`;
     // Reset form
-    $("expCategory").value = ""; $("expItem").innerHTML = `<option>— Select category first —</option>`;
+    $("expCategory").value = "";
+    $("expItem").innerHTML = `<option value="">— Select category first —</option>`;
     $("expAmount").value = ""; $("expNotes").value = "";
     document.querySelector('input[name="expFreq"][value="One-time"]').checked = true;
     _expInitDone = false; loadRecurringTemplates(); // refresh templates
