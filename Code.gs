@@ -306,6 +306,10 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getExpenseAnalytics(p));
     }
+    if (action === "getInventoryData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getInventoryData(p));
+    }
     if (action === "adminCreditWallet") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(adminCreditWallet(body));
@@ -498,6 +502,14 @@ function doPost(e) {
     if (action === "batchProcessApprovals") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(batchProcessApprovals(body));
+    }
+    if (action === "saveInventoryEntry") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveInventoryEntry(body));
+    }
+    if (action === "deleteInventoryEntry") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteInventoryEntry(body));
     }
     if (action === "saveExpense") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -3743,6 +3755,130 @@ function adminCreditWallet(body) {
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
   var newBalance = _calculateWalletBalance(phone);
   return {success:true, newBalance: Math.round(newBalance)};
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+// Tracks raw material purchases. Each new entry for the same item auto-calculates
+// how long the previous batch lasted → builds consumption rate over time.
+const TAB_INVENTORY      = "SK_Inventory";
+const INVENTORY_HEADERS  = [
+  "Entry_ID","Date","Item","Unit","Quantity","Price_Paid","Notes","Timestamp"
+];
+
+function saveInventoryEntry(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var now  = new Date();
+  var id   = "INV-" + Utilities.formatDate(now,"Asia/Kolkata","yyyyMMdd") + "-" + Math.floor(Math.random()*9000+1000);
+  var hIdx = headerIndex(ws);
+  var totalCols = Math.max(ws.getLastColumn(), INVENTORY_HEADERS.length);
+  var row  = new Array(totalCols).fill("");
+  var set  = function(col, val) { if (hIdx[col]) row[hIdx[col]-1] = val; };
+
+  set("Entry_ID",   id);
+  set("Date",       String(body.date || Utilities.formatDate(now,"Asia/Kolkata","yyyy-MM-dd")));
+  set("Item",       String(body.item || "").trim());
+  set("Unit",       String(body.unit || "kg"));
+  set("Quantity",   Number(body.quantity) || 0);
+  set("Price_Paid", Number(body.price)    || 0);
+  set("Notes",      String(body.notes     || ""));
+  set("Timestamp",  getISTTimestamp());
+
+  ws.appendRow(row);
+  return { success: true, id: id };
+}
+
+function getInventoryData(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var rows = getAllRows(ws);
+
+  // Sort ascending by date for correct duration calculation
+  rows.sort(function(a,b){ return String(a.Date).localeCompare(String(b.Date)); });
+
+  // Group by item
+  var byItem = {};
+  rows.forEach(function(r) {
+    var item = String(r.Item || "").trim();
+    if (!item) return;
+    if (!byItem[item]) byItem[item] = [];
+    byItem[item].push({
+      id:       String(r.Entry_ID || ""),
+      date:     String(r.Date     || ""),
+      unit:     String(r.Unit     || "kg"),
+      qty:      Number(r.Quantity) || 0,
+      price:    Number(r.Price_Paid) || 0,
+      notes:    String(r.Notes    || ""),
+      timestamp:String(r.Timestamp || "")
+    });
+  });
+
+  // For each item, calculate durations between entries + consumption stats
+  var items = [];
+  Object.keys(byItem).sort().forEach(function(item) {
+    var entries = byItem[item];
+    var totalDays = 0, totalQty = 0, durationCount = 0;
+
+    // Annotate each entry with how long it lasted (days until next purchase)
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      e.lasted_days = null;
+      e.daily_rate  = null;
+      if (i < entries.length - 1) {
+        var d1 = new Date(e.date);
+        var d2 = new Date(entries[i+1].date);
+        var days = Math.round((d2 - d1) / 86400000);
+        if (days > 0) {
+          e.lasted_days = days;
+          e.daily_rate  = Math.round((e.qty / days) * 100) / 100;
+          totalDays += days;
+          totalQty  += e.qty;
+          durationCount++;
+        }
+      }
+    }
+
+    var avgDays       = durationCount > 0 ? Math.round(totalDays / durationCount) : null;
+    var avgDailyRate  = (avgDays && totalQty) ? Math.round((totalQty / durationCount / avgDays) * 100) / 100 : null;
+    var lastEntry     = entries[entries.length - 1];
+
+    // Predict next purchase date
+    var nextBuyDate = null;
+    if (avgDays && lastEntry.date) {
+      var d = new Date(lastEntry.date);
+      d.setDate(d.getDate() + avgDays);
+      nextBuyDate = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    }
+
+    items.push({
+      item:          item,
+      unit:          lastEntry.unit,
+      entries:       entries.reverse(), // newest first for display
+      entry_count:   entries.length,
+      avg_days:      avgDays,
+      avg_daily_rate:avgDailyRate,
+      last_purchased:lastEntry.date,
+      last_qty:      lastEntry.qty,
+      next_buy_est:  nextBuyDate
+    });
+  });
+
+  return { success: true, items: items };
+}
+
+function deleteInventoryEntry(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = ws.getDataRange().getValues();
+  var idCol = (hIdx["Entry_ID"] || 1) - 1;
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][idCol]).trim() === String(body.id || "").trim()) {
+      ws.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: "Entry not found" };
 }
 
 // ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────

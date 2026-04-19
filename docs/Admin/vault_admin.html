@@ -851,6 +851,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
       <button class="topbar-btn" id="navExpenses" onclick="switchPage('expenses')">💸 Expenses</button>
+      <button class="topbar-btn" id="navInventory" onclick="switchPage('inventory')">📦 Inventory</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
       <button class="topbar-btn" id="navArchive" onclick="switchPage('archive')">🗄️ Archive</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
@@ -1305,6 +1306,129 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
 
       </div><!-- /pageExpenses -->
+
+      <!-- ════ PAGE: INVENTORY ════ -->
+      <div class="page" id="pageInventory">
+        <div class="page-header">
+          <div class="page-title">📦 Inventory <small>Track raw material purchases — know exactly how long each item lasts</small></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:2px solid #f1f5f9;padding-bottom:0;">
+          <button class="exp-tab active" id="invTabAdd"      onclick="switchInvTab('add')">➕ Log Purchase</button>
+          <button class="exp-tab"        id="invTabSummary"  onclick="switchInvTab('summary')">📊 Summary</button>
+          <button class="exp-tab"        id="invTabHistory"  onclick="switchInvTab('history')">📋 Full History</button>
+        </div>
+
+        <!-- ── LOG PURCHASE ── -->
+        <div id="invPanelAdd">
+          <div style="max-width:520px;">
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:20px 22px;">
+
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📅 Date of Purchase</label>
+                <input type="date" id="invDate" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🛒 Item</label>
+                <div style="display:flex;gap:8px;">
+                  <select id="invItemSelect" onchange="onInvItemSelect()" style="flex:1;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="">— Select item —</option>
+                    <optgroup label="🌾 Grains & Flour">
+                      <option>Wheat / Atta</option><option>Rice</option><option>Jowar</option><option>Bajra</option><option>Besan</option><option>Rawa / Semolina</option><option>Sabudana</option>
+                    </optgroup>
+                    <optgroup label="🫘 Dal & Pulses">
+                      <option>Toor Dal</option><option>Moong Dal</option><option>Chana Dal</option><option>Masoor Dal</option><option>Urad Dal</option>
+                    </optgroup>
+                    <optgroup label="🧄 Vegetables & Aromatics">
+                      <option>Onion</option><option>Tomato</option><option>Potato</option><option>Garlic</option><option>Ginger</option><option>Green Chilli</option><option>Coriander Leaves</option><option>Mixed Vegetables</option>
+                    </optgroup>
+                    <optgroup label="🥛 Dairy">
+                      <option>Milk</option><option>Curd</option><option>Paneer</option><option>Butter</option><option>Ghee</option>
+                    </optgroup>
+                    <optgroup label="🫙 Oils & Condiments">
+                      <option>Cooking Oil</option><option>Mustard Oil</option><option>Salt</option><option>Sugar</option><option>Jaggery</option>
+                    </optgroup>
+                    <optgroup label="🌶️ Spices">
+                      <option>Turmeric</option><option>Red Chilli Powder</option><option>Coriander Powder</option><option>Cumin / Jeera</option><option>Mustard Seeds</option><option>Garam Masala</option><option>Mixed Spices Pack</option>
+                    </optgroup>
+                    <optgroup label="⛽ Other">
+                      <option>LPG Cylinder</option>
+                    </optgroup>
+                    <option value="__custom__">✏️ Add custom item…</option>
+                  </select>
+                  <input type="text" id="invItemCustom" placeholder="Item name"
+                    style="display:none;flex:1;padding:9px 12px;border:1.5px solid #f59e0b;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                  <label class="exp-label">⚖️ Quantity</label>
+                  <input type="number" id="invQty" min="0.1" step="0.1" placeholder="e.g. 30"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+                <div style="width:100px;">
+                  <label class="exp-label">Unit</label>
+                  <select id="invUnit" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="litre">litre</option>
+                    <option value="ml">ml</option>
+                    <option value="packet">packet</option>
+                    <option value="piece">piece</option>
+                    <option value="dozen">dozen</option>
+                    <option value="cylinder">cylinder</option>
+                    <option value="bag">bag</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <label class="exp-label">₹ Price Paid <span style="font-weight:400;color:#94a3b8;">(opt)</span></label>
+                  <input type="number" id="invPrice" min="0" placeholder="e.g. 1200"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+              </div>
+
+              <div style="margin-bottom:18px;">
+                <label class="exp-label">💬 Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <input type="text" id="invNotes" placeholder="e.g. From Mahadik Stores, extra quality"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <button class="btn-primary" onclick="submitInventoryEntry()" style="width:100%;padding:11px;">
+                ➕ Log Purchase
+              </button>
+              <div id="invSaveStatus" style="margin-top:8px;font-size:.78rem;text-align:center;min-height:16px;"></div>
+            </div>
+
+            <!-- Last purchase info card (shown after item selected) -->
+            <div id="invLastInfo" style="display:none;margin-top:12px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:12px;padding:14px 16px;font-size:.82rem;color:#0c4a6e;"></div>
+          </div>
+        </div>
+
+        <!-- ── SUMMARY ── -->
+        <div id="invPanelSummary" style="display:none;">
+          <div id="invSummaryContent"><div style="text-align:center;padding:40px;color:#94a3b8;">Click Load to view summary</div></div>
+          <div style="margin-top:12px;text-align:center;">
+            <button class="btn-primary" onclick="loadInventory()">🔄 Load / Refresh</button>
+          </div>
+        </div>
+
+        <!-- ── FULL HISTORY ── -->
+        <div id="invPanelHistory" style="display:none;">
+          <div style="margin-bottom:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div>
+              <label class="exp-label">Filter by Item</label>
+              <select id="invHistoryFilter" style="padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);cursor:pointer;">
+                <option value="">All items</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="renderInventoryHistory()" style="padding:9px 18px;">Apply</button>
+          </div>
+          <div id="invHistoryContent"></div>
+        </div>
+
+      </div><!-- /pageInventory -->
 
       <!-- ════ PAGE: ANALYTICS ════ -->
       <div class="page" id="pageAnalytics">
@@ -2576,6 +2700,7 @@ async function switchPage(page) {
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
   document.getElementById("pageExpenses").classList.toggle("on", page==="expenses");
+  document.getElementById("pageInventory").classList.toggle("on", page==="inventory");
   document.getElementById("pageArchive").classList.toggle("on", page==="archive");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
@@ -2590,6 +2715,7 @@ async function switchPage(page) {
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
   document.getElementById("navExpenses").classList.toggle("active", page==="expenses");
+  document.getElementById("navInventory").classList.toggle("active", page==="inventory");
   document.getElementById("navArchive").classList.toggle("active", page==="archive");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
@@ -2634,6 +2760,7 @@ async function switchPage(page) {
     if (!af.value) { const ist=getIST(); analyticsSetRange(29); return; }
   }
   if (page === "archive")   { _initArchivePage(); }
+  if (page === "inventory") { initInventoryPage(); }
   if (page === "expenses")  { initExpensePage(); }
   if (page === "tenday") { tendayAutoSelect(); }
   if (page === "payments") {
@@ -6375,6 +6502,257 @@ function renderExpenseAnalytics(d) {
   }
 
   el.innerHTML = html || `<div style="text-align:center;padding:40px;color:#94a3b8;">No expense data for this period.</div>`;
+}
+
+// ── INVENTORY ──────────────────────────────────────────────────────────────
+let _invData       = null; // cached from last load
+let _invInitDone   = false;
+
+// Default units per item keyword
+const INV_DEFAULT_UNITS = {
+  "Milk":"litre","Cooking Oil":"litre","Mustard Oil":"litre","Curd":"kg","Ghee":"kg","Butter":"kg",
+  "LPG Cylinder":"cylinder","Green Chilli":"kg","Coriander Leaves":"kg",
+};
+
+function initInventoryPage() {
+  const today = toISO(getIST());
+  if ($("invDate") && !$("invDate").value) $("invDate").value = today;
+  if (!_invInitDone) { _invInitDone = true; loadInventory(); }
+}
+
+function switchInvTab(tab) {
+  ["add","summary","history"].forEach(t => {
+    const btn = $(`invTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    const panel = $(`invPanel${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    if (btn)   btn.classList.toggle("active", t === tab);
+    if (panel) panel.style.display = t === tab ? "block" : "none";
+  });
+}
+
+function onInvItemSelect() {
+  const sel = $("invItemSelect"), custom = $("invItemCustom");
+  if (sel.value === "__custom__") {
+    custom.style.display = "flex"; custom.focus();
+    sel.style.display = "none";
+  } else {
+    custom.style.display = "none"; sel.style.display = "";
+    // Auto-set unit
+    const item = sel.value;
+    const unit = INV_DEFAULT_UNITS[item] || "kg";
+    if ($("invUnit")) $("invUnit").value = unit;
+    // Show last purchase info
+    showLastPurchaseInfo(item);
+  }
+}
+
+function showLastPurchaseInfo(itemName) {
+  const card = $("invLastInfo");
+  if (!_invData || !itemName) { card.style.display = "none"; return; }
+  const entry = (_invData.items || []).find(i => i.item === itemName);
+  if (!entry) { card.style.display = "none"; return; }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]}`; };
+
+  card.style.display = "block";
+  card.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">📋 Last purchase of <em>${itemName}</em></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;">
+      <span>📅 <strong>${fmtDate(entry.last_purchased)}</strong></span>
+      <span>⚖️ <strong>${entry.last_qty} ${entry.unit}</strong></span>
+      ${entry.avg_days ? `<span>⏱ Avg lasts <strong>${entry.avg_days} days</strong></span>` : ""}
+      ${entry.avg_daily_rate ? `<span>📉 ~<strong>${entry.avg_daily_rate} ${entry.unit}/day</strong></span>` : ""}
+      ${entry.next_buy_est ? `<span>🛒 Next buy est. <strong>${fmtDate(entry.next_buy_est)}</strong></span>` : ""}
+    </div>`;
+}
+
+async function submitInventoryEntry() {
+  const sel    = $("invItemSelect");
+  const custom = $("invItemCustom");
+  const item   = sel.style.display === "none"
+                   ? custom.value.trim()
+                   : sel.value;
+  const date   = $("invDate").value;
+  const qty    = parseFloat($("invQty").value);
+  const unit   = $("invUnit").value;
+  const price  = parseFloat($("invPrice").value) || 0;
+  const notes  = $("invNotes").value.trim();
+  const status = $("invSaveStatus");
+
+  if (!item || item === "__custom__") { status.innerHTML = `<span style="color:#dc2626;">⚠ Select or enter an item.</span>`; return; }
+  if (!date) { status.innerHTML = `<span style="color:#dc2626;">⚠ Select a date.</span>`; return; }
+  if (!qty || qty <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid quantity.</span>`; return; }
+
+  status.innerHTML = `<span style="color:#64748b;">Saving…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveInventoryEntry", pin:S.sessionPin, item, date, quantity:qty, unit, price, notes
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ Logged! (${data.id})</span>`;
+    // Reset
+    sel.value = ""; sel.style.display = ""; custom.style.display = "none"; custom.value = "";
+    $("invQty").value = ""; $("invPrice").value = ""; $("invNotes").value = "";
+    $("invLastInfo").style.display = "none";
+    _invInitDone = false; loadInventory();
+    setTimeout(() => { if (status) status.innerHTML = ""; }, 4000);
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ ${e.message}</span>`;
+  }
+}
+
+async function loadInventory() {
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getInventoryData&pin=${S.sessionPin}`);
+    const data = await res.json();
+    if (!data.success) return;
+    _invData = data;
+    renderInventorySummary(data.items || []);
+    renderInventoryHistory();
+    populateInvHistoryFilter(data.items || []);
+  } catch(e) { console.error("Inventory load failed:", e); }
+}
+
+function populateInvHistoryFilter(items) {
+  const sel = $("invHistoryFilter");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">All items</option>`;
+  items.forEach(i => {
+    const opt = document.createElement("option");
+    opt.value = i.item; opt.textContent = i.item;
+    sel.appendChild(opt);
+  });
+}
+
+function renderInventorySummary(items) {
+  const el = $("invSummaryContent");
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No inventory entries yet. Log your first purchase!</div>`;
+    return;
+  }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]}`; };
+  const today   = toISO(getIST());
+
+  // Colour-code next buy estimate
+  function nextBuyStyle(nextDate) {
+    if (!nextDate) return "";
+    if (nextDate < today) return "color:#dc2626;font-weight:800;"; // overdue
+    const diff = Math.round((new Date(nextDate) - new Date(today)) / 86400000);
+    if (diff <= 2) return "color:#ea580c;font-weight:700;"; // buy soon
+    return "color:#16a34a;font-weight:700;";
+  }
+
+  let html = `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:.72rem;font-weight:700;letter-spacing:.04em;">
+          <th style="padding:10px 14px;text-align:left;">ITEM</th>
+          <th style="padding:10px 8px;text-align:center;">LAST BUY</th>
+          <th style="padding:10px 8px;text-align:center;">QTY</th>
+          <th style="padding:10px 8px;text-align:center;">AVG LASTS</th>
+          <th style="padding:10px 8px;text-align:center;">DAILY USE</th>
+          <th style="padding:10px 8px;text-align:center;">NEXT BUY EST.</th>
+          <th style="padding:10px 8px;text-align:center;">ENTRIES</th>
+        </tr>
+      </thead><tbody>`;
+
+  items.forEach(i => {
+    const overdueFlag = i.next_buy_est && i.next_buy_est < today
+      ? `<span style="font-size:.65rem;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:10px;margin-left:4px;">BUY NOW</span>`
+      : (i.next_buy_est && Math.round((new Date(i.next_buy_est)-new Date(today))/86400000) <= 2
+          ? `<span style="font-size:.65rem;background:#fff7ed;color:#ea580c;padding:1px 6px;border-radius:10px;margin-left:4px;">SOON</span>` : "");
+
+    html += `<tr style="border-bottom:1px solid #f1f5f9;" onclick="showItemDrilldown('${i.item.replace(/'/g,"\\'")}');" style="cursor:pointer;">
+      <td style="padding:10px 14px;font-weight:700;cursor:pointer;" onclick="showItemDrilldown('${i.item.replace(/'/g,"\\'")}')">
+        ${i.item}${overdueFlag}
+      </td>
+      <td style="padding:10px 8px;text-align:center;color:#475569;">${fmtDate(i.last_purchased)}</td>
+      <td style="padding:10px 8px;text-align:center;font-weight:600;">${i.last_qty} ${i.unit}</td>
+      <td style="padding:10px 8px;text-align:center;">${i.avg_days ? i.avg_days+" days" : "<span style='color:#94a3b8;'>need more data</span>"}</td>
+      <td style="padding:10px 8px;text-align:center;">${i.avg_daily_rate ? i.avg_daily_rate+" "+i.unit : "—"}</td>
+      <td style="padding:10px 8px;text-align:center;${nextBuyStyle(i.next_buy_est)}">${fmtDate(i.next_buy_est)}</td>
+      <td style="padding:10px 8px;text-align:center;color:#64748b;">${i.entry_count}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>
+  <div style="font-size:.72rem;color:#94a3b8;margin-top:8px;padding-left:4px;">
+    🔴 Buy Now = past estimated date &nbsp;|&nbsp; 🟠 Soon = within 2 days &nbsp;|&nbsp; Click any row to see history
+  </div>`;
+  el.innerHTML = html;
+}
+
+function showItemDrilldown(itemName) {
+  $("invHistoryFilter").value = itemName;
+  switchInvTab("history");
+  renderInventoryHistory();
+}
+
+function renderInventoryHistory() {
+  const el     = $("invHistoryContent");
+  const filter = ($("invHistoryFilter") && $("invHistoryFilter").value) || "";
+  if (!_invData) { el.innerHTML = `<div style="color:#94a3b8;padding:20px;text-align:center;">Loading…</div>`; return; }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]} ${y}`; };
+
+  const items = filter
+    ? (_invData.items || []).filter(i => i.item === filter)
+    : (_invData.items || []);
+
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No entries found.</div>`;
+    return;
+  }
+
+  let html = "";
+  items.forEach(item => {
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:800;font-size:.9rem;">${item.item}</span>
+        <span style="font-size:.75rem;color:#64748b;">${item.entry_count} purchase${item.entry_count!==1?"s":""} · avg ${item.avg_days ? item.avg_days+" days" : "insufficient data"}</span>
+      </div>`;
+
+    item.entries.forEach((e, idx) => {
+      const isLatest = idx === 0;
+      html += `<div class="exp-log-row">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;">${fmtDate(e.date)}</span>
+            <span style="font-size:.78rem;color:#475569;">— ${e.qty} ${e.unit}</span>
+            ${e.price ? `<span style="font-size:.72rem;color:#94a3b8;">₹${e.price}</span>` : ""}
+            ${isLatest ? `<span style="font-size:.65rem;background:#f0fdf4;color:#16a34a;padding:2px 7px;border-radius:10px;font-weight:700;">LATEST</span>` : ""}
+          </div>
+          ${e.lasted_days !== null
+            ? `<div style="margin-top:4px;font-size:.75rem;color:#0369a1;">
+                ⏱ Lasted <strong>${e.lasted_days} days</strong>
+                ${e.daily_rate ? `· used ~<strong>${e.daily_rate} ${e.unit}/day</strong>` : ""}
+               </div>`
+            : (isLatest ? `<div style="margin-top:4px;font-size:.72rem;color:#94a3b8;">⏳ Currently in use — duration calculated on next purchase</div>` : "")}
+          ${e.notes ? `<div style="font-size:.7rem;color:#64748b;font-style:italic;margin-top:2px;">${e.notes}</div>` : ""}
+        </div>
+        <button onclick="deleteInvEntry('${e.id}')" title="Delete"
+          style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.9rem;padding:4px;">🗑️</button>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function deleteInvEntry(id) {
+  if (!await sConfirm("Delete this inventory entry?", "Confirm", "🗑️")) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"deleteInventoryEntry", pin:S.sessionPin, id }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast("✅ Deleted");
+    _invInitDone = false; loadInventory();
+  } catch(e) { toast("Error: " + e.message); }
 }
 
 // ── ARCHIVE PANEL ──────────────────────────────────────────────────────────
