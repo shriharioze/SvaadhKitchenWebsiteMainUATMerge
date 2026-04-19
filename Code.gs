@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.1; // Prepaid Standard (Legacy Removal)
+const CODE_VERSION   = 14.2; // Standardized Menu Names
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ─────────────────────────────────────────────────────────────
 
@@ -106,6 +106,16 @@ const ITEM_COL_MAP = {
   "Ghee Phulka": "Ghee_Phulka",
   "Jowar Bhakri": "Jowar_Bhakri",
   "Bajra Bhakri": "Bajra_Bhakri",
+  "Dry Sabji Mini (100ml)": "Dry_Sabji_Mini",
+  "Dry Sabji Full (250ml)": "Dry_Sabji_Full",
+  "Curry Sabji Mini (100ml)": "Curry_Sabji_Mini",
+  "Curry Sabji Full (250ml)": "Curry_Sabji_Full",
+  "Dal (200ml)": "Dal",
+  "Rice (100g)": "Rice",
+  "Salad (40g)": "Salad",
+  "Curd (50g)": "Curd",
+
+  // Legacy/Simple variants (for backward compatibility)
   "Dry Sabji Mini": "Dry_Sabji_Mini",
   "Dry Sabji Full": "Dry_Sabji_Full",
   "Curry Sabji Mini": "Curry_Sabji_Mini",
@@ -179,8 +189,8 @@ const BUSINESS_CONTEXT = {
       {name:"Salad (40g)", price:6},
       {name:"Curd (50g)", price:12}
     ],
-    breakfast: "Rotating daily (₹35–₹70). Items include Kanda Poha ₹35, Ghee Upma ₹40, Sabudana Khichdi ₹40, Tikhi Pudi ₹45, Idli Chutney ₹45, Masala Dosa ₹45, Aloo Paratha ₹50, Veg Sandwich ₹50, Thalipeeth ₹50, Ghee Sheera ₹50, Paneer Paratha ₹70. Curd available extra ₹12. Check the order form for today's options.",
-    breakfast_note: "Curd (50g ₹12) is available as an add-on for breakfast — not included by default. Pure Ghee is used to make breakfast items."
+    breakfast: "Rotating daily (₹35–₹70). Items include Kanda Poha [175g] ₹35, Ghee Upma [200g] ₹40, Sabudana Khichdi [200g] ₹40, 5 x Tikhi Pudi with 100 ml coriander chutney ₹45, 4 x Idli & 100ml Chutney ₹45, Aloo Paratha ₹50, Thalipeeth ₹50, Ghee Sheera [200g] ₹50, Paneer Paratha ₹70. Curd 50g available extra ₹12. Check the order form for today's options.",
+    breakfast_note: "Curd 50g (₹12) is available as an add-on for breakfast — not included by default. Pure Ghee is used to make breakfast items."
   },
   discounts: {
     tier1: "5% off when the day total is ₹300 or more",
@@ -511,6 +521,9 @@ function doPost(e) {
       return jsonRes(submitManualOrder(body));
     }
 
+    // Client error logging (timeout / network failures reported by frontend)
+    if (action === "logClientError") return jsonRes(logClientError(body));
+
     // Regular order submission
     return jsonRes(submitOrder(body));
   } catch(err) {
@@ -766,7 +779,26 @@ function getMenu(dateStr) {
   // Breakfast master items
   const bfWs = getOrCreateTab(ss, TAB_BF_MASTER, []);
   const bfRows = getAllRows(bfWs).filter(x => String(x.Active).toLowerCase() !== "false");
-  const breakfast = bfRows.map(x => ({name: String(x.Name), price: Number(x.Price)}));
+  
+  const NAME_MAP = {
+    "Kanda Poha": "Kanda Poha [175g]",
+    "Ghee Upma": "Ghee Upma [200g]",
+    "Sabudana Khichdi": "Sabudana Khichdi [200g]",
+    "Tikhi Pudi": "5 x Tikhi Pudi with 100 ml coriander chutney",
+    "Tikhi Puri": "5 x Tikhi Pudi with 100 ml coriander chutney",
+    "Idli Chutney": "4 x Idli & 100ml Chutney",
+    "Idli": "4 x Idli & 100ml Chutney",
+    "4 x Idli & 100ml Chutney": "4 x Idli & 100ml Chutney",
+    "Ghee Sheera": "Ghee Sheera [200g]"
+  };
+
+  const breakfast = bfRows.map(x => {
+    const rawName = String(x.Name).trim();
+    return {
+      name: NAME_MAP[rawName] || rawName,
+      price: Number(x.Price)
+    };
+  });
 
   if (!r) return {
     breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
@@ -783,7 +815,15 @@ function getMenu(dateStr) {
   // MERGE LOGIC: Start with master active items, then merge daily overrides
   const masterActive = breakfast;
   let dailyBf = [];
-  try { if (r && r.Breakfast_JSON) dailyBf = JSON.parse(r.Breakfast_JSON); } catch(e) {}
+  if (r && r.Breakfast_JSON) {
+    try { 
+      const parsed = JSON.parse(r.Breakfast_JSON); 
+      dailyBf = parsed.map(d => ({
+        ...d,
+        name: d.name ? (NAME_MAP[d.name.trim()] || d.name) : ""
+      }));
+    } catch(e) {}
+  }
 
   // Prioritize Daily selections (where specific prices or choices were made)
   // but ensure Master Active items are always present.
@@ -3684,6 +3724,34 @@ function adminCreditWallet(body) {
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
   var newBalance = _calculateWalletBalance(phone);
   return {success:true, newBalance: Math.round(newBalance)};
+}
+
+// ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────
+const TAB_ERROR_LOG     = "SK_Error_Log";
+const ERROR_LOG_HEADERS = ["Timestamp","Date","Phone","Version","Type","Action","Attempt","Duration_ms","Message","URL"];
+
+function logClientError(body) {
+  try {
+    var ss  = getSpreadsheet();
+    var ws  = getOrCreateTab(ss, TAB_ERROR_LOG, ERROR_LOG_HEADERS);
+    var now = new Date();
+    var dateStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+    ws.appendRow([
+      getISTTimestamp(),
+      dateStr,
+      String(body.phone    || "unknown"),
+      String(body.version  || ""),
+      String(body.type     || "error"),
+      String(body.action   || "unknown"),
+      Number(body.attempt  || 1),
+      Number(body.ms       || 0),
+      String(body.msg      || ""),
+      String(body.url      || "")
+    ]);
+    return { success: true };
+  } catch(e) {
+    return { success: false }; // never throw — this is logging only
+  }
 }
 
 // ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────

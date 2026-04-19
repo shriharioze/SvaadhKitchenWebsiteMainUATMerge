@@ -84,9 +84,12 @@
         "@type": "MenuSection",
         "name": "Breakfast",
         "hasMenuItem": [
-          {"@type": "MenuItem", "name": "Kanda Poha", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Ghee Upma", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Sabudana Khichdi", "offers": {"@type": "Offer", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Kanda Poha [175g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Ghee Upma [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Sabudana Khichdi [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "5 x Tikhi Pudi with 100 ml coriander chutney", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "4 x Idli & 100ml Chutney", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Ghee Sheera [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}}
         ]
       },
       {
@@ -105,20 +108,20 @@
         "@type": "MenuSection",
         "name": "Sabji & Curry",
         "hasMenuItem": [
-          {"@type": "MenuItem", "name": "Dry Sabji Mini", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Dry Sabji Full", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curry Sabji Mini", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curry Sabji Full", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Dry Sabji Mini (100ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Dry Sabji Full (250ml)", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curry Sabji Mini (100ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curry Sabji Full (250ml)", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}}
         ]
       },
       {
         "@type": "MenuSection",
         "name": "Basics",
         "hasMenuItem": [
-          {"@type": "MenuItem", "name": "Dal", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Rice", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Salad", "offers": {"@type": "Offer", "price": "7", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curd", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Dal (200ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Rice (100g)", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Salad (40g)", "offers": {"@type": "Offer", "price": "7", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curd (50g)", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}}
         ]
       }
     ]
@@ -196,7 +199,7 @@
       "name": "What meals and items are available?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We offer a Make-Your-Own-Meal system — no fixed thali. Lunch and Dinner: Chapati ₹9, Ghee Phulka ₹10, Jowar Bhakri ₹20, Bajra Bhakri ₹20, Dry Sabji Mini ₹22, Dry Sabji Full ₹45, Curry Sabji Mini ₹22, Curry Sabji Full ₹45, Dal ₹22, Rice ₹12, Salad ₹7, Curd ₹12. Breakfast rotates daily — Kanda Poha, Upma, Sabudana Khichdi, Sheera and more."
+        "text": "We offer a Make-Your-Own-Meal system — no fixed thali. Lunch and Dinner: Chapati ₹9, Ghee Phulka ₹10, Jowar Bhakri ₹20, Bajra Bhakri ₹20, Dry Sabji Mini (100ml) ₹22, Dry Sabji Full (250ml) ₹45, Curry Sabji Mini (100ml) ₹22, Curry Sabji Full (250ml) ₹45, Dal (200ml) ₹22, Rice (100g) ₹12, Salad (40g) ₹7, Curd (50g) ₹12. Breakfast rotates daily — Kanda Poha [175g], Upma [200g], Sabudana Khichdi [200g], Sheera [200g] and more."
       }
     },
     {
@@ -4140,7 +4143,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.18.05";
+    const APP_VERSION = "v26.04.19.02";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4151,6 +4154,112 @@
     let CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
     const ICONS = { Breakfast: "🍳", Lunch: "🍱", Dinner: "🍽️" };
     const GRACE_MINUTES = 5; // extra minutes allowed after cutoff to complete & submit
+
+    // ── RESILIENT FETCH WRAPPER ──────────────────────────────────
+    // Retries up to MAX_RETRIES times with exponential backoff.
+    // Logs every timeout/failure to Code.gs so we can track daily error counts.
+    const FETCH_TIMEOUT_MS  = 25000; // 25 sec per attempt
+    const MAX_RETRIES       = 3;
+    const RETRY_DELAYS_MS   = [2000, 4000, 8000]; // wait between retries
+
+    async function apiFetch(urlOrOpts, fetchOpts = {}, { silent = false } = {}) {
+      // Accepts either a URL string (GET) or an object { url, ...fetchOpts }
+      const url     = typeof urlOrOpts === "string" ? urlOrOpts : urlOrOpts.url;
+      const options = typeof urlOrOpts === "object" ? { ...urlOrOpts, url: undefined } : fetchOpts;
+      delete options.url;
+
+      let lastErr;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        // Show "taking longer" hint after first failure
+        if (attempt === 1 && !silent) {
+          _showSlowBanner(true);
+        }
+        const ctrl    = new AbortController();
+        const tid     = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+        const t0      = Date.now();
+        try {
+          const res  = await fetch(url, { ...options, signal: ctrl.signal });
+          clearTimeout(tid);
+          _showSlowBanner(false);
+          return res;
+        } catch (err) {
+          clearTimeout(tid);
+          const isTimeout = err.name === "AbortError" || err.message?.includes("timeout");
+          lastErr = err;
+          // Log to server (fire-and-forget, don't await — never blocks UI)
+          _logServerError({
+            type:    isTimeout ? "timeout" : "network_error",
+            attempt: attempt + 1,
+            url:     url.split("?")[0],  // strip query params
+            action:  _extractAction(url, options),
+            ms:      Date.now() - t0,
+            msg:     err.message || "unknown"
+          });
+          if (attempt < MAX_RETRIES - 1) {
+            await _sleep(RETRY_DELAYS_MS[attempt]);
+          }
+        }
+      }
+      _showSlowBanner(false);
+      throw lastErr; // all retries exhausted — let caller handle
+    }
+
+    // POST helper — wraps apiFetch for JSON POST calls
+    async function apiPost(body, opts = {}) {
+      return apiFetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body:   JSON.stringify(body)
+      }, opts);
+    }
+
+    // ── SLOW BANNER ──────────────────────────────────────────────
+    let _slowBannerEl = null;
+    function _showSlowBanner(show) {
+      if (!_slowBannerEl) {
+        _slowBannerEl = document.createElement("div");
+        _slowBannerEl.id = "slowBanner";
+        Object.assign(_slowBannerEl.style, {
+          position:"fixed", bottom:"80px", left:"50%", transform:"translateX(-50%)",
+          background:"#f39c12", color:"#fff", padding:"10px 20px", borderRadius:"20px",
+          fontSize:".82rem", fontWeight:"700", zIndex:"9999",
+          boxShadow:"0 4px 12px rgba(0,0,0,.2)", display:"none",
+          whiteSpace:"nowrap"
+        });
+        _slowBannerEl.textContent = "⏳ Taking longer than usual — retrying…";
+        document.body.appendChild(_slowBannerEl);
+      }
+      _slowBannerEl.style.display = show ? "block" : "none";
+    }
+
+    // ── ERROR LOGGER (fire-and-forget) ───────────────────────────
+    function _logServerError(details) {
+      try {
+        fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            _action:   "logClientError",
+            phone:     S.phone || "unknown",
+            version:   APP_VERSION,
+            timestamp: new Date().toISOString(),
+            ...details
+          })
+        }).catch(() => {}); // truly fire-and-forget, never throws
+      } catch(e) {}
+    }
+
+    function _extractAction(url, opts) {
+      try {
+        const u = new URL(url);
+        if (u.searchParams.get("action")) return u.searchParams.get("action");
+      } catch(e) {}
+      try {
+        const b = JSON.parse(opts?.body || "{}");
+        return b._action || b.action || "unknown";
+      } catch(e) {}
+      return "unknown";
+    }
+
+    function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     // ── Grace Period Session State ───────────────────────────────
     // graceDeadlines: { meal → Date } computed once when user enters Step 3 today.
@@ -4313,22 +4422,22 @@
         },
         {
           group: "Today's Sabji (Dry)", dynamic: "dry", items: [
-            { name: "Dry Sabji Mini", price: 22, colKey: "Dry Sabji Mini" },
-            { name: "Dry Sabji Full", price: 45, colKey: "Dry Sabji Full" },
+            { name: "Dry Sabji Mini (100ml)", price: 22, colKey: "Dry Sabji Mini (100ml)" },
+            { name: "Dry Sabji Full (250ml)", price: 45, colKey: "Dry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Today's Sabji (Curry)", dynamic: "curry", items: [
-            { name: "Curry Sabji Mini", price: 22, colKey: "Curry Sabji Mini" },
-            { name: "Curry Sabji Full", price: 45, colKey: "Curry Sabji Full" },
+            { name: "Curry Sabji Mini (100ml)", price: 22, colKey: "Curry Sabji Mini (100ml)" },
+            { name: "Curry Sabji Full (250ml)", price: 45, colKey: "Curry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Dal / Rice / Extras", items: [
-            { name: "Dal", price: 22, colKey: "Dal" },
-            { name: "Rice", price: 12, colKey: "Rice" },
-            { name: "Salad", price: 7, colKey: "Salad" },
-            { name: "Curd", price: 12, colKey: "Curd" },
+            { name: "Dal (200ml)", price: 22, colKey: "Dal (200ml)" },
+            { name: "Rice (100g)", price: 12, colKey: "Rice (100g)" },
+            { name: "Salad (40g)", price: 7, colKey: "Salad (40g)" },
+            { name: "Curd (50g)", price: 12, colKey: "Curd (50g)" },
           ]
         },
       ],
@@ -4345,29 +4454,38 @@
         },
         {
           group: "Today's Sabji (Dry)", dynamic: "dry", items: [
-            { name: "Dry Sabji Mini", price: 22, colKey: "Dry Sabji Mini" },
-            { name: "Dry Sabji Full", price: 45, colKey: "Dry Sabji Full" },
+            { name: "Dry Sabji Mini (100ml)", price: 22, colKey: "Dry Sabji Mini (100ml)" },
+            { name: "Dry Sabji Full (250ml)", price: 45, colKey: "Dry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Today's Sabji (Curry)", dynamic: "curry", items: [
-            { name: "Curry Sabji Mini", price: 22, colKey: "Curry Sabji Mini" },
-            { name: "Curry Sabji Full", price: 45, colKey: "Curry Sabji Full" },
+            { name: "Curry Sabji Mini (100ml)", price: 22, colKey: "Curry Sabji Mini (100ml)" },
+            { name: "Curry Sabji Full (250ml)", price: 45, colKey: "Curry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Dal / Rice / Extras", items: [
-            { name: "Dal", price: 22, colKey: "Dal" },
-            { name: "Rice", price: 12, colKey: "Rice" },
-            { name: "Salad", price: 7, colKey: "Salad" },
-            { name: "Curd", price: 12, colKey: "Curd" },
+            { name: "Dal (200ml)", price: 22, colKey: "Dal (200ml)" },
+            { name: "Rice (100g)", price: 12, colKey: "Rice (100g)" },
+            { name: "Salad (40g)", price: 7, colKey: "Salad (40g)" },
+            { name: "Curd (50g)", price: 12, colKey: "Curd (50g)" },
           ]
         },
       ],
     };
     const BREAKFAST_COL_MAP = {
-      "Kanda Poha": "B_POHA", "Paneer Paratha": "B_PANEER",
-      "Aloo Paratha": "B_ALOO", "Curd (Breakfast)": "B_CURD",
+      "Kanda Poha [175g]": "B_POHA",
+      "Kanda Poha": "B_POHA",
+      "Ghee Upma [200g]": "B_UPMA",
+      "Ghee Upma": "B_UPMA",
+      "Sabudana Khichdi [200g]": "B_SABU",
+      "Sabudana Khichdi": "B_SABU",
+      "Paneer Paratha": "B_PANEER",
+      "Aloo Paratha": "B_ALOO",
+      "Curd 50g": "B_CURD",
+      "Curd (Breakfast)": "B_CURD",
+      "Curd": "B_CURD"
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -4383,7 +4501,7 @@
       calYear: 0, calMonth: 0,
       grandTotal: 0, runningTotal: 0, walletBalance: 0, walletCredit: 0,
       tempUpiMode: false,
-      version: "14.1.17"
+      version: "14.1.18"
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -4440,7 +4558,7 @@
     async function syncWalletValue() {
       if (!S.phone) return;
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
         const data = await res.json();
         if (data.wallet_balance !== undefined) {
           const wb = Number(data.wallet_balance) || 0;
@@ -4678,7 +4796,7 @@
         if (S.authMode === "verify") {
           sBtnLoading($("btnNext"), true, "Verifying");
           try {
-            const res = await fetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
+            const res = await apiFetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
             const verData = await res.json();
             sBtnLoading($("btnNext"), false);
             if (verData.success) {
@@ -4889,10 +5007,8 @@
     async function lookupCustomer() {
       sLoading(true, t('loading_logging_in'));
       if ($("pinAuthSection")) $("pinAuthSection").style.display = "none";
-      const _lCtrl = new AbortController(); const _lTid = setTimeout(() => _lCtrl.abort(), 15000);
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`, { signal: _lCtrl.signal });
-        clearTimeout(_lTid);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`);
         const data = await res.json();
 
         // Auto-login check
@@ -5180,7 +5296,7 @@
     async function refreshWalletBalance() {
       if (!S.phone) return;
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}&_t=${Date.now()}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.found) {
           updateWalletBalanceUI(Number(data.wallet_balance) || 0);
@@ -5401,7 +5517,7 @@
       $("mealSelectionContent").innerHTML = `<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">${t('loading_menu')}</p></div>`;
       await Promise.all(S.selectedDates.map(async date => {
         if (!S.menuCache[date]) {
-          try { const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); console.log('[DEBUG] menuCache[' + date + ']:', JSON.stringify({oos_items: S.menuCache[date].oos_items, orders_closed: S.menuCache[date].orders_closed})); }
+          try { const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); }
           catch (fetchErr) { console.error('[DEBUG] fetch failed for', date, fetchErr); S.menuCache[date] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} }; }
         }
         if (!S.orders[date]) {
@@ -5687,7 +5803,7 @@
       let existingDayTotals = {};
       try {
         const dates = S.selectedDates.join(',');
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getDayTotalsForDates&phone=${S.phone}&dates=${encodeURIComponent(dates)}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getDayTotalsForDates&phone=${S.phone}&dates=${encodeURIComponent(dates)}`);
         const data = await res.json();
         existingDayTotals = data.dayTotals || {};
       } catch (e) { /* non-fatal: fall back to no existing orders */ }
@@ -6193,15 +6309,12 @@
       sBtnLoading(btn, true, "Submitting");
 
       try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
+        const res = await apiPost({
             _action: "submitWalletRecharge",
             phone: S.phone,
             name: S.profile?.name || "Customer",
             amount: amt
-          })
-        });
+          });
         const data = await res.json();
         sBtnLoading(btn, false);
         if (!data.success) throw new Error(data.error || "Failed");
@@ -6421,10 +6534,8 @@
         wallet_bonus:  isFreeOrder ? (Number(S.walletBonus) || 0) : 0,
         settle_all: settleAll
       };
-      const _pCtrl = new AbortController(); const _pTid = setTimeout(() => _pCtrl.abort(), 15000);
       try {
-        const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload), signal: _pCtrl.signal });
-        clearTimeout(_pTid);
+        const res = await apiPost(payload);
         const data = await res.json();
         sBtnLoading($("btnNext"), false);
         S.isPlacingOrder = false;
@@ -6992,7 +7103,7 @@
       upcomingWrap.innerHTML = showReviewPromoBanner() + `<div class="loader"><div class="spinner"></div></div>`;
       pastWrap.innerHTML = "";
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
         const data = await res.json();
         
         S.existingOrders = data.orders || [];
@@ -7345,7 +7456,7 @@
     // ═══════════════════════════════════════════════════════════
     async function loadAreas() {
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getAreas`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getAreas`);
         const areas = await res.json();
         if (!Array.isArray(areas) || areas.length === 0) return;
         const apiFree = areas.filter(a => a.free).map(a => a.name);
@@ -7377,7 +7488,7 @@
       if (!wmLoaded) {
         $("wmBody").innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="border-top-color:#e74c3c;margin:0 auto;"></div><p style="font-size:0.75rem;color:var(--muted);margin-top:12px;">Fetching the freshest menus…</p></div>`;
         try {
-          const res = await fetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
+          const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
           const data = await res.json();
           if (data.success && data.days) {
             wmDays = data.days;
@@ -7515,7 +7626,7 @@
       (async () => {
         try {
           const todayStr = (() => { const t = getIST(); return `${t.getUTCFullYear()}-${String(t.getUTCMonth()+1).padStart(2,'0')}-${String(t.getUTCDate()).padStart(2,'0')}`; })();
-          const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayStr}`);
+          const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayStr}`, {}, { silent: true });
           const data = await res.json();
           if (data && !data.error) {
             S.menuCache[todayStr] = data;
