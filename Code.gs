@@ -5511,12 +5511,13 @@ function hdfc_createSession(body) {
     return { error: "Gateway credentials not configured in Script Properties." };
   }
 
-  // HDFC SmartGateway (Juspay) expects amount in PAISA (1 rupee = 100 paisa)
-  const amountPaisa = Math.round(amountRupees * 100);
+  // HDFC SmartGateway expects amount in RUPEES (empirically confirmed — UAT showed 100x
+  // inflation when sending paisa, so SmartGateway/Juspay takes rupees directly, not paisa)
+  const amountToSend = Math.round(amountRupees);
 
   const payload = {
     order_id:               orderId,
-    amount:                 amountPaisa,
+    amount:                 amountToSend,
     currency:               "INR",
     customer_id:            phone,
     customer_phone:         phone,
