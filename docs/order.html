@@ -4171,7 +4171,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_yJ8__7phuGfdSvclc5FVdpuM7WHffq4ybPrxYJUBp1frhiN1HZA2lcNUGSqlm1INHg/exec"; // DEV — Svaadh Kitchen Dev project
-    const APP_VERSION = "v26.04.21.05-hdfc";
+    const APP_VERSION = "v26.04.21.06-hdfc";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6679,6 +6679,13 @@
       $("successSummary").innerHTML = html;
     }
     function resetForAnotherOrder() {
+      // If we're on the GAS exec URL (post-HDFC redirect), send the customer
+      // to the real order page instead of resetting in place.
+      if (window.location.hostname === "script.google.com") {
+        window.location.href = "https://svaadhkitchen.in/order.html";
+        return;
+      }
+
       S.orders = {};
       S.selectedDates = [];
       S.tempUpiMode = false;
