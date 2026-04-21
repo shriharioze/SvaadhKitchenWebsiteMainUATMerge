@@ -6091,11 +6091,10 @@ function hdfc_getPendingOrder(body) {
       return { error: "Pending order not found. It may have expired (>30 min)." };
     }
 
-    // Remove it — single-use
-    delete pending[orderId];
-    props.setProperty("HDFC_PENDING_ORDERS", JSON.stringify(pending));
-
-    console.log("hdfc_getPendingOrder: retrieved and removed order " + orderId);
+    // Keep the entry — let it expire naturally after 30 minutes.
+    // Not deleting here so that if the page reloads or redirects twice,
+    // the second call still finds the data.
+    console.log("hdfc_getPendingOrder: retrieved order " + orderId);
     return { success: true, ...entry };
 
   } catch (err) {
