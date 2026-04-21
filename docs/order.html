@@ -4171,7 +4171,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_yJ8__7phuGfdSvclc5FVdpuM7WHffq4ybPrxYJUBp1frhiN1HZA2lcNUGSqlm1INHg/exec"; // DEV — Svaadh Kitchen Dev project
-    const APP_VERSION = "v26.04.21.01-hdfc";
+    const APP_VERSION = "v26.04.21.02-hdfc";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7631,7 +7631,7 @@
      */
     async function hdfc_init() {
       // 1. Check for return URL params first (customer coming back from HDFC)
-      hdfc_handleReturnParams();
+      await hdfc_handleReturnParams();
 
       // 2. Fetch gateway config from backend
       try {
