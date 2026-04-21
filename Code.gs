@@ -670,6 +670,8 @@ function doPost(e) {
       if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
       return jsonRes(hdfc_createSession(body));
     }
+    if (action === "hdfc_savePendingOrder") return jsonRes(hdfc_savePendingOrder(body));
+    if (action === "hdfc_getPendingOrder")  return jsonRes(hdfc_getPendingOrder(body));
 
     if (action === "hdfc_webhook") {
       // HDFC posts to this URL with Basic Auth — verify credentials first
@@ -6009,6 +6011,96 @@ function hdfc_markOrderPaid(order) {
   } catch (err) {
     console.error("hdfc_markOrderPaid error:", err.message);
     return { error: "Failed to update order: " + err.message };
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PENDING ORDER STORE
+// Saves the full order payload server-side before the HDFC redirect.
+// Retrieved on return — no sessionStorage/localStorage dependency.
+// Stored in Script Properties as a JSON map, auto-expired after 30 minutes.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Saves order payload before customer is redirected to HDFC checkout.
+ * Called by order.html hdfc_initiatePayment() just before window.location.href redirect.
+ *
+ * @param {Object} body  { order_id, phone, amount, orders, selectedDates, profile, mealAddrs, isFirstTime }
+ */
+function hdfc_savePendingOrder(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const orderId = String(body.order_id || "").trim();
+  if (!orderId) return { error: "order_id required." };
+
+  try {
+    const props    = PropertiesService.getScriptProperties();
+    const raw      = props.getProperty("HDFC_PENDING_ORDERS") || "{}";
+    const pending  = JSON.parse(raw);
+
+    // Expire entries older than 30 minutes to keep size under control
+    const now = Date.now();
+    Object.keys(pending).forEach(function(k) {
+      if (now - (pending[k].ts || 0) > 30 * 60 * 1000) delete pending[k];
+    });
+
+    pending[orderId] = {
+      ts:            now,
+      phone:         body.phone         || "",
+      amount:        body.amount        || 0,
+      orders:        body.orders        || {},
+      selectedDates: body.selectedDates || [],
+      profile:       body.profile       || {},
+      mealAddrs:     body.mealAddrs     || {},
+      isFirstTime:   body.isFirstTime   || false
+    };
+
+    props.setProperty("HDFC_PENDING_ORDERS", JSON.stringify(pending));
+    console.log("hdfc_savePendingOrder: saved order " + orderId);
+    return { success: true };
+
+  } catch (err) {
+    console.error("hdfc_savePendingOrder error:", err.message);
+    return { error: err.message };
+  }
+}
+
+
+/**
+ * Retrieves and removes the saved pending order on return from HDFC.
+ * Called by order.html hdfc_handleReturnParams() after verifying payment.
+ *
+ * @param {Object} body  { order_id }
+ * @returns {{ success, phone, amount, orders, selectedDates, profile, mealAddrs, isFirstTime } | { error }}
+ */
+function hdfc_getPendingOrder(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const orderId = String(body.order_id || "").trim();
+  if (!orderId) return { error: "order_id required." };
+
+  try {
+    const props   = PropertiesService.getScriptProperties();
+    const raw     = props.getProperty("HDFC_PENDING_ORDERS") || "{}";
+    const pending = JSON.parse(raw);
+
+    const entry = pending[orderId];
+    if (!entry) {
+      console.warn("hdfc_getPendingOrder: no pending entry for " + orderId);
+      return { error: "Pending order not found. It may have expired (>30 min)." };
+    }
+
+    // Remove it — single-use
+    delete pending[orderId];
+    props.setProperty("HDFC_PENDING_ORDERS", JSON.stringify(pending));
+
+    console.log("hdfc_getPendingOrder: retrieved and removed order " + orderId);
+    return { success: true, ...entry };
+
+  } catch (err) {
+    console.error("hdfc_getPendingOrder error:", err.message);
+    return { error: err.message };
   }
 }
 
