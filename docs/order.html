@@ -3175,10 +3175,13 @@
               <input type="text" id="societyInput" placeholder="e.g. Pentagon 1, Magarpatta" oninput="syncSingleAddr()">
             </div>
             <div class="form-group">
-              <label data-i18n="label_delivery_point">Deliver to</label>
+              <label data-i18n="label_delivery_point">Handover instructions</label>
               <select id="deliveryPointSelection" onchange="syncSingleAddr()">
                 <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door (Default)</option>
                 <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
+                <option value="keep_no_bell">Keep outside & Don't ring bell</option>
+                <option value="bag_ring">Keep in bag outside & Ring bell</option>
+                <option value="bag_no_bell">Keep in bag outside & Don't ring bell</option>
                 <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception</option>
                 <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
                 <option value="gate_handoff" data-i18n="opt_point_gate_handoff">Handover at Security Gate</option>
@@ -3250,10 +3253,13 @@
               <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input
                   type="text" id="bf_societyInput" placeholder="e.g. Pentagon 1, Magarpatta"></div>
               <div class="form-group">
-                <label data-i18n="label_delpoint_simple">Deliver to</label>
+                <label data-i18n="label_delpoint_simple">Handover instructions</label>
                 <select id="bf_deliveryPointSelection">
                   <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door (Default)</option>
                   <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
+                <option value="keep_no_bell">Keep outside & Don't ring bell</option>
+                <option value="bag_ring">Keep in bag outside & Ring bell</option>
+                <option value="bag_no_bell">Keep in bag outside & Don't ring bell</option>
                   <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception
                   </option>
                   <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
@@ -3317,10 +3323,13 @@
               <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input
                   type="text" id="l_societyInput" placeholder="e.g. Magarpatta"></div>
               <div class="form-group">
-                <label data-i18n="label_delpoint_simple">Deliver to</label>
+                <label data-i18n="label_delpoint_simple">Handover instructions</label>
                 <select id="l_deliveryPointSelection">
                   <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door (Default)</option>
                   <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
+                <option value="keep_no_bell">Keep outside & Don't ring bell</option>
+                <option value="bag_ring">Keep in bag outside & Ring bell</option>
+                <option value="bag_no_bell">Keep in bag outside & Don't ring bell</option>
                   <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception
                   </option>
                   <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
@@ -3384,10 +3393,13 @@
               <div class="form-group"><label data-i18n="label_society">Society / Building / Office Park</label><input
                   type="text" id="d_societyInput" placeholder="e.g. Pentagon 1, Magarpatta"></div>
               <div class="form-group">
-                <label data-i18n="label_delpoint_simple">Deliver to</label>
+                <label data-i18n="label_delpoint_simple">Handover instructions</label>
                 <select id="d_deliveryPointSelection">
                   <option value="door" data-i18n="opt_point_door">Handover at Doorstep / Office Door (Default)</option>
                   <option value="bell_keep" data-i18n="opt_point_bell_keep">Keep outside & Ring bell</option>
+                <option value="keep_no_bell">Keep outside & Don't ring bell</option>
+                <option value="bag_ring">Keep in bag outside & Ring bell</option>
+                <option value="bag_no_bell">Keep in bag outside & Don't ring bell</option>
                   <option value="lobby_handoff" data-i18n="opt_point_lobby_handoff">Handover at Lobby / Reception
                   </option>
                   <option value="lobby_keep" data-i18n="opt_point_lobby_keep">Keep at Lobby / Reception</option>
@@ -3780,6 +3792,29 @@
 
           <div id="successSummary" class="success-summary-box"></div>
 
+          <!-- Delivery tip card — shown once, dismissible -->
+          <div id="deliveryTipCard" style="display:none; position:relative; margin:16px 0;
+               background:linear-gradient(135deg,#f0fdf4,#ecfdf5); border:1px solid #6ee7b7;
+               border-radius:14px; padding:16px 40px 16px 16px; text-align:left;">
+            <button onclick="dismissDeliveryTip()" style="position:absolute;top:10px;right:12px;
+                background:none;border:none;font-size:1.1rem;cursor:pointer;color:#6b7280;
+                line-height:1;" title="Dismiss">✕</button>
+            <div style="font-size:1rem;margin-bottom:6px;">🛍️ <strong>Pro tip for smoother delivery</strong></div>
+            <div style="font-size:0.83rem;color:#065f46;line-height:1.6;">
+              Pre-approve entry for our delivery partner:<br>
+              <strong>Abhijeet Parekar — 📞 <a href="tel:8605512646" style="color:#065f46;">86055 12646</a></strong>
+              <br><br>
+              Also consider <strong>keeping a bag outside your door</strong> — our delivery partner can place food in
+              it without waiting for you, saving time for the next delivery stop. 🚀<br><br>
+              <span style="font-size:0.8rem;">You can set your handover preference anytime —
+                <a href="#" onclick="dismissDeliveryTip(); goToStep(1); return false;"
+                   style="color:#059669;font-weight:600;text-decoration:underline;">
+                  click here to update delivery instructions
+                </a>
+              </span>
+            </div>
+          </div>
+
           <!-- Review Reward Prompt -->
           <div id="successReviewPromo" class="card"
             style="margin:16px 0; background:linear-gradient(135deg,#fff8e1,#fffde7); border:1px solid #ffd54f; padding:16px; border-radius:12px; text-align:center; display:none;">
@@ -4143,7 +4178,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
-    const APP_VERSION = "v26.04.19.02";
+    const APP_VERSION = "v26.04.21.01";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6588,6 +6623,13 @@
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id.toUpperCase();
       $("bottomNav").style.display = "none";
+
+      // Show delivery tip once (dismissed state saved in localStorage)
+      const tipCard = $("deliveryTipCard");
+      if (tipCard) {
+        tipCard.style.display = localStorage.getItem("sk_delivery_tip_dismissed") ? "none" : "block";
+      }
+
       window.scrollTo(0, 0);
 
       // Instant/Optimistic wallet update for better UX
@@ -6639,6 +6681,12 @@
 
       $("successSummary").innerHTML = html;
     }
+    function dismissDeliveryTip() {
+      localStorage.setItem("sk_delivery_tip_dismissed", "1");
+      const el = $("deliveryTipCard");
+      if (el) el.style.display = "none";
+    }
+
     function resetForAnotherOrder() {
       S.orders = {};
       S.selectedDates = [];
