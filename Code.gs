@@ -262,7 +262,24 @@ function doGet(e) {
   const p = e.parameter;
   const action = p.parameter ? p.action : (e.parameter.action || ""); // Fix for inconsistent parameter access
   const pin = p.pin || "";
-  
+
+  // ── HDFC Return URL via GET ────────────────────────────────────
+  // HDFC sometimes redirects the customer's browser via GET (not POST).
+  // Detect by presence of order_id + status params with no _action.
+  // Redirect browser to the order page URL with all params forwarded.
+  if (p.order_id && p.status && !p.action && !p._action) {
+    const params = Object.keys(p)
+      .map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(p[k]); })
+      .join("&");
+    const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
+    return HtmlService.createHtmlOutput(
+      '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' + redirectUrl + '"></head>' +
+      '<body><script>window.location.replace(' + JSON.stringify(redirectUrl) + ');</script>' +
+      '<p>Redirecting... <a href="' + redirectUrl + '">Click here if not redirected</a></p></body></html>'
+    );
+  }
+  // ─────────────────────────────────────────────────────────────
+
   try {
     if (action === "version") return jsonRes({version: CODE_VERSION, status:"ok"});
     if (action === "getConfig") return jsonRes({
