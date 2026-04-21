@@ -3490,6 +3490,7 @@
     <div class="screen" id="screen4">
       <div class="card" id="summaryCard">
         <h2 data-i18n="step5_summary_title">🧾 Order Summary</h2>
+        <div id="streakProgressBadge" style="display:none; margin-bottom:14px;"></div>
         <div id="walletBalMsg" class="wallet-bal-msg"
           style="display:none;margin-bottom:12px;text-align:center;font-size:0.85rem;color:#2e7d32;background:#e8f5e9;padding:10px;border-radius:10px;border:1px solid #c8e6c9;">
         </div>
@@ -5871,10 +5872,47 @@
         existingDayTotals = data.dayTotals || {};
       } catch (e) { /* non-fatal: fall back to no existing orders */ }
 
+      // ── Streak progress badge ──────────────────────────────────────────────
+      {
+        const streakBadge = $("streakProgressBadge");
+        const sc = S.loyaltyInfo?.count || 0; // 0–5 completed days
+        if (streakBadge) {
+          if (sc === 0) {
+            streakBadge.style.display = "none";
+          } else if (sc >= 5) {
+            // Will be shown as 6th day reward in billing — hide generic badge
+            streakBadge.style.display = "none";
+          } else {
+            const remaining = 5 - sc;
+            const dots = Array.from({length: 5}, (_, i) =>
+              `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;
+                background:${i < sc ? '#059669' : '#d1d5db'};"></span>`
+            ).join("");
+            streakBadge.innerHTML = `
+              <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;
+                          border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="font-size:1.2rem;">🔥</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.82rem;font-weight:700;color:#065f46;">
+                    ${sc}-day streak! ${remaining} more consecutive day${remaining > 1 ? 's' : ''} to unlock your loyalty reward
+                  </div>
+                  <div style="font-size:0.72rem;color:#047857;margin-top:3px;line-height:1.4;">
+                    On your 6th consecutive day, all market surcharges from those 6 days are refunded to you.
+                  </div>
+                  <div style="margin-top:6px;">${dots}
+                    <span style="font-size:0.68rem;color:#6b7280;margin-left:4px;">${sc}/5 done</span>
+                  </div>
+                </div>
+              </div>`;
+            streakBadge.style.display = "block";
+          }
+        }
+      }
+
       let html = "", grandTotal = 0;
       let pCount = S.profile?.promoCount;
       let promoTracker = (pCount !== null && !isNaN(pCount)) ? Number(pCount) : 0;
-      
+
       // Virtual Streak Tracking for multi-date cart
       let virtualStreakCount = S.loyaltyInfo?.count || 0;
       let virtualPastSurcharge = S.loyaltyInfo?.surcharge || 0;

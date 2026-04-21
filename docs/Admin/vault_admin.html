@@ -5223,6 +5223,9 @@ async function loadPendingPayments() {
                      : isSplit          ? 'background:#f5f0ff; border-left: 4px solid #7b2ff7;' : '';
 
       // Amount column: for split, show only the UPI-due portion with wallet note
+      const loyaltyNote = p.is_loyalty && p.loyalty_discount > 0
+        ? `<div style="font-size:0.68rem;color:#047857;font-weight:600;margin-top:3px;">🏆 6-Day Loyalty Reward: −₹${p.loyalty_discount} applied — customer paid ₹${p.amount} (not ₹${(Number(p.amount) + Number(p.loyalty_discount)).toFixed(0)})</div>`
+        : '';
       const amountLabel = isSplit
         ? `₹${p.amount} <span style="font-size:0.65rem;color:#5b21b6;font-weight:500;">(UPI due — ₹${p.wallet_credit} already from Wallet)</span>`
         : `₹${p.amount}`;
@@ -5258,7 +5261,7 @@ async function loadPendingPayments() {
         <td>
           <div style="font-size:0.8rem;">${p.meal} - ${p.date}</div>
           <div style="font-size:0.65rem;color:var(--muted);">${p.id}</div>
-          ${cancelledNote}${splitPendingNote}${splitCancelledNote}
+          ${cancelledNote}${splitPendingNote}${splitCancelledNote}${loyaltyNote}
         </td>
         <td style="font-weight:700;">${amountLabel}</td>
         <td>

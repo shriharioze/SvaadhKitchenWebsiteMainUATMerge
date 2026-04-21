@@ -4767,6 +4767,8 @@ function getPendingUPIPayments() {
              .map(r => {
                const walletCredit = Number(r.Wallet_Credit) || 0;
                const isSplit = String(r.Payment_Method || "").trim() === "Split";
+               const loyaltyDiscount = Number(r.Discount_Amount) || 0;
+               const isLoyalty       = String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes";
                return {
                  id: r.Submission_ID,
                  date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
@@ -4779,7 +4781,9 @@ function getPendingUPIPayments() {
                  timestamp: r.Submitted_At,
                  status: r.Payment_Status,
                  payment_method: String(r.Payment_Method || ""),
-                 refund_preference: r.Refund_Preference || ""
+                 refund_preference: r.Refund_Preference || "",
+                 loyalty_discount: isLoyalty ? loyaltyDiscount : 0,
+                 is_loyalty: isLoyalty
                };
              });
 }
