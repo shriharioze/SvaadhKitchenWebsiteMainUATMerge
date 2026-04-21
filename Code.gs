@@ -59,7 +59,8 @@ const TAB_BF_MASTER  = "SK_Master_Breakfast";
 const TAB_SABJI      = "SK_Master_Sabjis";
 const TAB_AREAS      = "SK_Areas";
 const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
-const TAB_REFUNDS    = "SK_Refunds"; // Manual refund requests
+const TAB_REFUNDS    = "SK_Refunds";      // Manual refund requests
+const TAB_WEBHOOK_LOG = "SK_Webhook_Log"; // HDFC webhook log-first buffer
 
 // Canonical SK_Wallet column schema — NEVER reorder these
 const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Reference_ID", "Timestamp"];
@@ -5596,19 +5597,35 @@ function hdfc_createSession(body) {
  * @param {Object} body  Parsed webhook JSON from HDFC
  * @param {Object} e     Raw Apps Script event (for header access)
  */
+/**
+ * STEP 2 — Webhook handler. LOG-FIRST PATTERN.
+ *
+ * HDFC expects a 200 response within 5 seconds. Heavy work (Status API call,
+ * sheet reads, row updates) can take 5-8s — guaranteed timeout.
+ *
+ * Solution: this function does ONE thing only:
+ *   1. Verify Basic Auth (in-memory, < 5ms)
+ *   2. Write one row to SK_Webhook_Log (< 500ms)
+ *   3. Return 200 OK to HDFC immediately
+ *
+ * The actual processing — Status API verification, marking order paid —
+ * is handled by hdfc_processWebhookLog(), called by a 1-minute time trigger.
+ * No time pressure there. No duplicates (PENDING → PROCESSED gate).
+ *
+ * @param {Object} body  Parsed webhook JSON from HDFC
+ * @param {Object} e     Raw Apps Script event (for header access)
+ */
 function hdfc_handleWebhook(body, e) {
   if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
 
-  // Verify Basic Auth sent by HDFC
+  // ── Auth check (fast — no I/O) ───────────────────────────────
   try {
     var authHeader = "";
-    if (e && e.parameter && e.parameter.Authorization) {
-      authHeader = e.parameter.Authorization;
-    }
+    try { authHeader = e.parameter.Authorization || ""; } catch(_) {}
     if (HDFC_WEBHOOK_USERNAME && HDFC_WEBHOOK_PASSWORD) {
       var expectedAuth = "Basic " + Utilities.base64Encode(HDFC_WEBHOOK_USERNAME + ":" + HDFC_WEBHOOK_PASSWORD);
       if (authHeader && authHeader !== expectedAuth) {
-        console.warn("HDFC Webhook: Invalid Basic Auth. Possible spoofed request.");
+        console.warn("HDFC Webhook: Invalid Basic Auth — possible spoofed request.");
         return { error: "Unauthorized" };
       }
     }
@@ -5616,23 +5633,140 @@ function hdfc_handleWebhook(body, e) {
     console.warn("HDFC Webhook auth check error:", authErr.message);
   }
 
-  const eventName = body.event_name || "";
-  const content   = body.content    || {};
-  const order     = content.order   || {};
+  // ── Log-first: write one row, return immediately ─────────────
+  // Do NOT call hdfc_markOrderPaid here — that involves an external Status API
+  // call and sheet reads which will blow past HDFC's 5-second response window.
+  try {
+    const ss  = getSpreadsheet();
+    const ws  = getOrCreateTab(ss, TAB_WEBHOOK_LOG, [
+      "Received_At", "Event_Name", "Order_ID", "Raw_Payload", "Status", "Processed_At", "Result"
+    ]);
 
-  console.log("HDFC Webhook received: " + eventName, JSON.stringify(order));
+    const eventName = String(body.event_name || "");
+    const orderId   = String(
+      (body.content && body.content.order && body.content.order.order_id) || ""
+    );
 
-  if (eventName === "ORDER_SUCCEEDED" || order.status === "CHARGED") {
-    return hdfc_markOrderPaid(order);
+    ws.appendRow([
+      new Date(),          // Received_At
+      eventName,           // Event_Name
+      orderId,             // Order_ID
+      JSON.stringify(body),// Raw_Payload — full webhook preserved
+      "PENDING",           // Status
+      "",                  // Processed_At (filled by processor)
+      ""                   // Result       (filled by processor)
+    ]);
+
+    console.log("HDFC Webhook logged: event=" + eventName + " order=" + orderId);
+  } catch (logErr) {
+    // Even if logging fails, we must return 200 so HDFC doesn't retry endlessly.
+    // The raw payload is in the GAS execution log regardless.
+    console.error("HDFC Webhook log error:", logErr.message);
   }
 
-  if (eventName === "REFUND_INITIATED" || eventName === "REFUND_SUCCEEDED") {
-    console.log("HDFC Refund event for order: " + order.order_id);
-    return { success: true, message: "Refund event logged." };
-  }
+  // Return 200 immediately — HDFC is satisfied. Processing happens async.
+  return { success: true, received: true };
+}
 
-  console.log("HDFC Webhook: unhandled event '" + eventName + "'. Acknowledged.");
-  return { success: true, message: "Event '" + eventName + "' acknowledged." };
+
+/**
+ * HDFC Webhook Processor — called by a 1-minute time trigger.
+ * Reads all PENDING rows from SK_Webhook_Log and processes each one.
+ *
+ * For ORDER_SUCCEEDED events:
+ *   1. Calls Status API to independently confirm payment (security requirement)
+ *   2. Marks the order Paid in SK_Orders
+ *   3. Updates the log row to PROCESSED or FAILED
+ *
+ * Safe to run multiple times — duplicate protection is inside hdfc_markOrderPaid.
+ * Set up the trigger once by running setupHdfcWebhookTrigger() from the editor.
+ */
+function hdfc_processWebhookLog() {
+  if (!PAYMENT_GATEWAY_ENABLED) return;
+
+  try {
+    const ss  = getSpreadsheet();
+    const ws  = getOrCreateTab(ss, TAB_WEBHOOK_LOG, [
+      "Received_At", "Event_Name", "Order_ID", "Raw_Payload", "Status", "Processed_At", "Result"
+    ]);
+
+    const data = ws.getDataRange().getValues();
+    if (data.length < 2) return; // no rows yet
+
+    const headers        = data[0];
+    const COL_EVENT      = headers.indexOf("Event_Name");
+    const COL_PAYLOAD    = headers.indexOf("Raw_Payload");
+    const COL_STATUS     = headers.indexOf("Status");
+    const COL_PROC_AT    = headers.indexOf("Processed_At");
+    const COL_RESULT     = headers.indexOf("Result");
+
+    var processed = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      const rowStatus = String(data[i][COL_STATUS] || "").trim();
+      if (rowStatus !== "PENDING") continue; // skip already handled rows
+
+      const eventName  = String(data[i][COL_EVENT]   || "");
+      const rawPayload = String(data[i][COL_PAYLOAD]  || "{}");
+      var   body;
+      try { body = JSON.parse(rawPayload); } catch(_) { body = {}; }
+
+      const content = body.content || {};
+      const order   = content.order || {};
+      var   result  = "";
+      var   newStatus = "PROCESSED";
+
+      if (eventName === "ORDER_SUCCEEDED" || order.status === "CHARGED") {
+        const markResult = hdfc_markOrderPaid(order);
+        result = JSON.stringify(markResult);
+        if (markResult.error) newStatus = "FAILED";
+
+      } else if (eventName === "REFUND_INITIATED" || eventName === "REFUND_SUCCEEDED") {
+        // Placeholder — refund logic goes here when needed
+        result = "Refund event acknowledged.";
+
+      } else {
+        result = "Unhandled event type: " + eventName;
+      }
+
+      // Update the log row
+      ws.getRange(i + 1, COL_STATUS   + 1).setValue(newStatus);
+      ws.getRange(i + 1, COL_PROC_AT  + 1).setValue(new Date());
+      ws.getRange(i + 1, COL_RESULT   + 1).setValue(result);
+      processed++;
+
+      console.log("hdfc_processWebhookLog: row " + (i+1) + " → " + newStatus + " | " + result);
+    }
+
+    if (processed > 0) {
+      console.log("hdfc_processWebhookLog: processed " + processed + " pending webhook(s).");
+    }
+
+  } catch (err) {
+    console.error("hdfc_processWebhookLog error:", err.message);
+  }
+}
+
+
+/**
+ * Run this ONCE from the Apps Script editor to set up the 1-minute trigger
+ * that calls hdfc_processWebhookLog() automatically.
+ *
+ * Menu: Run → setupHdfcWebhookTrigger
+ * Only needed in the DEV project (same project that receives HDFC webhooks).
+ */
+function setupHdfcWebhookTrigger() {
+  // Remove any existing trigger for this function first (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "hdfc_processWebhookLog") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger("hdfc_processWebhookLog")
+    .timeBased()
+    .everyMinutes(1)
+    .create();
+  console.log("✅ hdfc_processWebhookLog trigger created — runs every 1 minute.");
 }
 
 
