@@ -7690,10 +7690,17 @@
       const rand     = Math.random().toString(36).substr(2, 9).toUpperCase();
       const tempId   = `SK${datePart}G${rand}`;
 
-      // Store temp ID so we can match it when HDFC redirects back
+      // Store temp ID + full order state so we can restore after HDFC redirect
+      // (page is a fresh load on return — in-memory S.* state is gone)
       S.hdfcPendingOrderId = tempId;
-      sessionStorage.setItem("sk_hdfc_pending_id",    tempId);
-      sessionStorage.setItem("sk_hdfc_pending_amount", String(S.grandTotal));
+      sessionStorage.setItem("sk_hdfc_pending_id",        tempId);
+      sessionStorage.setItem("sk_hdfc_pending_amount",    String(S.grandTotal));
+      sessionStorage.setItem("sk_hdfc_pending_phone",     S.phone || "");
+      sessionStorage.setItem("sk_hdfc_pending_orders",    JSON.stringify(S.orders        || {}));
+      sessionStorage.setItem("sk_hdfc_pending_dates",     JSON.stringify(S.selectedDates || []));
+      sessionStorage.setItem("sk_hdfc_pending_profile",   JSON.stringify(S.profile       || {}));
+      sessionStorage.setItem("sk_hdfc_pending_mealAddrs", JSON.stringify(S.mealAddrs     || {}));
+      sessionStorage.setItem("sk_hdfc_pending_firstTime", JSON.stringify(S.isFirstTime   || false));
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
@@ -7765,19 +7772,32 @@
         if (data.error) throw new Error(data.error);
 
         if (data.paid) {
-          // Payment confirmed — place the actual Svaadh order now
-          // Retrieve pending order context from sessionStorage
-          const pendingId  = sessionStorage.getItem("sk_hdfc_pending_id");
-          sessionStorage.removeItem("sk_hdfc_pending_id");
-          sessionStorage.removeItem("sk_hdfc_pending_amount");
+          // Payment confirmed — restore order state from sessionStorage
+          // (this is a fresh page load — in-memory S.* was wiped by the HDFC redirect)
+          const pendingId = sessionStorage.getItem("sk_hdfc_pending_id");
 
           if (pendingId && pendingId === orderId) {
-            // Mark payment method as Gateway for the order submission
+            // Restore all order state saved before the redirect
+            try {
+              S.phone         = sessionStorage.getItem("sk_hdfc_pending_phone")  || S.phone || "";
+              S.orders        = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_orders")    || "{}");
+              S.selectedDates = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_dates")     || "[]");
+              S.profile       = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_profile")   || "{}");
+              S.mealAddrs     = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_mealAddrs") || "{}");
+              S.isFirstTime   = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_firstTime") || "false");
+            } catch(_) {}
+
+            // Clean up sessionStorage
+            ["sk_hdfc_pending_id","sk_hdfc_pending_amount","sk_hdfc_pending_phone",
+             "sk_hdfc_pending_orders","sk_hdfc_pending_dates","sk_hdfc_pending_profile",
+             "sk_hdfc_pending_mealAddrs","sk_hdfc_pending_firstTime"]
+              .forEach(k => sessionStorage.removeItem(k));
+
             S.hdfcPaymentVerified = true;
             S.hdfcGatewayOrderId  = orderId;
-            // Auto-submit the order with Gateway as payment method
             await hdfc_submitVerifiedOrder(orderId, status);
           } else {
+            // pendingId mismatch — payment confirmed but can't auto-submit
             await sAlert(
               "Payment of ₹" + (sessionStorage.getItem("sk_hdfc_pending_amount") || "?") + " confirmed!\n\nYour order ID: " + orderId,
               "Payment Successful ✅", "🎉"

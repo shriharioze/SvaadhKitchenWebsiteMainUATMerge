@@ -46,6 +46,7 @@ const HDFC_WEBHOOK_USERNAME = SP.getProperty("HDFC_WEBHOOK_USERNAME") || "";
 const HDFC_WEBHOOK_PASSWORD = SP.getProperty("HDFC_WEBHOOK_PASSWORD") || "";
 const HDFC_ENV              = SP.getProperty("HDFC_ENV")              || "test";
 const HDFC_RETURN_URL       = SP.getProperty("HDFC_RETURN_URL")       || "";
+const HDFC_ORDER_PAGE_URL   = SP.getProperty("HDFC_ORDER_PAGE_URL")   || "https://svaadhkitchen.in/order.html";
 const HDFC_BASE_URL         = HDFC_ENV === "live"
   ? (SP.getProperty("HDFC_LIVE_URL") || "https://smartgateway.hdfcbank.com")
   : (SP.getProperty("HDFC_TEST_URL") || "https://smartgateway-uat.hdfcbank.com");
@@ -414,7 +415,7 @@ function doPost(e) {
       const params = Object.keys(parsedForHdfc)
         .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(parsedForHdfc[k]))
         .join("&");
-      const redirectUrl = "https://svaadhkitchen.in/order.html?" + params;
+      const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
       return HtmlService.createHtmlOutput(
         `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
         `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
@@ -428,7 +429,7 @@ function doPost(e) {
         const params = Object.keys(formParams)
           .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(formParams[k]))
           .join("&");
-        const redirectUrl = "https://svaadhkitchen.in/order.html?" + params;
+        const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
         return HtmlService.createHtmlOutput(
           `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
           `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
