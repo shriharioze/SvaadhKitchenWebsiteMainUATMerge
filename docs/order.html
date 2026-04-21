@@ -7146,22 +7146,26 @@
      */
     function calculateLoyaltyStreak(pastOrders) {
       if (!pastOrders || pastOrders.length === 0) return { count: 0, surcharge: 0 };
-      
+
       const dailyTotals = {};
+      const rewardDays = new Set();
       const allOrders = [...(S.existingOrders || []), ...(pastOrders || [])];
-      
+
       allOrders.forEach(r => {
         const stat = String(r.payment_status || "").toLowerCase();
         if (stat.includes("cancelled") || stat.includes("deleted")) return;
-        
+
         const d = r.date;
         if (!dailyTotals[d]) dailyTotals[d] = 0;
         dailyTotals[d] += Number(r.inflation_surcharge) || 0;
+
+        // Track days where 6th-day loyalty reward was applied
+        if (r.loyalty_discount === true) rewardDays.add(d);
       });
 
       let count = 0;
       let surcharge = 0;
-      let d = new Date(); d.setDate(d.getDate() - 1); 
+      let d = new Date(); d.setDate(d.getDate() - 1);
       let safety = 0;
 
       while (safety < 30) {
@@ -7172,6 +7176,7 @@
         }
         const iso = d.toISOString().split('T')[0];
         if (dailyTotals[iso] !== undefined) {
+          if (rewardDays.has(iso)) break; // This day was a reward day — new cycle starts after it
           count++;
           surcharge += dailyTotals[iso];
         } else {
