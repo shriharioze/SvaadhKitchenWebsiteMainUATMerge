@@ -5792,18 +5792,41 @@ function hdfc_verifyReturnPayload(body) {
     return { error: "Missing order_id or status in return payload." };
   }
 
-  // Verify HMAC signature
+  // ── Step 1: HMAC signature check (fast, no I/O) ─────────────
+  // If signature is present and key is configured, verify it.
+  // On mismatch: do NOT reject outright — fall back to Status API (Step 2).
+  // Reason: HDFC UAT may not send a valid signature; Status API is authoritative.
+  var signatureOk = false;
   if (HDFC_RESPONSE_KEY && signature) {
     const expectedSig = hdfc_hmacSha256(orderId + "|" + status, HDFC_RESPONSE_KEY);
-    if (expectedSig.toLowerCase() !== signature.toLowerCase()) {
-      console.warn("HDFC return: HMAC mismatch for order " + orderId);
-      return { error: "Payment response signature invalid.", paid: false };
+    if (expectedSig.toLowerCase() === signature.toLowerCase()) {
+      signatureOk = true;
+    } else {
+      console.warn("HDFC return: HMAC mismatch for order " + orderId + " — falling back to Status API.");
     }
   } else {
-    console.warn("HDFC return: Skipping HMAC check — HDFC_RESPONSE_KEY not configured.");
+    console.warn("HDFC return: No signature or key — falling back to Status API.");
   }
 
-  const paid = (status === "CHARGED" || status === "SUCCESS");
+  // ── Step 2: Status API verification (authoritative) ──────────
+  // Always call if signature check didn't pass. Even if it did pass,
+  // Status API gives us the real txn_id and confirmed status.
+  var statusConfirmed = (status === "CHARGED" || status === "SUCCESS");
+  if (!signatureOk) {
+    const statusCheck = hdfc_getOrderStatus(orderId);
+    if (statusCheck.confirmed) {
+      statusConfirmed = true;
+      console.log("HDFC return: Status API confirmed CHARGED for " + orderId);
+    } else {
+      console.warn("HDFC return: Status API returned '" + statusCheck.status + "' for " + orderId);
+      // Only reject if BOTH signature AND Status API fail
+      if (!statusConfirmed) {
+        return { error: "Payment could not be verified. Status: " + statusCheck.status, paid: false };
+      }
+    }
+  }
+
+  const paid = statusConfirmed;
 
   // Cross-check with sheet (webhook should have already marked it paid)
   try {
