@@ -1044,10 +1044,21 @@ function submitOrder(body) {
     (masters.sabjiMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
   } catch(e) { console.error("Master fetch failed in submitOrder", e); }
 
+  // Strip weight/measure suffixes like [175g], [200g], [100ml], (2 pieces) etc.
+  // so backend always stores the clean item name regardless of what frontend shows.
+  const stripDisplaySuffix = (name) => {
+    return String(name)
+      .replace(/\s*\[.*?\]\s*/g, '')   // removes [175g], [200ml], [2 pcs] etc.
+      .replace(/\s*\(.*?\)\s*/g, '')   // removes (2 pieces), (100ml) etc.
+      .trim();
+  };
+
   const resolveName = (k) => {
-    if (ITEM_COL_MAP[k]) return ITEM_COL_MAP[k].replace(/_/g, ' ');
-    if (masterMap[k]) return masterMap[k];
-    return k.replace(/_/g, ' ');
+    let name;
+    if (ITEM_COL_MAP[k]) name = ITEM_COL_MAP[k].replace(/_/g, ' ');
+    else if (masterMap[k]) name = masterMap[k];
+    else name = k.replace(/_/g, ' ');
+    return stripDisplaySuffix(name);
   };
 
   // Sort orders by date to ensure virtual streak runs chronologically
