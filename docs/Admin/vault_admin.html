@@ -737,6 +737,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .btn-mark-collected { display:flex; align-items:center; gap:7px; padding:9px 18px; background:var(--green); color:#fff; border:none; border-radius:var(--radius-sm); font-size:.82rem; font-weight:700; cursor:pointer; font-family:inherit; }
 .btn-mark-collected:hover { background:#245f3e; }
 .billing-empty { text-align:center; padding:48px; color:var(--muted); font-size:.9rem; }
+
+/* ── EXPENSES ── */
+.exp-label { display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;color:#64748b;margin-bottom:5px; }
+.exp-tab { padding:8px 16px;border:none;background:transparent;font-size:.82rem;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:0; }
+.exp-tab.active { color:var(--red);border-bottom-color:var(--red); }
+.exp-freq-btn { display:flex;align-items:center;gap:5px;padding:7px 14px;border:1.5px solid #cbd5e1;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;color:#475569;background:#fff;transition:all .15s; }
+.exp-freq-btn:has(input:checked) { border-color:var(--red);background:#fff5f5;color:var(--red); }
+.exp-freq-btn input { display:none; }
+.exp-log-row { display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:.82rem; }
+.exp-log-row:last-child { border-bottom:none; }
+.exp-log-row:hover { background:#fafafa; }
+.exp-cat-badge { font-size:.68rem;padding:3px 9px;border-radius:20px;background:#f1f5f9;color:#475569;font-weight:600;white-space:nowrap; }
+.exp-freq-badge { font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:700; }
+.exp-freq-badge.One-time { background:#f0f9ff;color:#0369a1; }
+.exp-freq-badge.Daily    { background:#fef3c7;color:#92400e; }
+.exp-freq-badge.Weekly   { background:#f0fdf4;color:#166534; }
+.exp-freq-badge.Monthly  { background:#fdf4ff;color:#7e22ce; }
+.exp-kpi { background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center; }
+.exp-kpi-val { font-size:1.3rem;font-weight:800;color:#1a1a1a; }
+.exp-kpi-lbl { font-size:.7rem;color:#64748b;font-weight:600;margin-top:2px; }
+.exp-bar-wrap { background:#f8fafc;border-radius:10px;padding:14px 16px;margin-bottom:10px; }
+.exp-bar-row { display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8rem; }
+.exp-bar-label { width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#374151; }
+.exp-bar-track { flex:1;background:#e2e8f0;border-radius:4px;height:8px; }
+.exp-bar-fill  { height:8px;border-radius:4px;background:var(--red);transition:width .4s; }
+.exp-bar-amt { width:60px;text-align:right;font-weight:700;color:#1a1a1a; }
+
 @media print {
   .bill-print-page { font-family: 'DM Sans', sans-serif; padding: 24px; max-width: 480px; margin: 0 auto; }
   body * { visibility: hidden; }
@@ -823,8 +850,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navManage" onclick="switchPage('manage')">⚙️ Manage Lists</button>
       <button class="topbar-btn" id="navOrders" onclick="switchPage('orders')">📊 Orders</button>
       <button class="topbar-btn" id="navPackaging" onclick="switchPage('packaging')">📦 Packaging Expenses</button>
-      <button class="topbar-btn" id="navLabels" onclick="switchPage('labels')">🏷️ Labels</button>
+      <button class="topbar-btn" id="navExpenses" onclick="switchPage('expenses')">💸 Expenses</button>
+      <button class="topbar-btn" id="navInventory" onclick="switchPage('inventory')">📦 Inventory</button>
       <button class="topbar-btn" id="navAnalytics" onclick="switchPage('analytics')">📊 Analytics</button>
+      <button class="topbar-btn" id="navArchive" onclick="switchPage('archive')">🗄️ Archive</button>
       <button class="topbar-btn" id="navHistory" onclick="switchPage('history')">📋 History</button>
       <button class="topbar-btn" id="navCustomers" onclick="switchPage('customers')">👥 Customers</button>
       <button class="topbar-btn" id="navReviews" onclick="switchPage('reviews')">🎁 Reviews</button>
@@ -886,7 +915,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div class="meal-card-head">
             <span class="meal-icon">☀️</span>
             <span class="meal-card-title">Lunch</span>
-            <span class="meal-cutoff">Order cutoff: 9:30 AM</span>
+            <span class="meal-cutoff">Order cutoff: 9:00 AM</span>
           </div>
           <div class="meal-card-body">
             <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for lunch.</p>
@@ -908,7 +937,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div class="meal-card-head">
             <span class="meal-icon">🌙</span>
             <span class="meal-card-title">Dinner</span>
-            <span class="meal-cutoff">Order cutoff: 5:00 PM</span>
+            <span class="meal-cutoff">Order cutoff: 4:30 PM</span>
           </div>
           <div class="meal-card-body">
             <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Select one dry sabji and one curry sabji for dinner.</p>
@@ -932,50 +961,34 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
             <span class="meal-card-title">Extend Cutoff Times Today</span>
           </div>
           <div class="meal-card-body">
-            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Leave blank to use defaults (Breakfast 7AM · Lunch 9:30AM · Dinner 5PM). Enter a new time below to extend for this date only.</p>
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">Leave blank to use defaults (Breakfast 7:00 AM · Lunch 9:00 AM · Dinner 4:30 PM). Pick any time — we'll show ⚡ Early or 🔓 Extended to customers.</p>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌅 Breakfast until</label>
-                <select id="cutoffBf" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (7:00 AM)</option>
-                  <option value="6.5">6:30 AM</option>
-                  <option value="6.75">6:45 AM</option>
-                  <option value="7.5">7:30 AM</option>
-                  <option value="8">8:00 AM</option>
-                  <option value="8.5">8:30 AM</option>
-                  <option value="9">9:00 AM</option>
-                </select>
+                <input type="time" id="cutoffBf" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffBf','cutoffBfBadge',7)">
+                <div id="cutoffBfBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 7:00 AM</div>
               </div>
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">☀️ Lunch until</label>
-                <select id="cutoffL" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (9:30 AM)</option>
-                  <option value="9">9:00 AM</option>
-                  <option value="9.167">9:10 AM</option>
-                  <option value="9.25">9:15 AM</option>
-                  <option value="9.333">9:20 AM</option>
-                  <option value="9.667">9:40 AM</option>
-                  <option value="9.75">9:45 AM</option>
-                  <option value="9.833">9:50 AM</option>
-                  <option value="10">10:00 AM</option>
-                </select>
+                <input type="time" id="cutoffL" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffL','cutoffLBadge',9)">
+                <div id="cutoffLBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 9:00 AM</div>
               </div>
               <div>
                 <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">🌙 Dinner until</label>
-                <select id="cutoffD" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;">
-                  <option value="">Default (5:00 PM)</option>
-                  <option value="16.5">4:30 PM</option>
-                  <option value="16.667">4:40 PM</option>
-                  <option value="16.75">4:45 PM</option>
-                  <option value="16.833">4:50 PM</option>
-                  <option value="17.167">5:10 PM</option>
-                  <option value="17.25">5:15 PM</option>
-                  <option value="17.333">5:20 PM</option>
-                  <option value="17.5">5:30 PM</option>
-                </select>
+                <input type="time" id="cutoffD" step="300"
+                  style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--bg2);color:var(--text);"
+                  onchange="updateCutoffBadge('cutoffD','cutoffDBadge',16.5)">
+                <div id="cutoffDBadge" style="margin-top:5px;font-size:.68rem;font-weight:700;text-align:center;"></div>
+                <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:2px;">Default: 4:30 PM</div>
               </div>
             </div>
-            <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">These are saved with the menu when you click <strong>Save Menu</strong> above. Customers will see the new cutoff time on the order page.</p>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Saved with the menu when you click <strong>Save Menu</strong>. ⚡ Early = before default · 🔓 Extended = after default.</p>
           </div>
         </div>
 
@@ -1113,60 +1126,309 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <div class="page" id="pagePackaging">
         <div class="pkg-header">
           <h2 style="margin:0;">📦 Packaging Expenses</h2>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="date" id="pkgDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
-            <button class="save-hero-btn" onclick="loadPackaging()">🔍 Load</button>
-          </div>
         </div>
+
+        <!-- Filter chips -->
+        <div class="range-chips" style="margin-bottom:10px;">
+          <button class="chip" onclick="pkgSetRange('week')">This Week</button>
+          <button class="chip" onclick="pkgSetRange('15days')">Last 15 Days</button>
+          <button class="chip" onclick="pkgSetRange('month')">This Month</button>
+          <button class="chip" onclick="pkgSetRange('lastmonth')">Last Month</button>
+          <button class="chip" onclick="pkgSetRange('year')">This Year</button>
+          <button class="chip" onclick="pkgSetRange('day')">Single Day</button>
+        </div>
+
+        <!-- Date inputs -->
+        <div class="filter-bar" style="margin-bottom:14px;">
+          <div id="pkgSingleWrap" style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--muted);font-weight:600;">Date</label>
+            <input type="date" id="pkgDatePicker" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+          </div>
+          <div id="pkgRangeWrap" style="display:none;align-items:center;gap:8px;">
+            <input type="date" id="pkgFrom" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <span style="color:var(--muted);font-size:.82rem;">to</span>
+            <input type="date" id="pkgTo" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;">
+          </div>
+
+          <!-- Sort -->
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <label style="font-size:0.78rem;color:var(--muted);font-weight:600;">Sort</label>
+            <select id="pkgSort" onchange="pkgApplySort()" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+              <option value="date_asc">Date ↑</option>
+              <option value="date_desc">Date ↓</option>
+              <option value="cost_desc">Cost ↓</option>
+              <option value="cost_asc">Cost ↑</option>
+              <option value="orders_desc">Orders ↓</option>
+              <option value="orders_asc">Orders ↑</option>
+            </select>
+          </div>
+
+          <button class="save-hero-btn" onclick="loadPackaging()">🔍 Load</button>
+        </div>
+
         <div id="packagingContent">
-          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load</div>
+          <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a period and click Load</div>
         </div>
       </div><!-- /pagePackaging -->
 
-      <!-- PAGE: LABELS -->
-      <div class="page" id="pageLabels">
-        <div class="labels-header">
-          <h2 style="margin:0;">🏷️ Label Generator</h2>
+      <!-- ════ PAGE: EXPENSES ════ -->
+      <div class="page" id="pageExpenses">
+        <div class="page-header">
+          <div class="page-title">💸 Expenses <small>Track all kitchen costs — raw materials, staff, utilities &amp; more</small></div>
         </div>
-        <div class="label-controls">
-          <div class="ctrl-group">
-            <label>Date</label>
-            <input type="date" id="labelDate">
-          </div>
-          <div class="ctrl-group">
-            <label>Meal</label>
-            <select id="labelMeal">
-              <option value="Breakfast">🌅 Breakfast</option>
-              <option value="Lunch">☀️ Lunch</option>
-              <option value="Dinner">🌙 Dinner</option>
-            </select>
-          </div>
-          <div class="ctrl-group">
-            <label>Language</label>
-            <select id="labelLang">
-              <option value="English">English (EN)</option>
-              <option value="Devanagari">देवनागरी (MR)</option>
-            </select>
-          </div>
-          <div class="ctrl-group">
-            <label>Gap (mm)</label>
-            <input type="number" id="labelGap" step="0.05" value="2.7" style="width:70px; padding:8px; border:1.5px solid #ddd; border-radius:8px;">
-          </div>
-          <div class="ctrl-group">
-            <label>Mode</label>
-            <select id="labelMode" style="width:100px;">
-              <option value="Full">Real</option>
-              <option value="Test">Test (5)</option>
-            </select>
-          </div>
-          <button class="gen-btn" onclick="generateLabels()">⚡ Generate Labels</button>
-        </div>
-        <div class="label-preview" id="labelPreview">
-          <div style="text-align:center;padding:30px;color:#aaa;font-size:0.85rem;">Select date, meal and language — then Generate</div>
-        </div>
-        <button class="download-btn" id="downloadLabelBtn" onclick="saveLabelsToDrive()">💾 Save to Drive</button>
-      </div><!-- /pageLabels -->
 
+        <!-- Tabs: Add / Log / Analytics -->
+        <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:2px solid #f1f5f9;padding-bottom:0;">
+          <button class="exp-tab active" id="expTabAdd"      onclick="switchExpTab('add')">➕ Add Expense</button>
+          <button class="exp-tab"        id="expTabLog"      onclick="switchExpTab('log')">📋 Expense Log</button>
+          <button class="exp-tab"        id="expTabAnalytics" onclick="switchExpTab('analytics')">📊 Analytics</button>
+        </div>
+
+        <!-- ── ADD EXPENSE PANEL ── -->
+        <div id="expPanelAdd">
+          <div style="max-width:560px;">
+
+            <!-- Quick-add recurring templates -->
+            <div id="expRecurringTemplates" style="margin-bottom:16px;display:none;">
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">⚡ QUICK RE-ENTER LAST MONTH</div>
+              <div id="expTemplateChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:20px 22px;">
+
+              <!-- Row 1: Date -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📅 Date</label>
+                <input type="date" id="expDate" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <!-- Row 2: Category -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🗂️ Category</label>
+                <select id="expCategory" onchange="onExpCategoryChange()" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="">— Select category —</option>
+                </select>
+              </div>
+
+              <!-- Row 3: Item -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📝 Item / Specific Expense</label>
+                <select id="expItem" onchange="onExpItemChange()" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="">— Select category first —</option>
+                </select>
+              </div>
+
+              <!-- Row 4: Amount + Payment Mode -->
+              <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                  <label class="exp-label">💰 Amount (₹)</label>
+                  <input type="number" id="expAmount" min="1" placeholder="e.g. 450"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+                <div style="flex:1;">
+                  <label class="exp-label">💳 Payment Mode</label>
+                  <select id="expPayMode" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Card">Card</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 5: Frequency -->
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🔁 Frequency</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="One-time" checked> One-time</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Daily"> Daily</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Weekly"> Weekly</label>
+                  <label class="exp-freq-btn"><input type="radio" name="expFreq" value="Monthly"> Monthly</label>
+                </div>
+              </div>
+
+              <!-- Row 6: Notes -->
+              <div style="margin-bottom:18px;">
+                <label class="exp-label">💬 Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <input type="text" id="expNotes" placeholder="e.g. From Mahadik Stores, paid advance…"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <button class="btn-primary" onclick="submitExpense()" style="width:100%;padding:11px;">
+                ➕ Save Expense
+              </button>
+              <div id="expSaveStatus" style="margin-top:8px;font-size:.78rem;min-height:16px;text-align:center;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── EXPENSE LOG PANEL ── -->
+        <div id="expPanelLog" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label class="exp-label">From</label>
+              <input type="date" id="expLogFrom" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <div>
+              <label class="exp-label">To</label>
+              <input type="date" id="expLogTo" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <button class="btn-primary" onclick="loadExpenseLog()" style="padding:9px 18px;">Load</button>
+          </div>
+          <div class="range-chips" style="margin-bottom:14px;">
+            <button class="chip" onclick="expLogSetRange(6)">Week</button>
+            <button class="chip" onclick="expLogSetRange(29)">Month</button>
+            <button class="chip" onclick="expLogSetRange(89)">Quarter</button>
+          </div>
+          <div id="expLogContent"></div>
+        </div>
+
+        <!-- ── ANALYTICS PANEL ── -->
+        <div id="expPanelAnalytics" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label class="exp-label">From</label>
+              <input type="date" id="expAnaFrom" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <div>
+              <label class="exp-label">To</label>
+              <input type="date" id="expAnaTo" style="padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);">
+            </div>
+            <button class="btn-primary" onclick="loadExpenseAnalytics()" style="padding:9px 18px;">Load</button>
+          </div>
+          <div class="range-chips" style="margin-bottom:14px;">
+            <button class="chip" onclick="expAnaSetRange(6)">Week</button>
+            <button class="chip" onclick="expAnaSetRange(29)">Month</button>
+            <button class="chip" onclick="expAnaSetRange(89)">Quarter</button>
+            <button class="chip" onclick="expAnaSetRange(179)">6 Months</button>
+          </div>
+          <div id="expAnaContent"></div>
+        </div>
+
+      </div><!-- /pageExpenses -->
+
+      <!-- ════ PAGE: INVENTORY ════ -->
+      <div class="page" id="pageInventory">
+        <div class="page-header">
+          <div class="page-title">📦 Inventory <small>Track raw material purchases — know exactly how long each item lasts</small></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:2px solid #f1f5f9;padding-bottom:0;">
+          <button class="exp-tab active" id="invTabAdd"      onclick="switchInvTab('add')">➕ Log Purchase</button>
+          <button class="exp-tab"        id="invTabSummary"  onclick="switchInvTab('summary')">📊 Summary</button>
+          <button class="exp-tab"        id="invTabHistory"  onclick="switchInvTab('history')">📋 Full History</button>
+        </div>
+
+        <!-- ── LOG PURCHASE ── -->
+        <div id="invPanelAdd">
+          <div style="max-width:520px;">
+            <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:20px 22px;">
+
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">📅 Date of Purchase</label>
+                <input type="date" id="invDate" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <label class="exp-label">🛒 Item</label>
+                <div style="display:flex;gap:8px;">
+                  <select id="invItemSelect" onchange="onInvItemSelect()" style="flex:1;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="">— Select item —</option>
+                    <optgroup label="🌾 Grains & Flour">
+                      <option>Wheat / Atta</option><option>Rice</option><option>Jowar</option><option>Bajra</option><option>Besan</option><option>Rawa / Semolina</option><option>Sabudana</option>
+                    </optgroup>
+                    <optgroup label="🫘 Dal & Pulses">
+                      <option>Toor Dal</option><option>Moong Dal</option><option>Chana Dal</option><option>Masoor Dal</option><option>Urad Dal</option>
+                    </optgroup>
+                    <optgroup label="🧄 Vegetables & Aromatics">
+                      <option>Onion</option><option>Tomato</option><option>Potato</option><option>Garlic</option><option>Ginger</option><option>Green Chilli</option><option>Coriander Leaves</option><option>Mixed Vegetables</option>
+                    </optgroup>
+                    <optgroup label="🥛 Dairy">
+                      <option>Milk</option><option>Curd</option><option>Paneer</option><option>Butter</option><option>Ghee</option>
+                    </optgroup>
+                    <optgroup label="🫙 Oils & Condiments">
+                      <option>Cooking Oil</option><option>Mustard Oil</option><option>Salt</option><option>Sugar</option><option>Jaggery</option>
+                    </optgroup>
+                    <optgroup label="🌶️ Spices">
+                      <option>Turmeric</option><option>Red Chilli Powder</option><option>Coriander Powder</option><option>Cumin / Jeera</option><option>Mustard Seeds</option><option>Garam Masala</option><option>Mixed Spices Pack</option>
+                    </optgroup>
+                    <optgroup label="⛽ Other">
+                      <option>LPG Cylinder</option>
+                    </optgroup>
+                    <option value="__custom__">✏️ Add custom item…</option>
+                  </select>
+                  <input type="text" id="invItemCustom" placeholder="Item name"
+                    style="display:none;flex:1;padding:9px 12px;border:1.5px solid #f59e0b;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+              </div>
+
+              <div style="display:flex;gap:12px;margin-bottom:14px;">
+                <div style="flex:1;">
+                  <label class="exp-label">⚖️ Quantity</label>
+                  <input type="number" id="invQty" min="0.1" step="0.1" placeholder="e.g. 30"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+                <div style="width:100px;">
+                  <label class="exp-label">Unit</label>
+                  <select id="invUnit" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="litre">litre</option>
+                    <option value="ml">ml</option>
+                    <option value="packet">packet</option>
+                    <option value="piece">piece</option>
+                    <option value="dozen">dozen</option>
+                    <option value="cylinder">cylinder</option>
+                    <option value="bag">bag</option>
+                  </select>
+                </div>
+                <div style="flex:1;">
+                  <label class="exp-label">₹ Price Paid <span style="font-weight:400;color:#94a3b8;">(opt)</span></label>
+                  <input type="number" id="invPrice" min="0" placeholder="e.g. 1200"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+                </div>
+              </div>
+
+              <div style="margin-bottom:18px;">
+                <label class="exp-label">💬 Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <input type="text" id="invNotes" placeholder="e.g. From Mahadik Stores, extra quality"
+                  style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+
+              <button class="btn-primary" onclick="submitInventoryEntry()" style="width:100%;padding:11px;">
+                ➕ Log Purchase
+              </button>
+              <div id="invSaveStatus" style="margin-top:8px;font-size:.78rem;text-align:center;min-height:16px;"></div>
+            </div>
+
+            <!-- Last purchase info card (shown after item selected) -->
+            <div id="invLastInfo" style="display:none;margin-top:12px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:12px;padding:14px 16px;font-size:.82rem;color:#0c4a6e;"></div>
+          </div>
+        </div>
+
+        <!-- ── SUMMARY ── -->
+        <div id="invPanelSummary" style="display:none;">
+          <div id="invSummaryContent"><div style="text-align:center;padding:40px;color:#94a3b8;">Click Load to view summary</div></div>
+          <div style="margin-top:12px;text-align:center;">
+            <button class="btn-primary" onclick="loadInventory()">🔄 Load / Refresh</button>
+          </div>
+        </div>
+
+        <!-- ── FULL HISTORY ── -->
+        <div id="invPanelHistory" style="display:none;">
+          <div style="margin-bottom:14px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div>
+              <label class="exp-label">Filter by Item</label>
+              <select id="invHistoryFilter" style="padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.82rem;background:var(--bg);cursor:pointer;">
+                <option value="">All items</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="renderInventoryHistory()" style="padding:9px 18px;">Apply</button>
+          </div>
+          <div id="invHistoryContent"></div>
+        </div>
+
+      </div><!-- /pageInventory -->
 
       <!-- ════ PAGE: ANALYTICS ════ -->
       <div class="page" id="pageAnalytics">
@@ -1183,12 +1445,76 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <button class="chip" onclick="analyticsSetRange(6)">This week</button>
           <button class="chip" onclick="analyticsSetRange(29)">This month</button>
           <button class="chip" onclick="analyticsSetLastMonth()">Last month</button>
+          <button class="chip" onclick="analyticsSetRange(89)">Quarterly</button>
+          <button class="chip" onclick="analyticsSetRange(179)">Semi-annual</button>
+          <button class="chip" onclick="analyticsSetRange(364)">Annual</button>
           <button class="chip" onclick="analyticsSetPeriod('1-10')">1–10</button>
           <button class="chip" onclick="analyticsSetPeriod('11-20')">11–20</button>
           <button class="chip" onclick="analyticsSetPeriod('21-end')">21–end</button>
         </div>
         <div id="analyticsContent"></div>
       </div><!-- /pageAnalytics -->
+
+      <!-- ════ PAGE: ARCHIVE ════ -->
+      <div class="page" id="pageArchive">
+        <div class="page-header">
+          <div class="page-title">Quarterly Archive <small>Safely archive old orders &amp; wallet data to keep the system fast</small></div>
+        </div>
+        <div style="max-width:560px;margin:0 auto;">
+
+          <!-- Info card -->
+          <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:14px;padding:16px 18px;margin-bottom:18px;font-size:.82rem;color:#0c4a6e;line-height:1.6;">
+            <div style="font-weight:700;font-size:.88rem;margin-bottom:6px;">📦 How it works</div>
+            <ul style="margin:0;padding-left:18px;">
+              <li>Creates a new Google Spreadsheet: <em>Svaadh Kitchen Archive — Q[N] [Year]</em></li>
+              <li>Copies all <strong>SK_Orders</strong> and <strong>SK_Wallet</strong> rows for that quarter</li>
+              <li>Writes <strong>Balance Carry Forward</strong> snapshots so active wallet balances are preserved</li>
+              <li>Deletes the archived rows from the live sheet — keeping it fast and lean</li>
+            </ul>
+            <div style="margin-top:8px;color:#b45309;font-weight:600;">⚠️ This action cannot be undone. Verify your selection before running.</div>
+          </div>
+
+          <!-- Manual archive trigger -->
+          <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+            <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:14px;">🗄️ MANUAL ARCHIVE</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.72rem;font-weight:600;color:#475569;">Year</label>
+                <input type="number" id="archiveYear" min="2024" max="2099" step="1"
+                  style="width:90px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.72rem;font-weight:600;color:#475569;">Quarter</label>
+                <select id="archiveQuarter"
+                  style="padding:8px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
+                  <option value="1">Q1 — Jan · Feb · Mar</option>
+                  <option value="2">Q2 — Apr · May · Jun</option>
+                  <option value="3">Q3 — Jul · Aug · Sep</option>
+                  <option value="4">Q4 — Oct · Nov · Dec</option>
+                </select>
+              </div>
+              <button class="btn-primary" onclick="runManualArchive()" style="height:38px;padding:0 18px;">
+                🗄️ Run Archive
+              </button>
+            </div>
+            <div id="archiveStatus"></div>
+          </div>
+
+          <!-- Auto-trigger setup -->
+          <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;">
+            <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">⏰ AUTO-ARCHIVE TRIGGER</div>
+            <div style="font-size:.82rem;color:#475569;margin-bottom:12px;line-height:1.5;">
+              Registers a time-based trigger to run automatically on the <strong>10th of each quarter-end month</strong>
+              (Apr 10, Jul 10, Oct 10, Jan 10). Run this once after deploying a new version.
+            </div>
+            <button class="btn-secondary" onclick="setupAutoTrigger()" style="font-size:.82rem;">
+              ⚙️ Setup Auto-Trigger (run once)
+            </button>
+            <div id="triggerStatus" style="margin-top:8px;"></div>
+          </div>
+
+        </div>
+      </div><!-- /pageArchive -->
 
       <!-- ════ PAGE: WALLET BILLING ════ -->
       <div class="page" id="pageTenday">
@@ -1217,29 +1543,77 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="page-header">
           <div class="page-title">Order History <small>Browse all orders by date range</small></div>
         </div>
-        <div class="filter-bar">
+
+        <!-- Quick range chips -->
+        <div class="range-chips" style="margin-bottom:10px;">
+          <button class="chip" id="hchip-today"     onclick="histQuickRange('today')">Today</button>
+          <button class="chip" id="hchip-week"      onclick="histQuickRange('week')">This Week</button>
+          <button class="chip" id="hchip-15days"    onclick="histQuickRange('15days')">Last 15 Days</button>
+          <button class="chip" id="hchip-month"     onclick="histQuickRange('month')">This Month</button>
+          <button class="chip" id="hchip-lastmonth" onclick="histQuickRange('lastmonth')">Last Month</button>
+          <button class="chip" id="hchip-year"      onclick="histQuickRange('year')">This Year</button>
+        </div>
+
+        <!-- Filter bar row 1: dates + load -->
+        <div class="filter-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:8px;">
           <input type="date" id="histFrom" title="From date">
           <span style="color:var(--muted);font-size:.82rem;">to</span>
           <input type="date" id="histTo" title="To date">
-          <select id="histMeal">
+          <button class="btn-primary" onclick="loadHistory()">🔍 Load</button>
+          <!-- View toggle -->
+          <div style="margin-left:auto;display:flex;gap:4px;background:#f0ede8;border-radius:8px;padding:3px;">
+            <button id="hvBtn-table" onclick="histSetView('table')"
+              style="border:none;background:#c0392b;color:#fff;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">⊞ Table</button>
+            <button id="hvBtn-list" onclick="histSetView('list')"
+              style="border:none;background:transparent;color:#666;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">≡ List</button>
+          </div>
+        </div>
+
+        <!-- Filter bar row 2: dropdowns -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;">
+          <select id="histMeal" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
             <option value="">All Meals</option>
             <option>Breakfast</option><option>Lunch</option><option>Dinner</option>
           </select>
-          <button class="btn-primary" onclick="loadHistory()">Load</button>
+          <select id="histPayStatus" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Statuses</option>
+            <option value="Paid">✓ Paid</option>
+            <option value="Wallet Paid">💳 Wallet Paid</option>
+            <option value="Pending">⏳ Pending</option>
+          </select>
+          <select id="histPayMethod" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Methods</option>
+            <option value="UPI">UPI</option>
+            <option value="Wallet">Wallet</option>
+            <option value="Split">Split</option>
+            <option value="On Account">On Account</option>
+          </select>
+          <select id="histAreaSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
+            <option value="">All Areas</option>
+          </select>
+          <input type="text" id="histSearch" placeholder="🔍 Name / Phone" oninput="histApplyFilters()"
+            style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;min-width:150px;">
+          <select id="histSortSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;" onchange="histApplySortSel()">
+            <option value="date_asc">Date ↑ (oldest)</option>
+            <option value="date_desc">Date ↓ (newest)</option>
+            <option value="amount_desc">Amount ↓</option>
+            <option value="amount_asc">Amount ↑</option>
+            <option value="name_asc">Name A–Z</option>
+            <option value="meal_asc">Meal</option>
+            <option value="area_asc">Area</option>
+            <option value="status_asc">Status</option>
+          </select>
+          <button onclick="histResetFilters()" style="padding:6px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.78rem;background:#fff;cursor:pointer;color:var(--muted);">↺ Reset</button>
         </div>
-        <div class="range-chips">
-          <button class="chip" onclick="histSetRange(0)">Today</button>
-          <button class="chip" onclick="histSetRange(6)">Last 7 days</button>
-          <button class="chip" onclick="histSetRange(29)">Last 30 days</button>
-        </div>
+
         <div id="histStats"></div>
-        <div id="histTableControls" style="display:none;margin-bottom:12px;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Status:</span>
+        <div id="histTableControls" style="display:none;margin-bottom:10px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Filter:</span>
             <button class="chip sel" id="hf-all"     onclick="setHistFilter('all')">All</button>
             <button class="chip"     id="hf-paid"    onclick="setHistFilter('Paid')">✓ Paid</button>
             <button class="chip"     id="hf-pending" onclick="setHistFilter('Pending')">⏳ Pending</button>
-            <span id="histRowCount" style="margin-left:auto;font-size:.78rem;color:var(--muted);"></span>
+            <span id="histRowCount" style="margin-left:auto;font-size:.78rem;font-weight:700;color:var(--muted);"></span>
           </div>
         </div>
         <div id="histTableWrap"></div>
@@ -1250,6 +1624,30 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="page-header">
           <div class="page-title">Customers <small>All customers, sorted by most recent order</small></div>
         </div>
+
+        <!-- Quick Wallet Credit -->
+        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px;padding:16px 18px;margin-bottom:18px;">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#166534;margin-bottom:12px;">💳 Add Wallet Credit</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:140px;">
+              <div style="font-size:.7rem;color:#166534;font-weight:600;margin-bottom:4px;">Customer Phone</div>
+              <input type="tel" id="wcPhone" placeholder="10-digit number" maxlength="10" inputmode="numeric"
+                style="width:100%;padding:9px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:.85rem;background:#fff;box-sizing:border-box;"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:.7rem;color:#166534;font-weight:600;margin-bottom:4px;">Amount (₹)</div>
+              <input type="number" id="wcAmount" placeholder="e.g. 100" min="1"
+                style="width:100%;padding:9px 12px;border:1.5px solid #86efac;border-radius:8px;font-size:.85rem;background:#fff;box-sizing:border-box;">
+            </div>
+            <button onclick="adminAddWalletCredit()"
+              style="padding:9px 22px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+              ➕ Add Credit
+            </button>
+          </div>
+          <div id="wcStatus" style="margin-top:8px;font-size:.78rem;min-height:18px;"></div>
+        </div>
+
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
           <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="filterCustomers()">
           <button class="btn-primary" onclick="loadCustomers()">↺ Refresh</button>
@@ -1488,39 +1886,46 @@ const GLOBAL_STAPLE_PRICES = {
   "Ghee Phulka": 10,
   "Jowar Bhakri": 20,
   "Bajra Bhakri": 20,
-  "Dry Sabji Mini": 22, "Dry Sabji (Mini)": 22, "Dry_Sabji_Mini": 22, "L_DRY_MINI": 22, "D_DRY_MINI": 22,
-  "Dry Sabji Full": 45, "Dry Sabji (Full)": 45, "Dry_Sabji_Full": 45, "L_DRY_FULL": 45, "D_DRY_FULL": 45,
-  "Curry Sabji Mini": 22, "Curry Sabji (Mini)": 22, "Curry_Sabji_Mini": 22, "L_CURRY_MINI": 22, "D_CURRY_MINI": 22,
-  "Curry Sabji Full": 45, "Curry Sabji (Full)": 45, "Curry_Sabji_Full": 45, "L_CURRY_FULL": 45, "D_CURRY_FULL": 45,
-  "Dal": 22,
-  "Rice": 12,
-  "Salad": 6,
-  "Curd": 12
+  "Dry Sabji Mini (100ml)": 22, "Dry Sabji (Mini)": 22, "Dry_Sabji_Mini": 22, "L_DRY_MINI": 22, "D_DRY_MINI": 22,
+  "Dry Sabji Full (250ml)": 45, "Dry Sabji (Full)": 45, "Dry_Sabji_Full": 45, "L_DRY_FULL": 45, "D_DRY_FULL": 45,
+  "Curry Sabji Mini (100ml)": 22, "Curry Sabji (Mini)": 22, "Curry_Sabji_Mini": 22, "L_CURRY_MINI": 22, "D_CURRY_MINI": 22,
+  "Curry Sabji Full (250ml)": 45, "Curry Sabji (Full)": 45, "Curry_Sabji_Full": 45, "L_CURRY_FULL": 45, "D_CURRY_FULL": 45,
+  "Dal (200ml)": 22, "Dal": 22,
+  "Rice (100g)": 12, "Rice": 12,
+  "Salad (40g)": 6, "Salad": 6,
+  "Curd (50g)": 12, "Curd": 12
 };
 
 // Maps every possible column key / colKey to a human-readable display name
 function colKeyToDisplayName(k) {
   const MAP = {
     // Breakfast
-    "B_CURD":"Curd",
+    "B_CURD":"Curd 50g",
     // Lunch legacy codes
-    "L_CHAPATI":"Chapati","L_WO_CHAPATI":"W/O Oil Chapati","L_PHULKA":"Phulka","L_GHEE_PHULKA":"Ghee Phulka",
+    "L_CHAPATI":"Chapati","L_WO_CHAPATI":"Without Oil Chapati","L_PHULKA":"Phulka","L_GHEE_PHULKA":"Ghee Phulka",
     "L_JOWAR":"Jowar Bhakri","L_BA_JRA":"Bajra Bhakri",
-    "L_DRY_MINI":"Dry Sabji (Mini)","L_DRY_FULL":"Dry Sabji (Full)",
-    "L_CURRY_MINI":"Curry Sabji (Mini)","L_CURRY_FULL":"Curry Sabji (Full)",
-    "L_DAL":"Dal","L_RICE":"Rice","L_SALAD":"Salad","L_CURD":"Curd",
+    "L_DRY_MINI":"Dry Sabji Mini (100ml)","L_DRY_FULL":"Dry Sabji Full (250ml)",
+    "L_CURRY_MINI":"Curry Sabji Mini (100ml)","L_CURRY_FULL":"Curry Sabji Full (250ml)",
+    "L_DAL":"Dal (200ml)","L_RICE":"Rice (100g)","L_SALAD":"Salad (40g)","L_CURD":"Curd (50g)",
     // Dinner legacy codes
-    "D_CHAPATI":"Chapati","D_WO_CHAPATI":"W/O Oil Chapati","D_PHULKA":"Phulka","D_GHEE_PHULKA":"Ghee Phulka",
+    "D_CHAPATI":"Chapati","D_WO_CHAPATI":"Without Oil Chapati","D_PHULKA":"Phulka","D_GHEE_PHULKA":"Ghee Phulka",
     "D_JOWAR":"Jowar Bhakri","D_BA_JRA":"Bajra Bhakri",
-    "D_DRY_MINI":"Dry Sabji (Mini)","D_DRY_FULL":"Dry Sabji (Full)",
-    "D_CURRY_MINI":"Curry Sabji (Mini)","D_CURRY_FULL":"Curry Sabji (Full)",
-    "D_DAL":"Dal","D_RICE":"Rice","D_SALAD":"Salad","D_CURD":"Curd",
+    "D_DRY_MINI":"Dry Sabji Mini (100ml)","D_DRY_FULL":"Dry Sabji Full (250ml)",
+    "D_CURRY_MINI":"Curry Sabji Mini (100ml)","D_CURRY_FULL":"Curry Sabji Full (250ml)",
+    "D_DAL":"Dal (200ml)","D_RICE":"Rice (100g)","D_SALAD":"Salad (40g)","D_CURD":"Curd (50g)",
     // Canonical names (already human-readable but underscored)
-    "Dry_Sabji_Mini":"Dry Sabji (Mini)","Dry_Sabji_Full":"Dry Sabji (Full)",
-    "Curry_Sabji_Mini":"Curry Sabji (Mini)","Curry_Sabji_Full":"Curry Sabji (Full)",
-    "Without_Oil_Chapati":"W/O Oil Chapati","Ghee_Phulka":"Ghee Phulka",
+    "Dry_Sabji_Mini":"Dry Sabji Mini (100ml)","Dry_Sabji_Full":"Dry Sabji Full (250ml)",
+    "Curry_Sabji_Mini":"Curry Sabji Mini (100ml)","Curry_Sabji_Full":"Curry Sabji Full (250ml)",
+    "Without_Oil_Chapati":"Without Oil Chapati","Ghee_Phulka":"Ghee Phulka",
     "Jowar_Bhakri":"Jowar Bhakri","Bajra_Bhakri":"Bajra Bhakri",
-    "Kanda_Poha":"Kanda Poha",
+    "Kanda_Poha":"Kanda Poha [175g]",
+    "Kanda Poha": "Kanda Poha [175g]",
+    "Ghee Upma": "Ghee Upma [200g]",
+    "Sabudana Khichdi": "Sabudana Khichdi [200g]",
+    "Tikhi Pudi": "5 x Tikhi Pudi with 100 ml coriander chutney",
+    "Idli Chutney": "4 x Idli & 100ml Chutney",
+    "Ghee Sheera": "Ghee Sheera [200g]",
+    "Curd": "Curd 50g"
   };
   if (MAP[k]) return MAP[k];
   // Try bfMaster / sabjiMaster lookup
@@ -1642,6 +2047,43 @@ function bootApp() {
   renderBfMasterTable();
   renderSabjiMasterTable();
   initBillingFilters();
+  startKeepAlive();
+}
+
+// ── KEEP-ALIVE PING ───────────────────────────────────────────
+// Pings GAS every 10 min while admin page is open.
+// Keeps the GAS instance warm → eliminates cold-start timeouts for customers.
+const KEEP_ALIVE_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+let _keepAliveTimer = null;
+let _keepAliveCount = 0;
+let _lastPingTime   = null;
+
+function startKeepAlive() {
+  _pingGAS(); // immediate first ping on login
+  _keepAliveTimer = setInterval(_pingGAS, KEEP_ALIVE_INTERVAL_MS);
+  // Stop pinging when tab is hidden (saves quota), resume when visible
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearInterval(_keepAliveTimer);
+      _keepAliveTimer = null;
+    } else {
+      // Tab came back — ping immediately then restart interval
+      const msSinceLast = _lastPingTime ? Date.now() - _lastPingTime : Infinity;
+      if (msSinceLast > 5 * 60 * 1000) _pingGAS(); // only if >5 min gap
+      _keepAliveTimer = setInterval(_pingGAS, KEEP_ALIVE_INTERVAL_MS);
+    }
+  });
+}
+
+async function _pingGAS() {
+  _lastPingTime = Date.now();
+  try {
+    await fetch(`${APPS_SCRIPT_URL}?action=ping&_t=${Date.now()}`);
+    _keepAliveCount++;
+    console.log(`[KeepAlive] ping #${_keepAliveCount} at ${new Date().toLocaleTimeString("en-IN")}`);
+  } catch(e) {
+    console.warn("[KeepAlive] ping failed:", e.message);
+  }
 }
 
 function initBillingFilters() {
@@ -1731,11 +2173,14 @@ function selectDate(iso) {
     S.lunchCurry = existing.lunch_curry;
     S.dinnerDry  = existing.dinner_dry;
     S.dinnerCurry= existing.dinner_curry;
-    // Load cutoff overrides into selects
+    // Load cutoff overrides into time inputs
     const co = existing.cutoff_overrides || {};
-    document.getElementById("cutoffBf").value = co.Breakfast ? String(co.Breakfast) : "";
-    document.getElementById("cutoffL").value  = co.Lunch     ? String(co.Lunch)     : "";
-    document.getElementById("cutoffD").value  = co.Dinner    ? String(co.Dinner)    : "";
+    document.getElementById("cutoffBf").value = co.Breakfast ? decimalToTime(co.Breakfast) : "";
+    document.getElementById("cutoffL").value  = co.Lunch     ? decimalToTime(co.Lunch)     : "";
+    document.getElementById("cutoffD").value  = co.Dinner    ? decimalToTime(co.Dinner)    : "";
+    updateCutoffBadge("cutoffBf","cutoffBfBadge",7);
+    updateCutoffBadge("cutoffL","cutoffLBadge",9);
+    updateCutoffBadge("cutoffD","cutoffDBadge",16.5);
     // Load OOS and orders closed state
     S.oosItems     = existing.oos_items     || { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = existing.orders_closed || {};
@@ -1746,6 +2191,7 @@ function selectDate(iso) {
     document.getElementById("cutoffBf").value = "";
     document.getElementById("cutoffL").value  = "";
     document.getElementById("cutoffD").value  = "";
+    ["cutoffBfBadge","cutoffLBadge","cutoffDBadge"].forEach(id => { document.getElementById(id).innerHTML = ""; });
     // Reset OOS and orders closed
     S.oosItems     = { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = {};
@@ -1837,14 +2283,14 @@ const OOS_FIXED_ITEMS = [
   { label:"Ghee Phulka",         colKey:"Ghee Phulka" },
   { label:"Jowar Bhakri",        colKey:"Jowar Bhakri" },
   { label:"Bajra Bhakri",        colKey:"Bajra Bhakri" },
-  { label:"Dry Sabji Mini",      colKey:"Dry Sabji Mini" },
-  { label:"Dry Sabji Full",      colKey:"Dry Sabji Full" },
-  { label:"Curry Sabji Mini",    colKey:"Curry Sabji Mini" },
-  { label:"Curry Sabji Full",    colKey:"Curry Sabji Full" },
-  { label:"Dal",                 colKey:"Dal" },
-  { label:"Rice",                colKey:"Rice" },
-  { label:"Salad",               colKey:"Salad" },
-  { label:"Curd",                colKey:"Curd" },
+  { label:"Dry Sabji Mini (100ml)", colKey:"Dry Sabji Mini (100ml)" },
+  { label:"Dry Sabji Full (250ml)", colKey:"Dry Sabji Full (250ml)" },
+  { label:"Curry Sabji Mini (100ml)", colKey:"Curry Sabji Mini (100ml)" },
+  { label:"Curry Sabji Full (250ml)", colKey:"Curry Sabji Full (250ml)" },
+  { label:"Dal (200ml)",         colKey:"Dal (200ml)" },
+  { label:"Rice (100g)",         colKey:"Rice (100g)" },
+  { label:"Salad (40g)",         colKey:"Salad (40g)" },
+  { label:"Curd (50g)",          colKey:"Curd (50g)" },
 ];
 
 function renderOOSPanel() {
@@ -1944,9 +2390,9 @@ async function saveCurrentMenu() {
     lunch_curry:        S.lunchCurry,
     dinner_dry:         S.dinnerDry,
     dinner_curry:       S.dinnerCurry,
-    cutoff_breakfast:   document.getElementById("cutoffBf").value || null,
-    cutoff_lunch:       document.getElementById("cutoffL").value  || null,
-    cutoff_dinner:      document.getElementById("cutoffD").value  || null,
+    cutoff_breakfast:   timeToDecimal(document.getElementById("cutoffBf").value) || null,
+    cutoff_lunch:       timeToDecimal(document.getElementById("cutoffL").value)  || null,
+    cutoff_dinner:      timeToDecimal(document.getElementById("cutoffD").value)  || null,
     oos_items:          S.oosItems,
     orders_closed:      S.ordersClosed,
   };
@@ -2252,8 +2698,10 @@ async function switchPage(page) {
   document.getElementById("pageManage").classList.toggle("on", page==="manage");
   document.getElementById("pageOrders").classList.toggle("on", page==="orders");
   document.getElementById("pagePackaging").classList.toggle("on", page==="packaging");
-  document.getElementById("pageLabels").classList.toggle("on", page==="labels");
   document.getElementById("pageAnalytics").classList.toggle("on", page==="analytics");
+  document.getElementById("pageExpenses").classList.toggle("on", page==="expenses");
+  document.getElementById("pageInventory").classList.toggle("on", page==="inventory");
+  document.getElementById("pageArchive").classList.toggle("on", page==="archive");
   document.getElementById("pageTenday").classList.toggle("on", page==="tenday");
   document.getElementById("pageHistory").classList.toggle("on", page==="history");
   document.getElementById("pageCustomers").classList.toggle("on", page==="customers");
@@ -2265,8 +2713,10 @@ async function switchPage(page) {
   document.getElementById("navManage").classList.toggle("active", page==="manage");
   document.getElementById("navOrders").classList.toggle("active", page==="orders");
   document.getElementById("navPackaging").classList.toggle("active", page==="packaging");
-  document.getElementById("navLabels").classList.toggle("active", page==="labels");
   document.getElementById("navAnalytics").classList.toggle("active", page==="analytics");
+  document.getElementById("navExpenses").classList.toggle("active", page==="expenses");
+  document.getElementById("navInventory").classList.toggle("active", page==="inventory");
+  document.getElementById("navArchive").classList.toggle("active", page==="archive");
   document.getElementById("nav10Day").classList.toggle("active", page==="tenday");
   document.getElementById("navHistory").classList.toggle("active", page==="history");
   document.getElementById("navCustomers").classList.toggle("active", page==="customers");
@@ -2288,26 +2738,30 @@ async function switchPage(page) {
     loadOrderSummary();
   }
   if (page === "packaging") {
-    const picker = document.getElementById("pkgDatePicker");
-    if (!picker.value) { picker.value = toISO(getIST()); }
+    // Default to This Month on first open
+    if (!document.getElementById("pkgFrom").value) {
+      const fakeEvent = { target: document.querySelector("#pagePackaging .chip:nth-child(3)") };
+      const origEvent = window.event;
+      // Manually set month range without event dependency
+      const now = new Date();
+      _pkgMode = "month";
+      document.getElementById("pkgSingleWrap").style.display = "none";
+      document.getElementById("pkgRangeWrap").style.display  = "flex";
+      document.getElementById("pkgFrom").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+      document.getElementById("pkgTo").value   = toISO(getIST());
+      document.querySelectorAll("#pagePackaging .chip").forEach((c,i)=>c.classList.toggle("active", i===2));
+    }
     loadPackaging();
   }
-  if (page === "labels") {
-    const picker = document.getElementById("labelDate");
-    if (!picker.value) { picker.value = toISO(getIST()); }
-    // Restore gap
-    const savedGap = localStorage.getItem('sk-label-gap');
-    if (savedGap) document.getElementById('labelGap').value = savedGap;
-    // Save gap on change
-    document.getElementById('labelGap').addEventListener('change', (e) => {
-      localStorage.setItem('sk-label-gap', e.target.value);
-    });
-  }
+
   if (page === "analytics") {
     const af = document.getElementById("analyticsFrom");
     const at = document.getElementById("analyticsTo");
     if (!af.value) { const ist=getIST(); analyticsSetRange(29); return; }
   }
+  if (page === "archive")   { _initArchivePage(); }
+  if (page === "inventory") { initInventoryPage(); }
+  if (page === "expenses")  { initExpensePage(); }
   if (page === "tenday") { tendayAutoSelect(); }
   if (page === "payments") {
     const pp = document.getElementById("payDate");
@@ -2351,6 +2805,38 @@ function isMealCancellable(dateStr, meal) {
   };
   return time < (cutoffs[meal] || 0);
 }
+// ── CUTOFF TIME HELPERS ─────────────────────────────────────
+// Convert "HH:MM" → decimal hours  e.g. "09:00" → 9, "16:30" → 16.5
+function timeToDecimal(val) {
+  if (!val) return null;
+  const [h, m] = val.split(":").map(Number);
+  if (isNaN(h)) return null;
+  return h + (m || 0) / 60;
+}
+// Convert decimal hours → "HH:MM"  e.g. 16.5 → "16:30", 9 → "09:00"
+function decimalToTime(dec) {
+  if (dec === null || dec === undefined || dec === "") return "";
+  const h = Math.floor(dec);
+  const m = Math.round((dec - h) * 60);
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+// Show ⚡ Early / 🔓 Extended / ✅ Default badge next to each time input
+function updateCutoffBadge(inputId, badgeId, defaultDecimal) {
+  const val = document.getElementById(inputId).value;
+  const badge = document.getElementById(badgeId);
+  if (!val) { badge.innerHTML = ""; return; }
+  const dec = timeToDecimal(val);
+  if (dec === null) { badge.innerHTML = ""; return; }
+  if (dec < defaultDecimal) {
+    badge.innerHTML = '<span style="color:#e67e22;background:#fff3e0;padding:2px 8px;border-radius:99px;">⚡ Early cutoff</span>';
+  } else if (dec > defaultDecimal) {
+    badge.innerHTML = '<span style="color:#27ae60;background:#e8f5e9;padding:2px 8px;border-radius:99px;">🔓 Extended</span>';
+  } else {
+    badge.innerHTML = '<span style="color:#888;background:#f5f5f5;padding:2px 8px;border-radius:99px;">✅ Same as default</span>';
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
 function toast(msg, ms=2500) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
@@ -2359,68 +2845,202 @@ function toast(msg, ms=2500) {
 // ════════════════════════════════════════════════════════
 // PACKAGING EXPENSES PAGE
 // ════════════════════════════════════════════════════════
+// ── PACKAGING: helpers ──────────────────────────────────────
+let _pkgMode = "day";   // "day" | "range"
+let _pkgData = null;    // last fetched data (for re-sort)
+
+function pkgISO(d) { return d.toISOString().slice(0,10); }
+function pkgAddDays(d, n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+
+function pkgSetRange(mode) {
+  _pkgMode = mode;
+  const now = new Date();
+  const toISO = d => pkgISO(d);
+  const single = document.getElementById("pkgSingleWrap");
+  const range  = document.getElementById("pkgRangeWrap");
+  const from   = document.getElementById("pkgFrom");
+  const to     = document.getElementById("pkgTo");
+  const date   = document.getElementById("pkgDatePicker");
+
+  document.querySelectorAll("#pagePackaging .chip").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+
+  if (mode === "day") {
+    single.style.display = "flex"; range.style.display = "none";
+    date.value = toISO(now);
+  } else {
+    single.style.display = "none"; range.style.display = "flex";
+    const today = now;
+    if (mode === "week") {
+      const dow = today.getDay() || 7;
+      from.value = toISO(pkgAddDays(today, 1-dow));
+      to.value   = toISO(today);
+    } else if (mode === "15days") {
+      from.value = toISO(pkgAddDays(today, -14));
+      to.value   = toISO(today);
+    } else if (mode === "month") {
+      from.value = toISO(new Date(today.getFullYear(), today.getMonth(), 1));
+      to.value   = toISO(today);
+    } else if (mode === "lastmonth") {
+      const lm = new Date(today.getFullYear(), today.getMonth()-1, 1);
+      from.value = toISO(lm);
+      to.value   = toISO(new Date(today.getFullYear(), today.getMonth(), 0));
+    } else if (mode === "year") {
+      from.value = toISO(new Date(today.getFullYear(), 0, 1));
+      to.value   = toISO(today);
+    }
+  }
+}
+
 async function loadPackaging() {
-  const date = document.getElementById("pkgDatePicker").value;
-  if (!date) { sAlert("Please pick a date first."); return; }
   const el = document.getElementById("packagingContent");
   el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getPackagingExpenses&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
+    let url;
+    if (_pkgMode === "day") {
+      const date = document.getElementById("pkgDatePicker").value;
+      if (!date) { sAlert("Please pick a date first."); el.innerHTML=""; return; }
+      url = `${APPS_SCRIPT_URL}?action=getPackagingExpenses&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`;
+    } else {
+      const from = document.getElementById("pkgFrom").value;
+      const to   = document.getElementById("pkgTo").value;
+      if (!from || !to) { sAlert("Please select both From and To dates."); el.innerHTML=""; return; }
+      url = `${APPS_SCRIPT_URL}?action=getPackagingExpenses&from=${from}&to=${to}&pin=${S.sessionPin}&_t=${Date.now()}`;
+    }
+    const res  = await fetch(url);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    el.innerHTML = renderPackaging(data);
+    _pkgData = data;
+    el.innerHTML = _pkgMode === "day" ? renderPackagingDay(data) : renderPackagingRange(data);
   } catch(e) {
     el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${e.message}</p>`;
   }
 }
 
-function renderPackaging(data) {
+function pkgApplySort() {
+  if (!_pkgData || _pkgMode === "day") return;
+  document.getElementById("packagingContent").innerHTML = renderPackagingRange(_pkgData);
+}
+
+// ── PACKAGING: single day ────────────────────────────────────
+function renderPackagingDay(data) {
   const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
   const fmt = v => `₹${Number(v).toFixed(2)}`;
 
-  if (!data.orderCount) {
+  if (!data.orderCount)
     return `<div style="text-align:center;padding:40px;color:#aaa;">😴 No orders for ${fmtDate(data.date)}</div>`;
-  }
 
-  const mealMeta = data.meals || {};
-  let html = `
+  const m = data.meals || {};
+  return `
     <div class="pkg-meta">
       <span>📅 ${fmtDate(data.date)}</span>
       <span>📦 ${data.orderCount} orders total</span>
-      ${mealMeta.Breakfast ? `<span>🌅 Breakfast: ${mealMeta.Breakfast}</span>` : ""}
-      ${mealMeta.Lunch     ? `<span>☀️ Lunch: ${mealMeta.Lunch}</span>` : ""}
-      ${mealMeta.Dinner    ? `<span>🌙 Dinner: ${mealMeta.Dinner}</span>` : ""}
+      ${m.Breakfast ? `<span>🌅 Breakfast: ${m.Breakfast}</span>` : ""}
+      ${m.Lunch     ? `<span>☀️ Lunch: ${m.Lunch}</span>`         : ""}
+      ${m.Dinner    ? `<span>🌙 Dinner: ${m.Dinner}</span>`       : ""}
     </div>
     <table class="pkg-table">
-      <thead>
-        <tr>
-          <th>Packaging Item</th>
-          <th>Units Used</th>
-          <th>Unit Cost</th>
-          <th>Total Cost</th>
+      <thead><tr><th>Packaging Item</th><th>Units</th><th>Unit Cost</th><th>Total</th></tr></thead>
+      <tbody>
+        ${data.items.map(it => `<tr>
+          <td>${it.name}</td>
+          <td style="text-align:right;">${it.qty}</td>
+          <td style="text-align:right;">${fmt(it.unitCost)}</td>
+          <td style="text-align:right;">${fmt(it.total)}</td>
+        </tr>`).join("")}
+        <tr style="font-weight:700;background:#fdf0ee;">
+          <td colspan="3" style="text-align:right;">Grand Total</td>
+          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
         </tr>
-      </thead>
-      <tbody>`;
+      </tbody>
+    </table>
+    <div class="pkg-total-card">
+      <div><div class="label">📦 Total Packaging Cost</div>
+        <div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${fmtDate(data.date)} · ${data.orderCount} orders</div>
+      </div>
+      <div class="value">${fmt(data.total)}</div>
+    </div>`;
+}
 
-  data.items.forEach(item => {
-    html += `<tr>
-      <td>${item.name}</td>
-      <td style="text-align:right;">${item.qty}</td>
-      <td style="text-align:right;">${fmt(item.unitCost)}</td>
-      <td style="text-align:right;">${fmt(item.total)}</td>
-    </tr>`;
-  });
+// ── PACKAGING: range ─────────────────────────────────────────
+function renderPackagingRange(data) {
+  const fmtDate = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmt = v => `₹${Number(v).toFixed(2)}`;
+  const m = data.meals || {};
 
-  html += `<tr>
-    <td colspan="3" style="text-align:right;font-weight:700;">Grand Total</td>
-    <td style="text-align:right;font-weight:700;color:#c0392b;">${fmt(data.total)}</td>
-  </tr>`;
-  html += `</tbody></table>`;
+  // Summary stat cards
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#c0392b;">${fmt(data.total)}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Total Cost</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#2980b9;">${data.orderCount}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Total Orders</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#27ae60;">${data.days.length}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Active Days</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;color:#8e44ad;">${data.days.length ? fmt(data.total/data.days.length) : '₹0'}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Avg / Day</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      ${m.Breakfast ? `<div style="background:#fff8ec;border:1px solid #fde8c8;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">🌅 Breakfast: <b>${m.Breakfast}</b> orders</div>` : ""}
+      ${m.Lunch     ? `<div style="background:#f0f9f0;border:1px solid #c8ecc8;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">☀️ Lunch: <b>${m.Lunch}</b> orders</div>` : ""}
+      ${m.Dinner    ? `<div style="background:#f0f0ff;border:1px solid #d0c8f0;border-radius:10px;padding:8px 14px;font-size:0.82rem;font-weight:600;">🌙 Dinner: <b>${m.Dinner}</b> orders</div>` : ""}
+    </div>`;
 
-  html += `<div class="pkg-total-card">
-    <div><div class="label">📦 Total Packaging Cost</div><div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${fmtDate(data.date)} · ${data.orderCount} orders</div></div>
-    <div class="value">${fmt(data.total)}</div>
-  </div>`;
+  // Aggregated items table
+  html += `
+    <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Aggregated Usage — ${fmtDate(data.from)} to ${fmtDate(data.to)}</div>
+    <table class="pkg-table" style="margin-bottom:20px;">
+      <thead><tr><th>Packaging Item</th><th>Total Units</th><th>Unit Cost</th><th>Total Cost</th><th>% of Total</th></tr></thead>
+      <tbody>
+        ${data.items.map(it => `<tr>
+          <td>${it.name}</td>
+          <td style="text-align:right;">${it.qty}</td>
+          <td style="text-align:right;">${fmt(it.unitCost)}</td>
+          <td style="text-align:right;">${fmt(it.total)}</td>
+          <td style="text-align:right;">${data.total ? (it.total/data.total*100).toFixed(1)+'%' : '—'}</td>
+        </tr>`).join("")}
+        <tr style="font-weight:700;background:#fdf0ee;">
+          <td colspan="3" style="text-align:right;">Grand Total</td>
+          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
+          <td style="text-align:right;">100%</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  // Per-day breakdown — sorted
+  const sort = document.getElementById("pkgSort")?.value || "date_asc";
+  let days = [...data.days];
+  if      (sort === "date_asc")    days.sort((a,b) => a.date.localeCompare(b.date));
+  else if (sort === "date_desc")   days.sort((a,b) => b.date.localeCompare(a.date));
+  else if (sort === "cost_desc")   days.sort((a,b) => b.total - a.total);
+  else if (sort === "cost_asc")    days.sort((a,b) => a.total - b.total);
+  else if (sort === "orders_desc") days.sort((a,b) => b.orderCount - a.orderCount);
+  else if (sort === "orders_asc")  days.sort((a,b) => a.orderCount - b.orderCount);
+
+  if (days.length > 0) {
+    html += `<div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Per-Day Breakdown</div>
+    <table class="pkg-table">
+      <thead><tr><th>Date</th><th>Orders</th><th style="text-align:center;">🌅</th><th style="text-align:center;">☀️</th><th style="text-align:center;">🌙</th><th>Cost</th></tr></thead>
+      <tbody>
+        ${days.map(day => `<tr>
+          <td style="white-space:nowrap;">${fmtDate(day.date)}</td>
+          <td style="text-align:right;">${day.orderCount}</td>
+          <td style="text-align:center;color:#e67e22;">${day.meals.Breakfast||"—"}</td>
+          <td style="text-align:center;color:#27ae60;">${day.meals.Lunch||"—"}</td>
+          <td style="text-align:center;color:#8e44ad;">${day.meals.Dinner||"—"}</td>
+          <td style="text-align:right;font-weight:600;">${fmt(day.total)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
 
   return html;
 }
@@ -3223,10 +3843,10 @@ async function loadAnalytics() {
 function renderAnalytics(data, from, to) {
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
   const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
-  const { summary, meals, days, topItems } = data;
+  const { summary, meals, days, topItems, allItems } = data;
   const maxCount = topItems.length ? topItems[0].count : 1;
 
-  // KPIs
+  // KPIs — revenue
   let html = `<div class="analytics-kpis">
     <div class="kpi-card"><div class="kv">${summary.orders}</div><div class="kl">Orders</div></div>
     <div class="kpi-card"><div class="kv">${summary.customers}</div><div class="kl">Customers</div></div>
@@ -3234,6 +3854,26 @@ function renderAnalytics(data, from, to) {
     <div class="kpi-card green"><div class="kv">${fmtM(summary.paid)}</div><div class="kl">Collected</div></div>
     <div class="kpi-card gold"><div class="kv">${fmtM(summary.pending)}</div><div class="kl">Pending</div></div>
     <div class="kpi-card"><div class="kv">${fmtM(summary.avgPerDay)}</div><div class="kl">Avg / Day</div></div>
+  </div>`;
+
+  // Fee KPIs
+  html += `<div class="analytics-kpis" style="margin-top:-6px;">
+    <div class="kpi-card" style="border-color:#fbbf24;background:#fffbeb;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.delivery||0)}</div>
+      <div class="kl">🚚 Delivery</div>
+    </div>
+    <div class="kpi-card" style="border-color:#f87171;background:#fff1f2;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.surcharge||0)}</div>
+      <div class="kl">📈 Surcharge</div>
+    </div>
+    <div class="kpi-card" style="border-color:#a78bfa;background:#f5f3ff;">
+      <div class="kv" style="font-size:1rem;">${fmtM(summary.smallFee||0)}</div>
+      <div class="kl">📦 Small Order Fee</div>
+    </div>
+    <div class="kpi-card" style="border-color:#6ee7b7;background:#f0fdf4;">
+      <div class="kv" style="font-size:1rem;">${fmtM((summary.delivery||0)+(summary.surcharge||0)+(summary.smallFee||0))}</div>
+      <div class="kl">Total Fees</div>
+    </div>
   </div>`;
 
   // Meal breakdown
@@ -3249,10 +3889,28 @@ function renderAnalytics(data, from, to) {
   });
   html += `</div>`;
 
-  // Top items
+  // Item Qty Sold — full table
+  if (allItems && allItems.length) {
+    const itemRows = allItems.map((item,i) => `<tr style="${i%2===0?'':'background:var(--bg)'}">
+      <td style="padding:7px 10px;font-size:.82rem;">${item.name}</td>
+      <td style="padding:7px 10px;text-align:right;font-weight:700;font-size:.88rem;">${item.count}</td>
+    </tr>`).join("");
+    html += `<div class="analytics-section">
+      <div class="analytics-section-title">📦 Item Qty Sold</div>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:var(--bg);">
+          <th style="padding:8px 10px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Item</th>
+          <th style="padding:8px 10px;text-align:right;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);">Qty Sold</th>
+        </tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // Top items bar chart
   if (topItems.length) {
     html += `<div class="analytics-section">
-      <div class="analytics-section-title">🏆 Top Items</div>`;
+      <div class="analytics-section-title">🏆 Top Items (by qty)</div>`;
     topItems.forEach(item => {
       const pct = Math.round((item.count / maxCount) * 100);
       html += `<div class="top-item-row">
@@ -3264,18 +3922,35 @@ function renderAnalytics(data, from, to) {
     html += `</div>`;
   }
 
-  // Day-by-day revenue
-  if (days.length > 1) {
+  // Day-by-day table with fee columns
+  if (days.length > 0) {
     const dayRows = days.map(d => `<tr>
-      <td>${fmtD(d.date)}</td>
-      <td>${d.orders}</td>
+      <td style="white-space:nowrap;">${fmtD(d.date)}</td>
+      <td style="text-align:center;">${d.orders}</td>
       <td style="text-align:right;font-weight:600;">${fmtM(d.revenue)}</td>
+      <td style="text-align:right;color:#d97706;">${d.delivery > 0 ? fmtM(d.delivery) : '—'}</td>
+      <td style="text-align:right;color:#dc2626;">${d.surcharge > 0 ? fmtM(d.surcharge) : '—'}</td>
+      <td style="text-align:right;color:#7c3aed;">${d.smallFee > 0 ? fmtM(d.smallFee) : '—'}</td>
     </tr>`).join("");
     html += `<div class="analytics-section">
-      <div class="analytics-section-title">📅 Revenue by Day</div>
+      <div class="analytics-section-title">📅 Day-wise Breakdown</div>
       <div style="overflow-x:auto;"><table class="day-table">
-        <thead><tr><th>Date</th><th>Orders</th><th style="text-align:right;">Revenue</th></tr></thead>
+        <thead><tr>
+          <th>Date</th><th>Orders</th>
+          <th style="text-align:right;">Revenue</th>
+          <th style="text-align:right;color:#d97706;">🚚 Del.</th>
+          <th style="text-align:right;color:#dc2626;">📈 Surch.</th>
+          <th style="text-align:right;color:#7c3aed;">📦 SmallFee</th>
+        </tr></thead>
         <tbody>${dayRows}</tbody>
+        <tfoot><tr style="font-weight:700;border-top:2px solid var(--border);">
+          <td>Total</td>
+          <td style="text-align:center;">${summary.orders}</td>
+          <td style="text-align:right;">${fmtM(summary.revenue)}</td>
+          <td style="text-align:right;color:#d97706;">${fmtM(summary.delivery||0)}</td>
+          <td style="text-align:right;color:#dc2626;">${fmtM(summary.surcharge||0)}</td>
+          <td style="text-align:right;color:#7c3aed;">${fmtM(summary.smallFee||0)}</td>
+        </tr></tfoot>
       </table></div>
     </div>`;
   }
@@ -3431,6 +4106,33 @@ function tendayShareWhatsApp() {
 // ════════════════════════════════════════════════════════
 // HISTORY PAGE
 // ════════════════════════════════════════════════════════
+let _histView = "table"; // "table" | "list"
+
+function histSetView(v) {
+  _histView = v;
+  document.getElementById("hvBtn-table").style.background = v==="table" ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-table").style.color      = v==="table" ? "#fff"    : "#666";
+  document.getElementById("hvBtn-list").style.background  = v==="list"  ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-list").style.color       = v==="list"  ? "#fff"    : "#666";
+  renderHistTable();
+}
+
+function histQuickRange(mode) {
+  const now = getIST();
+  const y = now.getFullYear(), mo = now.getMonth();
+  let from, to = now;
+  if      (mode === "today")     { from = now; }
+  else if (mode === "week")      { const dow = now.getDay()||7; from = new Date(now); from.setDate(now.getDate()-(dow-1)); }
+  else if (mode === "15days")    { from = new Date(now); from.setDate(now.getDate()-14); }
+  else if (mode === "month")     { from = new Date(y, mo, 1); }
+  else if (mode === "lastmonth") { from = new Date(y, mo-1, 1); to = new Date(y, mo, 0); }
+  else if (mode === "year")      { from = new Date(y, 0, 1); }
+  document.getElementById("histFrom").value = toISO(from);
+  document.getElementById("histTo").value   = toISO(to);
+  document.querySelectorAll("#pageHistory .range-chips .chip").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+  loadHistory();
+}
 function histSetRange(daysBack) {
   const today = getIST();
   const from  = new Date(today); from.setDate(from.getDate() - daysBack);
@@ -3448,6 +4150,25 @@ function histSetPeriod(period) {
   document.getElementById("histFrom").value = toISO(from);
   document.getElementById("histTo").value   = toISO(to);
   loadHistory();
+}
+function histApplySortSel() {
+  const val = document.getElementById("histSortSel")?.value || "date_asc";
+  const parts = val.split("_");
+  const dir = parts.pop();
+  const col = parts.join("_");
+  _histSort = { col, dir };
+  renderHistTable();
+}
+function histApplyFilters() { renderHistTable(); }
+function histResetFilters() {
+  ["histMeal","histPayStatus","histPayMethod","histAreaSel"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+  const s = document.getElementById("histSearch"); if(s) s.value="";
+  document.getElementById("histSortSel").value = "date_asc";
+  _histSort = {col:"date", dir:"asc"};
+  _histFilter = "all";
+  ["all","paid","pending"].forEach(id => document.getElementById("hf-"+id)?.classList.remove("sel"));
+  document.getElementById("hf-all")?.classList.add("sel");
+  renderHistTable();
 }
 let _histAllOrders = [];
 let _histSort = {col:'date', dir:'asc'};
@@ -3467,9 +4188,19 @@ async function loadHistory() {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderHistory&dateFrom=${from}&dateTo=${to}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    // Pre-apply meal filter from dropdown (still reduces dataset)
-    const meal = document.getElementById("histMeal").value;
-    _histAllOrders = meal ? data.orders.filter(o=>o.meal===meal) : data.orders;
+    _histAllOrders = data.orders;
+    _histFilter = "all";
+    _histSort   = {col:"date", dir:"asc"};
+
+    // Populate area dropdown
+    const areas = [...new Set(data.orders.map(o=>o.area).filter(Boolean))].sort();
+    const areaSel = document.getElementById("histAreaSel");
+    if (areaSel) {
+      areaSel.innerHTML = `<option value="">All Areas</option>` + areas.map(a=>`<option value="${a}">${a}</option>`).join("");
+    }
+    // Sync sort dropdown
+    const sortSel = document.getElementById("histSortSel");
+    if (sortSel) sortSel.value = "date_asc";
     _histFilter = "all";
     _histSort   = {col:"date", dir:"asc"};
     // Reset status chips
@@ -3503,14 +4234,34 @@ function setHistFilter(f) {
 function histSortBy(col) {
   if (_histSort.col === col) _histSort.dir = _histSort.dir==="asc" ? "desc" : "asc";
   else { _histSort.col = col; _histSort.dir = "asc"; }
+  // Sync dropdown
+  const sel = document.getElementById("histSortSel");
+  const key = col === "amount" ? "amount" : col;
+  const opt = `${key}_${_histSort.dir}`;
+  if (sel && [...sel.options].some(o => o.value === opt)) sel.value = opt;
   renderHistTable();
 }
 
 function renderHistTable() {
   const el = document.getElementById("histTableWrap");
-  // Apply status filter
-  let list = _histFilter==="all" ? [..._histAllOrders]
-    : _histAllOrders.filter(o => o.status === _histFilter);
+  // Apply all filters
+  const statusChipFilter = _histFilter;
+  const mealF    = document.getElementById("histMeal")?.value || "";
+  const statusF  = document.getElementById("histPayStatus")?.value || "";
+  const methodF  = document.getElementById("histPayMethod")?.value || "";
+  const areaF    = document.getElementById("histAreaSel")?.value || "";
+  const searchF  = (document.getElementById("histSearch")?.value || "").toLowerCase().trim();
+
+  let list = _histAllOrders.filter(o => {
+    if (statusChipFilter !== "all" && o.status !== statusChipFilter) return false;
+    if (mealF   && o.meal   !== mealF)   return false;
+    if (statusF && o.status !== statusF) return false;
+    if (methodF && (o.payment_method||"") !== methodF) return false;
+    if (areaF   && o.area   !== areaF)   return false;
+    if (searchF && !o.name.toLowerCase().includes(searchF) && !String(o.phone).includes(searchF)) return false;
+    return true;
+  });
+
   // Apply sort
   const {col, dir} = _histSort;
   const mul = dir==="asc" ? 1 : -1;
@@ -3518,13 +4269,15 @@ function renderHistTable() {
     if (col==="date")   return mul * a.date.localeCompare(b.date);
     if (col==="meal")   return mul * a.meal.localeCompare(b.meal);
     if (col==="name")   return mul * a.name.localeCompare(b.name);
-    if (col==="area")   return mul * a.area.localeCompare(b.area);
+    if (col==="area")   return mul * (a.area||"").localeCompare(b.area||"");
     if (col==="amount") return mul * (a.total - b.total);
     if (col==="status") return mul * a.status.localeCompare(b.status);
     return 0;
   });
-  document.getElementById("histRowCount").textContent = `${list.length} row${list.length!==1?"s":""}`;
+  document.getElementById("histRowCount").textContent = `${list.length} order${list.length!==1?"s":""}`;
   if (!list.length) { el.innerHTML=`<div class="no-orders-msg">No orders match the current filters.</div>`; return; }
+
+  if (_histView === "list") { el.innerHTML = renderHistList(list); return; }
 
   const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
   const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
@@ -3543,17 +4296,66 @@ function renderHistTable() {
     <td style="white-space:nowrap;">${fmtD(o.date)}</td>
     <td>${mChip(o.meal)}</td>
     <td><strong>${o.name}</strong><br><span style="font-size:.7rem;color:var(--muted);">${o.phone}</span></td>
-    <td><span class="area-chip">${o.area}</span></td>
+    <td><span class="area-chip">${o.area||'—'}</span></td>
     <td style="text-align:right;font-weight:700;white-space:nowrap;">${fmtM(o.total)}</td>
     <td>${pBadge(o.status)}</td>
+    <td style="font-size:.72rem;color:var(--muted);">${o.payment_method||'UPI'}</td>
   </tr>`).join("");
   el.innerHTML = `<div class="hist-table-wrap"><table class="hist-table">
     <thead><tr>
       ${th("Date","date")}${th("Meal","meal")}${th("Customer","name")}${th("Area","area")}
-      ${th("Amount","amount","text-align:right;")}${th("Status","status")}
+      ${th("Amount","amount","text-align:right;")}${th("Status","status")}<th>Method</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
+}
+
+function renderHistList(list) {
+  const fmtD = d => { const p=d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+  const mColor = m => m==="Breakfast"?"#e67e22":m==="Lunch"?"#27ae60":"#8e44ad";
+  const mIcon  = m => m==="Breakfast"?"🌅":m==="Lunch"?"☀️":"🌙";
+  const pBg    = s => (s==="Paid"||s==="Wallet Paid") ? "#e8f5e9" : "#fff8ec";
+  const pColor = s => (s==="Paid"||s==="Wallet Paid") ? "#27ae60" : "#e67e22";
+  const pIcon  = s => (s==="Paid"||s==="Wallet Paid") ? "✓" : "⏳";
+  const methodIcon = m => m==="Wallet"?"💳":m==="Split"?"🔀":m==="On Account"?"📋":"📲";
+
+  const cards = list.map(o => {
+    const itemsHtml = o.items && Object.keys(o.items).length
+      ? Object.entries(o.items).filter(([,q])=>Number(q)>0)
+          .map(([name,qty])=>`<span style="display:inline-flex;align-items:center;gap:3px;background:#f5f5f5;border-radius:20px;padding:2px 8px;font-size:.72rem;margin:2px;">${qty}× ${name}</span>`).join("")
+      : `<span style="font-size:.72rem;color:var(--muted);">—</span>`;
+
+    const notesHtml = o.notes ? `<div style="font-size:.72rem;color:#e67e22;margin-top:6px;padding:4px 8px;background:#fff8ec;border-radius:6px;border-left:3px solid #f39c12;">📝 ${o.notes}</div>` : "";
+
+    return `<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 5px rgba(0,0,0,0.07);border-left:4px solid ${mColor(o.meal)};">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <!-- Left: meal + date -->
+        <div style="flex-shrink:0;text-align:center;min-width:60px;">
+          <div style="font-size:1.4rem;">${mIcon(o.meal)}</div>
+          <div style="font-size:.65rem;font-weight:700;color:${mColor(o.meal)};text-transform:uppercase;">${o.meal}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:2px;white-space:nowrap;">${fmtD(o.date)}</div>
+        </div>
+        <!-- Middle: customer + items -->
+        <div style="flex:1;min-width:180px;">
+          <div style="font-weight:800;font-size:.92rem;color:var(--fg);">${o.name}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">${o.phone}${o.area?` · <span style="font-weight:600;color:#555;">${o.area}</span>`:''}${o.wing||o.flat?` · ${[o.wing,o.flat].filter(Boolean).join(' ')}`:''}</div>
+          <div>${itemsHtml}</div>
+          ${notesHtml}
+        </div>
+        <!-- Right: amount + status + method -->
+        <div style="flex-shrink:0;text-align:right;">
+          <div style="font-size:1.2rem;font-weight:900;color:var(--fg);">${fmtM(o.total)}</div>
+          <div style="margin-top:4px;display:inline-block;background:${pBg(o.status)};color:${pColor(o.status)};border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">${pIcon(o.status)} ${o.status}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">${methodIcon(o.payment_method)} ${o.payment_method||'UPI'}</div>
+          ${o.discount ? `<div style="font-size:.68rem;color:#27ae60;margin-top:2px;">−${fmtM(o.discount)} discount</div>` : ""}
+          ${o.delivery ? `<div style="font-size:.68rem;color:var(--muted);">+${fmtM(o.delivery)} delivery</div>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<div style="margin-top:4px;">${cards}</div>`;
 }
 
 // ════════════════════════════════════════════════════════
@@ -3562,6 +4364,28 @@ function renderHistTable() {
 let _custData = [];
 let _custPayFilter = "all";
 let _custSortKey   = "recent";
+
+async function adminAddWalletCredit() {
+  const phone  = document.getElementById("wcPhone").value.trim();
+  const amount = parseFloat(document.getElementById("wcAmount").value);
+  const status = document.getElementById("wcStatus");
+  if (phone.length < 10) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid 10-digit phone number.</span>`; return; }
+  if (!amount || amount <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid amount.</span>`; return; }
+  status.innerHTML = `<span style="color:#166534;">Adding ₹${amount} to ${phone}…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"adminCreditWallet", phone, amount, pin: S.sessionPin }) });
+    const data = await res.json();
+    if (data.success) {
+      status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ ₹${amount} credited to ${phone}. New balance: ₹${data.newBalance}</span>`;
+      document.getElementById("wcPhone").value  = "";
+      document.getElementById("wcAmount").value = "";
+    } else {
+      status.innerHTML = `<span style="color:#dc2626;">❌ ${data.error || "Failed"}</span>`;
+    }
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ Network error: ${e.message}</span>`;
+  }
+}
 
 async function loadCustomers() {
   const el = document.getElementById("custGridWrap");
@@ -4273,12 +5097,21 @@ function generateBillPDF(cust) {
       <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">₹${o.net}</td>
     </tr>`).join('');
 
+  // Build filename: CustomerName_DD-Mon_to_DD-Mon_SvaadhBill
+  const _firstName = (cust.name || "Customer").trim().split(" ")[0];
+  const _sortedOrders = [...orders];
+  const _fmtFN = d => { if (!d) return ''; const [y,m,day]=d.split('-'); const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${parseInt(day)}-${mo[parseInt(m)-1]}`; };
+  const _fnFrom = _sortedOrders.length ? _fmtFN(_sortedOrders[0].date) : '';
+  const _fnTo   = _sortedOrders.length > 1 ? _fmtFN(_sortedOrders[_sortedOrders.length-1].date) : '';
+  const _period = _fnTo && _fnTo !== _fnFrom ? `${_fnFrom}_to_${_fnTo}` : _fnFrom;
+  const _pdfTitle = `${_firstName}_${_period}_SvaadhBill`;
+
   const billHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Svaadh Kitchen — Bill</title>
+  <title>${_pdfTitle}</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -4378,14 +5211,43 @@ async function loadPendingPayments() {
       </tr></thead>
       <tbody>`;
     data.forEach(p => {
-      const isCancelled = p.status === "Cancelled (Verify UPI)";
-      const rowStyle = isCancelled ? 'background:#fff3e0; border-left: 4px solid #f57c00;' : '';
+      const isCancelled    = p.status === "Cancelled (Verify UPI)";
+      const isSplit        = String(p.payment_method || "").toLowerCase() === "split";
+      const isSplitCancelled = isCancelled && isSplit;
       const pref = String(p.refund_preference || "upi").toLowerCase();
       const prefLabel = pref === "wallet" ? "💳 Wallet" : "💸 UPI";
-      
+
+      // Row highlight: cancelled-split = red+purple; plain split = purple; cancelled = orange; normal = none
+      const rowStyle = isSplitCancelled ? 'background:#fdf4ff; border-left: 4px solid #7b2ff7;'
+                     : isCancelled      ? 'background:#fff3e0; border-left: 4px solid #f57c00;'
+                     : isSplit          ? 'background:#f5f0ff; border-left: 4px solid #7b2ff7;' : '';
+
+      // Amount column: for split, show only the UPI-due portion with wallet note
+      const amountLabel = isSplit
+        ? `₹${p.amount} <span style="font-size:0.65rem;color:#5b21b6;font-weight:500;">(UPI due — ₹${p.wallet_credit} already from Wallet)</span>`
+        : `₹${p.amount}`;
+
+      // Info labels below the order ID
+      const cancelledNote = isCancelled && !isSplit
+        ? `<div style="font-size:0.7rem;color:#e65100;font-weight:600;margin-top:4px;">⚠️ CANCELLED — Refund to ${prefLabel}</div>`
+        : '';
+      const splitPendingNote = isSplit && !isCancelled
+        ? `<div style="font-size:0.7rem;color:#5b21b6;font-weight:600;margin-top:4px;">🔀 SPLIT — ₹${p.wallet_credit} Wallet deducted · ₹${p.amount} UPI awaiting</div>`
+        : '';
+      const splitCancelledNote = isSplitCancelled
+        ? `<div style="font-size:0.7rem;color:#7b2ff7;font-weight:600;margin-top:4px;">⚠️ SPLIT CANCELLED — ₹${p.wallet_credit} already refunded to Wallet · confirm ₹${p.amount} UPI received → add to Wallet</div>`
+        : '';
+
+      // Button label and colour
+      const btnStyle  = isCancelled ? 'background:#f57c00;' : isSplit ? 'background:#7b2ff7;' : '';
+      const btnLabel  = isSplitCancelled ? 'Verify & Refund (Split)'
+                      : isCancelled      ? 'Verify & Refund'
+                      : isSplit          ? 'Confirm UPI Paid'
+                      : 'Confirm Paid';
+
       html += `<tr style="${rowStyle}" class="payment-row">
         <td>
-          <input type="checkbox" class="payment-check" 
+          <input type="checkbox" class="payment-check"
                  data-phone="${p.phone}" data-date="${p.date}" data-sid="${p.id}" data-iscancelled="${isCancelled}" data-name="${p.customer}" data-amount="${p.amount}"
                  onchange="updateBatchBar('payments')">
         </td>
@@ -4396,15 +5258,14 @@ async function loadPendingPayments() {
         <td>
           <div style="font-size:0.8rem;">${p.meal} - ${p.date}</div>
           <div style="font-size:0.65rem;color:var(--muted);">${p.id}</div>
-          ${isCancelled ? `<div style="font-size:0.7rem;color:#e65100;font-weight:600;margin-top:4px;">⚠️ CANCELLED - Refund to ${prefLabel}</div>` : ''}
+          ${cancelledNote}${splitPendingNote}${splitCancelledNote}
         </td>
-        <td style="font-weight:700;">₹${p.amount}</td>
+        <td style="font-weight:700;">${amountLabel}</td>
         <td>
           <div style="display:flex;gap:6px;">
-            <button class="approve-row-btn" 
-                    style="${isCancelled ? 'background:#f57c00;':''}"
-                    onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled}, '${p.customer}', ${p.amount})">
-              ${isCancelled ? 'Verify & Refund' : 'Confirm Paid'}
+            <button class="approve-row-btn" style="${btnStyle}"
+                    onclick="approveUPIPayment('${p.phone}', '${p.date}', '${p.id}', ${isCancelled}, '${p.customer}', ${p.amount}, this, ${p.wallet_credit || 0})">
+              ${btnLabel}
             </button>
             <button class="reject-row-btn" onclick="rejectUPIPayment('${p.phone}', '${p.date}', '${p.id}', '${p.customer}')">Reject</button>
           </div>
@@ -4433,11 +5294,33 @@ async function rejectUPIPayment(phone, date, sid, name) {
   } catch(e) { sLoading(false); toast("Error: " + e.message); }
 }
 
-async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", amt=0) {
-  const quest = isCancelled 
-    ? `Verify payment of ₹${amt} for ${name} (Order ${sid}) and process refund?` 
-    : `Confirm you have received ₹${amt} from ${name} for Order ${sid}?`;
-  if (!(await showUIConfirm(quest, isCancelled ? "Verify & Refund" : "Confirm Payment", isCancelled ? "💸" : "💰"))) return;
+async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", amt=0, btn=null, walletCredit=0) {
+  // Disable button immediately to prevent double-click / duplicate refund
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.5"; }
+
+  let quest, title, icon;
+  if (isCancelled && walletCredit > 0) {
+    quest = `Confirm ₹${amt} UPI was received from ${name} (${sid})?\n\n₹${walletCredit} was already refunded to their Wallet.\nConfirming will add ₹${amt} to their Wallet too.`;
+    title = "Verify & Add to Wallet";
+    icon  = "🔀";
+  } else if (isCancelled) {
+    quest = `Verify payment of ₹${amt} for ${name} (${sid}) and process refund?`;
+    title = "Verify & Refund";
+    icon  = "💸";
+  } else if (walletCredit > 0) {
+    quest = `Confirm ₹${amt} UPI received from ${name} (${sid})?\n(₹${walletCredit} wallet was already deducted at order time)`;
+    title = "Confirm UPI Part";
+    icon  = "🔀";
+  } else {
+    quest = `Confirm you have received ₹${amt} from ${name} for Order ${sid}?`;
+    title = "Confirm Payment";
+    icon  = "💰";
+  }
+
+  if (!(await showUIConfirm(quest, title, icon))) {
+    if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+    return;
+  }
   sLoading(true, isCancelled ? "Processing refund..." : "Verifying payment...");
   try {
     const res = await fetch(APPS_SCRIPT_URL, {method:"POST",
@@ -4448,9 +5331,10 @@ async function approveUPIPayment(phone, date, sid, isCancelled=false, name="", a
       await loadPendingPayments();
       refreshApprovalCounts();
     } else throw new Error(data.error);
-  } catch(e) { 
+  } catch(e) {
     sLoading(false);
-    toast("Error: " + e.message); 
+    if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+    toast("Error: " + e.message);
   }
 }
 
@@ -5275,6 +6159,757 @@ function toggleManualBillingCycle() {
       note.textContent = '(UPI)';
       note.style.color = 'var(--muted)';
     }
+  }
+}
+
+// ── EXPENSES ───────────────────────────────────────────────────────────────
+const EXP_CATEGORIES = {
+  "🥦 Raw Materials":       ["Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)","Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"],
+  "📦 Packaging":           ["Containers / Boxes","Bags & Covers","Labels & Stickers","Tissue & Napkins","Other Packaging"],
+  "⛽ Fuel & Transport":    ["Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"],
+  "👨‍🍳 Staff":              ["Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"],
+  "🔌 Utilities":           ["LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"],
+  "🍳 Kitchen & Equipment": ["Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"],
+  "📣 Marketing":           ["Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"],
+  "🏦 Finance & Admin":     ["Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"],
+  "📝 Miscellaneous":       ["Miscellaneous"]
+};
+
+let _expInitDone      = false;
+let _expLastEntries   = []; // cache for recurring templates
+let _expCustomCats    = {}; // custom categories from backend
+
+function initExpensePage() {
+  const today = toISO(getIST());
+  if ($("expDate")) $("expDate").value = today;
+
+  const ist = getIST();
+  const monthStart = `${ist.getFullYear()}-${String(ist.getMonth()+1).padStart(2,"0")}-01`;
+  if ($("expLogFrom") && !$("expLogFrom").value) $("expLogFrom").value = monthStart;
+  if ($("expLogTo")   && !$("expLogTo").value)   $("expLogTo").value   = today;
+  if ($("expAnaFrom") && !$("expAnaFrom").value) $("expAnaFrom").value = monthStart;
+  if ($("expAnaTo")   && !$("expAnaTo").value)   $("expAnaTo").value   = today;
+
+  if (!_expInitDone) {
+    _expInitDone = true;
+    loadExpenseMeta(); // loads custom cats, then populates dropdowns + templates
+  } else {
+    _populateExpCategoryDropdown(); // always re-populate in case custom cats changed
+  }
+}
+
+async function loadExpenseMeta() {
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getCustomExpenseCategories&pin=${S.sessionPin}`);
+    const data = await res.json();
+    if (data.success) _expCustomCats = data.categories || {};
+  } catch(e) { _expCustomCats = {}; }
+  _populateExpCategoryDropdown();
+  loadRecurringTemplates();
+}
+
+function _allExpCategories() {
+  // Merge defaults + custom, custom at bottom
+  const merged = { ...EXP_CATEGORIES };
+  Object.entries(_expCustomCats).forEach(([cat, items]) => {
+    if (merged[cat]) {
+      // add any custom items not already in default
+      items.forEach(i => { if (!merged[cat].includes(i)) merged[cat].push(i); });
+    } else {
+      merged[cat] = items;
+    }
+  });
+  return merged;
+}
+
+function _populateExpCategoryDropdown() {
+  const catSel = $("expCategory");
+  if (!catSel) return;
+  const current = catSel.value; // preserve selection if any
+  catSel.innerHTML = `<option value="">— Select category —</option>`;
+  const all = _allExpCategories();
+  Object.keys(all).forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat; opt.textContent = cat;
+    catSel.appendChild(opt);
+  });
+  // Add new category option at bottom
+  const addOpt = document.createElement("option");
+  addOpt.value = "__addcat__"; addOpt.textContent = "➕ Add new category…";
+  catSel.appendChild(addOpt);
+  if (current) catSel.value = current;
+}
+
+function switchExpTab(tab) {
+  ["add","log","analytics"].forEach(t => {
+    $(`expTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle("active", t === tab);
+    $(`expPanel${t.charAt(0).toUpperCase()+t.slice(1)}`).style.display = t === tab ? "block" : "none";
+  });
+}
+
+function onExpCategoryChange() {
+  const catSel = $("expCategory");
+  const cat    = catSel.value;
+
+  // "Add new category" selected
+  if (cat === "__addcat__") {
+    catSel.value = "";
+    showAddCustomCategoryModal();
+    return;
+  }
+
+  const all   = _allExpCategories();
+  const items = all[cat] || [];
+  const sel   = $("expItem");
+  sel.innerHTML = `<option value="">— Select item —</option>`;
+  items.forEach(it => {
+    const opt = document.createElement("option");
+    opt.value = it; opt.textContent = it;
+    sel.appendChild(opt);
+  });
+  // Add custom item option
+  const addOpt = document.createElement("option");
+  addOpt.value = "__additem__"; addOpt.textContent = "➕ Add new item to this category…";
+  sel.appendChild(addOpt);
+}
+
+function onExpItemChange() {
+  const sel = $("expItem");
+  if (sel.value === "__additem__") {
+    sel.value = "";
+    showAddCustomItemModal($("expCategory").value);
+  }
+}
+
+// ── CUSTOM CATEGORY / ITEM MODALS ────────────────────────────
+function showAddCustomCategoryModal() {
+  const name = window.prompt("Enter new category name:\n(e.g. 🚗 Vehicle, 🏠 Rent)");
+  if (!name || !name.trim()) return;
+  const item = window.prompt(`Add a first item under "${name.trim()}":\n(optional — press Cancel to skip)`);
+  _saveCustomCategory(name.trim(), item ? item.trim() : "");
+}
+
+function showAddCustomItemModal(category) {
+  if (!category) { toast("Please select a category first."); return; }
+  const item = window.prompt(`Add new item under "${category}":`);
+  if (!item || !item.trim()) return;
+  _saveCustomCategory(category, item.trim());
+}
+
+async function _saveCustomCategory(category, item) {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveCustomExpenseCategory", pin:S.sessionPin, category, item
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    _expCustomCats = data.categories || {};
+    _populateExpCategoryDropdown();
+    // Auto-select the newly created category and item
+    if ($("expCategory")) $("expCategory").value = category;
+    onExpCategoryChange();
+    if (item && $("expItem")) {
+      setTimeout(() => { $("expItem").value = item; }, 50);
+    }
+    toast(`✅ "${category}${item ? " → "+item : ""}" saved for future use.`);
+  } catch(e) {
+    toast("Error: " + e.message);
+  }
+}
+
+async function submitExpense() {
+  const date     = $("expDate").value;
+  const category = $("expCategory").value;
+  const item     = $("expItem").value;
+  const amount   = parseFloat($("expAmount").value);
+  const freq     = document.querySelector('input[name="expFreq"]:checked')?.value || "One-time";
+  const payMode  = $("expPayMode").value;
+  const notes    = $("expNotes").value.trim();
+  const status   = $("expSaveStatus");
+
+  if (!date)     { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select a date.</span>`; return; }
+  if (!category) { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select a category.</span>`; return; }
+  if (!item)     { status.innerHTML = `<span style="color:#dc2626;">⚠ Please select an item.</span>`; return; }
+  if (!amount || amount <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid amount.</span>`; return; }
+
+  status.innerHTML = `<span style="color:#64748b;">Saving…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveExpense", pin:S.sessionPin, date, category, item, amount, frequency:freq, payment_mode:payMode, notes
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ Saved! (${data.id})</span>`;
+    // Reset form
+    $("expCategory").value = "";
+    $("expItem").innerHTML = `<option value="">— Select category first —</option>`;
+    $("expAmount").value = ""; $("expNotes").value = "";
+    document.querySelector('input[name="expFreq"][value="One-time"]').checked = true;
+    _expInitDone = false; loadRecurringTemplates(); // refresh templates
+    setTimeout(() => { if (status) status.innerHTML = ""; }, 4000);
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ ${e.message}</span>`;
+  }
+}
+
+async function loadRecurringTemplates() {
+  // Load last 90 days of monthly/weekly expenses as quick re-enter chips
+  try {
+    const ist = getIST();
+    const to  = toISO(ist);
+    const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-90); return toISO(d); })();
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenses&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) return;
+    // Keep only recurring entries, deduplicate by item
+    const seen = {}; const templates = [];
+    (data.expenses || []).forEach(e => {
+      if ((e.frequency === "Monthly" || e.frequency === "Weekly") && !seen[e.item]) {
+        seen[e.item] = true;
+        templates.push(e);
+      }
+    });
+    _expLastEntries = templates;
+    renderRecurringTemplates(templates);
+  } catch(e) {}
+}
+
+function renderRecurringTemplates(templates) {
+  const wrap  = $("expRecurringTemplates");
+  const chips = $("expTemplateChips");
+  if (!templates.length) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  chips.innerHTML = templates.slice(0,8).map(e =>
+    `<button onclick="quickReEnter(${JSON.stringify(e).replace(/"/g,'&quot;')})"
+      style="padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:20px;font-size:.75rem;
+             background:#fff;cursor:pointer;color:#374151;font-weight:600;">
+       ${e.category.split(" ")[0]} ${e.item} · ₹${e.amount}
+     </button>`
+  ).join("");
+}
+
+function quickReEnter(e) {
+  // Pre-fill form with last entry values
+  $("expDate").value = toISO(getIST());
+  $("expCategory").value = e.category;
+  onExpCategoryChange();
+  setTimeout(() => { $("expItem").value = e.item; }, 50);
+  $("expAmount").value = e.amount;
+  $("expPayMode").value = e.payment_mode || "Cash";
+  $("expNotes").value = e.notes || "";
+  const radio = document.querySelector(`input[name="expFreq"][value="${e.frequency}"]`);
+  if (radio) radio.checked = true;
+  $("expSaveStatus").innerHTML = `<span style="color:#0369a1;">📋 Pre-filled from last entry — review and save.</span>`;
+  window.scrollTo(0, 0);
+}
+
+// ── EXPENSE LOG ────────────────────────────────────────────────
+function expLogSetRange(days) {
+  const ist = getIST(), to = toISO(ist);
+  const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-days); return toISO(d); })();
+  $("expLogFrom").value = from; $("expLogTo").value = to;
+  loadExpenseLog();
+}
+
+async function loadExpenseLog() {
+  const from = $("expLogFrom").value, to = $("expLogTo").value;
+  const el = $("expLogContent");
+  el.innerHTML = `<div style="text-align:center;padding:30px;color:#94a3b8;">Loading…</div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenses&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    renderExpenseLog(data.expenses || []);
+  } catch(e) {
+    el.innerHTML = `<div style="color:#dc2626;padding:20px;">Error: ${e.message}</div>`;
+  }
+}
+
+function renderExpenseLog(expenses) {
+  const el = $("expLogContent");
+  if (!expenses.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No expenses in this period.</div>`;
+    return;
+  }
+  const total = expenses.reduce((s,e) => s + e.amount, 0);
+  // Group by date
+  const byDate = {};
+  expenses.forEach(e => { if (!byDate[e.date]) byDate[e.date] = []; byDate[e.date].push(e); });
+  const dates = Object.keys(byDate).sort().reverse();
+
+  let html = `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:12px;">
+    <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:.78rem;color:#64748b;font-weight:600;">${expenses.length} entries</span>
+      <span style="font-weight:800;color:#1a1a1a;font-size:.95rem;">Total: ₹${total.toLocaleString("en-IN")}</span>
+    </div>`;
+
+  dates.forEach(date => {
+    const dayTotal = byDate[date].reduce((s,e) => s + e.amount, 0);
+    const [y,m,d] = date.split("-");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const label = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    html += `<div style="padding:8px 16px;background:#f1f5f9;font-size:.75rem;font-weight:700;color:#475569;display:flex;justify-content:space-between;">
+      <span>${label}</span><span>₹${dayTotal.toLocaleString("en-IN")}</span></div>`;
+    byDate[date].forEach(e => {
+      html += `<div class="exp-log-row">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;color:#1a1a1a;font-size:.83rem;">${e.item}</div>
+          <div style="display:flex;gap:6px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+            <span class="exp-cat-badge">${e.category}</span>
+            <span class="exp-freq-badge ${e.frequency}">${e.frequency}</span>
+            ${e.payment_mode ? `<span style="font-size:.65rem;color:#94a3b8;">${e.payment_mode}</span>` : ""}
+            ${e.notes ? `<span style="font-size:.68rem;color:#64748b;font-style:italic;">${e.notes}</span>` : ""}
+          </div>
+        </div>
+        <div style="font-weight:800;color:#1a1a1a;font-size:.9rem;white-space:nowrap;margin-left:8px;">₹${e.amount.toLocaleString("en-IN")}</div>
+        <button onclick="deleteExpenseEntry('${e.id}')" title="Delete"
+          style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.9rem;padding:4px;margin-left:4px;">🗑️</button>
+      </div>`;
+    });
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function deleteExpenseEntry(id) {
+  if (!await sConfirm("Delete this expense entry?", "Confirm", "🗑️")) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"deleteExpense", pin:S.sessionPin, id }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast("✅ Deleted");
+    loadExpenseLog();
+  } catch(e) { toast("Error: " + e.message); }
+}
+
+// ── EXPENSE ANALYTICS ──────────────────────────────────────────
+function expAnaSetRange(days) {
+  const ist = getIST(), to = toISO(ist);
+  const from = (() => { const d = new Date(ist); d.setDate(d.getDate()-days); return toISO(d); })();
+  $("expAnaFrom").value = from; $("expAnaTo").value = to;
+  loadExpenseAnalytics();
+}
+
+async function loadExpenseAnalytics() {
+  const from = $("expAnaFrom").value, to = $("expAnaTo").value;
+  const el = $("expAnaContent");
+  el.innerHTML = `<div style="text-align:center;padding:30px;color:#94a3b8;">Loading…</div>`;
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getExpenseAnalytics&pin=${S.sessionPin}&from=${from}&to=${to}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    renderExpenseAnalytics(data);
+  } catch(e) {
+    el.innerHTML = `<div style="color:#dc2626;padding:20px;">Error: ${e.message}</div>`;
+  }
+}
+
+function renderExpenseAnalytics(d) {
+  const el = $("expAnaContent");
+  const fmtM = v => `₹${Number(v).toLocaleString("en-IN")}`;
+
+  // KPI cards
+  const dailyAvg = d.byDay.length > 0 ? Math.round(d.total / d.byDay.length) : 0;
+  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;">
+    <div class="exp-kpi"><div class="exp-kpi-val">${fmtM(d.total)}</div><div class="exp-kpi-lbl">Total Spent</div></div>
+    <div class="exp-kpi"><div class="exp-kpi-val">${d.count}</div><div class="exp-kpi-lbl">Entries</div></div>
+    <div class="exp-kpi"><div class="exp-kpi-val">${fmtM(dailyAvg)}</div><div class="exp-kpi-lbl">Daily Average</div></div>
+    <div class="exp-kpi" style="border-color:#c084fc;"><div class="exp-kpi-val" style="color:#7e22ce;">${fmtM(d.monthlyFixed)}</div><div class="exp-kpi-lbl">Monthly Fixed</div></div>
+  </div>`;
+
+  // Category breakdown (bar chart)
+  if (d.byCategory.length) {
+    const maxAmt = d.byCategory[0].amount;
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:12px;">📊 BY CATEGORY</div>`;
+    d.byCategory.forEach(c => {
+      const pct = maxAmt > 0 ? Math.round((c.amount/maxAmt)*100) : 0;
+      html += `<div class="exp-bar-row">
+        <div class="exp-bar-label">${c.category}</div>
+        <div class="exp-bar-track"><div class="exp-bar-fill" style="width:${pct}%"></div></div>
+        <div class="exp-bar-amt">${fmtM(c.amount)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Frequency + Payment mode split
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">`;
+
+  // Frequency
+  html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+    <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">🔁 BY FREQUENCY</div>`;
+  ["Monthly","Weekly","Daily","One-time"].forEach(f => {
+    const amt = d.byFrequency[f] || 0;
+    if (!amt) return;
+    html += `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:6px;">
+      <span class="exp-freq-badge ${f}" style="font-size:.72rem;">${f}</span>
+      <span style="font-weight:700;">${fmtM(amt)}</span></div>`;
+  });
+  html += `</div>`;
+
+  // Payment mode
+  html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+    <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">💳 BY PAYMENT</div>`;
+  Object.entries(d.byPayMode).forEach(([mode, amt]) => {
+    html += `<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:6px;">
+      <span style="color:#475569;">${mode}</span>
+      <span style="font-weight:700;">${fmtM(amt)}</span></div>`;
+  });
+  html += `</div></div>`;
+
+  // Top items
+  if (d.topItems.length) {
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">🔝 TOP EXPENSE ITEMS</div>
+      <table style="width:100%;font-size:.8rem;border-collapse:collapse;">`;
+    d.topItems.forEach((it, i) => {
+      html += `<tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:7px 4px;color:#64748b;">${i+1}</td>
+        <td style="padding:7px 4px;font-weight:600;">${it.item}</td>
+        <td style="padding:7px 4px;text-align:right;font-weight:800;">${fmtM(it.amount)}</td>
+      </tr>`;
+    });
+    html += `</table></div>`;
+  }
+
+  // Day-wise trend
+  if (d.byDay.length) {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;">
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:10px;">📅 DAY-WISE SPENDING</div>
+      <table style="width:100%;font-size:.78rem;border-collapse:collapse;">
+        <thead><tr style="color:#64748b;border-bottom:2px solid #e2e8f0;">
+          <th style="padding:6px 4px;text-align:left;">Date</th>
+          <th style="padding:6px 4px;text-align:right;">Amount</th>
+        </tr></thead><tbody>`;
+    [...d.byDay].reverse().forEach(row => {
+      const [y,m,dy] = row.date.split("-");
+      html += `<tr style="border-bottom:1px solid #f8fafc;">
+        <td style="padding:6px 4px;">${parseInt(dy)} ${months[parseInt(m)-1]} ${y}</td>
+        <td style="padding:6px 4px;text-align:right;font-weight:700;">${fmtM(row.amount)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  el.innerHTML = html || `<div style="text-align:center;padding:40px;color:#94a3b8;">No expense data for this period.</div>`;
+}
+
+// ── INVENTORY ──────────────────────────────────────────────────────────────
+let _invData       = null; // cached from last load
+let _invInitDone   = false;
+
+// Default units per item keyword
+const INV_DEFAULT_UNITS = {
+  "Milk":"litre","Cooking Oil":"litre","Mustard Oil":"litre","Curd":"kg","Ghee":"kg","Butter":"kg",
+  "LPG Cylinder":"cylinder","Green Chilli":"kg","Coriander Leaves":"kg",
+};
+
+function initInventoryPage() {
+  const today = toISO(getIST());
+  if ($("invDate") && !$("invDate").value) $("invDate").value = today;
+  if (!_invInitDone) { _invInitDone = true; loadInventory(); }
+}
+
+function switchInvTab(tab) {
+  ["add","summary","history"].forEach(t => {
+    const btn = $(`invTab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    const panel = $(`invPanel${t.charAt(0).toUpperCase()+t.slice(1)}`);
+    if (btn)   btn.classList.toggle("active", t === tab);
+    if (panel) panel.style.display = t === tab ? "block" : "none";
+  });
+}
+
+function onInvItemSelect() {
+  const sel = $("invItemSelect"), custom = $("invItemCustom");
+  if (sel.value === "__custom__") {
+    custom.style.display = "flex"; custom.focus();
+    sel.style.display = "none";
+  } else {
+    custom.style.display = "none"; sel.style.display = "";
+    // Auto-set unit
+    const item = sel.value;
+    const unit = INV_DEFAULT_UNITS[item] || "kg";
+    if ($("invUnit")) $("invUnit").value = unit;
+    // Show last purchase info
+    showLastPurchaseInfo(item);
+  }
+}
+
+function showLastPurchaseInfo(itemName) {
+  const card = $("invLastInfo");
+  if (!_invData || !itemName) { card.style.display = "none"; return; }
+  const entry = (_invData.items || []).find(i => i.item === itemName);
+  if (!entry) { card.style.display = "none"; return; }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]}`; };
+
+  card.style.display = "block";
+  card.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">📋 Last purchase of <em>${itemName}</em></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;">
+      <span>📅 <strong>${fmtDate(entry.last_purchased)}</strong></span>
+      <span>⚖️ <strong>${entry.last_qty} ${entry.unit}</strong></span>
+      ${entry.avg_days ? `<span>⏱ Avg lasts <strong>${entry.avg_days} days</strong></span>` : ""}
+      ${entry.avg_daily_rate ? `<span>📉 ~<strong>${entry.avg_daily_rate} ${entry.unit}/day</strong></span>` : ""}
+      ${entry.next_buy_est ? `<span>🛒 Next buy est. <strong>${fmtDate(entry.next_buy_est)}</strong></span>` : ""}
+    </div>`;
+}
+
+async function submitInventoryEntry() {
+  const sel    = $("invItemSelect");
+  const custom = $("invItemCustom");
+  const item   = sel.style.display === "none"
+                   ? custom.value.trim()
+                   : sel.value;
+  const date   = $("invDate").value;
+  const qty    = parseFloat($("invQty").value);
+  const unit   = $("invUnit").value;
+  const price  = parseFloat($("invPrice").value) || 0;
+  const notes  = $("invNotes").value.trim();
+  const status = $("invSaveStatus");
+
+  if (!item || item === "__custom__") { status.innerHTML = `<span style="color:#dc2626;">⚠ Select or enter an item.</span>`; return; }
+  if (!date) { status.innerHTML = `<span style="color:#dc2626;">⚠ Select a date.</span>`; return; }
+  if (!qty || qty <= 0) { status.innerHTML = `<span style="color:#dc2626;">⚠ Enter a valid quantity.</span>`; return; }
+
+  status.innerHTML = `<span style="color:#64748b;">Saving…</span>`;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({
+      _action:"saveInventoryEntry", pin:S.sessionPin, item, date, quantity:qty, unit, price, notes
+    })});
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Failed");
+    status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ Logged! (${data.id})</span>`;
+    // Reset
+    sel.value = ""; sel.style.display = ""; custom.style.display = "none"; custom.value = "";
+    $("invQty").value = ""; $("invPrice").value = ""; $("invNotes").value = "";
+    $("invLastInfo").style.display = "none";
+    _invInitDone = false; loadInventory();
+    setTimeout(() => { if (status) status.innerHTML = ""; }, 4000);
+  } catch(e) {
+    status.innerHTML = `<span style="color:#dc2626;">❌ ${e.message}</span>`;
+  }
+}
+
+async function loadInventory() {
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getInventoryData&pin=${S.sessionPin}`);
+    const data = await res.json();
+    if (!data.success) return;
+    _invData = data;
+    renderInventorySummary(data.items || []);
+    renderInventoryHistory();
+    populateInvHistoryFilter(data.items || []);
+  } catch(e) { console.error("Inventory load failed:", e); }
+}
+
+function populateInvHistoryFilter(items) {
+  const sel = $("invHistoryFilter");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">All items</option>`;
+  items.forEach(i => {
+    const opt = document.createElement("option");
+    opt.value = i.item; opt.textContent = i.item;
+    sel.appendChild(opt);
+  });
+}
+
+function renderInventorySummary(items) {
+  const el = $("invSummaryContent");
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No inventory entries yet. Log your first purchase!</div>`;
+    return;
+  }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]}`; };
+  const today   = toISO(getIST());
+
+  // Colour-code next buy estimate
+  function nextBuyStyle(nextDate) {
+    if (!nextDate) return "";
+    if (nextDate < today) return "color:#dc2626;font-weight:800;"; // overdue
+    const diff = Math.round((new Date(nextDate) - new Date(today)) / 86400000);
+    if (diff <= 2) return "color:#ea580c;font-weight:700;"; // buy soon
+    return "color:#16a34a;font-weight:700;";
+  }
+
+  let html = `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:.72rem;font-weight:700;letter-spacing:.04em;">
+          <th style="padding:10px 14px;text-align:left;">ITEM</th>
+          <th style="padding:10px 8px;text-align:center;">LAST BUY</th>
+          <th style="padding:10px 8px;text-align:center;">QTY</th>
+          <th style="padding:10px 8px;text-align:center;">AVG LASTS</th>
+          <th style="padding:10px 8px;text-align:center;">DAILY USE</th>
+          <th style="padding:10px 8px;text-align:center;">NEXT BUY EST.</th>
+          <th style="padding:10px 8px;text-align:center;">ENTRIES</th>
+        </tr>
+      </thead><tbody>`;
+
+  items.forEach(i => {
+    const overdueFlag = i.next_buy_est && i.next_buy_est < today
+      ? `<span style="font-size:.65rem;background:#fee2e2;color:#dc2626;padding:1px 6px;border-radius:10px;margin-left:4px;">BUY NOW</span>`
+      : (i.next_buy_est && Math.round((new Date(i.next_buy_est)-new Date(today))/86400000) <= 2
+          ? `<span style="font-size:.65rem;background:#fff7ed;color:#ea580c;padding:1px 6px;border-radius:10px;margin-left:4px;">SOON</span>` : "");
+
+    html += `<tr style="border-bottom:1px solid #f1f5f9;" onclick="showItemDrilldown('${i.item.replace(/'/g,"\\'")}');" style="cursor:pointer;">
+      <td style="padding:10px 14px;font-weight:700;cursor:pointer;" onclick="showItemDrilldown('${i.item.replace(/'/g,"\\'")}')">
+        ${i.item}${overdueFlag}
+      </td>
+      <td style="padding:10px 8px;text-align:center;color:#475569;">${fmtDate(i.last_purchased)}</td>
+      <td style="padding:10px 8px;text-align:center;font-weight:600;">${i.last_qty} ${i.unit}</td>
+      <td style="padding:10px 8px;text-align:center;">${i.avg_days ? i.avg_days+" days" : "<span style='color:#94a3b8;'>need more data</span>"}</td>
+      <td style="padding:10px 8px;text-align:center;">${i.avg_daily_rate ? i.avg_daily_rate+" "+i.unit : "—"}</td>
+      <td style="padding:10px 8px;text-align:center;${nextBuyStyle(i.next_buy_est)}">${fmtDate(i.next_buy_est)}</td>
+      <td style="padding:10px 8px;text-align:center;color:#64748b;">${i.entry_count}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>
+  <div style="font-size:.72rem;color:#94a3b8;margin-top:8px;padding-left:4px;">
+    🔴 Buy Now = past estimated date &nbsp;|&nbsp; 🟠 Soon = within 2 days &nbsp;|&nbsp; Click any row to see history
+  </div>`;
+  el.innerHTML = html;
+}
+
+function showItemDrilldown(itemName) {
+  $("invHistoryFilter").value = itemName;
+  switchInvTab("history");
+  renderInventoryHistory();
+}
+
+function renderInventoryHistory() {
+  const el     = $("invHistoryContent");
+  const filter = ($("invHistoryFilter") && $("invHistoryFilter").value) || "";
+  if (!_invData) { el.innerHTML = `<div style="color:#94a3b8;padding:20px;text-align:center;">Loading…</div>`; return; }
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmtDate = d => { if (!d) return "—"; const [y,m,dy]=d.split("-"); return `${parseInt(dy)} ${months[parseInt(m)-1]} ${y}`; };
+
+  const items = filter
+    ? (_invData.items || []).filter(i => i.item === filter)
+    : (_invData.items || []);
+
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;">No entries found.</div>`;
+    return;
+  }
+
+  let html = "";
+  items.forEach(item => {
+    html += `<div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:800;font-size:.9rem;">${item.item}</span>
+        <span style="font-size:.75rem;color:#64748b;">${item.entry_count} purchase${item.entry_count!==1?"s":""} · avg ${item.avg_days ? item.avg_days+" days" : "insufficient data"}</span>
+      </div>`;
+
+    item.entries.forEach((e, idx) => {
+      const isLatest = idx === 0;
+      html += `<div class="exp-log-row">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;">${fmtDate(e.date)}</span>
+            <span style="font-size:.78rem;color:#475569;">— ${e.qty} ${e.unit}</span>
+            ${e.price ? `<span style="font-size:.72rem;color:#94a3b8;">₹${e.price}</span>` : ""}
+            ${isLatest ? `<span style="font-size:.65rem;background:#f0fdf4;color:#16a34a;padding:2px 7px;border-radius:10px;font-weight:700;">LATEST</span>` : ""}
+          </div>
+          ${e.lasted_days !== null
+            ? `<div style="margin-top:4px;font-size:.75rem;color:#0369a1;">
+                ⏱ Lasted <strong>${e.lasted_days} days</strong>
+                ${e.daily_rate ? `· used ~<strong>${e.daily_rate} ${e.unit}/day</strong>` : ""}
+               </div>`
+            : (isLatest ? `<div style="margin-top:4px;font-size:.72rem;color:#94a3b8;">⏳ Currently in use — duration calculated on next purchase</div>` : "")}
+          ${e.notes ? `<div style="font-size:.7rem;color:#64748b;font-style:italic;margin-top:2px;">${e.notes}</div>` : ""}
+        </div>
+        <button onclick="deleteInvEntry('${e.id}')" title="Delete"
+          style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.9rem;padding:4px;">🗑️</button>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+}
+
+async function deleteInvEntry(id) {
+  if (!await sConfirm("Delete this inventory entry?", "Confirm", "🗑️")) return;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"deleteInventoryEntry", pin:S.sessionPin, id }) });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    toast("✅ Deleted");
+    _invInitDone = false; loadInventory();
+  } catch(e) { toast("Error: " + e.message); }
+}
+
+// ── ARCHIVE PANEL ──────────────────────────────────────────────────────────
+function _initArchivePage() {
+  const now = new Date();
+  document.getElementById("archiveYear").value = now.getFullYear();
+  // Default to previous completed quarter
+  const q = Math.floor(now.getMonth() / 3); // 0-based current quarter
+  const prevQ = q === 0 ? 4 : q;
+  document.getElementById("archiveQuarter").value = String(prevQ);
+}
+
+async function runManualArchive() {
+  const year    = parseInt(document.getElementById("archiveYear").value);
+  const quarter = parseInt(document.getElementById("archiveQuarter").value);
+  const statusEl = document.getElementById("archiveStatus");
+
+  if (!year || !quarter || quarter < 1 || quarter > 4) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Please select a valid year and quarter.</div>`;
+    return;
+  }
+
+  const qLabels = { 1:"Jan–Mar", 2:"Apr–Jun", 3:"Jul–Sep", 4:"Oct–Dec" };
+  const confirmMsg = `Archive Q${quarter} ${year} (${qLabels[quarter]})?\n\nThis will:\n• Copy SK_Orders + SK_Wallet rows to a new file\n• Write Balance Carry Forward snapshots\n• DELETE archived rows from the live sheet\n\nThis CANNOT be undone. Proceed?`;
+  if (!confirm(confirmMsg)) return;
+
+  statusEl.innerHTML = `<div style="color:#0369a1;font-size:.82rem;">⏳ Archiving… this may take 30–60 seconds. Please wait.</div>`;
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"triggerManualArchive", year, quarter, pin: S.sessionPin }) }).then(r=>r.json());
+    if (res.error) {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error}</div>`;
+      return;
+    }
+    if (!res.success) {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error || "Archive failed"}</div>`;
+      return;
+    }
+    statusEl.innerHTML = `
+      <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;font-size:.82rem;color:#14532d;line-height:1.7;">
+        <div style="font-weight:700;margin-bottom:4px;">✅ Archive complete!</div>
+        <div>📄 <strong>${res.archiveName}</strong></div>
+        ${res.archiveUrl ? `<div>🔗 <a href="${res.archiveUrl}" target="_blank" style="color:#0369a1;">Open archive file</a></div>` : ""}
+        <div>📦 Orders archived: <strong>${res.ordersArchived}</strong></div>
+        <div>💳 Wallet txns archived: <strong>${res.walletArchived}</strong></div>
+        <div>🏦 Balance snapshots: <strong>${res.snapshots}</strong></div>
+        ${res.log && res.log.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#475569;">View log (${res.log.length} steps)</summary><pre style="font-size:.72rem;margin-top:4px;white-space:pre-wrap;">${res.log.join("\n")}</pre></details>` : ""}
+      </div>`;
+  } catch(e) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
+  }
+}
+
+async function setupAutoTrigger() {
+  const statusEl = document.getElementById("triggerStatus");
+  statusEl.innerHTML = `<div style="color:#0369a1;font-size:.82rem;">⏳ Setting up trigger…</div>`;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"setupQuarterlyArchiveTrigger", pin: S.sessionPin }) }).then(r=>r.json());
+    if (res && res.success) {
+      statusEl.innerHTML = `<div style="color:#166534;font-size:.82rem;">✅ Trigger registered! Auto-archive will run on Apr 10, Jul 10, Oct 10, and Jan 10 each year.</div>`;
+    } else {
+      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${(res && res.error) || "Failed to set up trigger"}</div>`;
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
   }
 }
 </script>

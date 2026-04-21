@@ -5,35 +5,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
+  <meta name="author" content="Svaadh Kitchen">
 
-  <!-- PWA & Mobile Web App settings -->
+  <!-- PWA & Mobile Web App -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e74c3c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Svaadh">
+  <meta name="apple-mobile-web-app-title" content="Svaadh Kitchen">
 
-  <title>Order Online - Svaadh Kitchen | Homemade Vegetarian Food Delivery Hadapsar Pune</title>
-  <meta name="description"
-    content="Order fresh homemade vegetarian breakfast, lunch & dinner online from Svaadh Kitchen, Hadapsar Pune. Build your own meal — chapati, sabji, dal, rice & more. Free delivery on orders above ₹100. No app needed.">
-  <meta name="keywords"
-    content="order food online hadapsar, tiffin service pune, homemade food delivery, vegetarian food order, svaadh kitchen order, cloud kitchen hadapsar, lunch delivery pune, dinner delivery hadapsar, breakfast delivery pune, chapati sabji order online">
+  <title>Order Homemade Vegetarian Food Online | Svaadh Kitchen Hadapsar, Pune</title>
+  <meta name="description" content="Order fresh homemade vegetarian meals from Svaadh Kitchen, Hadapsar Pune. Choose from Breakfast, Lunch & Dinner — Chapati, Dal, Sabji, Rice & more. Build your own meal à la carte. Free delivery above ₹100. No app needed. Order now!">
+  <meta name="keywords" content="order food online hadapsar, tiffin service pune hadapsar, homemade food delivery hadapsar, vegetarian tiffin hadapsar, svaadh kitchen order, cloud kitchen hadapsar pune, lunch delivery hadapsar, dinner delivery hadapsar, breakfast delivery hadapsar, chapati sabji dal rice order online, magarpatta food delivery, amanora food delivery, bhosale nagar food delivery, homemade dal chawal pune, daily meal delivery pune">
   <link rel="canonical" href="https://www.svaadhkitchen.in/order.html">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Order Homemade Vegetarian Meals Online - Svaadh Kitchen Hadapsar">
-  <meta property="og:description"
-    content="Build your own meal — chapati, sabji, dal, rice & more. Fresh homemade food delivered to your doorstep in Hadapsar, Pune. No app needed!">
+  <meta property="og:title" content="Order Homemade Vegetarian Meals Online | Svaadh Kitchen Hadapsar Pune">
+  <meta property="og:description" content="Build your own meal — Chapati, Sabji, Dal, Rice & more. Fresh homemade food delivered to your door in Hadapsar, Pune. Free delivery above ₹100. No app needed!">
   <meta property="og:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://www.svaadhkitchen.in/order.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Svaadh Kitchen">
+  <meta property="og:locale" content="en_IN">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Order Homemade Vegetarian Meals - Svaadh Kitchen Hadapsar Pune">
-  <meta name="twitter:description"
-    content="Fresh homemade food delivered daily. Build your own meal online — no app needed!">
+  <meta name="twitter:title" content="Order Homemade Vegetarian Meals | Svaadh Kitchen Hadapsar Pune">
+  <meta name="twitter:description" content="Fresh homemade food delivered daily in Hadapsar, Pune. Build your own meal — Chapati, Dal, Sabji, Rice. No app needed!">
   <meta name="twitter:image" content="https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG">
 
   <!-- Favicon -->
@@ -43,16 +43,17 @@
   <link rel="stylesheet" href="modals-svaadh.css">
   <script src="modals-svaadh.js"></script>
 
-  <!-- Structured Data: FoodEstablishment -->
+  <!-- Structured Data: FoodEstablishment + Menu -->
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FoodEstablishment",
   "name": "Svaadh Kitchen",
-  "description": "Order homemade vegetarian meals online — breakfast, lunch & dinner delivered daily in Hadapsar, Pune",
+  "description": "Homemade vegetarian cloud kitchen in Hadapsar, Pune. Fresh breakfast, lunch and dinner delivered daily. Make-your-own-meal — no fixed thali.",
   "url": "https://www.svaadhkitchen.in/order.html",
-  "telephone": "+919930748908, +919819969682",
+  "telephone": ["+919930748908", "+919819969682"],
   "email": "svaadh.kitchen@gmail.com",
+  "image": "https://www.svaadhkitchen.in/images/svaadh-kitchen-hero.PNG",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "Bhosale Nagar",
@@ -66,40 +67,61 @@
     "latitude": "18.5089",
     "longitude": "73.9260"
   },
-  "servesCuisine": ["Vegetarian", "Indian", "Maharashtrian", "North Indian"],
+  "servesCuisine": ["Vegetarian", "Indian", "Maharashtrian", "North Indian", "Jain"],
   "priceRange": "₹",
   "currenciesAccepted": "INR",
-  "paymentAccepted": "UPI",
+  "paymentAccepted": "UPI, Prepaid Wallet, On Account",
   "openingHours": "Mo-Sa 07:00-21:00",
+  "areaServed": [
+    "Bhosale Nagar", "Magarpatta", "Amanora", "DP Road", "Triveni Nagar",
+    "Malwadi", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road",
+    "Vaiduwadi", "Vihar Chowk", "Mandai", "Gadital", "Hadapsar", "Pune"
+  ],
   "hasMenu": {
     "@type": "Menu",
     "hasMenuSection": [
       {
         "@type": "MenuSection",
+        "name": "Breakfast",
+        "hasMenuItem": [
+          {"@type": "MenuItem", "name": "Kanda Poha [175g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Ghee Upma [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Sabudana Khichdi [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "5 x Tikhi Pudi with 100 ml coriander chutney", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "4 x Idli & 100ml Chutney", "offers": {"@type": "Offer", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Ghee Sheera [200g]", "offers": {"@type": "Offer", "priceCurrency": "INR"}}
+        ]
+      },
+      {
+        "@type": "MenuSection",
         "name": "Breads",
         "hasMenuItem": [
           {"@type": "MenuItem", "name": "Chapati", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Without Oil Chapati", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Phulka", "offers": {"@type": "Offer", "price": "9", "priceCurrency": "INR"}},
           {"@type": "MenuItem", "name": "Ghee Phulka", "offers": {"@type": "Offer", "price": "10", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Jowar Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Jowar Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Bajra Bhakri", "offers": {"@type": "Offer", "price": "20", "priceCurrency": "INR"}}
         ]
       },
       {
         "@type": "MenuSection",
         "name": "Sabji & Curry",
         "hasMenuItem": [
-          {"@type": "MenuItem", "name": "Dry Sabji Mini", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Dry Sabji Full", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curry Sabji Mini", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curry Sabji Full", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Dry Sabji Mini (100ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Dry Sabji Full (250ml)", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curry Sabji Mini (100ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curry Sabji Full (250ml)", "offers": {"@type": "Offer", "price": "45", "priceCurrency": "INR"}}
         ]
       },
       {
         "@type": "MenuSection",
         "name": "Basics",
         "hasMenuItem": [
-          {"@type": "MenuItem", "name": "Dal", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Rice", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}},
-          {"@type": "MenuItem", "name": "Curd", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}}
+          {"@type": "MenuItem", "name": "Dal (200ml)", "offers": {"@type": "Offer", "price": "22", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Rice (100g)", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Salad (40g)", "offers": {"@type": "Offer", "price": "7", "priceCurrency": "INR"}},
+          {"@type": "MenuItem", "name": "Curd (50g)", "offers": {"@type": "Offer", "price": "12", "priceCurrency": "INR"}}
         ]
       }
     ]
@@ -130,6 +152,96 @@
   "itemListElement": [
     {"@type": "ListItem", "position": 1, "name": "Svaadh Kitchen", "item": "https://www.svaadhkitchen.in/"},
     {"@type": "ListItem", "position": 2, "name": "Order Online", "item": "https://www.svaadhkitchen.in/order.html"}
+  ]
+}
+</script>
+
+  <!-- Structured Data: FAQPage -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I order from Svaadh Kitchen?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Visit svaadhkitchen.in/order.html, enter your phone number, add your delivery address, pick your dates, choose your meals à la carte (Breakfast, Lunch, Dinner), and pay via UPI or Svaadh Wallet. No app download needed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are the order cutoff times?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Breakfast orders must be placed before 7:00 AM, Lunch before 9:00 AM, and Dinner before 4:30 PM."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which areas in Hadapsar do you deliver to?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We deliver to 15 areas in Hadapsar: Bhosale Nagar (free delivery), Triveni Nagar (free delivery), Magarpatta, Amanora, DP Road, Malwadi, SadeSatraNali, Kirtane Baug, Tupe Patil Road, BG Shirke Road, Vaiduwadi (till Yash Honda), Pune-Solapur Road (till Gadital), Vihar Chowk, Mandai, and Gadital. Self Pickup is also available free of charge."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What are your delivery charges?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Delivery is free for orders above ₹100. A nominal charge of ₹10 applies for orders below ₹100. Bhosale Nagar and Triveni Nagar always have free delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What meals and items are available?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We offer a Make-Your-Own-Meal system — no fixed thali. Lunch and Dinner: Chapati ₹9, Ghee Phulka ₹10, Jowar Bhakri ₹20, Bajra Bhakri ₹20, Dry Sabji Mini (100ml) ₹22, Dry Sabji Full (250ml) ₹45, Curry Sabji Mini (100ml) ₹22, Curry Sabji Full (250ml) ₹45, Dal (200ml) ₹22, Rice (100g) ₹12, Salad (40g) ₹7, Curd (50g) ₹12. Breakfast rotates daily — Kanda Poha [175g], Upma [200g], Sabudana Khichdi [200g], Sheera [200g] and more."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What payment methods are accepted?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We accept UPI payments and Svaadh Wallet (prepaid credits for 1-tap instant ordering). Regular customers can also use On Account billing with daily, weekly, or monthly settlement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Svaadh Wallet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Svaadh Wallet is a prepaid credit system. Load a minimum of ₹100 via UPI and your balance auto-deducts with each order — no need to scan a QR every time. Your balance is always visible on the order page."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer discounts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — 5% discount on orders above ₹300 and 7.5% discount on orders above ₹450. Discounts apply automatically. Earn an extra 10% off your next order by leaving a 5-star Google review."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I track my delivery in real time?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Open the Manage Orders section on our website. Once our driver marks your order as dispatched, the status changes to Out for Delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I cancel or modify my order?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You can cancel before the cutoff time (Breakfast: 7 AM, Lunch: 9:00 AM, Dinner: 4:30 PM) through the Manage Orders section. Editing is not available — delete and re-place with changes instead."
+      }
+    }
   ]
 }
 </script>
@@ -175,20 +287,6 @@
     .page-header h1 {
       font-size: 1.3rem;
       font-weight: 700;
-    }
-
-    .beta-badge {
-      display: inline-block;
-      background: #fff3cd;
-      color: #856404;
-      font-size: 0.5rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      padding: 2px 6px;
-      border-radius: 4px;
-      vertical-align: middle;
-      margin-left: 6px;
-      border: 1px solid #ffc107;
     }
 
     .page-header p {
@@ -265,7 +363,7 @@
       background: white;
       border-radius: 14px;
       padding: 20px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
       border: 1px solid #f0ebe6;
     }
@@ -1782,7 +1880,13 @@
     }
 
     [data-theme="dark"] .upi-id {
-      color: #888;
+      background: #1e1e1e;
+      border-color: #3a3a3a;
+      color: #7eb8f7;
+    }
+    [data-theme="dark"] .upi-id:hover {
+      background: #252525;
+      border-color: #555;
     }
 
     [data-theme="dark"] .wallet-confirm-card {
@@ -1803,9 +1907,13 @@
     }
 
     [data-theme="dark"] #authActionsWrap button {
-      background: #2a2a2a;
-      border-color: #444;
-      color: #e0e0e0;
+      background: #2a2a2a !important;
+      border-color: #444 !important;
+      color: #ddd !important;
+    }
+    [data-theme="dark"] #authActionsWrap button:first-child {
+      border-color: #c0392b !important;
+      color: #ff6b6b !important;
     }
 
     /* ═══════════════════════════════════════════
@@ -2775,8 +2883,8 @@
       <div class="how-info-grid">
         <div class="how-info-box">
           <div class="hi-label" data-i18n="how_cutoffs_label">⏰ Order cutoffs</div>
-          <div class="hi-val">🌅 Breakfast: 7:00 AM<br>☀️ Lunch: 9:30 AM<br>🌙 Dinner: 5:00 PM</div>
-          <p class="mr-note">नाश्ता: सकाळी ७:०० पूर्वी · दुपारचे जेवण: ९:३० पूर्वी · रात्रीचे जेवण: सायं ५:०० पूर्वी</p>
+          <div class="hi-val">🌅 Breakfast: 7:00 AM<br>☀️ Lunch: 9:00 AM<br>🌙 Dinner: 4:30 PM</div>
+          <p class="mr-note">नाश्ता: सकाळी ७:०० पूर्वी · दुपारचे जेवण: ९:०० पूर्वी · रात्रीचे जेवण: सायं ४:३० पूर्वी</p>
         </div>
         <div class="how-info-box">
           <div class="hi-label" data-i18n="how_discounts_label">💰 Discounts</div>
@@ -2819,7 +2927,7 @@
     <div class="wm-sheet">
       <div class="wm-handle-bar"><span></span></div>
       <div class="wm-header">
-        <h3>📅 This Week's Tentative Menu</h3>
+        <h3>📅 Upcoming Days' Tentative Menu</h3>
         <button class="wm-close" onclick="closeWeeklyMenu()">✕</button>
       </div>
       <div class="wm-tabs" id="wmTabs"></div>
@@ -2835,40 +2943,35 @@
   <!-- HEADER -->
   <div class="page-header" style="position:relative; padding-bottom: 14px;">
     <h1><img src="images/svaadh-kitchen-hero.PNG" class="header-logo-img" alt="logo">Svaadh Kitchen <span
-        class="beta-badge">BETA</span></h1>
+        ></h1>
     <p data-i18n="header_tagline">Home-cooked food, made for you</p>
     <button class="help-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark mode"
       style="right:auto;left:16px;font-size:1.15rem;">🌙</button>
     <button class="help-btn" onclick="showHowModal()" title="How it works">?</button>
+    <!-- Guide button: visible pre-login (floats under tagline), hidden once action bar appears -->
+    <button id="headerGuideBtn" onclick="showGuideHub()"
+      style="margin-top:6px;padding:4px 12px;font-size:0.68rem;font-weight:700;border-radius:8px;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.5);color:#fff;cursor:pointer;display:inline-block;">📖 Guide to Order</button>
   </div>
 
-  <!-- QUICK ACTION BAR (LOGGED IN ONLY) -->
+  <!-- QUICK ACTION BAR (LOGGED IN ONLY) — single compact row -->
   <div id="quickButtonBar"
-    style="display:none; background:#fff; border-bottom:1px solid #eee; padding: 12px 16px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:400; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <div id="walletChip" onclick="openWalletRecharge()"
-        style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0;">
-        <span>💼 Wallet:</span>
-        <span id="headerWalletBalance">₹0</span>
-        <span
-          style="border-left:1px solid #c8e6c9; padding-left:4px; margin-left:2px; color:#2e7d32; font-size:0.8rem;">+</span>
-      </div>
+    style="display:none; background:#fff; border-bottom:1px solid #eee; padding:8px 12px; align-items:center; justify-content:space-between; gap:6px; position:sticky; top:0; z-index:400; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+
+    <!-- Wallet chip (left) -->
+    <div id="walletChip" onclick="openWalletRecharge()"
+      style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:5px 10px; font-size:0.72rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:4px; cursor:pointer; flex-shrink:0; white-space:nowrap;">
+      💼 <span id="headerWalletBalance">₹0</span>
+      <span style="border-left:1px solid #c8e6c9; padding-left:4px; color:#2e7d32; font-size:0.75rem;">+</span>
     </div>
-    <div id="authActionsWrap" style="display:flex; align-items:center; gap:8px;">
-      <button onclick="showManageOrders()" class="bill-chip-btn"
-        style="padding:6px 14px; font-size:0.75rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b;">📋
-        Manage Orders</button>
+
+    <!-- Action buttons (right) -->
+    <div id="authActionsWrap" style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+      <button onclick="showManageOrders()"
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #c0392b; color:#c0392b; white-space:nowrap; cursor:pointer;">📋 Orders</button>
+      <button onclick="showGuideHub()"
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff; border:1.5px solid #7f8c8d; color:#555; white-space:nowrap; cursor:pointer;">📖 Guide</button>
       <button onclick="logoutCustomer()"
-        style="background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; padding:6px 14px; border-radius:10px; font-size:0.75rem; cursor:pointer; font-weight:700;">Logout</button>
-    </div>
-    <div
-      style="width:100%; display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:8px; border-top:1px solid #f5f5f5; padding-top:8px;">
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSegGilECpH3x6jY0SmkfGlYbEQO9hPXfphpfy2prS6b-bSjGg/viewform?usp=header"
-        target="_blank" class="feedback-link">🗣️ Feedback</a>
-      <a href="https://forms.gle/sx563zFVvehuWvKbA" target="_blank" class="feedback-link satisfaction-link">🍱 Rate Meal
-        & Service</a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLScqR82ZRF4R4h0Ea2P7U1WMo5ipenx-eM7R7WPXYKaM_4HShw/viewform?usp=header"
-        target="_blank" class="feedback-link bug-link">🐞 Report Bug</a>
+        style="padding:6px 10px; font-size:0.72rem; font-weight:700; border-radius:10px; background:#fff5f4; border:1.5px solid #ffcdcc; color:#c0392b; white-space:nowrap; cursor:pointer;">↩ Out</button>
     </div>
   </div>
 
@@ -2972,7 +3075,7 @@
       </div>
       <div class="card" style="padding:0;overflow:hidden;border:none;box-shadow:none;background:transparent;">
         <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn">
-          <span>📅 View This Week's Tentative Menu</span>
+          <span>📅 View Upcoming Days' Tentative Menu</span>
           <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
         </button>
       </div>
@@ -3316,18 +3419,27 @@
             style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
         </h2>
         <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">
-          <span>📅 View This Week's Tentative Menu</span>
+          <span>📅 View Upcoming Days' Tentative Menu</span>
           <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
         </button>
         <div id="step3ReviewPromo"></div>
 
         <div class="info-box" id="cutoffInfoBox">
           <strong>Order cutoff times:</strong><br>
-          🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:30 AM &nbsp;|&nbsp; 🌙 Dinner: before 5:00
-          PM<br>
+          🌅 Breakfast: before 7:00 AM &nbsp;|&nbsp; ☀️ Lunch: before 9:00 AM &nbsp;|&nbsp; 🌙 Dinner: before 4:30 PM<br>
           <span style="font-size:0.74rem;color:#888;">Sundays closed. Select multiple dates to order in advance!</span>
-          <p class="mr-note">⏰ <strong>ऑर्डरची शेवटची वेळ:</strong> नाश्ता – सकाळी ७:०० · दुपारचे जेवण – ९:३० · रात्रीचे
-            जेवण – सायं ५:०० · रविवार बंद</p>
+          <p class="mr-note">⏰ <strong>ऑर्डरची शेवटची वेळ:</strong> नाश्ता – सकाळी ७:०० · दुपारचे जेवण – ९:०० · रात्रीचे
+            जेवण – सायं ४:३० · रविवार बंद</p>
+        </div>
+
+        <!-- Grace period countdown banner — shown only when near/past cutoff for today -->
+        <div id="graceBanner" style="display:none;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;display:none;align-items:center;gap:10px;">
+          <span style="font-size:1.2rem;">⏳</span>
+          <div style="flex:1;">
+            <div id="graceBannerTitle" style="margin-bottom:2px;"></div>
+            <div id="graceBannerSub" style="font-size:0.72rem;font-weight:400;opacity:0.85;"></div>
+          </div>
+          <div id="graceCountdown" style="font-size:1.1rem;font-weight:800;letter-spacing:1px;white-space:nowrap;"></div>
         </div>
         <div class="calendar-header">
           <button class="cal-nav" id="calPrev">‹</button>
@@ -3351,12 +3463,12 @@
         </div>
         <p class="mr-note" style="margin-bottom:0;">🚚 १ जेवण असल्यास ₹१०० वर <strong>मोफत डिलिव्हरी</strong>, २ किंवा अधिक असल्यास ₹१५० वर मोफत &nbsp;·&nbsp; 🎉 ₹३०० वर <strong>५% सूट</strong> · ₹४५० वर <strong>७.५% सूट</strong></p>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <div style="margin-bottom:8px;">
         <div id="dateTabsWrap"
-          style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;flex:1;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+          style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
         </div>
         <button id="copyToAllBtn" onclick="copyMealsToAllDates()"
-          style="display:none;flex-shrink:0;padding:5px 10px;border-radius:8px;font-size:0.72rem;font-weight:600;background:#fff3cd;color:#856404;border:1px solid #ffc107;cursor:pointer;white-space:nowrap;">📋
+          style="display:none;margin-top:6px;padding:5px 10px;border-radius:8px;font-size:0.72rem;font-weight:600;background:#fff3cd;color:#856404;border:1px solid #ffc107;cursor:pointer;white-space:nowrap;">📋
           Copy to all dates</button>
       </div>
       <div id="mealSelectionContent"></div>
@@ -3384,69 +3496,99 @@
       </div>
 
       <!-- UPI (daily customers) -->
-      <div class="card" id="paymentCard">
-        <h2 data-i18n="step5_payment_title">💳 Payment</h2>
-        <div
-          style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:0.78rem;color:#92400e;line-height:1.5;"
-          data-i18n-html="payment_warning_html">
-          ⚠️ <strong>Please confirm only after payment is complete.</strong><br>
-          <span style="color:#78350f;">Each transaction is verified manually. Please do not mark as paid before
-            completing payment.</span>
+      <div id="paymentCard">
+
+        <!-- UPI Header banner -->
+        <div style="background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">UPI Payment</div>
+          <div class="upi-amount" id="upiAmountDisplay" style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;color:#fff;margin-bottom:12px;">₹0</div>
+          <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.8rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span>📲</span><span>Scan · Tap · Pay</span>
+          </div>
         </div>
-        <p class="mr-note" style="color:#a05c00;margin-bottom:14px;">⚠️ पेमेंट पूर्ण केल्यानंतरच खाली टिक करा. प्रत्येक
-          व्यवहार तपासला जातो — आधी टिक करू नका.</p>
-        <div class="upi-section">
-          <p class="text-sm" data-i18n-html="upi_scan_hint" style="font-weight: 600; color: #444;">Scan the QR code to pay manually <strong>or</strong> use the button below</p>
-          <div id="qrcode" style="margin:14px auto 0; border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: fit-content; border-radius: 12px;"></div>
-          <div class="upi-amount" id="upiAmountDisplay" style="margin-top: 15px; font-size: 1.8rem; color: #1a6640;">₹0</div>
-          
-          <div style="margin: 12px 0 15px;">
-            <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID" style="cursor:pointer; font-weight:800; color:#1a3c8f; font-size: 0.95rem; letter-spacing: 0.5px;">
-              UPI ID: svaadhkitchen.36727659@hdfcbank
-            </div>
-            <div style="font-size:0.75rem; color:#7f8c8d; margin-top:2px;">(tap to copy)</div>
+
+        <!-- UPI Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(8,145,178,0.10);margin-bottom:8px;">
+
+          <!-- Warning banner -->
+          <div style="background:#fffbea;border:1px solid #fcd34d;border-radius:12px;padding:10px 13px;margin-bottom:14px;font-size:0.77rem;color:#92400e;line-height:1.5;display:flex;gap:8px;align-items:flex-start;">
+            <span style="flex-shrink:0;">⚠️</span>
+            <span><strong>Confirm only after payment is complete.</strong> Each transaction is verified manually.</span>
           </div>
 
+          <!-- QR + Pay section -->
+          <div style="padding:14px;background:#f0fdfa;border-radius:14px;border:1px solid #99f6e4;margin-bottom:12px;">
+            <p class="text-sm" style="font-size:0.75rem;color:#0f766e;text-align:center;margin-bottom:6px;font-weight:600;">Step 1 — Complete Payment</p>
+            <div style="display:flex;justify-content:center;margin-bottom:12px;">
+              <div id="qrcode" style="border:4px solid #fff;box-shadow:0 4px 14px rgba(8,145,178,0.13);width:fit-content;border-radius:12px;"></div>
+            </div>
 
-          <a id="upiDeepLink" href="#" class="btn btn-primary"
-            style="text-decoration:none;margin-top:6px;font-size:0.95rem; line-height: 1.4; padding: 12px; height: auto;">👆 Pay via UPI App<br><span style="font-size: 0.7rem; opacity: 0.85; font-weight: 400;">(Based on User's feedback, Recommended: HDFC Bank App or CRED UPI)</span></a>
-          
-          <div style="margin-top: 15px; padding: 14px; background: linear-gradient(135deg, #f0faf4, #ffffff); border: 1.5px solid #b7e4c7; border-radius: 12px; font-size: 0.85rem; color: #1a6640; line-height: 1.5; text-align: left; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 2px 10px rgba(26, 102, 64, 0.06);">
-            <div style="font-size: 1.6rem;">💳</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 800; color: #1a6640; margin-bottom: 2px;">Try Svaadh Wallet!</div>
-              <div style="font-size: 0.76rem; color: #2d6a4f;">Tired of manual payments? Recharge once and enjoy <strong>1-tap seamless ordering</strong>. No more waiting, no more daily screenshots!</div>
-              <div style="margin-top: 8px; display: flex; align-items: center; gap: 5px;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #27ae60; cursor: pointer; text-decoration: underline;" onclick="openWalletRecharge()">⚡ Recharge & Pay via Wallet</span>
+            <div style="text-align:center;margin-bottom:12px;">
+              <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID"
+                style="cursor:pointer;font-weight:700;color:#0f766e;font-size:0.88rem;letter-spacing:0.3px;display:inline-block;background:#ccfbf1;padding:6px 16px;border-radius:20px;">
+                svaadhkitchen.36727659@hdfcbank
+              </div>
+              <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
+            </div>
+
+            <a id="upiDeepLink" href="#" class="btn btn-primary"
+              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:12px;">
+              👆 Pay via UPI App
+            </a>
+            <p style="font-size:0.68rem;color:#64748b;text-align:center;margin-top:6px;">Recommended: HDFC Bank App or CRED UPI</p>
+
+            <!-- Pay button not working -->
+            <div style="margin-top:10px;text-align:center;">
+              <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'▾':'▴';"
+                style="background:none;border:none;font-size:0.72rem;color:#94a3b8;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px;">
+                Pay button not working? <span>▾</span>
+              </button>
+              <div style="display:none;background:#fff4e5;border:1px solid #ffe8cc;border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;line-height:1.5;">
+                <div style="font-size:0.75rem;color:#862e08;">
+                  Tap the <strong>UPI ID</strong> above to copy it, then paste and pay in any UPI app.<br>
+                  <span class="mr-note" style="display:block;margin-top:4px;">वरील UPI ID कॉपी करा, GPay/PhonePe मध्ये पेस्ट करा, पेमेंट करा — मग खाली टिक करा.</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div style="background:#fff4e5; border:1px solid #ffe8cc; border-radius:10px; padding:10px 12px; margin-top:12px; text-align:left; line-height:1.4;">
-            <div style="font-size: 0.78rem; color: #d63384; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              ⚠️ Pay button not working?
-            </div>
-            <div style="font-size:0.75rem; color:#862e08;">
-              Tap the <strong>UPI ID</strong> above to copy it, pay manually in any UPI app, then confirm below.<br>
-              <span class="mr-note" style="display:block; margin-top:4px; font-weight:500;">वरील UPI ID वर क्लिक करून कॉपी करा, GPay/PhonePe मध्ये पेस्ट करून पेमेंट करा आणि मग खाली टिक करा.</span>
-            </div>
-          </div>
-          <div class="upi-or" data-i18n="upi_or">or</div>
-          <!-- COD Button Removed -->
-          <div style="margin-top:14px;">
-            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-              <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#e74c3c;"
+          <!-- Step 2: Confirm checkbox -->
+          <div style="margin-bottom:12px;">
+            <p style="font-size:0.75rem;color:#0f766e;font-weight:600;margin-bottom:8px;">Step 2 — Confirm &amp; Place Order</p>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+              <input type="checkbox" id="paidConfirm" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
                 onchange="checkPaymentConfirmation()">
-              <span style="font-size:0.82rem;" data-i18n="paid_confirm_label">✅ Payment complete — I confirm payment has
-                been made</span>
-              <span class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</span>
+              <div>
+                <span style="font-size:0.81rem;color:#14532d;font-weight:600;" data-i18n="paid_confirm_label">Payment complete — I confirm payment has been made</span>
+                <p class="mr-note" style="margin-top:2px;">मी पुष्टी करतो की पेमेंट झाले आहे</p>
+              </div>
             </label>
           </div>
-          <div id="walletSwitchBackWrap" style="display:none; text-align:center; margin-top:16px; padding-top:4px;">
-            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💳 Switch back to Wallet Pay (₹<span
-                id="switchBackWalletBal">0</span> available)</a>
+
+          <!-- Coming soon + wallet promo -->
+          <div style="padding:12px 13px;background:linear-gradient(135deg,#f0f4ff,#f8f0ff);border:1px solid #c7b8f0;border-radius:12px;text-align:center;margin-bottom:10px;">
+            <div style="font-size:0.75rem;font-weight:700;color:#4a3580;margin-bottom:2px;">🚀 Payment Gateway Coming Soon!</div>
+            <div style="font-size:0.7rem;color:#6b5aad;line-height:1.5;">Until then, UPI keeps things simple. Thank you for your patience and love! 💜</div>
+          </div>
+
+          <div style="padding:12px 13px;background:linear-gradient(135deg,#f0faf4,#fff);border:1px solid #b7e4c7;border-radius:12px;display:flex;align-items:flex-start;gap:10px;">
+            <div style="font-size:1.4rem;flex-shrink:0;">💳</div>
+            <div style="flex:1;">
+              <div style="font-weight:800;color:#1a6640;font-size:0.82rem;margin-bottom:2px;">Try Svaadh Wallet!</div>
+              <div style="font-size:0.74rem;color:#2d6a4f;line-height:1.5;">Recharge once — enjoy <strong>1-tap ordering</strong>. No more daily screenshots!</div>
+              <span style="font-size:0.72rem;font-weight:700;color:#27ae60;cursor:pointer;text-decoration:underline;display:inline-block;margin-top:6px;" onclick="openWalletRecharge()">⚡ Recharge &amp; Pay via Wallet</span>
+            </div>
+          </div>
+
+          <p class="mr-note" style="margin-top:10px;font-size:0.7rem;color:#a05c00;text-align:center;">पेमेंट पूर्ण केल्यानंतरच खाली टिक करा — आधी टिक करू नका.</p>
+
+          <div id="walletSwitchBackWrap" style="display:none; text-align:center; margin-top:14px;">
+            <a href="javascript:togglePaymentMode('Wallet')" class="btn-wallet-alt">💳 Switch back to Wallet Pay (₹<span id="switchBackWalletBal">0</span> available)</a>
           </div>
         </div>
+
       </div>
 
       <!-- ════════════════════════════════════════════════
@@ -3478,74 +3620,177 @@
       </div>
 
       <!-- WALLET CONFIRMATION CARD -->
-      <div class="card" id="walletConfirmCard"
-        style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
-        <div class="wallet-confirm-card">
-          <div class="wc-label">Total amount to be deducted</div>
-          <div class="wc-amount" id="walletDeductAmount">₹0</div>
-          <div class="wc-balance" id="walletCheckBalance">Available: ₹0</div>
+      <div id="walletConfirmCard" style="display:none;">
+
+        <!-- Wallet Header banner -->
+        <div style="background:linear-gradient(135deg,#166534,#16a34a);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Wallet Payment</div>
+          <div style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;margin-bottom:12px;" id="walletDeductAmount">₹0</div>
+          <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.8rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <span>💳</span><span id="walletCheckBalance">Available: ₹0</span>
+          </div>
         </div>
-        <div class="card" style="margin-top:-10px;">
-          <div
-            style="background:#f0faf4; border:1px solid #b7e4c7; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#1a5c36; line-height:1.6;">
-            ✅ Your balance is sufficient. This order will be instantly confirmed.
+
+        <!-- Wallet Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(22,101,52,0.10);margin-bottom:8px;">
+
+          <!-- Balance OK banner -->
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:13px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;margin-bottom:14px;border:1px solid #bbf7d0;">
+            <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#166534,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#fff;">✓</div>
+            <div style="flex:1;">
+              <div style="font-size:0.82rem;font-weight:700;color:#14532d;margin-bottom:2px;">Balance Sufficient — Instant Confirm</div>
+              <div style="font-size:0.77rem;color:#166534;line-height:1.5;">Your Svaadh Wallet has enough balance. No UPI needed — order confirmed the moment you place it.</div>
+            </div>
+            <div style="flex-shrink:0;background:#16a34a;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
           </div>
-          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#27ae60;"
+
+          <!-- Confirm checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:12px;">
+            <input type="checkbox" id="walletConfirmCheck" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
               onchange="checkPaymentConfirmation()">
-            <span style="font-size:0.82rem;">I confirm to pay ₹<span id="walletConfirmLabelAmt">0</span> from my
-              Wallet</span>
+            <div>
+              <span style="font-size:0.81rem;color:#14532d;font-weight:600;">I confirm to deduct ₹<span id="walletConfirmLabelAmt">0</span> from my Wallet</span>
+              <p class="mr-note" style="margin-top:2px;">मी माझ्या वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
+            </div>
           </label>
-          <p class="mr-note" style="margin-top:4px;">मी माइया वॉलेटमधून हे वजा करण्याची पुष्टी करतो</p>
-          <div style="text-align:center;margin-top:12px;">
+
+          <div style="text-align:center;">
             <a href="javascript:togglePaymentMode('UPI')"
-              style="font-size:0.75rem;color:#666;text-decoration:underline;">Not now, pay via UPI QR Instead</a>
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay via UPI instead</a>
           </div>
+        </div>
+
+      </div>
+
+      <!-- SPLIT PAYMENT CARD -->
+      <div id="splitPayCard" style="display:none;">
+
+        <!-- Header banner -->
+        <div style="background:linear-gradient(135deg,#6c3cf7,#3d8ef5);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <!-- decorative circles -->
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;bottom:-22px;left:-22px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%;pointer-events:none;"></div>
+
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Split Payment</div>
+          <div style="font-size:2.4rem;font-weight:900;letter-spacing:-1px;line-height:1;" id="splitTotalDisplay">₹0</div>
+          <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:5px;">
+              <span style="font-size:0.9rem;">💳</span>
+              <span>₹<span id="splitWalletPart">0</span> Wallet</span>
+            </div>
+            <div style="opacity:0.6;font-size:0.9rem;">+</div>
+            <div style="background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:5px;">
+              <span style="font-size:0.9rem;">📲</span>
+              <span>₹<span id="splitUpiPart">0</span> UPI</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Steps container -->
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(108,60,247,0.10);margin-bottom:8px;">
+
+          <!-- Step 1: Wallet -->
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:linear-gradient(135deg,#f3f0ff,#ede9fe);border-radius:14px;margin-bottom:12px;border:1px solid #ddd6fe;">
+            <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#6c3cf7,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;">1</div>
+            <div style="flex:1;">
+              <div style="font-size:0.82rem;font-weight:700;color:#4c1d95;margin-bottom:3px;">Wallet Deduction — Auto</div>
+              <div style="font-size:0.78rem;color:#5b21b6;line-height:1.5;">₹<span id="splitWalletBalDisplay">0</span> from your Svaadh Wallet will be used automatically when you place the order.</div>
+            </div>
+            <div style="flex-shrink:0;background:#6c3cf7;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
+          </div>
+
+          <!-- Step 2: UPI -->
+          <div style="padding:14px;background:#f8faff;border-radius:14px;border:1px solid #dbeafe;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+              <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;">2</div>
+              <div>
+                <div style="font-size:0.82rem;font-weight:700;color:#1e3a8a;">Pay via UPI</div>
+                <div style="font-size:0.75rem;color:#3b82f6;">Scan QR · tap button · or use UPI ID</div>
+              </div>
+              <div style="margin-left:auto;font-size:1.5rem;font-weight:900;color:#15803d;letter-spacing:-0.5px;">₹<span id="splitUpiAmtDisplay">0</span></div>
+            </div>
+
+            <p class="text-sm" style="font-size:0.75rem;color:#64748b;text-align:center;margin-bottom:6px;">Scan QR or tap button to pay ₹<span id="splitUpiQrAmt">0</span></p>
+            <div id="splitQrcode" style="margin:0 auto 12px;border:4px solid #fff;box-shadow:0 4px 14px rgba(37,99,235,0.13);width:fit-content;border-radius:12px;"></div>
+
+            <div style="text-align:center;margin-bottom:12px;">
+              <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID"
+                style="cursor:pointer;font-weight:700;color:#1e3a8a;font-size:0.88rem;letter-spacing:0.3px;display:inline-block;background:#dbeafe;padding:6px 16px;border-radius:20px;">
+                svaadhkitchen.36727659@hdfcbank
+              </div>
+              <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
+            </div>
+
+            <a id="splitUpiDeepLink" href="#" class="btn btn-primary"
+              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:12px;">
+              👆 Pay ₹<span id="splitUpiDeepLinkAmt">0</span> via UPI App
+            </a>
+          </div>
+
+          <!-- Confirm checkbox -->
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+            <input type="checkbox" id="splitConfirmCheck" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
+              onchange="checkPaymentConfirmation()">
+            <span style="font-size:0.81rem;color:#14532d;line-height:1.5;font-weight:600;">I confirm ₹<span id="splitWalletConfirmAmt">0</span> Wallet used + paid ₹<span id="splitUpiConfirmAmt">0</span> via UPI</span>
+          </label>
+
+          <p class="mr-note" style="margin-top:8px;text-align:center;">वॉलेटमधून ₹<span id="splitWalletMr">0</span> वजा होईल, बाकी ₹<span id="splitUpiMr">0</span> UPI द्वारे भरा</p>
+
+          <div style="text-align:center;margin-top:10px;">
+            <a href="javascript:togglePaymentMode('UPI')"
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay full ₹<span id="splitFullUpiLink">0</span> via UPI instead</a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FREE ORDER CARD (loyalty bonus exceeds bill) -->
+      <div id="freeOrderCard" style="display:none;">
+        <div style="background:linear-gradient(135deg,#065f46,#059669);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-18px;right:-18px;width:80px;height:80px;background:rgba(255,255,255,0.08);border-radius:50%;pointer-events:none;"></div>
+          <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;margin-bottom:6px;">Loyalty Reward</div>
+          <div style="font-size:2.8rem;margin-bottom:6px;">🎉</div>
+          <div style="font-size:1.4rem;font-weight:900;letter-spacing:-0.5px;">This Order is FREE!</div>
+          <div style="margin-top:10px;background:rgba(255,255,255,0.18);border-radius:20px;padding:6px 18px;font-size:0.82rem;font-weight:700;display:inline-block;">
+            ₹<span id="freeOrderBonus">0</span> → Your Wallet
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:0 0 18px 18px;padding:18px 16px 16px;box-shadow:0 4px 20px rgba(6,95,70,0.10);margin-bottom:8px;">
+          <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid #a7f3d0;">
+            <div style="font-size:0.85rem;font-weight:700;color:#065f46;margin-bottom:6px;">🏆 6-Day Streak Reward Applied!</div>
+            <div style="font-size:0.78rem;color:#047857;line-height:1.6;">Your loyalty reward exceeds today's bill. No payment needed — just confirm below and <strong>₹<span id="freeOrderBonusNote">0</span> will be credited to your Svaadh Wallet</strong> instantly.</div>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+            <input type="checkbox" id="freeOrderConfirmCheck" style="margin-top:2px;width:auto;accent-color:#059669;flex-shrink:0;"
+              onchange="checkPaymentConfirmation()">
+            <div>
+              <span style="font-size:0.81rem;color:#065f46;font-weight:700;">I understand — place this free order &amp; credit ₹<span id="freeOrderBonusCheck">0</span> to my Wallet</span>
+            </div>
+          </label>
         </div>
       </div>
 
-      <!-- ON ACCOUNT CARD (Unified Flow) -->
+      <!-- ON ACCOUNT CARD -->
       <div class="card" id="onAccountCard" style="display:none; padding: 0; background: none; border: none; box-shadow: none;">
         <div class="wallet-confirm-card" style="background: linear-gradient(135deg, #1565c0, #134e91);">
           <div class="wc-label">Total amount</div>
           <div class="wc-amount" id="onAccountDeductAmount">₹0</div>
-          <div class="wc-balance" id="onAccountCycle" style="background:rgba(255,255,255,0.15); border:none;"> Authorized: On Account (<span id="onAccountCycleDisplay">Daily</span>)</div>
+          <div class="wc-balance" id="onAccountCycle" style="background:rgba(255,255,255,0.15); border:none;">On Account · <span id="onAccountCycleDisplay">Daily</span> billing</div>
         </div>
         <div class="card" style="margin-top:-10px; border-top-left-radius:0; border-top-right-radius:0;">
-          <div style="background:#e3f2fd; border:1px solid #90caf9; border-radius:10px; padding:12px; margin-bottom:14px; font-size:0.83rem; color:#0d47a1; line-height:1.6;">
-            💡 You can pay now via UPI <b>OR</b> settle later at the end of your billing cycle.
+          <div style="background:#fff; border:1px solid #b3d4f5; border-radius:12px; padding:16px; text-align:center;">
+            <div style="font-size:1.4rem; margin-bottom:8px;">📋</div>
+            <div style="font-size:0.9rem; font-weight:700; color:#0a2540; margin-bottom:6px;">Your bill will be shared at the end of your billing cycle</div>
+            <div style="font-size:0.78rem; color:#334e68; line-height:1.6;">No payment needed right now. We'll send you a summary based on your <b style="color:#0a2540;"><span id="onAccountCycleDisplay2">Daily</span> billing</b> preference.</div>
           </div>
 
-          <div class="upi-section" style="padding:0; box-shadow:none; border:none; background:none;">
-            <p class="text-sm" style="font-size:0.75rem; color:#666; margin-bottom:10px;">👇 Use QR below ONLY if paying via UPI right now:</p>
-            <div id="qrcodeOnAccount" style="margin:0 auto;"></div>
-            <div class="upi-amount" id="upiAmountDisplayOnAccount" style="font-size:1.1rem; margin-top:8px;">₹0</div>
-            
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; margin:10px 0; font-size:0.71rem; color:#4a5568; text-align:left;">
-              <span data-i18n-html="payment_note_label">📝 <strong>Note:</strong></span> <span id="upiNoteDisplayOnAccount" style="color:#1e40af; font-weight:600;"></span>
-            </div>
-
-            <a id="upiDeepLinkOnAccount" href="#" class="btn btn-primary" style="text-decoration:none; margin:0; font-size:0.85rem; padding:8px 12px; height:auto; background:#1e40af; border-color:#1e40af;">👆 Tap to Pay via UPI App</a>
-            
-            <div style="margin-top:18px; padding:12px; background:#fff; border:1px dashed #cbd5e0; border-radius:10px;">
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin-bottom:0; text-align:left;">
-                <input type="checkbox" id="onAccountConfirmCheck" style="margin-top:3px; width:auto; accent-color:#1e40af;">
-                <div style="display:flex; flex-direction:column;">
-                  <span style="font-size:0.82rem; font-weight:700; color:#1a202c;">✅ I have paid via UPI now</span>
-                  <span style="font-size:0.7rem; color:#718096;">(Order will be marked as UPI/Pending)</span>
-                </div>
-              </label>
-              
-              <div style="margin:8px 0; border-top:1px solid #edf2f7; padding-top:8px; font-size:0.65rem; color:#64748b; font-weight:700; text-align:center;">OR</div>
-              
-              <div style="font-size:0.78rem; font-weight:600; color:#1e3a8a; line-height:1.4; display:flex; align-items:center; justify-content:center; gap:6px;">
-                 <span>📦 Settle later as <b>On Account</b></span>
-              </div>
-            </div>
-
-            <div style="text-align:center; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-               <a href="javascript:togglePaymentMode('UPI')" style="font-size:0.72rem; color:#7f8c8d; text-decoration:underline;">I am not On Account, let me choose another method</a>
-            </div>
+          <div style="margin-top:14px;">
+            <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; padding:12px; background:#f0f7ff; border:1px solid #90caf9; border-radius:10px;">
+              <input type="checkbox" id="onAccountConfirmCheck" style="margin-top:2px; width:auto; accent-color:#1565c0;">
+              <div style="font-size:0.82rem; font-weight:600; color:#0d47a1; line-height:1.4;">I understand this order will be added to my On Account balance</div>
+            </label>
           </div>
         </div>
       </div>
@@ -3629,6 +3874,179 @@
         <button class="btn btn-secondary" onclick="hideManageOrders()"
           style="background:#f5f5f5;border-color:#ddd;color:#555;padding:12px;font-weight:600;width:100%;"
           data-i18n="btn_back_manage">Close</button>
+      </div>
+    </div>
+
+    <!-- PRICING INFO MODAL -->
+    <div id="pricingInfoPanel" class="bill-modal-overlay" style="display:none;z-index:10002;" onclick="if(event.target===this)hidePricingInfo()">
+      <div class="bill-modal-sheet" style="max-height:92vh;overflow-y:auto;padding-top:12px;">
+        <div class="bm-handle" onclick="hidePricingInfo()"><span></span></div>
+        <div style="padding:4px 18px 20px;">
+          <h3 style="font-size:1rem;font-weight:700;color:#2d2d2d;margin-bottom:4px;">💡 How Billing Works</h3>
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Everything that affects your final bill — in plain English.</p>
+
+          <!-- DELIVERY CHARGE -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🚴 Delivery Charge</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Always free:</b> Bhosale Nagar · Triveni Nagar · Self Pickup<br>
+              <b>₹10 per meal</b> for all other areas — unless your day total qualifies for free delivery (see below).
+            </div>
+          </div>
+
+          <!-- FREE DELIVERY THRESHOLD -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🎁 When Delivery Becomes Free</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>1 meal that day</b> → free delivery if food total ≥ ₹100<br>
+              <b>2 or more meals that day</b> → free delivery if combined food total ≥ ₹150<br><br>
+              <span style="background:#e8f8f0;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#1e8449;">
+                💡 <b>Example:</b> You order Breakfast (₹80) and pay ₹10 delivery. Later that day you add Dinner (₹90). Combined = ₹170 ≥ ₹150 — delivery becomes free, and the ₹10 you already paid is <b>credited back</b> on your next order that day.
+              </span>
+            </div>
+          </div>
+
+          <!-- SMALL ORDER FEE -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🛒 Small Order Fee</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              An extra <b>₹10</b> is added if your <b>Lunch or Dinner</b> subtotal is below <b>₹50</b>.<br>
+              This does not apply to Breakfast, free delivery areas, or Pickup orders.<br>
+              It is also waived once your day total crosses the free delivery threshold.
+            </div>
+          </div>
+
+          <!-- DISCOUNT -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🏷️ Discounts (Auto-applied)</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>5% off</b> when your total food spend for the day ≥ ₹300<br>
+              <b>7.5% off</b> when your total food spend for the day ≥ ₹450<br><br>
+              This is based on your <b>entire day's total</b> — so if you order multiple meals across the day and cross ₹300, the discount applies to everything placed that day (including earlier orders).<br><br>
+              <span style="background:#f5eef8;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#6c3483;">
+                💡 <b>Example:</b> You order Breakfast ₹150 + Lunch ₹170 = ₹320 combined → 5% discount applied to the whole day automatically.
+              </span>
+            </div>
+          </div>
+
+          <!-- MARKET SURCHARGE -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📈 Market Surcharge</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              A small surcharge of <b>₹1 for every ₹20</b> of food (≈5%) is added per meal to help us manage rising ingredient costs.<br><br>
+              <b>Examples:</b><br>
+              ₹40 meal → ₹2 surcharge<br>
+              ₹100 meal → ₹5 surcharge<br>
+              ₹150 meal → ₹8 surcharge
+            </div>
+          </div>
+
+          <!-- LOYALTY STREAK -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #f39c12;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🔥 6th Day Loyalty Reward</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Order on <b>5 consecutive days</b> → your <b>6th consecutive day is surcharge-free</b>.<br>
+              All market surcharges from the previous 5 days are also <b>credited back</b> on that 6th day.<br><br>
+              <span style="background:#fef9e7;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#7d6608;">
+                💡 <b>Sundays don't count</b> — since we're closed on Sundays, the streak continues through the weekend. Saturday + Monday = consecutive days. This resets every 6 days — keep ordering to keep earning!
+              </span>
+            </div>
+          </div>
+
+          <!-- GOOGLE REVIEW DISCOUNT -->
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #1abc9c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⭐ Google Review Reward</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Leave us a <b>5-star Google review</b> and get <b>10% off on your next 3 meal orders</b>.<br>
+              This is verified manually by our team. Once confirmed, the discount is applied automatically on checkout.
+            </div>
+          </div>
+
+          <!-- QUICK EXAMPLE -->
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+            <div style="font-size:0.82rem;font-weight:700;color:#7d5a00;margin-bottom:8px;">🧾 Full Example (Magarpatta, single Lunch order)</div>
+            <div style="font-size:0.75rem;color:#5d4037;line-height:1.8;">
+              Chapati ×4 (₹36) + Dry Sabji Mini (₹22) + Dal (₹22) = <b>₹80 food</b><br>
+              + Market surcharge: ₹4 (₹80 ÷ 20)<br>
+              + Delivery: ₹10 (Magarpatta, below ₹100 threshold)<br>
+              <b>= ₹94 total</b><br><br>
+              Now add Dinner (₹90) same day → day total = ₹170 ≥ ₹150<br>
+              → Delivery waived on Dinner + ₹10 credited back → <b>you save ₹20</b>
+            </div>
+          </div>
+
+          <button onclick="hidePricingInfo()" style="width:100%;padding:12px;background:#f5f5f5;border:1.5px solid #ddd;border-radius:10px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">Got it ✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         GUIDE HUB MODAL
+    ════════════════════════════════════════════ -->
+    <div id="guideHubPanel" class="bill-modal-overlay" style="display:none;z-index:10003;" onclick="if(event.target===this)hideGuideHub()">
+      <div class="bill-modal-sheet" style="max-height:85vh;overflow-y:auto;padding-top:12px;">
+        <div class="bm-handle" onclick="hideGuideHub()"><span></span></div>
+        <div style="padding:4px 18px 20px;">
+          <h3 style="font-size:1.05rem;font-weight:700;color:#2d2d2d;margin-bottom:4px;">📖 Guide to Order</h3>
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Everything you need to know — tap any topic.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button onclick="hideGuideHub();showPricingInfo()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">💡</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">How Billing Works</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Delivery charges, discounts, surcharge, loyalty reward</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('wallet')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">👛</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">How Wallet Works</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Load credits, 1-tap ordering, check balance</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('firsttime')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🆕</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">First Time Order Guide</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Step-by-step from phone number to delivery</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('cancellation')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">❌</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Cancellation & Changes</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Cutoff times, how to delete, refund process</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('delivery')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🚴</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Delivery Areas & Timing</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">All 15 areas, free delivery zones, self pickup</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('menu')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">🍱</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Understanding the Menu</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Make-your-own-meal, daily sabji, breakfast rotation</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('tracking')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">📍</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Tracking & Managing Orders</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Order status, out for delivery, upcoming orders</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+            <button onclick="hideGuideHub();showGuide('multiday')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:12px;cursor:pointer;text-align:left;width:100%;">
+              <span style="font-size:1.4rem;">📅</span>
+              <div><div style="font-size:0.85rem;font-weight:700;color:#1a252f;">Ordering for Multiple Days</div><div style="font-size:0.72rem;color:#888;margin-top:2px;">Weekly planning, copy meals, advance orders</div></div>
+              <span style="margin-left:auto;color:#bbb;font-size:1rem;">›</span>
+            </button>
+          </div>
+          <button onclick="hideGuideHub()" style="width:100%;margin-top:18px;padding:12px;background:#f5f5f5;border:1.5px solid #ddd;border-radius:10px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         INDIVIDUAL GUIDE MODAL (shared shell)
+    ════════════════════════════════════════════ -->
+    <div id="guideDetailPanel" class="bill-modal-overlay" style="display:none;z-index:10004;" onclick="if(event.target===this)hideGuideDetail()">
+      <div class="bill-modal-sheet" style="max-height:92vh;overflow-y:auto;padding-top:12px;">
+        <div class="bm-handle" onclick="hideGuideDetail()"><span></span></div>
+        <div style="padding:4px 18px 20px;">
+          <button onclick="hideGuideDetail();showGuideHub()" style="background:none;border:none;color:#888;font-size:0.78rem;cursor:pointer;padding:0;margin-bottom:12px;">‹ Back to Guides</button>
+          <div id="guideDetailContent"></div>
+          <button onclick="hideGuideDetail();showGuideHub()" style="width:100%;margin-top:18px;padding:12px;background:#f5f5f5;border:1.5px solid #ddd;border-radius:10px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">Got it ✓</button>
+        </div>
       </div>
     </div>
 
@@ -3717,6 +4135,34 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- REFRESH NUDGE BANNER — shown once per session -->
+  <div id="refreshNudge" style="
+    display:none; position:fixed; bottom:86px; left:50%; transform:translateX(-50%);
+    background:#1a1a2e; color:#fff; border-radius:16px; padding:14px 16px 14px 14px;
+    font-size:0.8rem; line-height:1.6; z-index:9999; max-width:320px; width:90%;
+    box-shadow:0 8px 32px rgba(0,0,0,0.32);
+    animation: nudgeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:1.2rem;flex-shrink:0;">✨</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;margin-bottom:2px;">You're on the latest version</div>
+        <div style="font-size:0.72rem;color:#ccc;">For the best experience, try a quick refresh if anything looks off.</div>
+      </div>
+      <button onclick="dismissRefreshNudge()"
+        style="background:none;border:none;color:#aaa;font-size:1.1rem;cursor:pointer;padding:0;margin-left:4px;flex-shrink:0;line-height:1;">✕</button>
+    </div>
+    <button onclick="location.reload(true); dismissRefreshNudge();"
+      style="margin-top:10px;width:100%;padding:7px;background:#e74c3c;border:none;border-radius:8px;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;">
+      🔄 Refresh Now
+    </button>
+  </div>
+  <style>
+    @keyframes nudgeIn {
+      from { opacity:0; transform:translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform:translateX(-50%) translateY(0); }
+    }
+  </style>
+
   <script>
 
     // Replaced with shared modals-svaadh.js logic
@@ -3725,7 +4171,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_yJ8__7phuGfdSvclc5FVdpuM7WHffq4ybPrxYJUBp1frhiN1HZA2lcNUGSqlm1INHg/exec"; // DEV — Svaadh Kitchen Dev project
-    const APP_VERSION = "v26.04.16.09-hdfc";
+    const APP_VERSION = "v26.04.19.02-hdfc";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -3733,8 +4179,259 @@
     const FREE_THRESHOLD = 150;
     const DISC_T1 = { min: 300, rate: 0.05 };
     const DISC_T2 = { min: 450, rate: 0.075 };
-    let CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
+    let CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
     const ICONS = { Breakfast: "🍳", Lunch: "🍱", Dinner: "🍽️" };
+    const GRACE_MINUTES = 5; // extra minutes allowed after cutoff to complete & submit
+
+    // ── RESILIENT FETCH WRAPPER ──────────────────────────────────
+    // Retries up to MAX_RETRIES times with exponential backoff.
+    // Logs every timeout/failure to Code.gs so we can track daily error counts.
+    const FETCH_TIMEOUT_MS  = 25000; // 25 sec per attempt
+    const MAX_RETRIES       = 3;
+    const RETRY_DELAYS_MS   = [2000, 4000, 8000]; // wait between retries
+
+    async function apiFetch(urlOrOpts, fetchOpts = {}, { silent = false } = {}) {
+      // Accepts either a URL string (GET) or an object { url, ...fetchOpts }
+      const url     = typeof urlOrOpts === "string" ? urlOrOpts : urlOrOpts.url;
+      const options = typeof urlOrOpts === "object" ? { ...urlOrOpts, url: undefined } : fetchOpts;
+      delete options.url;
+
+      let lastErr;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        // Show "taking longer" hint after first failure
+        if (attempt === 1 && !silent) {
+          _showSlowBanner(true);
+        }
+        const ctrl    = new AbortController();
+        const tid     = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+        const t0      = Date.now();
+        try {
+          const res  = await fetch(url, { ...options, signal: ctrl.signal });
+          clearTimeout(tid);
+          _showSlowBanner(false);
+          return res;
+        } catch (err) {
+          clearTimeout(tid);
+          const isTimeout = err.name === "AbortError" || err.message?.includes("timeout");
+          lastErr = err;
+          // Log to server (fire-and-forget, don't await — never blocks UI)
+          _logServerError({
+            type:    isTimeout ? "timeout" : "network_error",
+            attempt: attempt + 1,
+            url:     url.split("?")[0],  // strip query params
+            action:  _extractAction(url, options),
+            ms:      Date.now() - t0,
+            msg:     err.message || "unknown"
+          });
+          if (attempt < MAX_RETRIES - 1) {
+            await _sleep(RETRY_DELAYS_MS[attempt]);
+          }
+        }
+      }
+      _showSlowBanner(false);
+      throw lastErr; // all retries exhausted — let caller handle
+    }
+
+    // POST helper — wraps apiFetch for JSON POST calls
+    async function apiPost(body, opts = {}) {
+      return apiFetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body:   JSON.stringify(body)
+      }, opts);
+    }
+
+    // ── SLOW BANNER ──────────────────────────────────────────────
+    let _slowBannerEl = null;
+    function _showSlowBanner(show) {
+      if (!_slowBannerEl) {
+        _slowBannerEl = document.createElement("div");
+        _slowBannerEl.id = "slowBanner";
+        Object.assign(_slowBannerEl.style, {
+          position:"fixed", bottom:"80px", left:"50%", transform:"translateX(-50%)",
+          background:"#f39c12", color:"#fff", padding:"10px 20px", borderRadius:"20px",
+          fontSize:".82rem", fontWeight:"700", zIndex:"9999",
+          boxShadow:"0 4px 12px rgba(0,0,0,.2)", display:"none",
+          whiteSpace:"nowrap"
+        });
+        _slowBannerEl.textContent = "⏳ Taking longer than usual — retrying…";
+        document.body.appendChild(_slowBannerEl);
+      }
+      _slowBannerEl.style.display = show ? "block" : "none";
+    }
+
+    // ── ERROR LOGGER (fire-and-forget) ───────────────────────────
+    function _logServerError(details) {
+      try {
+        fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            _action:   "logClientError",
+            phone:     S.phone || "unknown",
+            version:   APP_VERSION,
+            timestamp: new Date().toISOString(),
+            ...details
+          })
+        }).catch(() => {}); // truly fire-and-forget, never throws
+      } catch(e) {}
+    }
+
+    function _extractAction(url, opts) {
+      try {
+        const u = new URL(url);
+        if (u.searchParams.get("action")) return u.searchParams.get("action");
+      } catch(e) {}
+      try {
+        const b = JSON.parse(opts?.body || "{}");
+        return b._action || b.action || "unknown";
+      } catch(e) {}
+      return "unknown";
+    }
+
+    function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // ── Grace Period Session State ───────────────────────────────
+    // graceDeadlines: { meal → Date } computed once when user enters Step 3 today.
+    // If a meal's cutoff was still in the future at that moment, we give them
+    // GRACE_MINUTES after the cutoff to finish and submit.
+    // Once set, deadlines never extend — leaving and re-entering Step 3 doesn't reset.
+    let _graceTimerHandle = null;
+
+    function initGraceDeadlines() {
+      if (!S.graceDeadlines) S.graceDeadlines = {};
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      // Only set deadlines once per session per meal (never re-set)
+      ["Breakfast","Lunch","Dinner"].forEach(meal => {
+        if (S.graceDeadlines[meal]) return; // already set this session
+        const menu = S.menuCache[todayStr];
+        const ov = menu?.cutoff_overrides || {};
+        const cutoffH = ov[meal] ?? CUTOFFS[meal];
+        const cutoffMs = cutoffH * 3600 * 1000; // ms since midnight IST
+        const midnightIST = new Date(ist);
+        midnightIST.setUTCHours(0,0,0,0);
+        const cutoffTime = new Date(midnightIST.getTime() + cutoffMs);
+        // Only set a grace deadline if we arrived before (or at) cutoff
+        // i.e., the user has a legitimate session that started before close
+        if (ist <= cutoffTime) {
+          S.graceDeadlines[meal] = new Date(cutoffTime.getTime() + GRACE_MINUTES * 60 * 1000);
+        }
+        // If already past cutoff when arriving, no grace — meal is simply closed
+      });
+    }
+
+    function getActiveMealsForToday() {
+      // Meals the user has items in for TODAY's date
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      return ["Breakfast","Lunch","Dinner"].filter(meal => {
+        return (S.orders[todayStr]?.[meal]?.subtotal || 0) > 0;
+      });
+    }
+
+    const GRACE_WARN_MINS = 15; // show pre-cutoff warning this many minutes before cutoff
+
+    function checkGraceExpiry() {
+      // Returns null if nothing to show, or an object:
+      // { phase: "warn"|"grace"|"expired", meal, msToClose, msLeft }
+      // "warn"    = still before cutoff but within GRACE_WARN_MINS — show green/blue heads-up
+      // "grace"   = past cutoff, within GRACE_MINUTES window — yellow countdown
+      // "expired" = past cutoff + GRACE_MINUTES — hard lock
+      const ist = getIST();
+      const todayStr = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-${String(ist.getUTCDate()).padStart(2,'0')}`;
+      const ov = S.menuCache[todayStr]?.cutoff_overrides || {};
+      const midnightIST = new Date(ist); midnightIST.setUTCHours(0,0,0,0);
+
+      let mostUrgent = null;
+
+      ["Breakfast","Lunch","Dinner"].forEach(meal => {
+        const cutoffH = ov[meal] ?? CUTOFFS[meal];
+        const cutoffTime = new Date(midnightIST.getTime() + cutoffH * 3600000);
+        const deadline   = S.graceDeadlines?.[meal]; // set when user arrived before cutoff
+
+        const msToClose = cutoffTime - ist;   // negative when past cutoff
+        const msLeft    = deadline ? (deadline - ist) : null; // ms left in grace window
+
+        let phase = null;
+        if (msToClose > 0 && msToClose <= GRACE_WARN_MINS * 60000) {
+          phase = "warn";   // before cutoff but closing soon
+        } else if (msToClose <= 0 && deadline) {
+          phase = msLeft > 0 ? "grace" : "expired";
+        }
+        if (!phase) return;
+
+        const entry = { phase, meal, msToClose, msLeft: msLeft ?? 0, cutoffTime };
+        // Priority: expired > grace > warn; within same phase pick most urgent
+        const rank = { expired: 3, grace: 2, warn: 1 };
+        if (!mostUrgent || rank[entry.phase] > rank[mostUrgent.phase] ||
+            (entry.phase === mostUrgent.phase && entry.msToClose < mostUrgent.msToClose)) {
+          mostUrgent = entry;
+        }
+      });
+      return mostUrgent;
+    }
+
+    function tickGraceBanner() {
+      const banner  = $("graceBanner");
+      const titleEl = $("graceBannerTitle");
+      const subEl   = $("graceBannerSub");
+      const cdEl    = $("graceCountdown");
+      const btn     = $("btnNext");
+
+      const state = checkGraceExpiry();
+
+      if (!state) {
+        if (banner) banner.style.display = "none";
+        if (btn && S.step === 3 && !btn.dataset.locked) { btn.disabled = false; btn.style.opacity = "1"; }
+        return;
+      }
+
+      if (banner) banner.style.display = "flex";
+
+      if (state.phase === "warn") {
+        // Pre-cutoff heads-up — green, no lock
+        const totalSec = Math.ceil(state.msToClose / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2,'0');
+        const ss = String(totalSec % 60).padStart(2,'0');
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;color:#166534;`;
+        if (titleEl) titleEl.textContent = `⏰ ${state.meal} orders close in ${mm}:${ss}`;
+        if (subEl)   subEl.textContent   = `Finish selecting your items and tap Continue before the cutoff.`;
+        if (cdEl)  { cdEl.textContent = `${mm}:${ss}`; cdEl.style.color = "#16a34a"; }
+        if (btn && S.step === 3) { btn.disabled = false; btn.style.opacity = "1"; }
+
+      } else if (state.phase === "grace") {
+        // Past cutoff — yellow/orange countdown
+        const totalSec = Math.ceil(state.msLeft / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2,'0');
+        const ss = String(totalSec % 60).padStart(2,'0');
+        const isUrgent = state.msLeft < 60000;
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:${isUrgent ? 'linear-gradient(135deg,#fff7ed,#ffedd5)' : 'linear-gradient(135deg,#fefce8,#fef9c3)'};border:1.5px solid ${isUrgent ? '#fb923c' : '#fbbf24'};color:${isUrgent ? '#9a3412' : '#78350f'};`;
+        if (titleEl) titleEl.textContent = `🕐 ${state.meal} cutoff just passed — submit before time runs out!`;
+        if (subEl)   subEl.textContent   = `You have a short grace window. Complete your order now.`;
+        if (cdEl)  { cdEl.textContent = `${mm}:${ss}`; cdEl.style.color = isUrgent ? "#dc2626" : "#d97706"; }
+        if (btn && S.step === 3) { btn.disabled = false; btn.style.opacity = "1"; }
+
+      } else {
+        // Expired — hard lock
+        banner.style.cssText = `display:flex;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;align-items:center;gap:10px;background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1.5px solid #fca5a5;color:#991b1b;`;
+        if (titleEl) titleEl.textContent = `⛔ ${state.meal} orders are now closed for today.`;
+        if (subEl)   subEl.textContent   = `The grace window has passed. Please order for a future date.`;
+        if (cdEl)  { cdEl.textContent = "CLOSED"; cdEl.style.color = "#dc2626"; }
+        if (btn && S.step === 3) { btn.disabled = true; btn.style.opacity = "0.4"; }
+      }
+    }
+
+    function startGraceTimer() {
+      stopGraceTimer();
+      tickGraceBanner(); // immediate paint
+      _graceTimerHandle = setInterval(tickGraceBanner, 1000);
+    }
+
+    function stopGraceTimer() {
+      if (_graceTimerHandle) { clearInterval(_graceTimerHandle); _graceTimerHandle = null; }
+      const banner = $("graceBanner");
+      if (banner) banner.style.display = "none";
+    }
+    // ── End Grace Period ─────────────────────────────────────────
 
     // ═══════════════════════════════════════════════════════════
     // FIXED MENU
@@ -3753,22 +4450,22 @@
         },
         {
           group: "Today's Sabji (Dry)", dynamic: "dry", items: [
-            { name: "Dry Sabji Mini", price: 22, colKey: "Dry Sabji Mini" },
-            { name: "Dry Sabji Full", price: 45, colKey: "Dry Sabji Full" },
+            { name: "Dry Sabji Mini (100ml)", price: 22, colKey: "Dry Sabji Mini (100ml)" },
+            { name: "Dry Sabji Full (250ml)", price: 45, colKey: "Dry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Today's Sabji (Curry)", dynamic: "curry", items: [
-            { name: "Curry Sabji Mini", price: 22, colKey: "Curry Sabji Mini" },
-            { name: "Curry Sabji Full", price: 45, colKey: "Curry Sabji Full" },
+            { name: "Curry Sabji Mini (100ml)", price: 22, colKey: "Curry Sabji Mini (100ml)" },
+            { name: "Curry Sabji Full (250ml)", price: 45, colKey: "Curry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Dal / Rice / Extras", items: [
-            { name: "Dal", price: 22, colKey: "Dal" },
-            { name: "Rice", price: 12, colKey: "Rice" },
-            { name: "Salad", price: 6, colKey: "Salad" },
-            { name: "Curd", price: 12, colKey: "Curd" },
+            { name: "Dal (200ml)", price: 22, colKey: "Dal (200ml)" },
+            { name: "Rice (100g)", price: 12, colKey: "Rice (100g)" },
+            { name: "Salad (40g)", price: 7, colKey: "Salad (40g)" },
+            { name: "Curd (50g)", price: 12, colKey: "Curd (50g)" },
           ]
         },
       ],
@@ -3785,29 +4482,38 @@
         },
         {
           group: "Today's Sabji (Dry)", dynamic: "dry", items: [
-            { name: "Dry Sabji Mini", price: 22, colKey: "Dry Sabji Mini" },
-            { name: "Dry Sabji Full", price: 45, colKey: "Dry Sabji Full" },
+            { name: "Dry Sabji Mini (100ml)", price: 22, colKey: "Dry Sabji Mini (100ml)" },
+            { name: "Dry Sabji Full (250ml)", price: 45, colKey: "Dry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Today's Sabji (Curry)", dynamic: "curry", items: [
-            { name: "Curry Sabji Mini", price: 22, colKey: "Curry Sabji Mini" },
-            { name: "Curry Sabji Full", price: 45, colKey: "Curry Sabji Full" },
+            { name: "Curry Sabji Mini (100ml)", price: 22, colKey: "Curry Sabji Mini (100ml)" },
+            { name: "Curry Sabji Full (250ml)", price: 45, colKey: "Curry Sabji Full (250ml)" },
           ]
         },
         {
           group: "Dal / Rice / Extras", items: [
-            { name: "Dal", price: 22, colKey: "Dal" },
-            { name: "Rice", price: 12, colKey: "Rice" },
-            { name: "Salad", price: 6, colKey: "Salad" },
-            { name: "Curd", price: 12, colKey: "Curd" },
+            { name: "Dal (200ml)", price: 22, colKey: "Dal (200ml)" },
+            { name: "Rice (100g)", price: 12, colKey: "Rice (100g)" },
+            { name: "Salad (40g)", price: 7, colKey: "Salad (40g)" },
+            { name: "Curd (50g)", price: 12, colKey: "Curd (50g)" },
           ]
         },
       ],
     };
     const BREAKFAST_COL_MAP = {
-      "Kanda Poha": "B_POHA", "Paneer Paratha": "B_PANEER",
-      "Aloo Paratha": "B_ALOO", "Curd (Breakfast)": "B_CURD",
+      "Kanda Poha [175g]": "B_POHA",
+      "Kanda Poha": "B_POHA",
+      "Ghee Upma [200g]": "B_UPMA",
+      "Ghee Upma": "B_UPMA",
+      "Sabudana Khichdi [200g]": "B_SABU",
+      "Sabudana Khichdi": "B_SABU",
+      "Paneer Paratha": "B_PANEER",
+      "Aloo Paratha": "B_ALOO",
+      "Curd 50g": "B_CURD",
+      "Curd (Breakfast)": "B_CURD",
+      "Curd": "B_CURD"
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -3821,9 +4527,9 @@
       },
       selectedDates: [], menuCache: {}, orders: {},
       calYear: 0, calMonth: 0,
-      grandTotal: 0, runningTotal: 0, walletBalance: 0,
+      grandTotal: 0, runningTotal: 0, walletBalance: 0, walletCredit: 0,
       tempUpiMode: false,
-      version: "14.1.17"
+      version: "14.1.18"
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -3837,6 +4543,15 @@
       return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
     };
     const formatDate = ds => new Date(ds + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    function dismissRefreshNudge() {
+      const nudge = $("refreshNudge");
+      if (!nudge) return;
+      nudge.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      nudge.style.opacity = "0";
+      nudge.style.transform = "translateX(-50%) translateY(10px)";
+      setTimeout(() => { nudge.style.display = "none"; }, 300);
+    }
+
     function toast(msg, ms = 2500) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), ms); }
 
     const trackGA = (name, params = {}) => {
@@ -3871,7 +4586,7 @@
     async function syncWalletValue() {
       if (!S.phone) return;
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
         const data = await res.json();
         if (data.wallet_balance !== undefined) {
           const wb = Number(data.wallet_balance) || 0;
@@ -3932,7 +4647,7 @@
       $("howModalContent").innerHTML = `
     <div style="font-size:0.82rem;color:#555;line-height:1.8;">
       <strong>🔐 Security:</strong> 4-digit PIN to secure your wallet<br>
-      <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ', '')}</strong>: Breakfast 7AM · Lunch 9:30AM · Dinner 5PM<br>
+      <strong>⏰ ${t('how_cutoffs_label').replace('⏰ ', '')}</strong>: Breakfast 7AM · Lunch 9:00AM · Dinner 4:30PM<br>
       <strong>💰 ${t('how_discounts_label').replace('💰 ', '')}</strong>: 5% off ≥₹300 · 7.5% off ≥₹450 per day<br>
       <strong>🚚 ${t('how_delivery_label').replace('🚚 ', '')}</strong>: Free in Bhosale Nagar · ₹10/meal elsewhere (Waived if Self Pickup)<br>
       <strong>📦 Small Order Fee:</strong> ₹10 for Lunch/Dinner if bill &lt; ₹50 (Waived if Self Pickup)<br>
@@ -3957,7 +4672,7 @@
       { q: "How do I track my delivery in real-time?", a: "Once our driver marks your order as 'Out for Delivery', a <strong>🚗 Out for Delivery</strong> badge will appear next to that order's timing in the 'View/Edit upcoming orders' dashboard." },
       { q: "Can I install this as an App on my phone?", a: "Yes! Look for the <strong>📲 Install App</strong> button on the home screen. This will add Svaadh Kitchen to your home screen for fast, one-tap access just like a regular app." },
       { q: "What's included in your thali / meals?", a: "We follow a <strong>Make Your Own Meal</strong> model — pick exactly what you want:<br>🫓 <strong>Breads</strong>: Chapati ₹9 · Phulka ₹7 · Ghee Phulka ₹10 · Jowar/Bajra Bhakri ₹20<br>🥘 <strong>Sabji</strong>: Mini 100ml ₹22 · Full 250ml ₹45 (changes daily)<br>🍲 <strong>Dal</strong> 200ml ₹22 · <strong>Rice</strong> 100g ₹12 · <strong>Salad</strong> 40g ₹6 · <strong>Curd</strong> 50g ₹12<br>🌅 <strong>Breakfast</strong>: Rotating daily items (₹35–₹70) — Poha, Upma, Paratha & more." },
-      { q: "What are the order cutoff times?", a: "Breakfast: before 7:00 AM · Lunch: before 9:30 AM · Dinner: before 5:00 PM. Cutoff times are strictly strictly for same-day delivery." },
+      { q: "What are the order cutoff times?", a: "Breakfast: before 7:00 AM · Lunch: before 9:00 AM · Dinner: before 4:30 PM. Cutoff times are strictly for same-day delivery." },
       { q: "Can I order for multiple days at once?", a: "Yes! On the date selection screen, tap as many dates as you want. You'll set meals for each date individually." },
       { q: "How do discounts work?", a: "If your total for a single day is ₹300+, you get <strong>5% off</strong>. ₹450+, you get <strong>7.5% off</strong>. Applied automatically on the bill screen." },
       { q: "What is Prepaid Wallet Billing?", a: "Prepaid Wallet Billing allows you to maintain a balance on our platform so that your orders are automatically deducted without needing UPI entry every time. Perfect for regular customers!" },
@@ -4003,6 +4718,18 @@
       if (s === 3 && !hasAnyOrder()) { $("btnNext").disabled = true; $("btnNext").style.opacity = "0.45"; }
       if (s === 4) { checkPaymentConfirmation(); }
 
+      // Re-render calendar every time user lands on step 2 so admin cutoff overrides
+      // (fetched async on page load) are always applied — avoids stale default cutoff
+      if (s === 2) renderCalendar();
+
+      // Grace period timer — start on Step 3 (meal selection), stop on all other steps
+      if (s === 3) {
+        initGraceDeadlines(); // compute deadlines once (no-op if already set)
+        startGraceTimer();    // start ticking
+      } else {
+        stopGraceTimer();
+      }
+
       // Toggle Quick Button Bar (Wallet, Orders, Logout) only after step 0
       const qb = $("quickButtonBar");
       if (qb) qb.style.display = (s > 0) ? "flex" : "none";
@@ -4019,9 +4746,12 @@
       let isChecked = false;
       if (S.paymentChoice === "Wallet") {
         isChecked = $("walletConfirmCheck")?.checked;
+      } else if (S.paymentChoice === "Split") {
+        isChecked = $("splitConfirmCheck")?.checked;
       } else if (S.paymentChoice === "OnAccount") {
-        // For On Account, the checkbox is optional (Step 4 & 5)
-        isChecked = true; 
+        isChecked = true;
+      } else if (S.paymentChoice === "Free") {
+        isChecked = $("freeOrderConfirmCheck")?.checked;
       } else {
         isChecked = $("paidConfirm")?.checked;
       }
@@ -4060,7 +4790,19 @@
       const ok = hasAnyOrder();
       $("btnNext").disabled = !ok; $("btnNext").style.opacity = ok ? "1" : "0.45";
     }
-    function goBack() { if (S.step > 0) { S.step--; updateNav(); window.scrollTo(0, 0); } }
+    function goBack() {
+      if (S.step <= 0) return;
+      const prevStep = S.step;
+      S.step--;
+      updateNav();
+      // Coming back from bill screen (step 4) to meal selection (step 3):
+      // re-render meal content so items are fully interactive again
+      if (prevStep === 4 && S.selectedDates.length > 0 && $("mealSelectionContent").innerHTML.trim()) {
+        buildDateTabs();
+        renderMealContent(activeDate || S.selectedDates[0]);
+      }
+      window.scrollTo(0, 0);
+    }
     function goToStep(n) { S.step = n; updateNav(); window.scrollTo(0, 0); }
     async function goNext() {
       if ($("btnNext").dataset.locked === "payment") {
@@ -4082,7 +4824,7 @@
         if (S.authMode === "verify") {
           sBtnLoading($("btnNext"), true, "Verifying");
           try {
-            const res = await fetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
+            const res = await apiFetch(`${APPS_SCRIPT_URL}?action=verifyLogin&phone=${S.phone}&pin=${enteredPin}`);
             const verData = await res.json();
             sBtnLoading($("btnNext"), false);
             if (verData.success) {
@@ -4164,6 +4906,13 @@
           if (!confirmed) return;
         }
         if (!hasAnyOrder()) { toast(t('toast_select_item')); return; }
+
+        // Hard grace-period check before proceeding to bill
+        const _graceState = checkGraceExpiry();
+        if (_graceState?.expired) {
+          toast(`⛔ ${_graceState.meal} orders for today are closed — the 5-minute window after cutoff has passed. You can still order for future dates!`, 6000);
+          return;
+        }
 
         sBtnLoading($("btnNext"), true, t('loading_building'));
         try {
@@ -4286,10 +5035,8 @@
     async function lookupCustomer() {
       sLoading(true, t('loading_logging_in'));
       if ($("pinAuthSection")) $("pinAuthSection").style.display = "none";
-      const _lCtrl = new AbortController(); const _lTid = setTimeout(() => _lCtrl.abort(), 15000);
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`, { signal: _lCtrl.signal });
-        clearTimeout(_lTid);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}`);
         const data = await res.json();
 
         // Auto-login check
@@ -4391,6 +5138,8 @@
     function handleLoginSuccess(profileData, isNew) {
       sLoading(false); // Hide any active "Logging you in" loader
       if ($("authActionsWrap")) $("authActionsWrap").style.display = "flex";
+      // Hide header Guide button once logged in — it's now in the action bar
+      if ($("headerGuideBtn")) $("headerGuideBtn").style.display = "none";
       if (profileData) {
         const parts = (profileData.name || "").trim().split(" ");
         const fn = parts[0] || "";
@@ -4575,7 +5324,7 @@
     async function refreshWalletBalance() {
       if (!S.phone) return;
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}&_t=${Date.now()}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomer&phone=${S.phone}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.found) {
           updateWalletBalanceUI(Number(data.wallet_balance) || 0);
@@ -4796,7 +5545,7 @@
       $("mealSelectionContent").innerHTML = `<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">${t('loading_menu')}</p></div>`;
       await Promise.all(S.selectedDates.map(async date => {
         if (!S.menuCache[date]) {
-          try { const res = await fetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); console.log('[DEBUG] menuCache[' + date + ']:', JSON.stringify({oos_items: S.menuCache[date].oos_items, orders_closed: S.menuCache[date].orders_closed})); }
+          try { const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); }
           catch (fetchErr) { console.error('[DEBUG] fetch failed for', date, fetchErr); S.menuCache[date] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} }; }
         }
         if (!S.orders[date]) {
@@ -4865,7 +5614,7 @@
       const MEALS = ["Breakfast", "Lunch", "Dinner"];
       const ICONS = { Breakfast: "🌅", Lunch: "☀️", Dinner: "🌙" };
       const ov = menu.cutoff_overrides || {};
-      const DEFAULTS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
+      const DEFAULTS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
       const getCutoffTxt = (meal, def) => {
         const override = parseFloat(ov[meal]);
         if (isNaN(override)) return t('cutoff_default', { time: def });
@@ -4874,8 +5623,8 @@
       };
       const cutoffTxt = {
         Breakfast: getCutoffTxt('Breakfast', '7:00 AM'),
-        Lunch: getCutoffTxt('Lunch', '9:30 AM'),
-        Dinner: getCutoffTxt('Dinner', '5:00 PM'),
+        Lunch: getCutoffTxt('Lunch', '9:00 AM'),
+        Dinner: getCutoffTxt('Dinner', '4:30 PM'),
       };
       $("mealSelectionContent").innerHTML = MEALS.map(meal => {
         const isAvail = avail[meal], sub = S.orders[date]?.[meal]?.subtotal || 0;
@@ -4970,7 +5719,7 @@
         return `<div class="item-row" style="opacity:0.45;pointer-events:none;">
     <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
     <div class="qty-control">
-      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Sold Out</span>
+      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Order Limit Reached</span>
     </div>
   </div>`;
       }
@@ -5082,7 +5831,7 @@
       let existingDayTotals = {};
       try {
         const dates = S.selectedDates.join(',');
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getDayTotalsForDates&phone=${S.phone}&dates=${encodeURIComponent(dates)}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getDayTotalsForDates&phone=${S.phone}&dates=${encodeURIComponent(dates)}`);
         const data = await res.json();
         existingDayTotals = data.dayTotals || {};
       } catch (e) { /* non-fatal: fall back to no existing orders */ }
@@ -5094,6 +5843,79 @@
       // Virtual Streak Tracking for multi-date cart
       let virtualStreakCount = S.loyaltyInfo?.count || 0;
       let virtualPastSurcharge = S.loyaltyInfo?.surcharge || 0;
+
+      // ── Pre-compute pass: figure out carry-back credits from streak surplus ──
+      // We need to know how much surplus the streak day generates so we can
+      // retroactively reduce prior days' displayed totals (5th → 4th → 3rd …)
+      const carryBack = {}; // date → ₹ credit applied from streak surplus
+      {
+        let _psc = S.loyaltyInfo?.count || 0, _pps = S.loyaltyInfo?.surcharge || 0, _ppt = promoTracker;
+        const _dayNets = {}; // date → net day total (before carry-back)
+        const _dateOrder = [];
+        for (const _d of S.selectedDates) {
+          const _do = S.orders[_d] || {};
+          let _dft = 0;
+          ["Breakfast","Lunch","Dinner"].forEach(m => _dft += _do[m]?.subtotal || 0);
+          if (_dft === 0) continue;
+          _dateOrder.push(_d);
+          const _ex = existingDayTotals[_d] || {};
+          const _exft = Object.values(_ex).reduce((s,m) => s+(m.subtotal||0), 0);
+          const _cdt = _dft + _exft;
+          let _dr = 0;
+          if (_cdt >= DISC_T2.min) _dr = DISC_T2.rate;
+          else if (_cdt >= DISC_T1.min) _dr = DISC_T1.rate;
+          const _exDisc = Object.values(_ex).reduce((s,m) => s+(m.discount_applied||0), 0);
+          const _retro = Math.max(0, Math.round(_exft*_dr) - _exDisc);
+          const _is6 = (_psc === 5);
+          let _da = 0;
+          if (_is6) {
+            const _cds = Math.ceil(_dft/20);
+            _da = _pps + _cds;
+          } else {
+            _da = Math.min(_dft, Math.round(_dft*_dr) + _retro);
+          }
+          const _totalM = ["Breakfast","Lunch","Dinner"].filter(m=>(_do[m]?.subtotal>0)||(_ex[m]?.subtotal>0)).length;
+          const _dynTh = _totalM<=1 ? 100 : 150;
+          const _isFD = (_cdt >= _dynTh) || S.profile.feeExempt;
+          let _tdel=0, _tsm=0, _tsu=0, _trev=0, _tcred=0;
+          if (_isFD && _exft > 0) {
+            ["Breakfast","Lunch","Dinner"].forEach(m => {
+              _tcred += (_ex[m]?.delivery_charged||0) + (_ex[m]?.small_fee_charged||0);
+            });
+          }
+          ["Breakfast","Lunch","Dinner"].forEach(meal => {
+            const _ms = _do[meal]; const _sub = _ms?.subtotal||0; if (_sub<=0) return;
+            if (_ppt>0) { _trev += Math.round(_sub*0.10); _ppt--; }
+            const _mAddr = getMealAddr(meal);
+            const _isP = _mAddr.area==="Self Pickup";
+            const _isFA = FREE_AREAS.includes(_mAddr.area);
+            const _cms = _sub+(_ex[meal]?.subtotal||0);
+            if (!S.profile.feeExempt&&!_isFD&&!_isP&&(meal==="Lunch"||meal==="Dinner")&&_sub>0&&_cms<50) _tsm+=10;
+            if (!S.profile.feeExempt&&!_isFD&&!_isP&&!_isFA&&_sub>0) _tdel+=DELIVERY_CHARGE;
+            _tsu += Math.ceil(_sub/20);
+          });
+          const _net = _dft - _da + _tdel + _tsm + _tsu - _tcred - _trev;
+          _dayNets[_d] = { net: _net, is6: _is6 };
+          if (_is6) { _psc=0; _pps=0; } else { _psc++; _pps+=Math.ceil(_dft/20); }
+        }
+        // Find streak day surplus and carry backwards
+        let _surplus = 0;
+        for (const _d of _dateOrder) {
+          if (_dayNets[_d].is6 && _dayNets[_d].net < 0) {
+            _surplus = Math.abs(_dayNets[_d].net);
+            break;
+          }
+        }
+        if (_surplus > 0) {
+          for (let _i = _dateOrder.length - 1; _i >= 0 && _surplus > 0; _i--) {
+            const _d = _dateOrder[_i];
+            if (_dayNets[_d].is6) continue; // skip streak day itself
+            const _absorb = Math.min(_surplus, Math.max(0, _dayNets[_d].net));
+            if (_absorb > 0) { carryBack[_d] = (carryBack[_d] || 0) + _absorb; _surplus -= _absorb; }
+          }
+        }
+      }
+      // ── End pre-compute pass ──
 
       for (const date of S.selectedDates) {
         const dayOrders = S.orders[date] || {};
@@ -5119,11 +5941,14 @@
         let loyaltyWaiverTotal = 0;
 
         if (is6thDay) {
-          // Loyalty Discount triggers on Day 6
+          // Loyalty Discount triggers on Day 6: waive all surcharges across 6 days
           const currentDaySurcharge = Math.ceil(dayFoodTotal / 20);
           loyaltyWaiverTotal = virtualPastSurcharge + currentDaySurcharge;
-          discAmt = loyaltyWaiverTotal;
-          discLabel = "Loyalty Streak Reward (6 Days)";
+          // Cap discAmt so this day's total doesn't go below ₹0 (surplus already
+          // distributed to prior days via carryBack in the pre-compute pass above)
+          const grossDayBill = dayFoodTotal; // fees added later; we clamp post-fee
+          discAmt = loyaltyWaiverTotal; // may cause negative dayTotal — handled below
+          discLabel = "🎉 6-Day Streak Reward";
         } else {
           // Audit Fix #4: Cap discount at current food total to prevent negative bills
           discAmt = Math.min(dayFoodTotal, Math.round(dayFoodTotal * discRate) + retroDiscountCredit);
@@ -5160,8 +5985,9 @@
             <span>🌟</span> <span>VIP Benefit: <strong>Free Delivery & No Small Cart Fee</strong> applied to your account!</span>
           </div>`;
         } else if (is6thDay) {
-          html += `<div style="font-size:0.75rem;color:#2c3e50;background:#f1c40f;background:linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);display:flex;align-items:center;gap:10px;">
-            <span style="font-size:1.2rem;">🎉</span> <span><strong>Amazing Regular!</strong> Since you ordered for 6 consecutive days, we've waived today's bill by <strong>₹${loyaltyWaiverTotal}</strong> (sum of surcharges for 6 days). Thank you!</span>
+          html += `<div style="font-size:0.75rem;background:linear-gradient(135deg,#f1c40f,#f39c12);color:#fff;padding:12px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;box-shadow:0 4px 10px rgba(243,156,18,0.3);display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.4rem;">🎉</span>
+            <span><strong>6-Day Streak!</strong> We're giving back all your market surcharges — ~5% of your food bill, back in your pocket. You've earned it! Total reward: <strong>₹${loyaltyWaiverTotal}</strong></span>
           </div>`;
         } else if (!isDayFree && !allPickup) {
           const diff = dynamicThreshold - combinedDayTotal;
@@ -5286,7 +6112,17 @@
         });
         // 6. Date-level Adjustments (Credits / Discounts)
         const totalCredits = dayDeliveryCredit + daySmallFeeCredit;
-        const dayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal;
+        let rawDayTotal = dayFoodTotal - discAmt + totalDelivery + totalSmallOrderFee + totalInflationSurcharge - totalCredits - dayReviewDiscountTotal;
+
+        // For streak day: if rawDayTotal < 0, the surplus was already pre-distributed
+        // to prior days via carryBack[]. Clamp this day's total to ₹0.
+        const streakDaySurplus = (is6thDay && rawDayTotal < 0) ? Math.abs(rawDayTotal) : 0;
+        if (is6thDay && rawDayTotal < 0) rawDayTotal = 0;
+
+        // For prior days: apply carry-back credit received from the streak day
+        const cbAmt = carryBack[date] || 0;
+        const dayTotal = rawDayTotal - cbAmt;
+
         grandTotal += dayTotal;
 
         // Update virtual streak for NEXT date in this cart
@@ -5314,17 +6150,37 @@
           html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Day discount applied on combined total ₹${combinedDayTotal}. Includes ₹${retroDiscountCredit} credit passing savings from your early orders to this bill.', 6000)">
         <span>🎉 ${discNote}</span><span>−₹${discAmt}</span></div>`;
         }
+        // Carry-back credit from streak day surplus
+        if (cbAmt > 0) {
+          html += `<div class="bill-line discount" style="cursor:pointer; margin-bottom:4px;" onclick="toast('Your 6-day streak discount on Day 6 exceeded that day\\'s bill, so the extra ₹${cbAmt} has been carried back to reduce this day\\'s total!', 7000)">
+        <span>🎁 Streak Carry-back Credit</span><span>−₹${cbAmt}</span></div>`;
+        }
 
         html += `  <div class="bill-line date-total" style="font-size:1.1rem; padding:4px 0;"><span>Day Total</span><span>₹${dayTotal}</span></div>
     </div><hr class="bill-divider" style="margin-top:16px;"></div>`;
       }
+      // Handle negative grand total: excess loyalty credit → wallet bonus
+      const walletBonus = grandTotal < 0 ? Math.abs(grandTotal) : 0;
+      S.walletBonus = walletBonus;
+      if (grandTotal < 0) grandTotal = 0;
       S.grandTotal = grandTotal;
+
       // Reset payment confirmation state
-      // codMode removed
       const paidCb = $("paidConfirm"); if (paidCb) paidCb.checked = false;
       const tenCb = $("tenDayConfirm"); if (tenCb) tenCb.checked = false;
-      // codBtn logic removed
-      $("billSummaryContent").innerHTML = html +
+
+      // Show wallet bonus banner in bill if applicable
+      const walletBonusBanner = walletBonus > 0
+        ? `<div style="background:linear-gradient(135deg,#e8f5e9,#f0fdf4);border:1.5px solid #a7f3d0;border-radius:12px;padding:12px 14px;margin:10px 0;display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1.4rem;flex-shrink:0;">🎁</span>
+            <div>
+              <div style="font-weight:800;color:#065f46;font-size:0.88rem;margin-bottom:3px;">₹${walletBonus} Wallet Credit Incoming!</div>
+              <div style="font-size:0.76rem;color:#047857;line-height:1.5;">Your loyalty reward exceeds today's bill. The extra ₹${walletBonus} will be added to your Svaadh Wallet automatically when you place this order.</div>
+            </div>
+           </div>`
+        : "";
+
+      $("billSummaryContent").innerHTML = html + walletBonusBanner +
         `<div style="height:18px;"></div><div class="grand-total-box"><div><div class="label">${t('grand_total')}</div><div style="font-size:0.68rem;opacity:0.7;">${t('all_dates_label')}</div></div><div class="amount">₹${grandTotal}</div></div>`;
 
       const wb = Number(S.walletBalance) || 0;
@@ -5335,22 +6191,30 @@
       $("onAccountCard").style.display = "none";
       $("paymentCard").style.display = "none";
       if ($("hdfcGatewayCard")) $("hdfcGatewayCard").style.display = "none";
-      
+      $("splitPayCard").style.display = "none";
+      $("freeOrderCard").style.display = "none";
+
       // Reset confirmations
       if ($("walletConfirmCheck")) $("walletConfirmCheck").checked = false;
       if ($("onAccountConfirmCheck")) $("onAccountConfirmCheck").checked = false;
+      if ($("splitConfirmCheck")) $("splitConfirmCheck").checked = false;
       if ($("paidConfirm")) $("paidConfirm").checked = false;
 
       // Determine default payment choice
       if (!S.tempUpiMode) {
-        if (isOnAccount) {
+        if (grandTotal === 0 && walletBonus > 0) {
+          // Loyalty reward exceeds bill — free order, credit goes to wallet
+          S.paymentChoice = "Free";
+          $("freeOrderCard").style.display = "block";
+          ["freeOrderBonus","freeOrderBonusNote","freeOrderBonusCheck"].forEach(id => {
+            const el = $(id); if (el) el.textContent = walletBonus;
+          });
+        } else if (isOnAccount) {
           S.paymentChoice = "OnAccount";
           $("onAccountCard").style.display = "block";
           $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
           $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
-          // Update the switch link if it exists
-          const upiLink = $("onAccountCard").querySelector("a[href*='togglePaymentMode']");
-          if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+          $("onAccountCycleDisplay2").textContent = S.profile.billingCycle || "Daily";
         } else if (wb >= grandTotal && grandTotal > 0) {
           S.paymentChoice = "Wallet";
           $("walletConfirmCard").style.display = "block";
@@ -5359,6 +6223,22 @@
           $("walletConfirmLabelAmt").textContent = grandTotal;
           const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
           if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
+        } else if (wb > 0 && grandTotal > 0 && wb < grandTotal) {
+          // Partial wallet: show Split card as default
+          const upiDue = grandTotal - wb;
+          S.paymentChoice = "Split";
+          S.walletCredit = wb;
+          $("splitPayCard").style.display = "block";
+          $("splitTotalDisplay").textContent = `₹${grandTotal}`;
+          $("splitWalletPart").textContent = wb;
+          $("splitUpiPart").textContent = upiDue;
+          $("splitWalletBalDisplay").textContent = wb;
+          $("splitWalletConfirmAmt").textContent = wb;
+          $("splitUpiConfirmAmt").textContent = upiDue;
+          $("splitUpiMr").textContent = upiDue;
+          $("splitWalletMr").textContent = wb;
+          $("splitFullUpiLink").textContent = grandTotal;
+          setupSplitUPI(upiDue);
         } else {
           S.paymentChoice = "UPI";
           $("paymentCard").style.display = "block";
@@ -5368,9 +6248,7 @@
         $("paymentCard").style.display = "block";
       }
 
-      if (S.paymentChoice === "OnAccount") {
-        setupUPI(grandTotal, true);
-      }
+
 
       // If gateway is enabled and payment is UPI, swap to gateway card
       if (S.paymentChoice === "UPI") hdfc_showGatewayIfEnabled();
@@ -5383,7 +6261,13 @@
             sw.style.display = "block";
             const balSpan = $("switchBackWalletBal");
             if (balSpan) balSpan.textContent = wb;
-            // Also need to handle On Account switch back if I had one, but UPI is the fallback usually
+          }
+        } else if (wb > 0 && wb < grandTotal) {
+          // Partial wallet available — show split option
+          const sw = $("walletSwitchBackWrap");
+          if (sw) {
+            sw.style.display = "block";
+            sw.innerHTML = `<a href="javascript:togglePaymentMode('Split')" class="btn-wallet-alt">🔀 Use ₹${wb} Wallet + Pay ₹${grandTotal - wb} via UPI</a>`;
           }
         }
         setupUPI(grandTotal);
@@ -5396,12 +6280,19 @@
       if (mode === "UPI") {
         S.tempUpiMode = true;
         S.paymentChoice = "UPI";
+        S.walletCredit = 0;
+      } else if (mode === "Split") {
+        S.tempUpiMode = false; // allow split branch in buildBillScreen
+        S.paymentChoice = "Split"; // pre-hint; buildBillScreen will confirm
+        S.walletCredit = 0;
       } else if (mode === "Wallet") {
         S.tempUpiMode = false;
         S.paymentChoice = "Wallet";
+        S.walletCredit = 0;
       } else if (mode === "OnAccount") {
         S.tempUpiMode = false;
         S.paymentChoice = "OnAccount";
+        S.walletCredit = 0;
       }
       buildBillScreen();
     }
@@ -5450,15 +6341,12 @@
       sBtnLoading(btn, true, "Submitting");
 
       try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
+        const res = await apiPost({
             _action: "submitWalletRecharge",
             phone: S.phone,
             name: S.profile?.name || "Customer",
             amount: amt
-          })
-        });
+          });
         const data = await res.json();
         sBtnLoading(btn, false);
         if (!data.success) throw new Error(data.error || "Failed");
@@ -5527,27 +6415,79 @@
       } else {
         deepLinkBtn.href = deepUpiStr;
         deepLinkBtn.onclick = null;
-        deepLinkBtn.innerHTML = `👆 Pay ₹${amount} via UPI App<br><span style="font-size: 0.72rem; opacity: 0.9; font-weight: 400;">(Based on User's feedback, Recommended: HDFC Bank App or CRED UPI)</span>`;
+        deepLinkBtn.innerHTML = `👆 Pay ₹${amount} via UPI App`;
       }
     }
 
+
+    // ── SPLIT UPI SETUP ──────────────────────────────────────────
+    function setupSplitUPI(amount) {
+      const hdfcVpa     = "svaadhkitchen.36727659@hdfcbank";
+      const merchantVpa = "svaadhkitchen.36727659@hdfcbank";
+      const payeeName   = "Svaadh Kitchen";
+      const mccCode     = "5812";
+      const note        = `Svaadh ${S.phone.slice(-4)}`;
+      const txRef       = `SK${Date.now()}${Math.floor(Math.random()*1000)}`;
+      const qrUpiStr    = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+      const deepUpiStr  = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
+
+      ["splitUpiQrAmt","splitUpiAmtDisplay","splitUpiDeepLinkAmt"].forEach(id => {
+        if ($(id)) $(id).textContent = amount;
+      });
+
+      const qrEl = $("splitQrcode");
+      if (qrEl) {
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, { text: qrUpiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
+        qrEl.style.cursor = "default";
+        qrEl.onclick = null;
+      }
+
+      const btn = $("splitUpiDeepLink");
+      if (btn) {
+        if (isIOS()) {
+          btn.removeAttribute("href");
+          btn.textContent = t('upi_copy_label');
+          btn.onclick = (e) => {
+            e.preventDefault();
+            navigator.clipboard?.writeText(hdfcVpa)
+              .then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
+              .catch(() => {
+                const el = document.createElement("input"); el.value = hdfcVpa;
+                document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
+                toast(t('upi_copied_toast', { amt: amount }), 3500);
+              });
+          };
+        } else {
+          btn.href = deepUpiStr;
+          btn.onclick = null;
+          btn.innerHTML = `👆 Pay ₹${amount} via UPI App`;
+        }
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════
     // PLACE ORDER
     // ═══════════════════════════════════════════════════════════
     async function placeOrder(settleAll = false) {
       if (S.isPlacingOrder) return;
-      const isWalletOrder = S.paymentChoice === "Wallet";
+      const isWalletOrder    = S.paymentChoice === "Wallet";
       const isOnAccountOrder = S.paymentChoice === "OnAccount";
-      
+      const isSplitOrder     = S.paymentChoice === "Split";
+      const isFreeOrder      = S.paymentChoice === "Free";
+
       let confirmEl;
       if (isWalletOrder) confirmEl = $("walletConfirmCheck");
       else if (isOnAccountOrder) confirmEl = $("onAccountConfirmCheck");
+      else if (isSplitOrder) confirmEl = $("splitConfirmCheck");
+      else if (isFreeOrder) confirmEl = $("freeOrderConfirmCheck");
       else confirmEl = $("paidConfirm");
 
       if (confirmEl && !confirmEl.checked) {
         if (isWalletOrder) toast("Please confirm wallet deduction");
         else if (isOnAccountOrder) toast("Please confirm 'On Account' placement");
+        else if (isSplitOrder) toast("Please confirm wallet + UPI split payment");
+        else if (isFreeOrder) toast("Please confirm to place this free order");
         else toast(t('toast_confirm_payment'));
         return;
       }
@@ -5617,21 +6557,30 @@
           payment_preference: S.profile.payment_preference, isFirstTime: S.isFirstTime
         },
         orders,
-        payment_method: (isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) ? "On Account" : (isWalletOrder ? "Wallet" : "UPI"),
-        payment_status: ((isOnAccountOrder && !($("onAccountConfirmCheck")?.checked)) || isWalletOrder) ? "Paid" : "Pending",
+        payment_method: isFreeOrder ? "Wallet"
+                       : isOnAccountOrder ? "On Account"
+                       : isSplitOrder ? "Split"
+                       : (isWalletOrder ? "Wallet" : "UPI"),
+        payment_status: (isFreeOrder || isWalletOrder || isOnAccountOrder) ? "Paid" : "Pending",
+        wallet_credit: isSplitOrder ? Math.min(Number(S.walletBalance) || 0, Number(S.grandTotal) || 0) : 0,
+        wallet_bonus:  isFreeOrder ? (Number(S.walletBonus) || 0) : 0,
         settle_all: settleAll
       };
-      const _pCtrl = new AbortController(); const _pTid = setTimeout(() => _pCtrl.abort(), 15000);
       try {
-        const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload), signal: _pCtrl.signal });
-        clearTimeout(_pTid);
+        const res = await apiPost(payload);
         const data = await res.json();
         sBtnLoading($("btnNext"), false);
         S.isPlacingOrder = false;
         $("btnNext").style.pointerEvents = "auto";
         if (data.success) {
           S.isPlaced = true;
-          if (payload.payment_status === "Pending") {
+          if (isFreeOrder) {
+            const bonus = data.wallet_bonus || payload.wallet_bonus || 0;
+            await sAlert(`🎉 Your order is placed — completely free thanks to your 6-day loyalty streak!\n\n💳 ₹${bonus} has been credited to your Svaadh Wallet.`, "Free Order Placed!", "🏆");
+          } else if (payload.payment_method === "Split") {
+            const upiDue = payload.wallet_credit ? (S.grandTotal - payload.wallet_credit) : S.grandTotal;
+            await sAlert(`✅ ₹${payload.wallet_credit} deducted from Wallet.\n\n📲 Please complete the remaining ₹${upiDue} via UPI. Admin will verify and confirm your order.`, "Order Placed — UPI Due", "🔀");
+          } else if (payload.payment_status === "Pending") {
             await sAlert(t('toast_payment_submitted'), "Order Placed", "💸");
           } else {
             await sAlert("Your order has been placed successfully!", "Order Success", "✅");
@@ -5644,7 +6593,16 @@
         sBtnLoading($("btnNext"), false);
         S.isPlacingOrder = false;
         $("btnNext").style.pointerEvents = "auto";
-        if (err.name === "AbortError") { toast(t('toast_server_timeout'), 6000); }
+        if (err.name === "AbortError") {
+          await sAlert(
+            `The server took too long to respond — this can happen occasionally.\n\n` +
+            `<b>Before placing the order again:</b>\n` +
+            `👉 Go to <b>Manage Orders</b> and check if your order already appears there.\n\n` +
+            `✅ <b>Order visible?</b> You're all set — do NOT place it again.\n` +
+            `❌ <b>Order not visible?</b> Go ahead and place it again.`,
+            "Request Timed Out", "⏱️"
+          );
+        }
         else { await sAlert("Error: " + err.message, "Placement Failed", "❌"); }
       }
     }
@@ -5657,6 +6615,8 @@
       $("paymentCard").style.display = "none";
       $("walletConfirmCard").style.display = "none";
       if ($("hdfcGatewayCard")) $("hdfcGatewayCard").style.display = "none";
+      $("splitPayCard").style.display = "none";
+      $("freeOrderCard").style.display = "none";
 
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id.toUpperCase();
@@ -5668,8 +6628,10 @@
         const deduction = Number(S.grandTotal) || 0;
         S.walletBalance = Math.max(0, S.walletBalance - deduction);
         updateWalletBalanceUI(S.walletBalance);
-
-        // Still refresh from server after a short delay to ensure perfect sync
+      } else if (S.paymentChoice === "Split") {
+        const deduction = Number(S.walletCredit) || 0;
+        S.walletBalance = Math.max(0, S.walletBalance - deduction);
+        updateWalletBalanceUI(S.walletBalance);
         setTimeout(refreshWalletBalance, 1500);
       } else {
         // Even for UPI, refresh balance just in case
@@ -5744,6 +6706,351 @@
     function hideManageOrders() {
       $("manageOrdersPanel").style.display = "none";
       syncWalletValue(); // Refresh main chip balance when closing manage orders
+    }
+
+    function showPricingInfo() {
+      $("pricingInfoPanel").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function hidePricingInfo() {
+      $("pricingInfoPanel").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    // ── GUIDE HUB ────────────────────────────────────────────
+    function showGuideHub() {
+      $("guideHubPanel").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function hideGuideHub() {
+      $("guideHubPanel").style.display = "none";
+      document.body.style.overflow = "";
+    }
+    function showGuideDetail() {
+      $("guideDetailPanel").style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function hideGuideDetail() {
+      $("guideDetailPanel").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    const GUIDES = {
+      wallet: {
+        title: "👛 How Wallet Works",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Svaadh Wallet is the fastest way to order — load once, order with one tap.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💰 What is Svaadh Wallet?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              A prepaid credit system linked to your phone number. You load money in advance and each order is automatically deducted — no UPI scan needed every time.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📲 How to Load Wallet</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              1. On the order page, tap the <b>wallet balance chip</b> (top right, Step 2 onwards)<br>
+              2. Enter the amount (minimum <b>₹100</b>)<br>
+              3. Pay via UPI to our ID: <b>svaadhkitchen.36727659@hdfcbank</b><br>
+              4. Submit the recharge request — our team verifies and credits within a few hours<br><br>
+              <span style="background:#e8f8f0;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#1e8449;">
+                ✅ You'll see the balance update once it's verified. You can still place orders while waiting — just pay via UPI for that order.
+              </span>
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⚡ How Orders Are Deducted</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              When you reach the payment step, if your wallet has enough balance, it's automatically selected.<br>
+              Check the confirm box → Place Order → done. No QR, no UPI app needed.<br><br>
+              Your balance is always shown at the top right of the order form from Step 2 onwards.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🔄 Refunds to Wallet</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              If you cancel an order that was paid via Wallet, the amount is automatically credited back to your Svaadh Wallet balance — usually instantly.<br><br>
+              If you prefer a UPI refund instead, contact us on WhatsApp.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:14px 16px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Tip:</b> Keeping ₹200–₹300 loaded means you can order for the whole week without thinking about payments.
+            </div>
+          </div>`
+      },
+
+      firsttime: {
+        title: "🆕 First Time Order Guide",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Your first order in under 2 minutes — here's exactly what to do.</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${[
+              ["1","Enter Your Phone Number","Your 10-digit mobile number is your identity — no username or password needed. If you're new, you'll be asked to set a 4-digit PIN to protect your account."],
+              ["2","Add Your Delivery Address","Enter your Wing, Flat number, Society, and Area. You can set different addresses for Breakfast, Lunch, and Dinner if needed — or use the same address for all."],
+              ["3","Pick Your Dates","Tap on one or more dates on the calendar. You can order for today, tomorrow, or the whole week in one go. Dates with orders already placed are highlighted."],
+              ["4","Build Your Meal","For each date, choose your meals — Breakfast, Lunch, and/or Dinner. Pick exactly what you want à la carte: Chapati, Sabji, Dal, Rice, etc. Today's sabji is shown live."],
+              ["5","Review Your Bill","See your full itemised bill with all charges and discounts applied automatically. Check the total before paying."],
+              ["6","Pay & Confirm","Pay via UPI QR shown on screen, or use your Svaadh Wallet balance for 1-tap checkout. Once confirmed, your order is placed!"]
+            ].map(([n,title,desc]) => `
+              <div style="display:flex;gap:12px;align-items:flex-start;background:#f8f9fa;border-radius:12px;padding:12px 14px;">
+                <div style="min-width:28px;height:28px;border-radius:50%;background:#c0392b;color:#fff;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${n}</div>
+                <div><div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:3px;">${title}</div><div style="font-size:0.76rem;color:#555;line-height:1.6;">${desc}</div></div>
+              </div>`).join("")}
+          </div>
+
+          <div style="background:#e8f4fd;border:1px solid #90caf9;border-radius:12px;padding:12px 14px;margin-top:14px;">
+            <div style="font-size:0.78rem;color:#0d47a1;line-height:1.7;">
+              📌 <b>Cutoff times to remember:</b><br>
+              Breakfast — before <b>7:00 AM</b><br>
+              Lunch — before <b>9:00 AM</b><br>
+              Dinner — before <b>4:30 PM</b><br>
+              Kitchen is <b>closed on Sundays</b>.
+            </div>
+          </div>`
+      },
+
+      cancellation: {
+        title: "❌ Cancellation & Changes",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Need to cancel or change something? Here's how.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏰ Cancellation Cutoff Times</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              You can cancel for <b>free</b> before these times:<br>
+              <b>Breakfast</b> → before 7:00 AM<br>
+              <b>Lunch</b> → before 9:00 AM<br>
+              <b>Dinner</b> → before 4:30 PM<br><br>
+              After the cutoff, the order is being prepared and <b>cannot be cancelled</b>.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🗑️ How to Cancel an Order</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              1. Tap <b>Manage Orders</b> button on the order page<br>
+              2. Find the upcoming order you want to cancel<br>
+              3. Tap the <b>Delete</b> button on that order<br>
+              4. Confirm the cancellation<br><br>
+              <span style="background:#fdecea;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#c0392b;">
+                ⚠️ Direct editing is not possible. To change items — delete the order and place a new one before the cutoff.
+              </span>
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💸 Refund After Cancellation</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Wallet payments:</b> Credited back to your Svaadh Wallet instantly.<br>
+              <b>UPI payments:</b> A refund request is raised. Our team processes it within 1–2 working days. You'll receive it back to your original UPI account.<br><br>
+              If you don't hear back in 2 days, WhatsApp us at <b>+91 93222 46765</b>.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Pro tip:</b> If your order shows on the order page but you're unsure it went through, always check <b>Manage Orders</b> first before placing again.
+            </div>
+          </div>`
+      },
+
+      delivery: {
+        title: "🚴 Delivery Areas & Timing",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">We deliver to 15 areas in Hadapsar. Here's everything you need to know.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🆓 Always Free Delivery</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Bhosale Nagar</b> · <b>Triveni Nagar</b> · <b>Self Pickup</b><br>
+              These areas never have a delivery charge regardless of order amount.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📍 All Delivery Areas</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              Magarpatta · Amanora · DP Road · Malwadi · SadeSatraNali · Kirtane Baug · Tupe Patil Road · BG Shirke Road · Vaiduwadi (till Yash Honda) · Pune-Solapur Road (till Gadital) · Vihar Chowk · Mandai · Gadital<br><br>
+              <b>₹10 delivery charge</b> per meal applies for these areas if your day's food total is below the free threshold (₹100 for 1 meal, ₹150 for 2+ meals).
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏰ Delivery Timings</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.8;">
+              <b>Breakfast:</b> ~8:30 AM – 9:45 AM<br>
+              <b>Lunch:</b> ~10:30 AM – 1:30 PM<br>
+              <b>Dinner:</b> ~6:00 PM – 9:00 PM<br><br>
+              Exact timing may vary slightly by area. Once your order is dispatched, you'll see <b>Out for Delivery</b> in Manage Orders.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📦 Self Pickup</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Pickup from: <b>A 104, Shree Laxmi Vihar Society, Bhosale Nagar, Hadapsar</b><br>
+              Select "Self Pickup" as your area when ordering — no delivery charge applies.<br>
+              Collect at the same delivery timings as above.
+            </div>
+          </div>
+
+          <div style="background:#fdecea;border:1px solid #f5c6c0;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#c0392b;line-height:1.7;">
+              ❌ We do <b>not</b> deliver outside the listed Hadapsar areas (e.g., Kothrud, Baner, Viman Nagar, Koregaon Park, etc.)
+            </div>
+          </div>`
+      },
+
+      menu: {
+        title: "🍱 Understanding the Menu",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">No fixed thali here — you build your own meal every day.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🎯 Make Your Own Meal</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Pick exactly what you want, in the quantities you want. No bundle, no thali, no wastage.<br><br>
+              <b>Breads:</b> Chapati ₹9 · Without Oil Chapati ₹9 · Phulka ₹9 · Ghee Phulka ₹10 · Jowar Bhakri ₹20 · Bajra Bhakri ₹20<br>
+              <b>Sabji:</b> Dry Mini ₹22 · Dry Full ₹45 · Curry Mini ₹22 · Curry Full ₹45<br>
+              <b>Basics:</b> Dal ₹22 · Rice ₹12 · Salad ₹6 · Curd ₹12
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #f39c12;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🥘 Daily Sabji (Changes Every Day)</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              The dry sabji and curry sabji change daily based on what's fresh and in season.<br>
+              Today's sabji is <b>shown live</b> on the order form when you pick Lunch or Dinner.<br>
+              You can also check the <b>This Week's Menu</b> button on the homepage for upcoming sabjis.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🌅 Breakfast (Rotating Daily)</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Breakfast items rotate daily — ₹35 to ₹70 per serving.<br>
+              Includes: Kanda Poha, Ghee Upma, Sabudana Khichdi, Sheera, Dadpe Pohe, Methi Thepla, Thalipeeth, Idli Chutney, Masala Dosa, and more.<br>
+              Made with <b>Pure Ghee</b>. <b>Curd (50g ₹12)</b> available as an add-on.<br>
+              Check the order form for today's breakfast options.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🙏 Special Dietary Needs</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              <b>Oil-free:</b> Without Oil Chapati available.<br>
+              <b>Millet options:</b> Jowar Bhakri and Bajra Bhakri available daily.<br><br>
+              We use <b>Pure Ghee</b> and <b>Groundnut refined oil</b>. 100% Pure Vegetarian kitchen.
+            </div>
+          </div>
+
+          `
+      },
+
+      tracking: {
+        title: "📍 Tracking & Managing Orders",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Stay on top of your orders — from placement to delivery.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📋 Opening Manage Orders</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Tap <b>Manage Orders</b> (top right of the order page after login).<br>
+              You'll see all your upcoming orders for the next few days, and recent past orders below.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">🚗 Delivery Status</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Each order row shows a status badge:<br><br>
+              <b>🕐 Upcoming</b> — order is placed and scheduled<br>
+              <b>🚗 Out for Delivery</b> — driver has picked up and is on the way<br>
+              <b>✅ Delivered</b> — marked as delivered by driver<br><br>
+              You don't need to refresh — just reopen Manage Orders to see the latest status.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💳 Wallet Balance</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Your Svaadh Wallet balance is shown at the top of the Manage Orders panel.<br>
+              You can also submit a wallet recharge request from there.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e74c3c;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⏱️ Server Timeout During Ordering?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              If you see a "Request Timed Out" message, <b>do not place the order again immediately</b>.<br>
+              First open <b>Manage Orders</b> and check if your order appears there.<br>
+              ✅ Order visible → you're all set, don't resubmit.<br>
+              ❌ Order not visible → safe to place again.
+            </div>
+          </div>`
+      },
+
+      multiday: {
+        title: "📅 Ordering for Multiple Days",
+        html: `
+          <p style="font-size:0.72rem;color:#888;margin-bottom:18px;">Plan your whole week in one go — saves time every morning.</p>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #3498db;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📆 Selecting Multiple Dates</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              On the calendar (Step 3), tap multiple dates — they'll all be highlighted.<br>
+              You then set the meals for <b>each date separately</b>. Navigate between dates using the date tabs at the top of the meal selection screen.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
+            <div style="font-size:0.82rem;font-weight:700;color:#f39c12;margin-bottom:8px;">📋 Copy Meal Feature</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Built a meal you like? Use the <b>Copy</b> button to copy that meal's items to one or more other selected dates.<br>
+              Great for ordering the same lunch all week — set it once, copy to the rest.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #9b59b6;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💰 Discounts Across Multiple Days</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              Discounts are calculated <b>per day</b>, not per order. Each day's food total is assessed independently.<br>
+              If one day's total reaches ₹300 → 5% off that day. Another day at ₹250 → no discount that day.<br><br>
+              The 6th-day loyalty reward also tracks across multi-day orders.
+            </div>
+          </div>
+
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #e67e22;">
+            <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">📅 How Far in Advance Can I Order?</div>
+            <div style="font-size:0.78rem;color:#444;line-height:1.7;">
+              You can order up to <b>6 days ahead</b> (Mon–Sat of the current week shown on the calendar).<br>
+              Sundays are not available — kitchen is closed.<br>
+              Dates that have already passed their cutoff time are automatically disabled.
+            </div>
+          </div>
+
+          <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:12px 14px;">
+            <div style="font-size:0.78rem;color:#5d4037;line-height:1.7;">
+              💡 <b>Tip:</b> Order for the full week on Sunday night / Monday morning — you won't have to think about it again, and you'll likely hit the ₹300+ discount threshold on most days!
+            </div>
+          </div>`
+      }
+    };
+
+    function showGuide(key) {
+      const g = GUIDES[key];
+      if (!g) return;
+      $("guideDetailContent").innerHTML = `
+        <h3 style="font-size:1rem;font-weight:700;color:#2d2d2d;margin-bottom:4px;">${g.title}</h3>
+        ${g.html}`;
+      showGuideDetail();
     }
 
     function showReviewPromoBanner() {
@@ -5829,7 +7136,7 @@
       upcomingWrap.innerHTML = showReviewPromoBanner() + `<div class="loader"><div class="spinner"></div></div>`;
       pastWrap.innerHTML = "";
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
         const data = await res.json();
         
         S.existingOrders = data.orders || [];
@@ -5950,10 +7257,12 @@
               const rowTotal = (Number(o.total) || 0);
               if (["paid", "wallet paid"].includes(stat)) totalAmountPaid += rowTotal;
               if (meth.includes("wallet") || stat.includes("wallet")) isWallet = true;
-              orderDataCache[rid] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: stat, potential_total: rowTotal };
+              const isSplitRow = meth === "split";
+              orderDataCache[rid] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, is_split: isSplitRow, status: stat, potential_total: rowTotal };
             }
           });
-          orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, status: fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(), potential_total: g.totalSum };
+          const firstMeth = String(fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_method || "").toLowerCase();
+          orderDataCache[g.rowId] = { all_row_ids: g.rowIds, original_total_paid: totalAmountPaid, is_wallet: isWallet, is_split: firstMeth === "split", status: fullUpcomingRaw.find(x => String(x.rowId) === String(g.rowId))?.payment_status?.toLowerCase(), potential_total: g.totalSum };
         });
 
         // ── RENDER UPCOMING ──
@@ -5976,12 +7285,18 @@
             let trackHtml = o.deliveredAt ? `<div style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">✅ Delivered</div>` :
               (o.enRouteAt ? `<div style="display:inline-block;background:#fff8e1;color:#f57f17;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:600;">🚗 In Area</div>` : "");
             const payMeth = String(firstRow?.payment_method || "").toLowerCase();
-            const isWalletPay = payMeth.includes("wallet") || stat.toLowerCase().includes("wallet");
+            const isWalletPay = payMeth === "wallet" || stat.toLowerCase().includes("wallet");
             const isOnAccount = payMeth.includes("account") || stat.toLowerCase() === "on account";
-            
+            const isSplit     = payMeth === "split";
+            const walletCredit = Number(firstRow?.wallet_credit) || 0;
+
             let payChip = "";
             if (isOnAccount) {
               payChip = `<div style="display:inline-block;background:#eef2f7;color:#2c3e50;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1d9e6;margin-top:5px;vertical-align:middle;">💳 On Account</div>`;
+            } else if (isSplit && walletCredit > 0) {
+              const upiDue = Math.max(0, (Number(firstRow?.total) || 0) - walletCredit);
+              const splitStat = stat.toLowerCase() === "paid" ? "✅ Paid" : "⏳ UPI Pending";
+              payChip = `<div style="display:inline-block;background:#f5f0ff;color:#5b21b6;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #c4b5fd;margin-top:5px;vertical-align:middle;">🔀 ₹${walletCredit} Wallet + ₹${upiDue} UPI · ${splitStat}</div>`;
             } else if (isWalletPay) {
               payChip = `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>`;
             } else {
@@ -6078,6 +7393,7 @@
       const totalPaid = Number(cached.original_total_paid) || 0;
       const potentialAmt = Number(cached.potential_total) || 0;
       const isWalletPaid = !!cached.is_wallet;
+      const isSplitPay   = !!cached.is_split;
       const isPending = String(cached.status || "").toLowerCase().trim() === "pending";
       const count = allIds.length;
 
@@ -6089,7 +7405,18 @@
       if (!confirmed) return;
 
       let refundType = "none";
-      if (totalPaid > 0) {
+      if (isSplitPay) {
+        // Split: full refund always goes to Wallet — no choice shown
+        if (isPending) {
+          await sAlert(
+            `Your Wallet portion will be refunded instantly.<br><br>The UPI portion will be added to your Wallet once Admin verifies the payment.`,
+            "Refund to Wallet", "💳"
+          );
+        } else {
+          await sAlert(`Full amount will be refunded to your Svaadh Wallet.`, "Refund to Wallet", "💳");
+        }
+        refundType = "wallet";
+      } else if (totalPaid > 0) {
         if (isWalletPaid) {
           await sAlert(`₹${totalPaid} will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💳");
           refundType = "wallet";
@@ -6162,7 +7489,7 @@
     // ═══════════════════════════════════════════════════════════
     async function loadAreas() {
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getAreas`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getAreas`);
         const areas = await res.json();
         if (!Array.isArray(areas) || areas.length === 0) return;
         const apiFree = areas.filter(a => a.free).map(a => a.name);
@@ -6194,7 +7521,7 @@
       if (!wmLoaded) {
         $("wmBody").innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="border-top-color:#e74c3c;margin:0 auto;"></div><p style="font-size:0.75rem;color:var(--muted);margin-top:12px;">Fetching the freshest menus…</p></div>`;
         try {
-          const res = await fetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
+          const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWeeklyMenu`);
           const data = await res.json();
           if (data.success && data.days) {
             wmDays = data.days;
@@ -6217,10 +7544,13 @@
     }
 
     function renderWeeklyTabs() {
+      const todayISO = new Date().toLocaleDateString("en-CA"); // yyyy-MM-dd in local time
       $("wmTabs").innerHTML = wmDays.map((d, i) => {
         let classes = "wm-tab";
-        if (i === 0) classes += " today";
-        let txt = i === 0 ? "Today" : (i === 1 ? "Tomorrow" : d.displayDate);
+        const isToday    = d.date === todayISO;
+        const isTomorrow = (() => { const t = new Date(); t.setDate(t.getDate()+1); return d.date === t.toLocaleDateString("en-CA"); })();
+        if (isToday) classes += " today";
+        const txt = isToday ? "Today" : (isTomorrow ? "Tomorrow" : d.displayDate);
         return `<button class="${classes}" id="wmTab_${i}" onclick="renderWeeklyDay(${i})">${txt}</button>`;
       }).join("");
     }
@@ -6266,8 +7596,9 @@
         if (d.dinner_curry) dnContent += `<div style="margin-top:6px;"><div class="wm-sabji-name">${d.dinner_curry} <span class="wm-sabji-type">(Curry)</span></div></div>`;
       }
 
+      const _todayISO2 = new Date().toLocaleDateString("en-CA");
       $("wmBody").innerHTML = `
-    <div class="wm-day-title">${idx === 0 ? "Today's Menu (" + d.dayName + ")" : d.dayName + ", " + d.displayDate}</div>
+    <div class="wm-day-title">${d.date === _todayISO2 ? "Today's Menu (" + d.dayName + ")" : d.dayName + ", " + d.displayDate}</div>
     
     <div class="wm-meal-card">
       <div class="wm-meal-label bf">☀️ Breakfast Menu</div>
@@ -6562,13 +7893,48 @@
       })();
 
       if ($("verLabel")) $("verLabel").textContent = APP_VERSION;
-      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Wallet & PWA Fixes`);
+      console.log(`Svaadh Kitchen ${APP_VERSION} Loaded - Grace period cutoff timer + carry-back loyalty`);
       applyThemeIcon();
       hdfc_init();   // Check gateway config + handle any HDFC return URL params
+
+      // Show refresh nudge once per browser session
+      if (!sessionStorage.getItem("sk_nudge_shown")) {
+        setTimeout(() => {
+          const nudge = $("refreshNudge");
+          if (nudge) {
+            nudge.style.display = "block";
+            sessionStorage.setItem("sk_nudge_shown", "1");
+            setTimeout(dismissRefreshNudge, 8000); // auto-dismiss after 8s
+          }
+        }, 1500);
+      }
+
+
       loadAreas();
       updateNav();
       initCalendar();
       buildFAQ();
+      // Pre-fetch today's menu so cutoff_overrides are available before calendar renders
+      // This re-renders the calendar once real cutoff data arrives from the server
+      (async () => {
+        try {
+          const todayStr = (() => { const t = getIST(); return `${t.getUTCFullYear()}-${String(t.getUTCMonth()+1).padStart(2,'0')}-${String(t.getUTCDate()).padStart(2,'0')}`; })();
+          const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${todayStr}`, {}, { silent: true });
+          const data = await res.json();
+          if (data && !data.error) {
+            S.menuCache[todayStr] = data;
+            // Always re-render — if user is already on the calendar step, this
+            // immediately corrects any date that was wrongly disabled by defaults
+            renderCalendar();
+            // If user is already past the calendar step, re-init grace deadlines
+            // so they use the real admin cutoff rather than the default
+            if (S.step === 3 && S.graceDeadlines) {
+              S.graceDeadlines = {}; // force re-compute with real cutoff data
+              initGraceDeadlines();
+            }
+          }
+        } catch(e) { /* silently ignore — calendar stays with defaults */ }
+      })();
       $("phoneInput").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
       $("phoneInput").addEventListener("keydown", e => { if (e.key === "Enter") goNext(); });
       // Close how modal on backdrop click

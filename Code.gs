@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.1; // Prepaid Standard (Legacy Removal)
+const CODE_VERSION   = 14.2; // Standardized Menu Names
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -130,7 +130,7 @@ const ORDERS_HEADERS = [
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point",
-  "Inflation_Surcharge", "Loyalty_Discount"
+  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit"
 ];
 
 const ITEM_COL_MAP = {
@@ -141,6 +141,16 @@ const ITEM_COL_MAP = {
   "Ghee Phulka": "Ghee_Phulka",
   "Jowar Bhakri": "Jowar_Bhakri",
   "Bajra Bhakri": "Bajra_Bhakri",
+  "Dry Sabji Mini (100ml)": "Dry_Sabji_Mini",
+  "Dry Sabji Full (250ml)": "Dry_Sabji_Full",
+  "Curry Sabji Mini (100ml)": "Curry_Sabji_Mini",
+  "Curry Sabji Full (250ml)": "Curry_Sabji_Full",
+  "Dal (200ml)": "Dal",
+  "Rice (100g)": "Rice",
+  "Salad (40g)": "Salad",
+  "Curd (50g)": "Curd",
+
+  // Legacy/Simple variants (for backward compatibility)
   "Dry Sabji Mini": "Dry_Sabji_Mini",
   "Dry Sabji Full": "Dry_Sabji_Full",
   "Curry Sabji Mini": "Curry_Sabji_Mini",
@@ -186,7 +196,7 @@ const BUSINESS_CONTEXT = {
     "Malwadi", "SadeSatraNali", "Kirtane Baug", "Tupe Patil Road", "BG Shirke Road", 
     "Vaiduwadi (Till Yash Honda Only)", "Pune-Solapur Road (Till Gadital Only)", "Vihar Chowk", "Mandai (Hadapsar Mandai)", "Gadital"
   ],
-  order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:30 AM", dinner: "before 5:00 PM", closed_on: "Sunday" },
+  order_cutoffs: { breakfast: "before 7:00 AM", lunch: "before 9:00 AM", dinner: "before 4:30 PM", closed_on: "Sunday" },
   delivery: {
     free_areas: ["Bhosale Nagar", "Triveni Nagar", "Self Pickup"],
     charge: "₹10 per meal for other listed areas if subtotal is below ₹100. Free for Bhosale Nagar, Triveni Nagar and Self Pickup always.",
@@ -214,8 +224,8 @@ const BUSINESS_CONTEXT = {
       {name:"Salad (40g)", price:6},
       {name:"Curd (50g)", price:12}
     ],
-    breakfast: "Rotating daily (₹35–₹70). Items include Kanda Poha ₹35, Ghee Upma ₹40, Sabudana Khichdi ₹40, Tikhi Pudi ₹45, Idli Chutney ₹45, Masala Dosa ₹45, Aloo Paratha ₹50, Veg Sandwich ₹50, Thalipeeth ₹50, Ghee Sheera ₹50, Paneer Paratha ₹70. Curd available extra ₹12. Check the order form for today's options.",
-    breakfast_note: "Curd (50g ₹12) is available as an add-on for breakfast — not included by default. Pure Ghee is used to make breakfast items."
+    breakfast: "Rotating daily (₹35–₹70). Items include Kanda Poha [175g] ₹35, Ghee Upma [200g] ₹40, Sabudana Khichdi [200g] ₹40, 5 x Tikhi Pudi with 100 ml coriander chutney ₹45, 4 x Idli & 100ml Chutney ₹45, Aloo Paratha ₹50, Thalipeeth ₹50, Ghee Sheera [200g] ₹50, Paneer Paratha ₹70. Curd 50g available extra ₹12. Check the order form for today's options.",
+    breakfast_note: "Curd 50g (₹12) is available as an add-on for breakfast — not included by default. Pure Ghee is used to make breakfast items."
   },
   discounts: {
     tier1: "5% off when the day total is ₹300 or more",
@@ -304,6 +314,7 @@ function doGet(e) {
     }
     if (action === "getPackagingExpenses") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      if (p.from && p.to) return jsonRes(getPackagingExpensesRange(p.from, p.to));
       return jsonRes(getPackagingExpenses(p.date));
     }
     if (action === "getOrderHistory") {
@@ -325,6 +336,26 @@ function doGet(e) {
     if (action === "getAnalytics") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getAnalytics(p));
+    }
+    if (action === "getExpenses") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getExpenses(p));
+    }
+    if (action === "getExpenseAnalytics") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getExpenseAnalytics(p));
+    }
+    if (action === "getCustomExpenseCategories") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes({ success:true, categories: getCustomExpenseCategories() });
+    }
+    if (action === "getInventoryData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getInventoryData(p));
+    }
+    if (action === "adminCreditWallet") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(adminCreditWallet(body));
     }
     if (action === "getChurnReport") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
@@ -351,6 +382,9 @@ function doGet(e) {
       });
     }
     
+    // Keep-alive ping — just wakes GAS, no sheet reads
+    if (action === "ping") return jsonRes({ok: true, t: new Date().toISOString()});
+
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
@@ -536,6 +570,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(rejectUPIPayment(body));
     }
+    if (action === "adminCreditWallet") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(adminCreditWallet(body));
+    }
     if (action === "rejectWalletRecharge") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(rejectWalletRecharge(body));
@@ -543,6 +581,39 @@ function doPost(e) {
     if (action === "batchProcessApprovals") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(batchProcessApprovals(body));
+    }
+    if (action === "saveInventoryEntry") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveInventoryEntry(body));
+    }
+    if (action === "deleteInventoryEntry") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteInventoryEntry(body));
+    }
+    if (action === "saveCustomExpenseCategory") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveCustomExpenseCategory(body));
+    }
+    if (action === "deleteCustomExpenseCategory") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteCustomExpenseCategory(body));
+    }
+    if (action === "saveExpense") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(saveExpense(body));
+    }
+    if (action === "deleteExpense") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(deleteExpense(body));
+    }
+    if (action === "triggerManualArchive") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(triggerManualArchive(body));
+    }
+    if (action === "setupQuarterlyArchiveTrigger") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      try { setupQuarterlyArchiveTrigger(); return jsonRes({success:true}); }
+      catch(e) { return jsonRes({success:false, error:e.message}); }
     }
 
     if (action === "setPin") {
@@ -567,6 +638,9 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(submitManualOrder(body));
     }
+
+    // Client error logging (timeout / network failures reported by frontend)
+    if (action === "logClientError") return jsonRes(logClientError(body));
 
     // ── HDFC PAYMENT GATEWAY ACTIONS ─────────────────────────
     // All gateway actions are gated by PAYMENT_GATEWAY_ENABLED.
@@ -710,6 +784,14 @@ function initSchema() {
  * Normalizes phone numbers for reliable comparison across Google Sheets.
  * Handles scientific notation (e.g., 9.87E+9) and trailing decimals (.0).
  */
+// Returns true if the order should be excluded from kitchen/prep counts.
+// "Cancelled (Verify UPI)" = soft-cancel pending admin verification —
+// the customer already requested cancellation, do NOT include in kitchen prep.
+function _isOrderCancelled(paymentStatus) {
+  const s = String(paymentStatus || "").toLowerCase();
+  return s === "cancelled" || s.startsWith("cancelled");
+}
+
 function _normalizePhone(phone) {
   let p = String(phone || "").trim();
   if (p.includes(".")) p = p.split(".")[0];
@@ -821,7 +903,8 @@ function _calculateWalletBalance(phone) {
     // Also check legacy columns where Txn_Type may have been stored in a "Balance" column
     const rType = String(w.Txn_Type || w.Balance || w.Txn_Type || "").trim().toLowerCase();
 
-    if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")) {
+    if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")
+        || rType.includes("carry forward") || rType.includes("carry-forward")) {
       balance += rAmt;
     } else if (rType.includes("order") || rType.includes("deduct") || rType.includes("payment")) {
       balance -= rAmt;
@@ -846,7 +929,26 @@ function getMenu(dateStr) {
   // Breakfast master items
   const bfWs = getOrCreateTab(ss, TAB_BF_MASTER, []);
   const bfRows = getAllRows(bfWs).filter(x => String(x.Active).toLowerCase() !== "false");
-  const breakfast = bfRows.map(x => ({name: String(x.Name), price: Number(x.Price)}));
+  
+  const NAME_MAP = {
+    "Kanda Poha": "Kanda Poha [175g]",
+    "Ghee Upma": "Ghee Upma [200g]",
+    "Sabudana Khichdi": "Sabudana Khichdi [200g]",
+    "Tikhi Pudi": "5 x Tikhi Pudi with 100 ml coriander chutney",
+    "Tikhi Puri": "5 x Tikhi Pudi with 100 ml coriander chutney",
+    "Idli Chutney": "4 x Idli & 100ml Chutney",
+    "Idli": "4 x Idli & 100ml Chutney",
+    "4 x Idli & 100ml Chutney": "4 x Idli & 100ml Chutney",
+    "Ghee Sheera": "Ghee Sheera [200g]"
+  };
+
+  const breakfast = bfRows.map(x => {
+    const rawName = String(x.Name).trim();
+    return {
+      name: NAME_MAP[rawName] || rawName,
+      price: Number(x.Price)
+    };
+  });
 
   if (!r) return {
     breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
@@ -863,7 +965,15 @@ function getMenu(dateStr) {
   // MERGE LOGIC: Start with master active items, then merge daily overrides
   const masterActive = breakfast;
   let dailyBf = [];
-  try { if (r && r.Breakfast_JSON) dailyBf = JSON.parse(r.Breakfast_JSON); } catch(e) {}
+  if (r && r.Breakfast_JSON) {
+    try { 
+      const parsed = JSON.parse(r.Breakfast_JSON); 
+      dailyBf = parsed.map(d => ({
+        ...d,
+        name: d.name ? (NAME_MAP[d.name.trim()] || d.name) : ""
+      }));
+    } catch(e) {}
+  }
 
   // Prioritize Daily selections (where specific prices or choices were made)
   // but ensure Master Active items are always present.
@@ -912,17 +1022,19 @@ function getWeeklyMenu() {
     menuMap[d] = x;
   });
 
-  // Generate standard Mon-Sat week (starting Apr 13)
-  const now = new Date();
-  const dIdx = now.getDay();
-  const diff = now.getDate() - dIdx + (dIdx === 0 ? -6 : 1);
-  const startMonday = new Date(now.setDate(diff));
+  // Show all dates from today onwards that have a menu row set
+  const today = getISTDate();
+  const todayStr = Utilities.formatDate(today, "Asia/Kolkata", "yyyy-MM-dd");
+
+  // Collect all future/today dates that have a menu row, sorted ascending
+  const futureDates = Object.keys(menuMap)
+    .filter(d => d >= todayStr)
+    .sort();
+
   const days = [];
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(startMonday);
-    d.setDate(d.getDate() + i);
-    const dateStr = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
-    const dayName = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
+  futureDates.forEach(dateStr => {
+    const d = new Date(dateStr + "T00:00:00+05:30");
+    const dayName    = Utilities.formatDate(d, "Asia/Kolkata", "EEEE");
     const displayDate = Utilities.formatDate(d, "Asia/Kolkata", "dd MMM");
 
     const r = menuMap[dateStr];
@@ -934,7 +1046,7 @@ function getWeeklyMenu() {
     // Merge Master + Daily
     const finalBf = [...bfDaily];
     defaultBreakfast.forEach(m => {
-      if (!finalBf.some(d => d.name === m.name)) finalBf.push(m);
+      if (!finalBf.some(x => x.name === m.name)) finalBf.push(m);
     });
 
     days.push({
@@ -942,13 +1054,13 @@ function getWeeklyMenu() {
       dayName: dayName,
       displayDate: displayDate,
       breakfast: finalBf,
-      lunch_dry: r ? (r.Lunch_Dry || "") : "",
-      lunch_curry: r ? (r.Lunch_Curry || "") : "",
-      dinner_dry: r ? (r.Dinner_Dry || "") : "",
+      lunch_dry:    r ? (r.Lunch_Dry    || "") : "",
+      lunch_curry:  r ? (r.Lunch_Curry  || "") : "",
+      dinner_dry:   r ? (r.Dinner_Dry   || "") : "",
       dinner_curry: r ? (r.Dinner_Curry || "") : "",
-      menuSet: !!r
+      menuSet: true  // only dates with a menu row are included
     });
-  }
+  });
 
   return { success: true, days: days };
 }
@@ -991,8 +1103,8 @@ function submitOrder(body) {
   const orders    = body.orders  || [];   // [{date, meals:[{type,items,notes,subtotal,area}]}]
 
   const submittedAt  = getISTTimestamp();
-  const payMethod    = body.payment_method  || "UPI";
-  const payStatus    = body.payment_status  || "Pending";
+  let   payMethod    = body.payment_method  || "UPI";
+  let   payStatus    = body.payment_status  || "Pending";
   const firstTime    = profile.isFirstTime ? "Yes" : "No";
   const payFreq      = profile.payment_preference || "Daily Payment";
 
@@ -1020,6 +1132,15 @@ function submitOrder(body) {
     const rawVal = cRows[cRowIdx].Review_Promo_Count;
     promoCount = (rawVal === "" || rawVal === undefined) ? null : rawVal;
     if (promoCount !== null && !isNaN(promoCount)) promoCount = Number(promoCount);
+
+    // ── On Account override (server-enforced) ──────────────────
+    // If the customer is flagged On_Account in SK_Customers, every order
+    // is automatically set to method "On Account" / status "On Account"
+    // regardless of what the frontend sends.
+    if (String(cRows[cRowIdx].On_Account || "").trim() === "Yes") {
+      payMethod = "On Account";
+      payStatus = "On Account";
+    }
   }
 
   // Pre-fetch masters once for ID -> Name resolution in sheet columns
@@ -1030,10 +1151,21 @@ function submitOrder(body) {
     (masters.sabjiMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
   } catch(e) { console.error("Master fetch failed in submitOrder", e); }
 
+  // Strip weight/measure suffixes like [175g], [200g], [100ml], (2 pieces) etc.
+  // so backend always stores the clean item name regardless of what frontend shows.
+  const stripDisplaySuffix = (name) => {
+    return String(name)
+      .replace(/\s*\[.*?\]\s*/g, '')   // removes [175g], [200ml], [2 pcs] etc.
+      .replace(/\s*\(.*?\)\s*/g, '')   // removes (2 pieces), (100ml) etc.
+      .trim();
+  };
+
   const resolveName = (k) => {
-    if (ITEM_COL_MAP[k]) return ITEM_COL_MAP[k].replace(/_/g, ' ');
-    if (masterMap[k]) return masterMap[k];
-    return k.replace(/_/g, ' ');
+    let name;
+    if (ITEM_COL_MAP[k]) name = ITEM_COL_MAP[k].replace(/_/g, ' ');
+    else if (masterMap[k]) name = masterMap[k];
+    else name = k.replace(/_/g, ' ');
+    return stripDisplaySuffix(name);
   };
 
   // Sort orders by date to ensure virtual streak runs chronologically
@@ -1159,11 +1291,11 @@ function submitOrder(body) {
         });
       }
       const totalDateCredit = dateDeliveryCredit + dateSmallFeeCredit;
-      const mealCredit = submissionDayFoodTotal > 0 ? (totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
-      
+      const mealCredit = submissionDayFoodTotal > 0 ? Math.round(totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
+
       const discAmt = getDisc(sub);
       const inflationSurcharge = Math.ceil(sub / 20);
-      
+
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
       const isNumeric = (typeof promoCount === "number" && !isNaN(promoCount));
@@ -1171,8 +1303,8 @@ function submitOrder(body) {
         reviewDiscount = Math.round(sub * 0.10);
         promoCount--;
       }
-      
-      const netTotal  = sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount;
+
+      const netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
       meal._reviewDiscount = reviewDiscount; // carry for set() below
 
 
@@ -1245,22 +1377,49 @@ function submitOrder(body) {
       set("Net_Total",           netTotal);
       
       let pStat = payStatus;
+      let walletCreditUsed = 0;
       // ════ WALLET DEDUCTION LOGIC ════
       if (payMethod === "Wallet") {
         let currentBalance = _calculateWalletBalance(profile.phone);
-        
+
         if (currentBalance >= netTotal) {
           _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true, sid);
           pStat = "Wallet Paid";
+          walletCreditUsed = netTotal;
         } else {
           pStat = "Pending"; // Wallet failed, fallback to pending
+        }
+      } else if (payMethod === "Split") {
+        // Split: deduct wallet portion now, UPI portion remains pending
+        const requestedCredit = Math.min(Number(body.wallet_credit) || 0, netTotal);
+        if (requestedCredit > 0) {
+          const currentBalance = _calculateWalletBalance(profile.phone);
+          if (currentBalance >= requestedCredit) {
+            _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction (Wallet Part)", requestedCredit, true, sid);
+            walletCreditUsed = requestedCredit;
+            pStat = "Pending"; // UPI portion still outstanding
+          } else {
+            // Not enough wallet — fall back to full UPI
+            payMethod = "UPI";
+            pStat = "Pending";
+          }
         }
       } else if (payMethod === "On Account") {
         pStat = "On Account";
       }
-      
+
+      // Self-heal Wallet_Credit column if it doesn't exist yet (no initSchema needed)
+      if (walletCreditUsed > 0 && !hIdx["Wallet_Credit"]) {
+        const newCol = ordersWs.getLastColumn() + 1;
+        ordersWs.getRange(1, newCol).setValue("Wallet_Credit");
+        SpreadsheetApp.flush();
+        // Refresh hIdx so set() can find it
+        Object.assign(hIdx, headerIndex(ordersWs));
+      }
+
       set("Payment_Method",      payMethod);
       set("Payment_Status",      pStat);
+      if (walletCreditUsed > 0) set("Wallet_Credit", walletCreditUsed);
       set("Payment_Freq",        payFreq);
       set("First_Time",          firstTime);
       set("Source",              "WebApp");
@@ -1335,7 +1494,19 @@ function submitOrder(body) {
     custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(finalValue);
   }
 
-  return {success: true, submissionId: submissionIds[0] || ""};
+  // If loyalty reward exceeded the bill, credit the bonus to wallet
+  const walletBonus = Number(body.wallet_bonus) || 0;
+  if (walletBonus > 0) {
+    try {
+      _appendWalletTransaction(
+        profile.phone || "", profile.name || "Customer",
+        "Loyalty Streak Reward (Excess Credit)",
+        walletBonus, true, submissionIds[0] || ""
+      );
+    } catch(e) { /* non-fatal */ }
+  }
+
+  return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: walletBonus};
 }
 
 
@@ -1572,6 +1743,7 @@ function getCustomerOrders(phone) {
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
+        wallet_credit:      Number(r.Wallet_Credit) || 0,
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
@@ -1592,6 +1764,7 @@ function getCustomerOrders(phone) {
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
+        wallet_credit:      Number(r.Wallet_Credit) || 0,
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
@@ -1628,7 +1801,7 @@ function deleteOrder(phone, rowId, refundType) {
   let msg = "Order deleted successfully";
   const today = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
   const hourIST = now.getHours() + now.getMinutes() / 60;
-  const CUTOFFS = { Breakfast: 7, Lunch: 9.5, Dinner: 17 };
+  const CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
 
   const r = rows.find(x => {
     // Deep Normalization: Keep only digits to handle commas, decimals (123.0), or scientific notation
@@ -1657,9 +1830,11 @@ function deleteOrder(phone, rowId, refundType) {
 
   // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
-  if (pStatStr === "paid" || pStatStr === "wallet paid") {
+  const isOnAccountOrder = pStatStr === "on account";
+  if (pStatStr === "paid" || pStatStr === "wallet paid" || isOnAccountOrder) {
     const custName = r.Customer_Name || "Customer";
     const ordersWs2 = ws; // same sheet
+    const hIdx = headerIndex(ws); // needed for updating remaining rows
     const deleteDate = orderDateStr;
     const deleteMeal = String(r.Meal_Type).trim();
 
@@ -1685,7 +1860,8 @@ function deleteOrder(phone, rowId, refundType) {
     const newRate = discRate(remainingDaySubtotal);
 
     // Calc over-discount on remaining orders: they received discount at oldRate
-    // but now only deserve newRate
+    // but now only deserve newRate. Also update those rows in the sheet so that
+    // a same-day reorder sees the corrected prevDayDiscAmt and gets the right discount.
     let overDiscount = 0;
     if (oldRate > newRate) {
       const overOnRemaining = sameDayRows.reduce((s, x) => {
@@ -1695,6 +1871,25 @@ function deleteOrder(phone, rowId, refundType) {
         return s + (oldD - newD);
       }, 0);
       overDiscount = overOnRemaining;
+
+      // ── Update remaining rows so their stored Discount_Amount and Net_Total
+      //    reflect the new (lower) tier. This ensures any re-order on the same
+      //    day computes prevDayDiscAmt correctly and gives the right discount.
+      if (overDiscount > 0) {
+        const discColIdx  = hIdx["Discount_Amount"];
+        const netColIdx   = hIdx["Net_Total"];
+        sameDayRows.forEach(x => {
+          const xSub      = Number(x.Food_Subtotal)      || 0;
+          const xSurcharge= Number(x.Inflation_Surcharge)|| 0;
+          const xDelivery = Number(x.Delivery_Charge)    || 0;
+          const xSmallFee = Number(x.Small_Order_Fee)    || 0;
+          const xReviewD  = Number(x.Review_Discount)    || 0;
+          const newDiscAmt= Math.round(xSub * newRate);          // 0 when newRate=0
+          const newNetTotal = xSub + xDelivery + xSmallFee + xSurcharge - newDiscAmt - xReviewD;
+          if (discColIdx) ws.getRange(x._row, discColIdx).setValue(newDiscAmt);
+          if (netColIdx)  ws.getRange(x._row, netColIdx) .setValue(newNetTotal);
+        });
+      }
     }
 
     // Delivery & Fee eligibility for remaining same-day orders
@@ -1708,34 +1903,39 @@ function deleteOrder(phone, rowId, refundType) {
     let smallFeeOwed = 0;
 
     if (oldDaySubtotal >= FREE_THR_D && remainingDaySubtotal < FREE_THR_D) {
-      // 1. Delivery Clawback: sum up delivery on all remaining rows that were waived due to the 150 rule
+      // Day total drops below free-delivery threshold → remaining orders now owe fees.
+      // We claw the amounts from THIS refund, AND update those rows in the sheet so that
+      // if they are later cancelled themselves, the clawback doesn't fire a second time.
+      const delivColIdx   = hIdx["Delivery_Charge"];
+      const smallFeeColIdx = hIdx["Small_Order_Fee"];
+      const netColIdx2    = hIdx["Net_Total"];
+
       sameDayRows.forEach(x => {
         const xArea = x.Area || "";
-        const xSub = Number(x.Food_Subtotal) || 0;
-        if (xSub > 0 && isNonFree(xArea)) {
-          // They should have paid delivery. Check if they were charged 0.
-          if ((Number(x.Delivery_Charge) || 0) === 0) {
-             deliveryOwed += 10;
-          }
+        const xSub  = Number(x.Food_Subtotal) || 0;
+        let netDelta = 0;
+
+        // 1. Delivery Clawback: order was in non-free area but charged ₹0 due to threshold
+        if (xSub > 0 && isNonFree(xArea) && (Number(x.Delivery_Charge) || 0) === 0) {
+          deliveryOwed += 10;
+          netDelta += 10;
+          if (delivColIdx) ws.getRange(x._row, delivColIdx).setValue(10);
         }
-        
-        // 2. Small Order Fee Clawback: if Lunch/Dinner row < 50 and was waived
+
+        // 2. Small Order Fee Clawback: Lunch/Dinner sub < ₹50 was waived due to threshold
         const xMeal = String(x.Meal_Type).trim();
-        if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50) {
-          if ((Number(x.Small_Order_Fee) || 0) === 0) {
-            smallFeeOwed += 10;
-          }
+        if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50
+            && (Number(x.Small_Order_Fee) || 0) === 0) {
+          smallFeeOwed += 10;
+          netDelta += 10;
+          if (smallFeeColIdx) ws.getRange(x._row, smallFeeColIdx).setValue(10);
+        }
+
+        // Update Net_Total on remaining row to reflect newly owed fees (prevents double-clawback)
+        if (netDelta > 0 && netColIdx2) {
+          ws.getRange(x._row, netColIdx2).setValue((Number(x.Net_Total) || 0) + netDelta);
         }
       });
-    } else {
-      // Partial drop handling: If they were always below 150, but a specific meal sub dropped below 100/50?
-      // Actually, the user wants the 150 rule to be the primary toggle now.
-      // But we still need to handle the case where day total was < 150, and they delete an order,
-      // and a specific meal total drops.
-      // Wait, the user said "remove the breakfast delivery free if lunch/dinner ordered, instead put this, 
-      // day's total over ₹150 then free delivery across all."
-      
-      // Let's stick to the 150 rule as the only common waiver.
     }
 
     // Loyalty Clawback Logic
@@ -1762,12 +1962,17 @@ function deleteOrder(phone, rowId, refundType) {
       // For simplicity: subtract the reward.
     }
 
-    // Actual refund = what was charged on deleted row minus any amount now owed back
+    // Refund = Net_Total − adjustment
+    // Net_Total already correctly encodes: food + delivery + fees + surcharge − discount − mealCredit − reviewDiscount
+    // mealCredit (retroactive delivery/fee credit for same-day orders) is baked into Net_Total silently;
+    // using Net_Total as base ensures we never over-refund that credit.
+    // The adjustment claws back over-discount on remaining rows, and delivery/fees now owed
+    // by remaining rows (those amounts are deducted from THIS refund instead of charging customer again).
     const adjustment = overDiscount + deliveryOwed + smallFeeOwed + loyaltyClawback;
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
-    // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid, 
+    // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid,
     // force this refund to Wallet too (to keep the day's bookkeeping simple).
     const hasAnyOtherWalletPaid = sameDayRows.some(x => {
       const typeMatch = String(x.Meal_Type).trim() === deleteMeal;
@@ -1777,11 +1982,25 @@ function deleteOrder(phone, rowId, refundType) {
 
     let finalType = refundType;
     let msgSuffix = "";
-    
+
     // Auto-detect wallet refund if current was wallet paid, overriding passed type
     const currentWasWallet = (pStatStr === "wallet paid");
-    if (currentWasWallet) {
+    const currentWasSplit  = (String(r.Payment_Method || "").trim().toLowerCase() === "split");
+    if (isOnAccountOrder) {
+      // On Account: no cash was collected — just delete the row.
+      // Remaining rows already updated above (discount/delivery recalculation).
+      // On-account balance auto-corrects since it's derived from live sheet rows.
+      msg = "Order removed from your On Account balance.";
+      finalType = "__on_account_handled__"; // skip all refund payout logic
+    } else if (currentWasWallet) {
       finalType = "wallet";
+    } else if (currentWasSplit) {
+      // Split orders: entire refund always goes to Wallet — wallet + UPI portions both back to wallet.
+      if (refundAmt > 0) {
+        _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
+      }
+      msg = `₹${refundAmt} refunded to Wallet`;
+      finalType = "__split_handled__"; // skip normal logic below
     } else if (hasAnyOtherWalletPaid && refundType === "manual_upi") {
       finalType = "wallet";
       msgSuffix = " (Consolidated to Wallet since other items in this meal were Wallet Paid)";
@@ -1801,7 +2020,10 @@ function deleteOrder(phone, rowId, refundType) {
       msg = `₹${refundAmt} refund request raised in Approvals`;
     }
   } 
-  // ── SOFT CANCELLATION FOR UPI ── (Turn 47 feature)
+  // ── SOFT CANCELLATION FOR UPI / SPLIT ──────────────────────────────────────
+  // "Pending" means customer has ALREADY paid (UPI screenshot sent) but admin hasn't verified yet.
+  // For Split orders, "Pending" = wallet was deducted AND UPI payment was sent — must soft-cancel just like UPI.
+  // Admin will verify and then "Verify & Refund" triggers the split refund logic in markOrdersStatus.
   if (String(r.Payment_Status || "").toLowerCase().includes("pending") && (refundType === "wallet" || refundType === "manual_upi")) {
     let hIdx = headerIndex(ws);
     
@@ -1818,12 +2040,26 @@ function deleteOrder(phone, rowId, refundType) {
     
     if (statusCol && prefCol) {
       ws.getRange(r._row, statusCol).setValue("Cancelled (Verify UPI)");
-      ws.getRange(r._row, prefCol).setValue(refundType);
-      console.info(`SUCCESS: Soft-cancelled row ${r._row} with preference ${refundType}`);
-      return {
-        success: true, 
-        message: "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅"
-      };
+      // Split orders: refund preference is always wallet (full amount back to wallet)
+      const isSoftSplit = String(r.Payment_Method || "").trim().toLowerCase() === "split";
+      ws.getRange(r._row, prefCol).setValue(isSoftSplit ? "wallet" : refundType);
+      console.info(`SUCCESS: Soft-cancelled row ${r._row} with preference ${isSoftSplit ? "wallet (split)" : refundType}`);
+
+      // For split orders: wallet portion is already deducted — refund it immediately.
+      // UPI portion will be added to wallet once admin verifies.
+      let softCancelMsg = "Cancellation request received! Admin will verify your payment and process the refund (1-2 days). ✅";
+      if (isSoftSplit) {
+        const walletCredit = Number(r.Wallet_Credit) || 0;
+        const upiDue = Math.max(0, (Number(r.Net_Total) || 0) - walletCredit);
+        if (walletCredit > 0) {
+          _appendWalletTransaction(phone, r.Customer_Name || "Customer", "Order Cancellation Refund (Wallet Part)", walletCredit, true, String(rowId));
+        }
+        softCancelMsg = upiDue > 0
+          ? `₹${walletCredit} has been refunded to your Wallet instantly. ` +
+            `Once Admin verifies your ₹${upiDue} UPI payment, it will also be added to your Wallet (1-2 days). ✅`
+          : `₹${walletCredit} has been refunded to your Wallet. ✅`;
+      }
+      return { success: true, message: softCancelMsg };
     } else {
       console.error(`FAILED: Missing columns for soft-cancel. StatusCol:${statusCol}, PrefCol:${prefCol}`);
     }
@@ -2346,8 +2582,9 @@ function getKitchenSummary(date) {
       if (cFull > 0) summaryParts.push(cFull + " Full Curry");
 
       if (!m.other) m.other = {Dal:{kg:0, count:0}, Rice:{count:0}, Salad:{count:0}, Curd:{count:0}};
-      if (!m.riceMatrix) m.riceMatrix = {};
+      if (!m.riceMatrix)  m.riceMatrix  = {};
       if (!m.saladMatrix) m.saladMatrix = {};
+      if (!m.curdMatrix)  m.curdMatrix  = {};
 
       var dalQ = Number(r.Dal)   || 0;
       var riceQ = Number(r.Rice)  || 0;
@@ -2368,6 +2605,10 @@ function getKitchenSummary(date) {
       if (saladQ > 0) {
         var sPacks = calculatePackets(saladQ, 4); // SALAD_LIMIT = 4
         sPacks.forEach(function(p) { m.saladMatrix[p] = (m.saladMatrix[p] || 0) + 1; });
+      }
+      if (curdQ > 0) {
+        var cPacks = calculatePackets(curdQ, 2); // CURD_LIMIT = 2 (50g cups: 1 or 2 per packet)
+        cPacks.forEach(function(p) { m.curdMatrix[p] = (m.curdMatrix[p] || 0) + 1; });
       }
 
       if (dalQ > 0) summaryParts.push(dalQ + " Dal");
@@ -2417,13 +2658,16 @@ function getDriverOrders(date) {
   var rows = getAllRows(ws);
   var meals = {Breakfast: [], Lunch: [], Dinner: []};
 
-  // Load delivery status from SK_Deliveries tab
+  // Load delivery status from SK_Deliveries tab (both EnRoute_At and Delivered_At)
   var delMap = {};
   var delWs  = ss.getSheetByName("SK_Deliveries");
   if (delWs) {
     getAllRows(delWs).forEach(function(r) {
       var sid = String(r.Submission_ID || "").trim();
-      if (sid) delMap[sid] = String(r.Delivered_At || "");
+      if (sid) delMap[sid] = {
+        deliveredAt: String(r.Delivered_At || ""),
+        enRouteAt:   String(r.EnRoute_At   || "")
+      };
     });
   }
 
@@ -2446,7 +2690,7 @@ function getDriverOrders(date) {
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
     if (d !== date) return;
-    if (String(r.Payment_Status) === "Cancelled") return;
+    if (_isOrderCancelled(r.Payment_Status)) return;
     // var area = String(r.Area || "").trim();
     // if (area.toLowerCase().includes("pickup")) return;
     var area = String(r.Area || "").trim();
@@ -2464,7 +2708,8 @@ function getDriverOrders(date) {
       deliveryPoint: String(r.Delivery_Point || ""),
       maps:          String(r.Maps_Link || ""),
       notes:         String(r.Special_Notes_Delivery || ""),
-      deliveredAt:   delMap[sid] || "",
+      deliveredAt:   (delMap[sid] && delMap[sid].deliveredAt) || "",
+      enRouteAt:     (delMap[sid] && delMap[sid].enRouteAt)   || "",
       amount:        Number(r.Net_Total || r.Food_Subtotal || 0),
       paymentStatus: String(r.Payment_Status || ""),
       mealAddresses: custMap[normP] ? custMap[normP].mealAddresses : ""
@@ -2524,7 +2769,7 @@ function getOrderSummary(date) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
-    return d === date && String(r.Payment_Status) !== "Cancelled";
+    return d === date && !_isOrderCancelled(r.Payment_Status);
   });
 
   var meals = {};
@@ -2698,6 +2943,96 @@ function getPackagingExpenses(date) {
   return {date: date, orderCount: dayRows.length, meals: mealsOut, items: items, total: total};
 }
 
+// ── PACKAGING EXPENSES — RANGE ───────────────────────────────
+function getPackagingExpensesRange(from, to) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  var rows = getAllRows(ws);
+
+  var rangeRows = rows.filter(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    return d >= from && d <= to && !_isOrderCancelled(r.Payment_Status);
+  });
+
+  // Group by date
+  var byDate = {};
+  rangeRows.forEach(function(r) {
+    var d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date).trim();
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  var PKG_COSTS = PKG_UNIT_COSTS;
+  var itemOrder = ["Breakfast Box","Delivery Bag","Label / Sticker","Bread Packet",
+                   "Sabji Container (Mini)","Sabji Container (Full)",
+                   "Dal Container","Rice Container","Salad Container","Curd Container"];
+
+  function calcDay(dateStr, dayRows) {
+    var counts = {}, mealCounts = {Breakfast:0, Lunch:0, Dinner:0};
+    function add(key, qty) { if (qty > 0) counts[key] = (counts[key]||0) + qty; }
+    dayRows.forEach(function(r) {
+      var meal = String(r.Meal_Type || "");
+      if (mealCounts[meal] !== undefined) mealCounts[meal]++;
+      add("Label / Sticker", 1);
+      if (meal === "Breakfast") {
+        add("Breakfast Box", 1);
+        add("Curd Container", Number(r.Curd) || 0);
+      } else {
+        add("Delivery Bag", 1);
+        var breadCols = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri"];
+        if (breadCols.some(function(c){ return (Number(r[c])||0)>0; })) add("Bread Packet", 1);
+        add("Sabji Container (Mini)", (Number(r.Dry_Sabji_Mini)||0)+(Number(r.Curry_Sabji_Mini)||0));
+        add("Sabji Container (Full)", (Number(r.Dry_Sabji_Full)||0)+(Number(r.Curry_Sabji_Full)||0));
+        add("Dal Container",  Number(r.Dal)||0);
+        add("Rice Container", Number(r.Rice)||0);
+        add("Salad Container",Number(r.Salad)||0);
+        add("Curd Container", Number(r.Curd)||0);
+      }
+    });
+    var items = [], total = 0;
+    itemOrder.forEach(function(key) {
+      var qty = counts[key]||0; if (!qty) return;
+      var unitCost = PKG_COSTS[key]||0, t = qty*unitCost;
+      items.push({name:key, qty:qty, unitCost:unitCost, total:t});
+      total += t;
+    });
+    var mealsOut = {};
+    Object.keys(mealCounts).forEach(function(m){ if(mealCounts[m]>0) mealsOut[m]=mealCounts[m]; });
+    return {date:dateStr, orderCount:dayRows.length, meals:mealsOut, items:items, total:total};
+  }
+
+  // Build per-day results
+  var days = Object.keys(byDate).sort().map(function(d){ return calcDay(d, byDate[d]); });
+
+  // Aggregate totals
+  var aggCounts = {}, aggMeals = {Breakfast:0,Lunch:0,Dinner:0}, aggTotal = 0, aggOrders = 0;
+  days.forEach(function(day) {
+    aggOrders += day.orderCount;
+    aggTotal  += day.total;
+    Object.keys(day.meals).forEach(function(m){ aggMeals[m]=(aggMeals[m]||0)+day.meals[m]; });
+    day.items.forEach(function(it){ aggCounts[it.name]=(aggCounts[it.name]||0)+it.qty; });
+  });
+  var aggItems = [];
+  itemOrder.forEach(function(key) {
+    var qty = aggCounts[key]||0; if (!qty) return;
+    var unitCost = PKG_COSTS[key]||0, t=qty*unitCost;
+    aggItems.push({name:key, qty:qty, unitCost:unitCost, total:t});
+  });
+
+  return {
+    from: from, to: to,
+    orderCount: aggOrders,
+    total: aggTotal,
+    meals: aggMeals,
+    items: aggItems,
+    days: days
+  };
+}
+
 // ── LABEL DRIVE SAVE ─────────────────────────────────────────
 function saveLabels(body) {
   var date   = body.date;  // "2026-03-18"
@@ -2809,7 +3144,7 @@ function buildSystemPrompt(extraMenu) {
   } catch(e) { todayLine = "Today's menu: check WhatsApp group.\n"; }
 
   const prompt = "You are a helpful assistant for Svaadh Kitchen, a vegetarian cloud kitchen in Hadapsar, Pune."
-    +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9:30AM, Dinner<5PM."
+    +" Closed Sundays. Over 2.5 years of service (since Aug 2023). Cutoffs: BF<7AM, Lunch<9AM, Dinner<4:30PM."
     +" AREAS: " + B.locations_served.join(", ") + ".\n"
     +" DELIVERY POLICY: FREE for Bhosale Nagar, Triveni Nagar, and Self Pickup. Other areas ₹10/meal if subtotal < ₹100. "
     + B.delivery.outside_policy + "\n"
@@ -2950,20 +3285,29 @@ function getOrderHistory(p) {
 
   var filtered = rows.filter(function(r) {
     var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
+    return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
   });
 
   var orders = filtered.map(function(r) {
+    var items = {};
+    try { if (r.Items_JSON) items = JSON.parse(r.Items_JSON); } catch(e) {}
     return {
-      id:     r.Submission_ID,
-      date:   fmtDate(r.Order_Date),
-      meal:   r.Meal_Type,
-      name:   r.Customer_Name,
-      phone:  r.Phone,
-      area:   r.Area,
-      total:  Number(r.Net_Total) || 0,
-      status: r.Payment_Status || "Pending",
-      notes:  r.Special_Notes || ""
+      id:             r.Submission_ID,
+      date:           fmtDate(r.Order_Date),
+      meal:           r.Meal_Type,
+      name:           r.Customer_Name,
+      phone:          r.Phone,
+      area:           r.Area || "",
+      wing:           r.Wing || "",
+      flat:           r.Flat || "",
+      total:          Number(r.Net_Total) || 0,
+      gross:          Number(r.Gross_Total) || 0,
+      status:         r.Payment_Status || "Pending",
+      payment_method: r.Payment_Method || "UPI",
+      notes:          r.Special_Notes || "",
+      items:          items,
+      delivery:       Number(r.Delivery_Charge) || 0,
+      discount:       Number(r.Loyalty_Discount) || 0
     };
   });
 
@@ -3023,7 +3367,7 @@ function getCustomerList() {
 
   var map = {};
   ordRows.forEach(function(r) {
-    if (String(r.Payment_Status) === "Cancelled") return;
+    if (_isOrderCancelled(r.Payment_Status)) return;
     var phone = String(r.Phone||"").trim();
     if (!phone) return;
     var normP = _normalizePhone(phone);
@@ -3157,7 +3501,7 @@ function getCustomerHistory(phone) {
   var name       = rows.length ? String(rows[0].Customer_Name||"").trim() : "";
   var area       = rows.length ? String(rows[0].Area||"").trim() : "";
   var payFreq    = rows.length ? String(rows[0].Payment_Freq||"").trim() : "";
-  var activeOrders = orders.filter(function(o){return String(o.status)!=="Cancelled";});
+  var activeOrders = orders.filter(function(o){return !_isOrderCancelled(o.status);});
   var totalSpent = Math.round(activeOrders.reduce(function(s,o){return s+o.total;},0));
   var pending    = Math.round(activeOrders.filter(function(o){return String(o.status)!=="Paid" && String(o.status)!=="Wallet Paid";}).reduce(function(s,o){return s+o.total;},0));
 
@@ -3198,7 +3542,7 @@ function getDatePayments(date) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
-  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && String(r.Payment_Status)!=="Cancelled";});
+  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && !_isOrderCancelled(r.Payment_Status);});
 
   var map = {};
   rows.forEach(function(r) {
@@ -3208,7 +3552,7 @@ function getDatePayments(date) {
       payFreq:String(r.Payment_Freq||"").trim(), meals:[], total:0, allPaid:true};
     map[phone].meals.push(r.Meal_Type);
     map[phone].total += Number(r.Net_Total)||0;
-    if (!["Paid", "Wallet Paid", "Collected"].includes(String(r.Payment_Status))) map[phone].allPaid = false;
+    if (!["Paid", "Wallet Paid", "Collected", "On Account"].includes(String(r.Payment_Status))) map[phone].allPaid = false;
   });
 
   var customers = Object.values(map).map(function(c) {
@@ -3234,6 +3578,11 @@ function markOrdersStatus(body) {
   var status = body.status || "Paid";
   if (!date || !phone) return {success:false, error:"date and phone required"};
 
+  // Prevent race-condition double-processing (e.g. admin double-clicks Verify & Refund)
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch(e) { return {success:false, error:"Server busy — please retry"}; }
+  try {
+
   var ss    = getSpreadsheet();
   var ws    = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   var hIdx  = headerIndex(ws);
@@ -3255,13 +3604,105 @@ function markOrdersStatus(body) {
     if (currentStatus === "Cancelled (Verify UPI)" && status === "Paid") {
       // ── Process Refund Logic based on preference
       const pref = String(r.Refund_Preference || "upi").toLowerCase();
-      const amt = Number(r.Net_Total) || 0;
       const custName = r.Customer_Name || "Customer";
-      
-      if (pref === "wallet" && amt > 0) {
+
+      // ── Recompute correct refund at verify time (same logic as hard-cancel) ──
+      // Uses Net_Total as base so mealCredit baked into Net_Total is not over-refunded.
+      const scOrderDate = r.Order_Date instanceof Date
+        ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+        : String(r.Order_Date).trim();
+      const scSameDayRows = rows.filter(x => {
+        const xd = x.Order_Date instanceof Date
+          ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+          : String(x.Order_Date).trim();
+        const xStat = String(x.Payment_Status || "").toLowerCase();
+        return String(x.Phone).trim() === String(phone).trim() &&
+               xd === scOrderDate &&
+               String(x.Submission_ID) !== String(r.Submission_ID) &&
+               !xStat.includes("deleted") && !xStat.includes("cancelled");
+      });
+      const scRemaining = scSameDayRows.reduce((s, x) => s + (Number(x.Food_Subtotal) || 0), 0);
+      const scOldTotal  = scRemaining + (Number(r.Food_Subtotal) || 0);
+      const scDiscRate  = (sub) => sub >= 450 ? 0.075 : sub >= 300 ? 0.05 : 0;
+      const scOldRate   = scDiscRate(scOldTotal);
+      const scNewRate   = scDiscRate(scRemaining);
+
+      // Discount over-clawback on remaining rows
+      let scOverDiscount = 0;
+      if (scOldRate > scNewRate) {
+        scOverDiscount = scSameDayRows.reduce((s, x) => {
+          const xSub = Number(x.Food_Subtotal) || 0;
+          return s + Math.round(xSub * scOldRate) - Math.round(xSub * scNewRate);
+        }, 0);
+        if (scOverDiscount > 0) {
+          const scHIdx   = headerIndex(ws);
+          const scDiscCol = scHIdx["Discount_Amount"];
+          const scNetCol  = scHIdx["Net_Total"];
+          scSameDayRows.forEach(x => {
+            const xSub      = Number(x.Food_Subtotal)      || 0;
+            const xSurcharge= Number(x.Inflation_Surcharge)|| 0;
+            const xDelivery = Number(x.Delivery_Charge)    || 0;
+            const xSmallFee = Number(x.Small_Order_Fee)    || 0;
+            const xReviewD  = Number(x.Review_Discount)    || 0;
+            const newD   = Math.round(xSub * scNewRate);
+            const newNet = xSub + xDelivery + xSmallFee + xSurcharge - newD - xReviewD;
+            if (scDiscCol) ws.getRange(x._row, scDiscCol).setValue(newD);
+            if (scNetCol)  ws.getRange(x._row, scNetCol) .setValue(newNet);
+          });
+        }
+      }
+
+      // Delivery/small-fee clawback + row updates
+      let scDeliveryOwed = 0;
+      let scSmallFeeOwed = 0;
+      const scFreeAreas  = getAreas().filter(a => a.free).map(a => a.name);
+      const scIsNonFree  = (area) => !scFreeAreas.includes(area) && area !== "Self Pickup";
+      const scFreeThr    = 150;
+      if (scOldTotal >= scFreeThr && scRemaining < scFreeThr) {
+        const scHIdx2    = headerIndex(ws);
+        const scDelCol   = scHIdx2["Delivery_Charge"];
+        const scSmallCol = scHIdx2["Small_Order_Fee"];
+        const scNetCol2  = scHIdx2["Net_Total"];
+        scSameDayRows.forEach(x => {
+          const xSub  = Number(x.Food_Subtotal) || 0;
+          const xMeal = String(x.Meal_Type).trim();
+          let scNetDelta = 0;
+          if (xSub > 0 && scIsNonFree(x.Area || "") && (Number(x.Delivery_Charge) || 0) === 0) {
+            scDeliveryOwed += 10; scNetDelta += 10;
+            if (scDelCol) ws.getRange(x._row, scDelCol).setValue(10);
+          }
+          if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50
+              && (Number(x.Small_Order_Fee) || 0) === 0) {
+            scSmallFeeOwed += 10; scNetDelta += 10;
+            if (scSmallCol) ws.getRange(x._row, scSmallCol).setValue(10);
+          }
+          if (scNetDelta > 0 && scNetCol2) {
+            ws.getRange(x._row, scNetCol2).setValue((Number(x.Net_Total) || 0) + scNetDelta);
+          }
+        });
+      }
+
+      const scAdj = scOverDiscount + scDeliveryOwed + scSmallFeeOwed;
+      const amt   = Math.max(0, (Number(r.Net_Total) || 0) - scAdj);
+
+      // ── Duplicate refund guard (shared for all paths below)
+      const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
+      const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
+      const existingRefunds = getAllRows(refWs);
+      const alreadyExists = existingRefunds.some(rx => String(rx.Submission_ID) === String(r.Submission_ID));
+
+      const isSplitOrder = String(r.Payment_Method || "").trim().toLowerCase() === "split";
+
+      if (isSplitOrder) {
+        // Split orders: entire refund always goes to Wallet — simple, no UPI queue.
+        // Wallet portion was already deducted at order time, UPI portion was paid by customer.
+        // Both come back to wallet in full.
+        if (amt > 0) {
+          _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
+        }
+      } else if (pref === "wallet" && amt > 0) {
         _appendWalletTransaction(phone, custName, "Order Cancellation Refund", amt, true, String(r.Submission_ID));
-      } else if (pref === "manual_upi" && amt > 0) {
-        const refWs = getOrCreateTab(ss, TAB_REFUNDS, ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"]);
+      } else if (pref === "manual_upi" && amt > 0 && !alreadyExists) {
         refWs.appendRow([r.Submission_ID, phone, custName, amt, r.Meal_Type, date, "Pending", now, "Verified Soft Cancellation", "upi"]);
       }
       ws.deleteRow(r._row); // Final delete after verification
@@ -3273,6 +3714,9 @@ function markOrdersStatus(body) {
   });
 
   return {success:true, updatedRows:updated};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function rejectUPIPayment(body) {
@@ -3319,27 +3763,89 @@ function getAnalytics(p) {
   };
   var rows = getAllRows(ws).filter(function(r) {
     var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo && String(r.Payment_Status) !== "Cancelled";
+    return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
   });
+
+  // ── Option B: Exact Small Order Fee backfill ──────────────────────────────
+  // Pre-pass 1: build VIP set from profiles (Fee_Exempt = Yes)
+  var profWs   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var profRows = getAllRows(profWs);
+  var vipSet   = {};
+  profRows.forEach(function(pr) {
+    if (pr.Fee_Exempt === "Yes" || pr.Fee_Exempt === true) {
+      vipSet[String(pr.Phone||"").trim()] = true;
+    }
+  });
+
+  // Pre-pass 2: for every phone+date combo, sum food subtotals & count distinct meals
+  // This lets us know if the combined day total reached the free-delivery threshold,
+  // which also waives the small order fee.
+  var dayTotals = {}; // key = phone+"_"+date  →  { foodTotal, mealCount }
+  rows.forEach(function(r) {
+    var ph   = String(r.Phone||"").trim();
+    var d    = fmtDate(r.Order_Date);
+    var food = Number(r.Food_Subtotal)||0;
+    var key  = ph + "_" + d;
+    if (!dayTotals[key]) dayTotals[key] = { foodTotal:0, meals:{} };
+    dayTotals[key].foodTotal += food;
+    dayTotals[key].meals[String(r.Meal_Type||"")] = true;
+  });
+
+  // Helper: calculate small fee for a row using exact rules
+  function calcSmallFee(r) {
+    var stored = r.Small_Order_Fee;
+    // If the column exists and has a numeric value, trust it
+    if (stored !== undefined && stored !== null && stored !== "" && !isNaN(Number(stored))) {
+      return Number(stored);
+    }
+    // Backfill for old rows
+    var meal = String(r.Meal_Type||"");
+    if (meal !== "Lunch" && meal !== "Dinner") return 0; // Breakfast: never charged
+    var food = Number(r.Food_Subtotal)||0;
+    if (food <= 0 || food >= 50) return 0;              // Only charged when sub < ₹50
+    var area = String(r.Area||"").trim();
+    if (area === "Self Pickup") return 0;                // Pickup: waived
+    var ph  = String(r.Phone||"").trim();
+    if (vipSet[ph]) return 0;                            // VIP: waived
+    // Check if combined day food total crossed free-delivery threshold
+    var d   = fmtDate(r.Order_Date);
+    var key = ph + "_" + d;
+    var dt  = dayTotals[key] || {foodTotal:0, meals:{}};
+    var mealCount    = Object.keys(dt.meals).length;
+    var threshold    = mealCount <= 1 ? 100 : 150;
+    if (dt.foodTotal >= threshold) return 0;             // Day crossed threshold: waived
+    return 10;
+  }
+  // ── End backfill helper ───────────────────────────────────────────────────
   var LUNCH_COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
     "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad","Curd"];
   var COL_DISP = {"Chapati":"Chapati","Without_Oil_Chapati":"WO Chapati","Phulka":"Phulka","Ghee_Phulka":"Ghee Phulka",
     "Jowar_Bhakri":"Jowar Bhakri","Bajra_Bhakri":"Bajra Bhakri","Dry_Sabji_Mini":"Dry Sabji Mini",
     "Dry_Sabji_Full":"Dry Sabji Full","Curry_Sabji_Mini":"Curry Sabji Mini","Curry_Sabji_Full":"Curry Sabji Full",
     "Dal":"Dal","Rice":"Rice","Salad":"Salad","Curd":"Curd"};
-  var totalRev=0, totalPaid=0, custSet={}, dayMap={};
+  var totalRev=0, totalPaid=0, totalDelivery=0, totalSurcharge=0, totalSmallFee=0;
+  var custSet={}, dayMap={};
   var mealStats={Breakfast:{count:0,revenue:0},Lunch:{count:0,revenue:0},Dinner:{count:0,revenue:0}};
   var itemCounts={};
   rows.forEach(function(r) {
     var d=fmtDate(r.Order_Date), net=Number(r.Net_Total)||0;
+    var delivery=Number(r.Delivery_Charge)||0;
+    var food=Number(r.Food_Subtotal)||0;
+    // Backfill surcharge for old rows where Inflation_Surcharge column was blank
+    var surchargeRaw=Number(r.Inflation_Surcharge);
+    var surcharge = (!isNaN(surchargeRaw) && surchargeRaw > 0) ? surchargeRaw : (food > 0 ? Math.ceil(food/20) : 0);
+    // Small_Order_Fee: exact backfill using Option B (checks VIP, pickup, day threshold)
+    var smallFee = calcSmallFee(r);
     var payStatus = String(r.Payment_Status || "").trim();
-    totalRev+=net; 
-    if(payStatus==="Paid" || payStatus==="Wallet Paid" || payStatus==="Collected") totalPaid+=net;
+    totalRev+=net;
+    totalDelivery+=delivery; totalSurcharge+=surcharge; totalSmallFee+=smallFee;
+    if(payStatus==="Paid"||payStatus==="Wallet Paid"||payStatus==="Collected") totalPaid+=net;
     var ph=String(r.Phone||"").trim(); if(ph) custSet[ph]=true;
     var meal=String(r.Meal_Type||"");
     if(mealStats[meal]){mealStats[meal].count++;mealStats[meal].revenue+=net;}
-    if(!dayMap[d])dayMap[d]={orders:0,revenue:0};
-    dayMap[d].orders++;dayMap[d].revenue+=net;
+    if(!dayMap[d]) dayMap[d]={orders:0,revenue:0,delivery:0,surcharge:0,smallFee:0};
+    dayMap[d].orders++; dayMap[d].revenue+=net;
+    dayMap[d].delivery+=delivery; dayMap[d].surcharge+=surcharge; dayMap[d].smallFee+=smallFee;
     if(meal==="Breakfast"){
       for(var n=1;n<=4;n++){var bi=String(r["BF_Item_"+n]||"").trim(),bq=Number(r["BF_Qty_"+n])||0;if(bi&&bq>0)itemCounts[bi]=(itemCounts[bi]||0)+bq;}
       var cu=Number(r.Curd)||0; if(cu>0)itemCounts["Curd"]=(itemCounts["Curd"]||0)+cu;
@@ -3347,14 +3853,606 @@ function getAnalytics(p) {
       LUNCH_COLS.forEach(function(col){var q=Number(r[col])||0;if(q>0){var dn=COL_DISP[col]||col;itemCounts[dn]=(itemCounts[dn]||0)+q;}});
     }
   });
-  var days=Object.keys(dayMap).sort().map(function(d){return{date:d,orders:dayMap[d].orders,revenue:Math.round(dayMap[d].revenue)};});
-  var topItems=Object.keys(itemCounts).map(function(k){return{name:k,count:Math.round(itemCounts[k])};}).sort(function(a,b){return b.count-a.count;}).slice(0,15);
+  var days=Object.keys(dayMap).sort().map(function(d){
+    return{date:d,orders:dayMap[d].orders,revenue:Math.round(dayMap[d].revenue),
+           delivery:Math.round(dayMap[d].delivery),surcharge:Math.round(dayMap[d].surcharge),smallFee:Math.round(dayMap[d].smallFee)};
+  });
+  var allItems=Object.keys(itemCounts).map(function(k){return{name:k,count:Math.round(itemCounts[k])};}).sort(function(a,b){return b.count-a.count;});
+  var topItems=allItems.slice(0,15);
   Object.keys(mealStats).forEach(function(m){mealStats[m].revenue=Math.round(mealStats[m].revenue);});
   return {success:true,
     summary:{orders:rows.length,customers:Object.keys(custSet).length,revenue:Math.round(totalRev),
       paid:Math.round(totalPaid),pending:Math.round(totalRev-totalPaid),
-      avgPerDay:days.length>0?Math.round(totalRev/days.length):0},
-    meals:mealStats,days:days,topItems:topItems};
+      avgPerDay:days.length>0?Math.round(totalRev/days.length):0,
+      delivery:Math.round(totalDelivery),surcharge:Math.round(totalSurcharge),smallFee:Math.round(totalSmallFee)},
+    meals:mealStats,days:days,topItems:topItems,allItems:allItems};
+}
+
+// ── ADMIN WALLET CREDIT ───────────────────────────────────────────────────────
+function adminCreditWallet(body) {
+  var phone  = String(body.phone || "").trim();
+  var amount = Number(body.amount);
+  if (!phone || phone.length < 10) return {success:false, error:"Valid phone required"};
+  if (!amount || amount <= 0)      return {success:false, error:"Amount must be > 0"};
+
+  // Look up customer name
+  var ss      = getSpreadsheet();
+  var profWs  = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var profRows = getAllRows(profWs);
+  var profile  = profRows.find(function(r){ return String(r.Phone||"").trim() === phone; });
+  var name     = profile ? (String(profile.Customer_Name||"").trim() || "Customer") : "Customer";
+
+  _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
+  var newBalance = _calculateWalletBalance(phone);
+  return {success:true, newBalance: Math.round(newBalance)};
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+// Tracks raw material purchases. Each new entry for the same item auto-calculates
+// how long the previous batch lasted → builds consumption rate over time.
+const TAB_INVENTORY      = "SK_Inventory";
+const INVENTORY_HEADERS  = [
+  "Entry_ID","Date","Item","Unit","Quantity","Price_Paid","Notes","Timestamp"
+];
+
+function saveInventoryEntry(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var now  = new Date();
+  var id   = "INV-" + Utilities.formatDate(now,"Asia/Kolkata","yyyyMMdd") + "-" + Math.floor(Math.random()*9000+1000);
+  var hIdx = headerIndex(ws);
+  var totalCols = Math.max(ws.getLastColumn(), INVENTORY_HEADERS.length);
+  var row  = new Array(totalCols).fill("");
+  var set  = function(col, val) { if (hIdx[col]) row[hIdx[col]-1] = val; };
+
+  set("Entry_ID",   id);
+  set("Date",       String(body.date || Utilities.formatDate(now,"Asia/Kolkata","yyyy-MM-dd")));
+  set("Item",       String(body.item || "").trim());
+  set("Unit",       String(body.unit || "kg"));
+  set("Quantity",   Number(body.quantity) || 0);
+  set("Price_Paid", Number(body.price)    || 0);
+  set("Notes",      String(body.notes     || ""));
+  set("Timestamp",  getISTTimestamp());
+
+  ws.appendRow(row);
+  return { success: true, id: id };
+}
+
+function getInventoryData(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var rows = getAllRows(ws);
+
+  // Sort ascending by date for correct duration calculation
+  rows.sort(function(a,b){ return String(a.Date).localeCompare(String(b.Date)); });
+
+  // Group by item
+  var byItem = {};
+  rows.forEach(function(r) {
+    var item = String(r.Item || "").trim();
+    if (!item) return;
+    if (!byItem[item]) byItem[item] = [];
+    byItem[item].push({
+      id:       String(r.Entry_ID || ""),
+      date:     String(r.Date     || ""),
+      unit:     String(r.Unit     || "kg"),
+      qty:      Number(r.Quantity) || 0,
+      price:    Number(r.Price_Paid) || 0,
+      notes:    String(r.Notes    || ""),
+      timestamp:String(r.Timestamp || "")
+    });
+  });
+
+  // For each item, calculate durations between entries + consumption stats
+  var items = [];
+  Object.keys(byItem).sort().forEach(function(item) {
+    var entries = byItem[item];
+    var totalDays = 0, totalQty = 0, durationCount = 0;
+
+    // Annotate each entry with how long it lasted (days until next purchase)
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      e.lasted_days = null;
+      e.daily_rate  = null;
+      if (i < entries.length - 1) {
+        var d1 = new Date(e.date);
+        var d2 = new Date(entries[i+1].date);
+        var days = Math.round((d2 - d1) / 86400000);
+        if (days > 0) {
+          e.lasted_days = days;
+          e.daily_rate  = Math.round((e.qty / days) * 100) / 100;
+          totalDays += days;
+          totalQty  += e.qty;
+          durationCount++;
+        }
+      }
+    }
+
+    var avgDays       = durationCount > 0 ? Math.round(totalDays / durationCount) : null;
+    var avgDailyRate  = (avgDays && totalQty) ? Math.round((totalQty / durationCount / avgDays) * 100) / 100 : null;
+    var lastEntry     = entries[entries.length - 1];
+
+    // Predict next purchase date
+    var nextBuyDate = null;
+    if (avgDays && lastEntry.date) {
+      var d = new Date(lastEntry.date);
+      d.setDate(d.getDate() + avgDays);
+      nextBuyDate = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    }
+
+    items.push({
+      item:          item,
+      unit:          lastEntry.unit,
+      entries:       entries.reverse(), // newest first for display
+      entry_count:   entries.length,
+      avg_days:      avgDays,
+      avg_daily_rate:avgDailyRate,
+      last_purchased:lastEntry.date,
+      last_qty:      lastEntry.qty,
+      next_buy_est:  nextBuyDate
+    });
+  });
+
+  return { success: true, items: items };
+}
+
+function deleteInventoryEntry(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_INVENTORY, INVENTORY_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = ws.getDataRange().getValues();
+  var idCol = (hIdx["Entry_ID"] || 1) - 1;
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][idCol]).trim() === String(body.id || "").trim()) {
+      ws.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: "Entry not found" };
+}
+
+// ── EXPENSE CUSTOM CATEGORIES ─────────────────────────────────────────────────
+// Stored in Script Properties as JSON so no extra sheet is needed.
+function getCustomExpenseCategories() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty("CUSTOM_EXP_CATS");
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveCustomExpenseCategory(body) {
+  var category = String(body.category || "").trim();
+  var item     = String(body.item     || "").trim();
+  if (!category) return { success:false, error:"Category required" };
+  var cats = getCustomExpenseCategories();
+  if (!cats[category]) cats[category] = [];
+  if (item && !cats[category].includes(item)) cats[category].push(item);
+  PropertiesService.getScriptProperties().setProperty("CUSTOM_EXP_CATS", JSON.stringify(cats));
+  return { success:true, categories: cats };
+}
+
+function deleteCustomExpenseCategory(body) {
+  var category = String(body.category || "").trim();
+  var item     = String(body.item     || "").trim();
+  var cats = getCustomExpenseCategories();
+  if (item && cats[category]) {
+    cats[category] = cats[category].filter(function(i){ return i !== item; });
+  } else {
+    delete cats[category];
+  }
+  PropertiesService.getScriptProperties().setProperty("CUSTOM_EXP_CATS", JSON.stringify(cats));
+  return { success:true, categories: cats };
+}
+
+// ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────
+const TAB_EXPENSES      = "SK_Expenses";
+const EXPENSES_HEADERS  = [
+  "Expense_ID","Date","Category","Item","Amount","Frequency",
+  "Payment_Mode","Notes","Timestamp"
+];
+
+// Category → sub-items map (also used by frontend for dropdowns)
+var EXPENSE_CATEGORIES = {
+  "🥦 Raw Materials": [
+    "Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)",
+    "Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"
+  ],
+  "📦 Packaging": [
+    "Containers / Boxes","Bags & Covers","Labels & Stickers",
+    "Tissue & Napkins","Other Packaging"
+  ],
+  "⛽ Fuel & Transport": [
+    "Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"
+  ],
+  "👨‍🍳 Staff": [
+    "Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"
+  ],
+  "🔌 Utilities": [
+    "LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"
+  ],
+  "🍳 Kitchen & Equipment": [
+    "Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"
+  ],
+  "📣 Marketing": [
+    "Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"
+  ],
+  "🏦 Finance & Admin": [
+    "Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"
+  ],
+  "📝 Miscellaneous": ["Miscellaneous"]
+};
+
+function saveExpense(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var hIdx = headerIndex(ws);
+  var now  = new Date();
+  var id   = "EXP-" + Utilities.formatDate(now, "Asia/Kolkata", "yyyyMMdd") + "-" + Math.floor(Math.random()*9000+1000);
+
+  var totalCols = ws.getLastColumn();
+  var row = new Array(totalCols).fill("");
+  var set = function(col, val) { if (hIdx[col]) row[hIdx[col]-1] = val; };
+
+  set("Expense_ID",   id);
+  set("Date",         String(body.date || Utilities.formatDate(now,"Asia/Kolkata","yyyy-MM-dd")));
+  set("Category",     String(body.category  || ""));
+  set("Item",         String(body.item      || ""));
+  set("Amount",       Number(body.amount)   || 0);
+  set("Frequency",    String(body.frequency || "One-time"));
+  set("Payment_Mode", String(body.payment_mode || "Cash"));
+  set("Notes",        String(body.notes     || ""));
+  set("Timestamp",    getISTTimestamp());
+
+  ws.appendRow(row);
+  return { success: true, id: id };
+}
+
+function deleteExpense(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = ws.getDataRange().getValues();
+  var idCol = (hIdx["Expense_ID"] || 1) - 1;
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][idCol]).trim() === String(body.id || "").trim()) {
+      ws.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, error: "Expense not found" };
+}
+
+function getExpenses(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var rows = getAllRows(ws);
+  var from = String(body.from || "");
+  var to   = String(body.to   || "");
+  var filtered = rows.filter(function(r) {
+    var d = String(r.Date || "").trim();
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+  // Sort newest first
+  filtered.sort(function(a,b){ return String(b.Date).localeCompare(String(a.Date)); });
+  return {
+    success: true,
+    expenses: filtered.map(function(r) {
+      return {
+        id:           r.Expense_ID,
+        date:         r.Date,
+        category:     r.Category,
+        item:         r.Item,
+        amount:       Number(r.Amount) || 0,
+        frequency:    r.Frequency,
+        payment_mode: r.Payment_Mode,
+        notes:        r.Notes,
+        timestamp:    r.Timestamp
+      };
+    }),
+    categories: EXPENSE_CATEGORIES
+  };
+}
+
+function getExpenseAnalytics(body) {
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
+  var rows = getAllRows(ws);
+  var from = String(body.from || "");
+  var to   = String(body.to   || "");
+
+  var filtered = rows.filter(function(r) {
+    var d = String(r.Date || "").trim();
+    if (!d) return false;
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+
+  var total       = 0;
+  var byCat       = {};   // category → total
+  var byFreq      = {};   // frequency → total
+  var byPayMode   = {};   // payment mode → total
+  var byDay       = {};   // date → total
+  var topItems    = {};   // item → total
+  var monthlyFixed = 0;   // sum of Monthly-tagged expenses
+
+  filtered.forEach(function(r) {
+    var amt  = Number(r.Amount) || 0;
+    var cat  = String(r.Category || "Other");
+    var freq = String(r.Frequency || "One-time");
+    var pm   = String(r.Payment_Mode || "Cash");
+    var d    = String(r.Date || "").trim();
+    var item = String(r.Item || "Other");
+
+    total += amt;
+    byCat[cat]     = (byCat[cat]     || 0) + amt;
+    byFreq[freq]   = (byFreq[freq]   || 0) + amt;
+    byPayMode[pm]  = (byPayMode[pm]  || 0) + amt;
+    byDay[d]       = (byDay[d]       || 0) + amt;
+    topItems[item] = (topItems[item] || 0) + amt;
+    if (freq === "Monthly") monthlyFixed += amt;
+  });
+
+  var days = Object.keys(byDay).sort().map(function(d) {
+    return { date: d, amount: Math.round(byDay[d]) };
+  });
+
+  var catArr = Object.keys(byCat).sort(function(a,b){ return byCat[b]-byCat[a]; }).map(function(c) {
+    return { category: c, amount: Math.round(byCat[c]) };
+  });
+
+  var itemArr = Object.keys(topItems).sort(function(a,b){ return topItems[b]-topItems[a]; }).slice(0,10).map(function(i) {
+    return { item: i, amount: Math.round(topItems[i]) };
+  });
+
+  return {
+    success:      true,
+    total:        Math.round(total),
+    monthlyFixed: Math.round(monthlyFixed),
+    count:        filtered.length,
+    byCategory:   catArr,
+    byFrequency:  byFreq,
+    byPayMode:    byPayMode,
+    byDay:        days,
+    topItems:     itemArr,
+    categories:   EXPENSE_CATEGORIES
+  };
+}
+
+// ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────
+const TAB_ERROR_LOG     = "SK_Error_Log";
+const ERROR_LOG_HEADERS = ["Timestamp","Date","Phone","Version","Type","Action","Attempt","Duration_ms","Message","URL"];
+
+function logClientError(body) {
+  try {
+    var ss  = getSpreadsheet();
+    var ws  = getOrCreateTab(ss, TAB_ERROR_LOG, ERROR_LOG_HEADERS);
+    var now = new Date();
+    var dateStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+    ws.appendRow([
+      getISTTimestamp(),
+      dateStr,
+      String(body.phone    || "unknown"),
+      String(body.version  || ""),
+      String(body.type     || "error"),
+      String(body.action   || "unknown"),
+      Number(body.attempt  || 1),
+      Number(body.ms       || 0),
+      String(body.msg      || ""),
+      String(body.url      || "")
+    ]);
+    return { success: true };
+  } catch(e) {
+    return { success: false }; // never throw — this is logging only
+  }
+}
+
+// ── KEEP-ALIVE ────────────────────────────────────────────────────────────────
+// Keeps the GAS instance warm so customers never hit a cold-start timeout.
+// Set up once: Apps Script editor → Triggers → Add Trigger:
+//   Function: keepAlive | Event: Time-based | Type: Minutes timer | Every: 10 minutes
+function keepAlive() {
+  // Intentionally empty — just waking the instance is enough.
+  // GAS logs will show "keepAlive" executions confirming it's running.
+}
+
+// Run this once from Apps Script editor to register the trigger automatically.
+// After that it runs forever — no manual intervention needed.
+function setupKeepAliveTrigger() {
+  // Remove any existing keepAlive trigger first (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "keepAlive") ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger("keepAlive")
+    .timeBased()
+    .everyMinutes(10)
+    .create();
+  Logger.log("keepAlive trigger registered — fires every 10 minutes.");
+}
+
+// ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────
+/*
+  Archives SK_Orders and SK_Wallet for a given quarter into a new Google
+  Spreadsheet, writes Balance Carry Forward snapshots so wallet balances are
+  preserved, then deletes the archived rows from the main sheet.
+
+  Quarter map:
+    Q1 = Jan–Mar   (archive trigger: April 10)
+    Q2 = Apr–Jun   (archive trigger: July 10)
+    Q3 = Jul–Sep   (archive trigger: October 10)
+    Q4 = Oct–Dec   (archive trigger: January 10 of next year)
+*/
+function archiveQuarter(year, quarter) {
+  var Q = {
+    1: {from: year+"-01-01", to: year+"-03-31", label: "Q1 Jan–Mar"},
+    2: {from: year+"-04-01", to: year+"-06-30", label: "Q2 Apr–Jun"},
+    3: {from: year+"-07-01", to: year+"-09-30", label: "Q3 Jul–Sep"},
+    4: {from: year+"-10-01", to: year+"-12-31", label: "Q4 Oct–Dec"}
+  };
+  var qr = Q[quarter];
+  if (!qr) return {success:false, error:"Invalid quarter — must be 1, 2, 3 or 4"};
+
+  var ss = getSpreadsheet();
+  var fmtDate = function(v) {
+    return v instanceof Date
+      ? Utilities.formatDate(v, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(v || "").trim().slice(0, 10);
+  };
+
+  // ── STEP 1: Create archive spreadsheet ────────────────────────────────────
+  var archiveName = "Svaadh Kitchen Archive — " + qr.label + " " + year;
+  var archiveSS   = SpreadsheetApp.create(archiveName);
+  var log = [];
+
+  // ── STEP 2: Archive SK_Orders ──────────────────────────────────────────────
+  var ordersWs      = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var allOrderData  = ordersWs.getDataRange().getValues();
+  var oHeaders      = allOrderData[0];
+  var oDateIdx      = oHeaders.indexOf("Order_Date");
+
+  // Collect rows that fall in the quarter (track 1-based sheet row numbers)
+  var toArchiveOrders = []; // { sheetRow (1-based), vals }
+  for (var i = 1; i < allOrderData.length; i++) {
+    var d = fmtDate(allOrderData[i][oDateIdx]);
+    if (d >= qr.from && d <= qr.to) {
+      toArchiveOrders.push({sheetRow: i + 1, vals: allOrderData[i]});
+    }
+  }
+
+  if (toArchiveOrders.length > 0) {
+    var archiveOrderSheet = archiveSS.getActiveSheet();
+    archiveOrderSheet.setName("SK_Orders");
+    archiveOrderSheet.getRange(1, 1, 1, oHeaders.length).setValues([oHeaders]);
+    var oData = toArchiveOrders.map(function(r) { return r.vals; });
+    archiveOrderSheet.getRange(2, 1, oData.length, oHeaders.length).setValues(oData);
+    // Verify
+    var oWritten = archiveOrderSheet.getLastRow() - 1;
+    if (oWritten !== toArchiveOrders.length) {
+      return {success:false, error:"Order archive verification failed. Expected "
+        + toArchiveOrders.length + ", got " + oWritten + ". Nothing deleted."};
+    }
+    log.push(toArchiveOrders.length + " orders archived ✓");
+  } else {
+    log.push("No orders found for this quarter.");
+  }
+
+  // ── STEP 3: Archive SK_Wallet ──────────────────────────────────────────────
+  var walletWs     = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  var allWalletData = walletWs.getDataRange().getValues();
+  var wHeaders      = allWalletData[0];
+  var wTsIdx        = wHeaders.indexOf("Timestamp");
+  var wPhoneIdx     = wHeaders.indexOf("Phone");
+  var wNameIdx      = wHeaders.indexOf("Customer_Name");
+
+  var toArchiveWallet = [];
+  for (var j = 1; j < allWalletData.length; j++) {
+    var ts = allWalletData[j][wTsIdx];
+    var wd = fmtDate(ts instanceof Date ? ts : new Date(ts));
+    if (wd >= qr.from && wd <= qr.to) {
+      toArchiveWallet.push({sheetRow: j + 1, vals: allWalletData[j]});
+    }
+  }
+
+  if (toArchiveWallet.length > 0) {
+    var archiveWalletSheet = archiveSS.insertSheet("SK_Wallet");
+    archiveWalletSheet.getRange(1, 1, 1, wHeaders.length).setValues([wHeaders]);
+    var wData = toArchiveWallet.map(function(r) { return r.vals; });
+    archiveWalletSheet.getRange(2, 1, wData.length, wHeaders.length).setValues(wData);
+    var wWritten = archiveWalletSheet.getLastRow() - 1;
+    if (wWritten !== toArchiveWallet.length) {
+      return {success:false, error:"Wallet archive verification failed. Expected "
+        + toArchiveWallet.length + ", got " + wWritten + ". Nothing deleted."};
+    }
+    log.push(toArchiveWallet.length + " wallet transactions archived ✓");
+  } else {
+    log.push("No wallet transactions found for this quarter.");
+  }
+
+  // ── STEP 4: Write Balance Carry Forward snapshots ─────────────────────────
+  // Calculate BEFORE deleting anything — reads full live wallet sheet
+  // Only needed for phones that had activity in this quarter AND have balance > 0
+  var activePhones = {};
+  toArchiveWallet.forEach(function(r) {
+    var ph   = String(r.vals[wPhoneIdx] || "").trim();
+    var name = String(r.vals[wNameIdx]  || "").trim();
+    if (ph) activePhones[ph] = name;
+  });
+
+  var snapshotCount = 0;
+  var snapTime      = new Date();
+  var refId         = "ARCHIVE-Q" + quarter + "-" + year;
+  Object.keys(activePhones).forEach(function(ph) {
+    var balance = _calculateWalletBalance(ph);
+    if (balance > 0) {
+      walletWs.appendRow([ph, activePhones[ph], "Balance Carry Forward",
+                          balance, "TRUE", refId, snapTime]);
+      snapshotCount++;
+    }
+    // balance = 0 → no snapshot needed, no carry-forward required
+  });
+  if (snapshotCount > 0) log.push(snapshotCount + " balance snapshots written ✓");
+
+  // ── STEP 5: Delete archived rows — bottom to top so indices don't shift ───
+  // Wallet rows
+  var wRowNums = toArchiveWallet.map(function(r){return r.sheetRow;})
+                                .sort(function(a,b){return b-a;});
+  wRowNums.forEach(function(rowNum) { walletWs.deleteRow(rowNum); });
+  if (wRowNums.length) log.push(wRowNums.length + " wallet rows deleted from main ✓");
+
+  // Order rows
+  var oRowNums = toArchiveOrders.map(function(r){return r.sheetRow;})
+                                .sort(function(a,b){return b-a;});
+  oRowNums.forEach(function(rowNum) { ordersWs.deleteRow(rowNum); });
+  if (oRowNums.length) log.push(oRowNums.length + " order rows deleted from main ✓");
+
+  return {
+    success:          true,
+    archiveName:      archiveName,
+    archiveUrl:       archiveSS.getUrl(),
+    ordersArchived:   toArchiveOrders.length,
+    walletArchived:   toArchiveWallet.length,
+    snapshots:        snapshotCount,
+    log:              log
+  };
+}
+
+// Called by admin UI — wraps archiveQuarter with PIN check (handled by router)
+function triggerManualArchive(body) {
+  var year    = parseInt(body.year);
+  var quarter = parseInt(body.quarter);
+  if (!year || !quarter) return {success:false, error:"year and quarter required"};
+  return archiveQuarter(year, quarter);
+}
+
+// ── Time-based trigger: auto-archive previous quarter on the 10th ─────────
+// Run setupQuarterlyArchiveTrigger() once from Apps Script editor to register.
+function setupQuarterlyArchiveTrigger() {
+  // Remove any existing trigger for runScheduledArchive
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "runScheduledArchive") ScriptApp.deleteTrigger(t);
+  });
+  // Fire on the 10th of every month at 2 AM IST (Apps Script uses server time ≈ UTC)
+  ScriptApp.newTrigger("runScheduledArchive")
+    .timeBased()
+    .onMonthDay(10)
+    .atHour(21)   // 21:00 UTC = 02:30 IST next day ≈ 2 AM IST on the 10th
+    .create();
+  return "Quarterly archive trigger set — fires on 10th of Apr, Jul, Oct, Jan.";
+}
+
+function runScheduledArchive() {
+  // Determine which quarter just ended based on today's month
+  var now     = new Date();
+  var month   = now.getMonth() + 1; // 1–12
+  var year    = now.getFullYear();
+  var qMap    = {4:1, 7:2, 10:3, 1:4}; // trigger month → quarter to archive
+  var qNum    = qMap[month];
+  if (!qNum) { Logger.log("runScheduledArchive: not an archive month (" + month + "), skipping."); return; }
+  var archiveYear = (month === 1) ? year - 1 : year; // Jan trigger → archive Q4 of last year
+  var result  = archiveQuarter(archiveYear, qNum);
+  Logger.log("Archive result: " + JSON.stringify(result));
 }
 
 // ── CHURN REPORT ──────────────────────────────────────────────────────────────
@@ -3364,7 +4462,7 @@ function getChurnReport(sinceDate) {
   var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
   var map={};
   getAllRows(ws).forEach(function(r){
-    if(String(r.Payment_Status)==="Cancelled")return;
+    if(_isOrderCancelled(r.Payment_Status))return;
     var phone=String(r.Phone||"").trim(); if(!phone)return;
     var d=fmtDate(r.Order_Date);
     if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),lastDate:"",orderCount:0};
@@ -3609,19 +4707,28 @@ function getPendingUPIPayments() {
   // Return Payment_Status == "Pending" OR "Cancelled (Verify UPI)"
   return rows.filter(r => {
     const s = String(r.Payment_Status).trim();
-    return s === "Pending" || s === "Cancelled (Verify UPI)" || s === "Pending Approval";
+    const m = String(r.Payment_Method || "").trim();
+    return s === "Pending" || s === "Cancelled (Verify UPI)" || s === "Pending Approval"
+      || (m === "Split" && s === "Pending"); // Split orders awaiting UPI portion
   })
-             .map(r => ({
-               id: r.Submission_ID,
-               date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
-               customer: r.Customer_Name,
-               phone: r.Phone,
-               amount: r.Net_Total,
-               meal: r.Meal_Type,
-               timestamp: r.Submitted_At,
-               status: r.Payment_Status,
-               refund_preference: r.Refund_Preference || ""
-             }));
+             .map(r => {
+               const walletCredit = Number(r.Wallet_Credit) || 0;
+               const isSplit = String(r.Payment_Method || "").trim() === "Split";
+               return {
+                 id: r.Submission_ID,
+                 date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
+                 customer: r.Customer_Name,
+                 phone: r.Phone,
+                 amount: isSplit ? Math.max(0, (Number(r.Net_Total) || 0) - walletCredit) : r.Net_Total,
+                 full_amount: r.Net_Total,
+                 wallet_credit: walletCredit,
+                 meal: r.Meal_Type,
+                 timestamp: r.Submitted_At,
+                 status: r.Payment_Status,
+                 payment_method: String(r.Payment_Method || ""),
+                 refund_preference: r.Refund_Preference || ""
+               };
+             });
 }
 
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
@@ -3725,7 +4832,7 @@ function adminCancelOrder(body) {
       : String(r.Order_Date).trim();
     const status = String(r.Payment_Status || "").toLowerCase();
     
-    return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && status !== 'cancelled';
+    return rPhone === phone && rMeal === meal && orderDate === dateStr && status !== 'deleted' && !status.startsWith('cancelled');
   });
 
   if (!matches.length) return {success:false, error: "No matching orders found"};

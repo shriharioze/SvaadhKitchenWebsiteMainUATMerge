@@ -147,7 +147,7 @@
     toast_enter_phone_first: "Enter your phone number first",
     toast_recharge_submitted: "Recharge Submitted! 💰 payment submitted successfully. Our team will verify it shortly. Your wallet balance will be updated soon. ✅",
     toast_payment_submitted: "Order Received! 🍱 payment submitted successfully. Our team will verify it shortly. Rest assured, your meal is confirmed and will be delivered on schedule! ✅",
-    toast_server_timeout: "Server timed out — check WhatsApp to confirm if your order was placed.",
+    toast_server_timeout: "Request timed out. Check Manage Orders — if your order appears, you're all set. If not, place it again.",
     toast_no_meals_to_copy: "No meals selected on this date to copy",
     toast_copied: "Copied to {n} date(s) ✅",
 

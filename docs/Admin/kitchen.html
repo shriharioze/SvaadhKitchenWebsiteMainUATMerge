@@ -562,8 +562,13 @@
       background: #27ae60 !important;
       color: #fff !important;
     }
+    .roti-row-Curd {
+      background: #0891b2 !important;
+      color: #fff !important;
+    }
     .roti-name.val-Rice,
-    .roti-name.val-Salad {
+    .roti-name.val-Salad,
+    .roti-name.val-Curd {
       color: #fff !important;
     }
 
@@ -663,8 +668,8 @@
       align-items: flex-start;
     }
     .label-card .lname { font-weight: 700; font-size: 0.9rem; color: #222; }
-    .label-card .lsummary { font-size: 0.78rem; color: #444; }
-    .label-card .larea { font-weight: 700; font-size: 0.78rem; color: #333; margin-top: 2px; }
+    .label-card .lsummary { font-size: 0.78rem; color: #444; line-height: 1.4; }
+    .label-card .larea { font-size: 0.62rem; color: #888; margin-top: 3px; letter-spacing: 0.02em; }
     .label-card .lnotes { font-size: 0.68rem; color: #e67e22; margin-top: 3px; }
     .label-card .lnum { font-size: 0.62rem; color: #ccc; white-space: nowrap; margin-left:10px; padding-top:2px; }
     
@@ -1072,10 +1077,17 @@
       "Jowar Bhakri": "ज्वारी भाकरी", "Jowar_Bhakri": "ज्वारी भाकरी", "Bajra Bhakri": "बाजरी भाकरी", "Bajra_Bhakri": "बाजरी भाकरी",
       "Dry Sabji": "सुकी भाजी", "Curry Sabji": "रस्सा भाजी",
       "Sabji (Dry)": "सुकी भाजी", "Sabji (Curry)": "रस्सा भाजी",
-      "Dal": "वरण", "Rice": "भात", "Salad": "सलाड", "Curd": "दही", "Curd (50g)": "दही",
-      "Kanda Poha": "कांदा पोहे", "Sabudana Khichdi": "साबुदाणा खिचडी", "Ghee Upma": "तुपातील उपमा", "Upma": "उपमा", "Poha": "पोहे",
-      "Thalipeeth": "थालीपीठ", "Aloo Paratha": "आलू पराठा", "Tikhi Puri": "तिखी पुरी", "Paneer Paratha": "पनीर पराठा",
-      "Ghee Sheera": "घी शिरा", "Palak Paratha (2 peices)": "पालक पराठा (२ पीसेस)", "Methi Paratha (2 pieces)": "मेथी पराठा (२ पीसेस)",
+      "Dal": "वरण", "Dal (200ml)": "वरण (२००ml)", "Rice": "भात", "Rice (100g)": "भात (१००g)", "Salad": "सलाड", "Salad (40g)": "सलाड (४०g)", "Curd": "दही", "Curd (50g)": "दही (५०g)", 
+      "Kanda Poha": "कांदा पोहे", "Kanda Poha [175g]": "कांदा पोहे [१७५g]", 
+      "Sabudana Khichdi": "साबुदाणा खिचडी", "Sabudana Khichdi [200g]": "साबुदाणा खिचडी [२००g]",
+      "Ghee Upma": "तुपातील उपमा", "Ghee Upma [200g]": "तुपातील उपमा [२००g]",
+      "Upma": "उपमा", "Poha": "पोहे",
+      "Thalipeeth": "थालीपीठ", "Aloo Paratha": "आलू पराठा", "Tikhi Puri": "तिखी पुरी", 
+      "5 x Tikhi Pudi with 100 ml coriander chutney": "५ x तििख पुरी आणि १००ml चटणी",
+      "Paneer Paratha": "पनीर पराठा",
+      "Ghee Sheera": "घी शिरा", "Ghee Sheera [200g]": "घी शिरा [२००g]",
+      "Palak Paratha (2 peices)": "पालक पराठा (२ पीसेस)", "Methi Paratha (2 pieces)": "मेथी पराठा (२ पीसेस)",
+      "4 x Idli & 100ml Chutney": "४ x इडली आणि १००ml चटणी",
       "4 x Idli and 100ml Chutney": "४ x इडली आणि १००ml चटणी", "Chutney": "चटणी",
       "orders": "ऑर्डर",
       // Specific Sabjis
@@ -1355,9 +1367,10 @@
           if (o.Rice && o.Rice.count > 0) packs.push({ count: o.Rice.count, name: "250ml aluminium container for rice" });
         }
 
-        const hasMatrices = (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) || 
-                            (m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || 
-                            (m.saladMatrix && Object.keys(m.saladMatrix).length > 0);
+        const hasMatrices = (m.rotiMatrix && Object.keys(m.rotiMatrix).length > 0) ||
+                            (m.riceMatrix && Object.keys(m.riceMatrix).length > 0) ||
+                            (m.saladMatrix && Object.keys(m.saladMatrix).length > 0) ||
+                            (m.curdMatrix && Object.keys(m.curdMatrix).length > 0);
 
         if (packs.length > 0 || hasMatrices) {
           html += `<div class="meal-block">
@@ -1395,8 +1408,8 @@
             </div>`;
           }
 
-          if ((m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || (m.saladMatrix && Object.keys(m.saladMatrix).length > 0)) {
-            html += `<div class="matrix-title">Rice & Salad Preparation Matrix</div>
+          if ((m.riceMatrix && Object.keys(m.riceMatrix).length > 0) || (m.saladMatrix && Object.keys(m.saladMatrix).length > 0) || (m.curdMatrix && Object.keys(m.curdMatrix).length > 0)) {
+            html += `<div class="matrix-title">Rice, Salad & Curd Preparation Matrix</div>
             <div class="roti-matrix-wrap">
               <table class="roti-table">
                 <thead>
@@ -1419,6 +1432,14 @@
                       <td class="roti-name val-Salad">को (Salad)</td>
                       ${[1, 2, 3, 4].map(n => {
               const count = m.saladMatrix[n] || 0;
+              return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
+            }).join("")}
+                    </tr>` : ""}
+                  ${m.curdMatrix && Object.keys(m.curdMatrix).length > 0 ? `
+                    <tr class="roti-row-Curd">
+                      <td class="roti-name val-Curd">दही (Curd)</td>
+                      ${[1, 2, 3, 4].map(n => {
+              const count = m.curdMatrix[n] || 0;
               return count > 0 ? `<td class="roti-val">${count}</td>` : `<td class="roti-empty">·</td>`;
             }).join("")}
                     </tr>` : ""}
@@ -1840,9 +1861,9 @@
           html += `
             <div class="label-card">
               <div>
-                <div class="lname">Name: ${o.name}</div>
+                <div class="lname">${o.name}</div>
                 <div class="lsummary">${summary}</div>
-                <div class="larea">${o.area || ""}</div>
+                ${o.area ? `<div class="larea">${o.area}</div>` : ''}
                 ${o.notes ? `<div class="lnotes">★ ${o.notes}</div>` : ""}
               </div>
               <div class="lnum">#${i + 1}</div>

@@ -1,27 +1,23 @@
-# Svaadh Kitchen - robots.txt
+# Svaadh Kitchen — robots.txt
 # https://www.svaadhkitchen.in
 
 User-agent: *
 Allow: /
 Allow: /order.html
 Disallow: /Admin/
+Disallow: /Admin/vault_admin.html
+Disallow: /Admin/kitchen.html
+Disallow: /Admin/driver.html
 
 # Sitemap
 Sitemap: https://www.svaadhkitchen.in/sitemap.xml
 
-# Block unnecessary crawler bots
-User-agent: AhrefsBot
-Disallow: /
-
-User-agent: MJ12bot
-Disallow: /
-
-User-agent: SemrushBot
-Disallow: /
-
-# Allow Google, Bing, and social crawlers full access
+# Allow major search and social crawlers
 User-agent: Googlebot
 Allow: /
+
+User-agent: Googlebot-Image
+Allow: /images/
 
 User-agent: Bingbot
 Allow: /
@@ -30,4 +26,10 @@ User-agent: facebookexternalhit
 Allow: /
 
 User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
 Allow: /
