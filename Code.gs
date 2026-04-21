@@ -1865,6 +1865,38 @@ function deleteOrder(phone, rowId, refundType) {
     const rawRefund = Number(r.Net_Total) || 0;
     const refundAmt = Math.max(0, rawRefund - adjustment);
 
+    // ── HUMAN-READABLE REFUND BREAKDOWN ────────────────────────────────────
+    function buildRefundBreakdown() {
+      const lines = [];
+      if (adjustment === 0) {
+        lines.push(`Full refund of ₹${refundAmt}.`);
+        return lines.join("\n");
+      }
+      lines.push(`Order total: ₹${rawRefund}`);
+      lines.push(`Deductions (₹${adjustment} total):`);
+      if (overDiscount > 0) {
+        const oldPct = Math.round(oldRate * 100);
+        const newPct = Math.round(newRate * 100);
+        if (newRate === 0) {
+          lines.push(`  • -₹${overDiscount} — discount reversal: remaining day total drops below ₹300, so the ${oldPct}% discount on your other order(s) is removed.`);
+        } else {
+          lines.push(`  • -₹${overDiscount} — discount reduction: remaining day total drops from the ${oldPct}% tier to ${newPct}%, so discount on your other order(s) is reduced.`);
+        }
+      }
+      if (deliveryOwed > 0) {
+        const numOrders = deliveryOwed / 10;
+        lines.push(`  • -₹${deliveryOwed} — delivery fee: your remaining ${numOrders > 1 ? numOrders + " orders" : "order"} had free delivery because day total was ₹150+. It now drops below ₹150, so ₹10 delivery applies.`);
+      }
+      if (smallFeeOwed > 0) {
+        lines.push(`  • -₹${smallFeeOwed} — small cart fee: a remaining order under ₹50 had its ₹10 small cart fee waived (day total was ₹150+). Now that drops below ₹150, the fee applies.`);
+      }
+      if (loyaltyClawback > 0) {
+        lines.push(`  • -₹${loyaltyClawback} — loyalty reward reversal: a streak reward on a later order is no longer valid since this cancellation breaks your streak.`);
+      }
+      lines.push(`Refund: ₹${rawRefund} − ₹${adjustment} = ₹${refundAmt}`);
+      return lines.join("\n");
+    }
+
     // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid,
     // force this refund to Wallet too (to keep the day's bookkeeping simple).
     const hasAnyOtherWalletPaid = sameDayRows.some(x => {
@@ -1892,25 +1924,25 @@ function deleteOrder(phone, rowId, refundType) {
       if (refundAmt > 0) {
         _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
       }
-      msg = `₹${refundAmt} refunded to Wallet`;
+      msg = buildRefundBreakdown() + `\n\n₹${refundAmt} refunded to your Wallet.`;
       finalType = "__split_handled__"; // skip normal logic below
     } else if (hasAnyOtherWalletPaid && refundType === "manual_upi") {
       finalType = "wallet";
-      msgSuffix = " (Consolidated to Wallet since other items in this meal were Wallet Paid)";
+      msgSuffix = "\n(Consolidated to Wallet since other items in this meal were Wallet Paid.)";
     }
 
     if (finalType === "wallet") {
       _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
-      msg = `₹${refundAmt} refunded to Wallet${msgSuffix}`;
+      msg = buildRefundBreakdown() + `\n\n₹${refundAmt} refunded to your Wallet.${msgSuffix}`;
     }
     else if (finalType === "manual_upi") {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
       const note = adjustment > 0
-        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed}, bfDeliveryOwed:${bfDeliveryOwed})`
+        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
         : "";
       refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note, "upi"]);
-      msg = `₹${refundAmt} refund request raised in Approvals`;
+      msg = buildRefundBreakdown() + `\n\n₹${refundAmt} refund request raised — we'll process it within 1-2 days.`;
     }
   } 
   // ── SOFT CANCELLATION FOR UPI / SPLIT ──────────────────────────────────────
