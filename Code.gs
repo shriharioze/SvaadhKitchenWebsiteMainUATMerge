@@ -6190,3 +6190,154 @@ function testHdfcConnection() {
   });
   console.log("testHdfcConnection result:", JSON.stringify(result, null, 2));
 }
+
+
+// ============================================================
+// ONE-TIME REPAIR: Fix Loyalty_Discount markers in SK_Orders
+// ============================================================
+/**
+ * Run once from Apps Script editor to back-fill correct Loyalty_Discount
+ * values for all customers. Safe to run multiple times (idempotent).
+ *
+ * What it does:
+ *  1. Replays every customer's order history chronologically (same logic
+ *     as submitOrder's virtual streak).
+ *  2. Identifies which rows SHOULD have Loyalty_Discount = "Yes" based
+ *     on the 6-consecutive-day rule.
+ *  3. Writes "Yes" / "No" into the sheet only where the current value
+ *     differs, so it doesn't thrash unchanged rows.
+ *
+ * Run from Editor: open Apps Script → select fixLoyaltyDiscountMarkers → Run
+ */
+function fixLoyaltyDiscountMarkers() {
+  const ss  = getSpreadsheet();
+  const ws  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const data = ws.getDataRange().getValues();
+  if (data.length < 2) { console.log("No data rows."); return; }
+
+  const headers = data[0];
+  const colIdx  = {};
+  headers.forEach((h, i) => { colIdx[String(h).trim()] = i; });
+
+  const COL_PHONE   = colIdx["Phone"];
+  const COL_DATE    = colIdx["Order_Date"];
+  const COL_STATUS  = colIdx["Payment_Status"];
+  const COL_SUBTOT  = colIdx["Food_Subtotal"];
+  const COL_LOYDISC = colIdx["Loyalty_Discount"];
+  const COL_DISCAMT = colIdx["Discount_Amount"];
+
+  if (COL_LOYDISC === undefined) {
+    console.error("Loyalty_Discount column not found. Run initSchema() first.");
+    return;
+  }
+
+  // ── 1. Group rows by phone ──────────────────────────────────
+  const byPhone = {}; // phone → [{ rowIndex(1-based), date, subtotal, status, discAmt, current }]
+  for (let i = 1; i < data.length; i++) {
+    const row    = data[i];
+    const phone  = _normalizePhone(String(row[COL_PHONE] || "").trim());
+    if (!phone) continue;
+    const stat   = String(row[COL_STATUS] || "").toLowerCase();
+    const rawDate = row[COL_DATE];
+    const dateStr = rawDate instanceof Date
+      ? Utilities.formatDate(rawDate, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(rawDate || "").trim();
+    if (!dateStr) continue;
+
+    if (!byPhone[phone]) byPhone[phone] = [];
+    byPhone[phone].push({
+      rowIndex: i + 1,          // 1-based sheet row
+      date:     dateStr,
+      subtotal: Number(row[COL_SUBTOT] || 0),
+      discAmt:  Number(row[COL_DISCAMT] || 0),
+      status:   stat,
+      current:  String(row[COL_LOYDISC] || "").trim()
+    });
+  }
+
+  // ── 2. For each customer, replay streak forward in time ─────
+  const writes = []; // { rowIndex, value }
+  let changed = 0, unchanged = 0;
+
+  Object.entries(byPhone).forEach(([phone, rows]) => {
+    // Sort chronologically, then by rowIndex (multiple meals same day)
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.rowIndex - b.rowIndex);
+
+    // Aggregate per day: group rows by date, pick only active orders
+    const activeDayMap = {}; // date → [rows]
+    rows.forEach(r => {
+      const cancelled = r.status.includes("cancelled") || r.status.includes("deleted");
+      if (cancelled) return;
+      if (!activeDayMap[r.date]) activeDayMap[r.date] = [];
+      activeDayMap[r.date].push(r);
+    });
+
+    // Get sorted unique active days
+    const activeDates = Object.keys(activeDayMap).sort();
+
+    let streakCount = 0; // consecutive active days going forward
+    let prevDate    = null;
+
+    activeDates.forEach(dateStr => {
+      const d = new Date(dateStr + "T00:00:00+05:30");
+      const dow = d.getDay(); // 0=Sun
+
+      // Check continuity: is this date the "next expected" day after prevDate?
+      let isContinuous = false;
+      if (!prevDate) {
+        isContinuous = true; // first ever day always starts streak
+      } else {
+        // Advance prevDate forward by 1+ days, skipping Sundays, to see if we land on dateStr
+        const prev = new Date(prevDate + "T00:00:00+05:30");
+        let nxt = new Date(prev); nxt.setDate(nxt.getDate() + 1);
+        while (nxt.getDay() === 0) nxt.setDate(nxt.getDate() + 1); // skip Sundays
+        const nxtISO = Utilities.formatDate(nxt, "Asia/Kolkata", "yyyy-MM-dd");
+        isContinuous = (nxtISO === dateStr);
+      }
+
+      if (!isContinuous) {
+        // Gap — reset streak
+        streakCount = 0;
+      }
+
+      const is6thDay = (streakCount === 5); // 0-indexed: 0=1st, 5=6th
+
+      // Mark all rows for this date
+      activeDayMap[dateStr].forEach(r => {
+        const expected = is6thDay ? "Yes" : "No";
+        writes.push({ rowIndex: r.rowIndex, value: expected });
+        if (r.current !== expected) changed++;
+        else unchanged++;
+      });
+
+      if (is6thDay) {
+        streakCount = 0; // reset after reward day
+      } else {
+        streakCount++;
+      }
+
+      prevDate = dateStr;
+    });
+
+    // Also mark cancelled rows on 6th-day dates as "No" (they didn't get reward)
+    rows.forEach(r => {
+      const cancelled = r.status.includes("cancelled") || r.status.includes("deleted");
+      if (!cancelled) return;
+      // Already handled above for active rows; just ensure cancelled don't have "Yes" erroneously
+      if (r.current === "Yes") {
+        writes.push({ rowIndex: r.rowIndex, value: "No" });
+        changed++;
+      }
+    });
+  });
+
+  // ── 3. Batch-write all changes ──────────────────────────────
+  writes.forEach(w => {
+    ws.getRange(w.rowIndex, COL_LOYDISC + 1).setValue(w.value);
+  });
+
+  console.log(`fixLoyaltyDiscountMarkers complete.`);
+  console.log(`  Rows updated : ${changed}`);
+  console.log(`  Rows already correct: ${unchanged}`);
+  console.log(`  Total writes : ${writes.length}`);
+}
