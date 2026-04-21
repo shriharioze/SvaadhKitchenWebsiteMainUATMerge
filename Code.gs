@@ -3335,34 +3335,6 @@ function getCustomerList() {
   return {success:true, customers:customers};
 }
 
-function markReviewed(body) {
-  var phone = body.phone;
-  if (!phone) return {success:false, error:"phone required"};
-
-  var ss   = getSpreadsheet();
-  var ws   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
-  var hIdx = headerIndex(ws);
-  var rows = getAllRows(ws);
-  var normP = _normalizePhone(phone);
-
-  var r = rows.find(function(x) { return _normalizePhone(x.Phone) === normP; });
-  if (!r) return {success:false, error:"Customer not found"};
-
-  var col = hIdx["Review_Promo_Count"];
-  if (!col) return {success:false, error:"Review_Promo_Count column missing"};
-
-  var current = Number(r.Review_Promo_Count) || 0;
-  ws.getRange(r._row, col).setValue(current + 3);
-
-  // Mark as claimed
-  var claimCol = hIdx["Review_Reward_Claimed"];
-  if (claimCol) {
-    ws.getRange(r._row, claimCol).setValue("TRUE");
-  }
-
-  return {success:true, newCount: current + 3};
-}
-
 // ── GET CUSTOMER HISTORY ──────────────────────────────────────────────────────
 function getCustomerHistory(phone) {
   if (!phone) return {success:false, error:"phone required"};
