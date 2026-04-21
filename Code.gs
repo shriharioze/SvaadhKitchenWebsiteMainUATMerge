@@ -1685,40 +1685,52 @@ function _calculateLoyaltyStreak(phone) {
   const phoneStr = _normalizePhone(phone);
   const todayISO = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
 
-  const dailyTotals = {};
+  const dailyTotals  = {}; // date → total surcharge that day
+  const rewardDays   = new Set(); // dates where Loyalty_Discount = "Yes"
+
   rows.forEach(r => {
     if (_normalizePhone(r.Phone) !== phoneStr) return;
     const stat = String(r.Payment_Status || "").toLowerCase();
     if (stat.includes("cancelled") || stat.includes("deleted")) return;
-    
+
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Order_Date).trim();
-    if (d >= todayISO) return; // Only past days for the streak check
+    if (d >= todayISO) return; // Only past days
 
     if (!dailyTotals[d]) dailyTotals[d] = 0;
-    dailyTotals[d] += (Number(r.Inflation_Surcharge) || (Math.ceil((Number(r.Food_Subtotal)||0)/20))); 
+    dailyTotals[d] += (Number(r.Inflation_Surcharge) || (Math.ceil((Number(r.Food_Subtotal)||0)/20)));
+
+    // Track days where the 6-day loyalty reward was already given
+    if (String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes") {
+      rewardDays.add(d);
+    }
   });
 
   let streakCount = 0;
   let accumulatedSurcharge = 0;
-  
-  let d = new Date(); d.setDate(d.getDate() - 1); // yesterday
+
+  let d = new Date(); d.setDate(d.getDate() - 1); // start from yesterday
   let safety = 0;
-  while (safety < 30) { 
+  while (safety < 30) {
     safety++;
-    if (d.getDay() === 0) { // Skip Sunday
+    if (d.getDay() === 0) { // Skip Sunday (closed)
       d.setDate(d.getDate() - 1);
       continue;
     }
     const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
     if (dailyTotals[iso] !== undefined) {
+      if (rewardDays.has(iso)) {
+        // This day was a 6th-day reward day — it marks the END of the previous cycle.
+        // Don't count it; the new cycle starts from the day after it.
+        break;
+      }
       streakCount++;
       accumulatedSurcharge += dailyTotals[iso];
     } else {
-      break; 
+      break; // gap in ordering — streak broken
     }
     d.setDate(d.getDate() - 1);
   }
-  
+
   return { streak: streakCount, pastSurcharge: accumulatedSurcharge };
 }
 
@@ -1762,6 +1774,7 @@ function getCustomerOrders(phone) {
         summary:            _buildSummary(r),
         total:              r.Net_Total,
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
+        loyalty_discount:   String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes",
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         wallet_credit:      Number(r.Wallet_Credit) || 0,
@@ -1783,6 +1796,7 @@ function getCustomerOrders(phone) {
         summary:            _buildSummary(r),
         total:              r.Net_Total,
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
+        loyalty_discount:   String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes",
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         wallet_credit:      Number(r.Wallet_Credit) || 0,
