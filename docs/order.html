@@ -7680,14 +7680,15 @@
       const btn = $("hdfcPayBtn");
       if (btn) { btn.disabled = true; btn.textContent = "⏳ Creating secure session…"; }
 
-      // Generate a unique gateway order ID for this session
-      // Format: SK-YYYYMMDD-G-XXXX  (G = Gateway)
+      // Generate a unique gateway order ID for this session.
+      // Rules (HDFC security audit): alphanumeric only, ≤21 chars, non-sequential.
+      // Format: SK + YYMMDD (6) + G + 9 random alphanumeric chars = 18 chars total.
       const now      = new Date();
       const datePart = now.getFullYear().toString().slice(-2)
                      + String(now.getMonth() + 1).padStart(2, "0")
                      + String(now.getDate()).padStart(2, "0");
-      const rand     = Math.floor(Math.random() * 9000) + 1000;
-      const tempId   = `SK-${datePart}-G-${rand}`;
+      const rand     = Math.random().toString(36).substr(2, 9).toUpperCase();
+      const tempId   = `SK${datePart}G${rand}`;
 
       // Store temp ID so we can match it when HDFC redirects back
       S.hdfcPendingOrderId = tempId;

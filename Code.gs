@@ -5527,8 +5527,8 @@ function hdfc_createSession(body) {
     first_name:             name.split(" ")[0] || name,
     last_name:              name.split(" ").slice(1).join(" ") || "",
     udf1:                   phone,
-    udf2:                   orderId,
     udf3:                   "svaadh_kitchen"
+    // udf2 intentionally omitted — blocked by HDFC for tokenization compliance
   };
 
   // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
@@ -5702,6 +5702,60 @@ function hdfc_verifyReturnPayload(body) {
 
 
 /**
+ * Internal: Calls HDFC Order Status API to confirm a payment server-side.
+ * Must be called before writing "Paid" to the sheet — webhook alone is not
+ * sufficient per HDFC security audit requirements.
+ *
+ * Endpoint: GET {HDFC_BASE_URL}/orders/{order_id}
+ * Auth:     Basic base64(API_KEY + ":")
+ *
+ * @param {string} orderId  The gateway order ID (alphanumeric, ≤21 chars)
+ * @returns {{ confirmed: boolean, status: string, txn_id: string }}
+ */
+function hdfc_getOrderStatus(orderId) {
+  if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) {
+    console.warn("hdfc_getOrderStatus: credentials not configured.");
+    return { confirmed: false, status: "UNKNOWN", txn_id: "" };
+  }
+
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
+  const options = {
+    method:             "get",
+    headers: {
+      "Authorization": "Basic " + authToken,
+      "x-merchantid":  HDFC_MERCHANT_ID,
+      "version":        "2023-01-01"
+    },
+    muteHttpExceptions: true
+  };
+
+  try {
+    const resp     = UrlFetchApp.fetch(HDFC_BASE_URL + "/orders/" + orderId, options);
+    const respCode = resp.getResponseCode();
+    const respBody = JSON.parse(resp.getContentText());
+
+    console.log("hdfc_getOrderStatus [" + respCode + "] for " + orderId + ":", JSON.stringify(respBody));
+
+    if (respCode !== 200) {
+      console.warn("hdfc_getOrderStatus: non-200 response (" + respCode + ") for " + orderId);
+      return { confirmed: false, status: "API_ERROR", txn_id: "" };
+    }
+
+    const status = String(respBody.status || "").toUpperCase();
+    const txnId  = String((respBody.txn_detail && respBody.txn_detail.txn_id) || respBody.txn_id || "");
+    return {
+      confirmed: (status === "CHARGED"),
+      status:    status,
+      txn_id:    txnId
+    };
+  } catch (err) {
+    console.error("hdfc_getOrderStatus error:", err.message);
+    return { confirmed: false, status: "FETCH_ERROR", txn_id: "" };
+  }
+}
+
+
+/**
  * Internal: Marks a Svaadh order row(s) as PAID in SK_Orders sheet.
  * Called by hdfc_handleWebhook on ORDER_SUCCEEDED.
  *
@@ -5714,7 +5768,19 @@ function hdfc_markOrderPaid(order) {
 
   if (!orderId) return { error: "Webhook: missing order_id." };
 
-  console.log("HDFC Payment confirmed: " + orderId + " via " + method);
+  console.log("HDFC Webhook received for order: " + orderId + " via " + method);
+
+  // ── Step 1: Verify payment via Status API (mandatory per HDFC security audit) ──
+  // Never rely on the webhook payload alone. Confirm the order is truly CHARGED.
+  const statusCheck = hdfc_getOrderStatus(orderId);
+  if (!statusCheck.confirmed) {
+    console.warn("hdfc_markOrderPaid: Status API returned '" + statusCheck.status + "' for " + orderId + ". Aborting mark-paid.");
+    return { success: true, message: "Webhook received but Status API shows " + statusCheck.status + " — not marking paid." };
+  }
+  // Use txn_id from Status API if richer than what webhook provided
+  if (statusCheck.txn_id && !txnId) txnId = statusCheck.txn_id;
+
+  console.log("HDFC Status API confirmed CHARGED: " + orderId + " (TXN:" + txnId + ")");
 
   try {
     const ss      = getSpreadsheet();
@@ -5735,6 +5801,14 @@ function hdfc_markOrderPaid(order) {
     var updated = 0;
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][COL_SID] || "").trim() === orderId) {
+
+        // ── Step 2: Duplicate check — skip if already marked Paid ──
+        const currentStatus = String(data[i][COL_PSTATUS] || "").toLowerCase();
+        if (currentStatus === "paid" || currentStatus === "collected") {
+          console.log("hdfc_markOrderPaid: order " + orderId + " row " + (i+1) + " already Paid — skipping (duplicate webhook).");
+          continue;
+        }
+
         ws.getRange(i + 1, COL_PSTATUS + 1).setValue("Paid");
         if (COL_PMETHOD >= 0) {
           ws.getRange(i + 1, COL_PMETHOD + 1).setValue("Gateway (" + method + ")");
@@ -5749,8 +5823,8 @@ function hdfc_markOrderPaid(order) {
     }
 
     if (updated === 0) {
-      console.warn("HDFC Webhook: order " + orderId + " not found in SK_Orders.");
-      return { success: true, message: "Order " + orderId + " not found — event logged." };
+      console.warn("HDFC Webhook: order " + orderId + " not found in SK_Orders (or already Paid).");
+      return { success: true, message: "Order " + orderId + " not found or already processed." };
     }
 
     return { success: true, message: "Order " + orderId + " marked paid (" + updated + " row(s))." };
@@ -5793,7 +5867,7 @@ function testHdfcConnection() {
     phone:       "9999999999",
     name:        "Test Customer",
     amount:      1,
-    order_id:    "SK-TEST-" + Date.now(),
+    order_id:    "SKTEST" + Date.now().toString(36).toUpperCase().slice(-9),  // alphanumeric ≤21
     description: "Svaadh Kitchen — Connection Test"
   });
   console.log("testHdfcConnection result:", JSON.stringify(result, null, 2));
