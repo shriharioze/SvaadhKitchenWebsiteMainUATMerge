@@ -5528,8 +5528,9 @@ function hdfc_createSession(body) {
     first_name:             name.split(" ")[0] || name,
     last_name:              name.split(" ").slice(1).join(" ") || "",
     udf1:                   phone,
-    udf3:                   "svaadh_kitchen"
+    udf3:                   "svaadh_kitchen",
     // udf2 intentionally omitted — blocked by HDFC for tokenization compliance
+    notification_url:       HDFC_RETURN_URL   // webhook URL per-session (fallback if dashboard not set)
   };
 
   // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
