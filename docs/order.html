@@ -4171,7 +4171,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_yJ8__7phuGfdSvclc5FVdpuM7WHffq4ybPrxYJUBp1frhiN1HZA2lcNUGSqlm1INHg/exec"; // DEV — Svaadh Kitchen Dev project
-    const APP_VERSION = "v26.04.19.02-hdfc";
+    const APP_VERSION = "v26.04.21.01-hdfc";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7690,17 +7690,26 @@
       const rand     = Math.random().toString(36).substr(2, 9).toUpperCase();
       const tempId   = `SK${datePart}G${rand}`;
 
-      // Store temp ID + full order state so we can restore after HDFC redirect
-      // (page is a fresh load on return — in-memory S.* state is gone)
+      // Save full order state to GAS backend before redirecting to HDFC.
+      // sessionStorage/localStorage are unreliable across cross-origin redirects.
+      // Backend stores it keyed by tempId, retrieved on return.
       S.hdfcPendingOrderId = tempId;
-      sessionStorage.setItem("sk_hdfc_pending_id",        tempId);
-      sessionStorage.setItem("sk_hdfc_pending_amount",    String(S.grandTotal));
-      sessionStorage.setItem("sk_hdfc_pending_phone",     S.phone || "");
-      sessionStorage.setItem("sk_hdfc_pending_orders",    JSON.stringify(S.orders        || {}));
-      sessionStorage.setItem("sk_hdfc_pending_dates",     JSON.stringify(S.selectedDates || []));
-      sessionStorage.setItem("sk_hdfc_pending_profile",   JSON.stringify(S.profile       || {}));
-      sessionStorage.setItem("sk_hdfc_pending_mealAddrs", JSON.stringify(S.mealAddrs     || {}));
-      sessionStorage.setItem("sk_hdfc_pending_firstTime", JSON.stringify(S.isFirstTime   || false));
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            _action:       "hdfc_savePendingOrder",
+            order_id:      tempId,
+            phone:         S.phone         || "",
+            amount:        S.grandTotal    || 0,
+            orders:        S.orders        || {},
+            selectedDates: S.selectedDates || [],
+            profile:       S.profile       || {},
+            mealAddrs:     S.mealAddrs     || {},
+            isFirstTime:   S.isFirstTime   || false
+          })
+        });
+      } catch (_) { /* non-fatal — proceed with redirect even if save fails */ }
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
@@ -7772,34 +7781,33 @@
         if (data.error) throw new Error(data.error);
 
         if (data.paid) {
-          // Payment confirmed — restore order state from sessionStorage
-          // (this is a fresh page load — in-memory S.* was wiped by the HDFC redirect)
-          const pendingId = sessionStorage.getItem("sk_hdfc_pending_id");
+          // Payment confirmed — restore order state from GAS Script Properties
+          // (sessionStorage is unreliable across cross-origin redirect chain)
+          let pendingData = null;
+          try {
+            const pendingRes = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              body: JSON.stringify({ _action: "hdfc_getPendingOrder", order_id: orderId })
+            });
+            pendingData = await pendingRes.json();
+          } catch(_) {}
 
-          if (pendingId && pendingId === orderId) {
+          if (pendingData && pendingData.success) {
             // Restore all order state saved before the redirect
-            try {
-              S.phone         = sessionStorage.getItem("sk_hdfc_pending_phone")  || S.phone || "";
-              S.orders        = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_orders")    || "{}");
-              S.selectedDates = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_dates")     || "[]");
-              S.profile       = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_profile")   || "{}");
-              S.mealAddrs     = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_mealAddrs") || "{}");
-              S.isFirstTime   = JSON.parse(sessionStorage.getItem("sk_hdfc_pending_firstTime") || "false");
-            } catch(_) {}
-
-            // Clean up sessionStorage
-            ["sk_hdfc_pending_id","sk_hdfc_pending_amount","sk_hdfc_pending_phone",
-             "sk_hdfc_pending_orders","sk_hdfc_pending_dates","sk_hdfc_pending_profile",
-             "sk_hdfc_pending_mealAddrs","sk_hdfc_pending_firstTime"]
-              .forEach(k => sessionStorage.removeItem(k));
+            S.phone         = pendingData.phone         || S.phone || "";
+            S.orders        = pendingData.orders        || {};
+            S.selectedDates = pendingData.selectedDates || [];
+            S.profile       = pendingData.profile       || {};
+            S.mealAddrs     = pendingData.mealAddrs     || {};
+            S.isFirstTime   = pendingData.isFirstTime   || false;
 
             S.hdfcPaymentVerified = true;
             S.hdfcGatewayOrderId  = orderId;
             await hdfc_submitVerifiedOrder(orderId, status);
           } else {
-            // pendingId mismatch — payment confirmed but can't auto-submit
+            // Backend lookup failed — payment confirmed but can't auto-submit
             await sAlert(
-              "Payment of ₹" + (sessionStorage.getItem("sk_hdfc_pending_amount") || "?") + " confirmed!\n\nYour order ID: " + orderId,
+              "Payment confirmed!\n\nYour order ID: " + orderId + "\n\nPlease WhatsApp us at +91 93222 46765 with this ID to confirm your order.",
               "Payment Successful ✅", "🎉"
             );
           }
