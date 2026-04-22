@@ -988,6 +988,85 @@ function _appendWalletTransaction(phone, name, txnType, amount, isVerified, refI
   ws.appendRow(row);
 }
 
+// ── MISSED-ORDER SAFETY NET ───────────────────────────────────
+/**
+ * Called immediately after appendRow for each order row.
+ * Saves the order payload to Script Properties as a backup.
+ * A separate cleanup pass (called at the end of submitOrder after flush)
+ * verifies the row landed in the sheet; if not, it emails admin.
+ *
+ * This closes the 0.5% gap where GAS buffered writes silently failed.
+ */
+function _missedOrderSafetyNet(ss, sid, row, phone) {
+  try {
+    const props  = PropertiesService.getScriptProperties();
+    const raw    = props.getProperty("PENDING_ORDER_ROWS") || "{}";
+    const store  = JSON.parse(raw);
+    // Expire entries older than 10 minutes
+    const now    = Date.now();
+    Object.keys(store).forEach(k => { if (now - store[k].ts > 10 * 60 * 1000) delete store[k]; });
+    store[sid]   = { ts: now, phone: String(phone || ""), row: row };
+    props.setProperty("PENDING_ORDER_ROWS", JSON.stringify(store));
+  } catch(e) {
+    console.error("_missedOrderSafetyNet save failed:", e.message);
+  }
+}
+
+function _verifyAndAlertMissedOrders(ss, submissionIds) {
+  try {
+    const props  = PropertiesService.getScriptProperties();
+    const raw    = props.getProperty("PENDING_ORDER_ROWS") || "{}";
+    const store  = JSON.parse(raw);
+    if (!Object.keys(store).length) return;
+
+    const ws     = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+    const hIdx   = headerIndex(ws);
+    const sidCol = hIdx["Submission_ID"];
+    if (!sidCol) return;
+
+    // Read all Submission_IDs from sheet (last 200 rows for speed)
+    const lastRow  = ws.getLastRow();
+    const startRow = Math.max(2, lastRow - 200);
+    const count    = lastRow - startRow + 1;
+    if (count <= 0) return;
+    const sidValues = ws.getRange(startRow, sidCol, count, 1).getValues().flat().map(String);
+    const inSheet   = new Set(sidValues);
+
+    const missed = [];
+    Object.entries(store).forEach(([sid, entry]) => {
+      if (!inSheet.has(sid)) {
+        console.error("MISSED ORDER DETECTED — " + sid + " not found in sheet after flush!");
+        missed.push({ sid, phone: entry.phone, row: entry.row });
+        // Emergency re-append
+        try {
+          ws.appendRow(entry.row);
+          console.log("Emergency re-append succeeded for " + sid);
+        } catch(e2) {
+          console.error("Emergency re-append FAILED for " + sid + ": " + e2.message);
+        }
+      }
+      delete store[sid]; // clear from queue regardless
+    });
+
+    props.setProperty("PENDING_ORDER_ROWS", JSON.stringify(store));
+
+    if (missed.length > 0) {
+      // Email admin alert
+      try {
+        const adminEmail = PropertiesService.getScriptProperties().getProperty("ADMIN_EMAIL");
+        if (adminEmail) {
+          const body = missed.map(m =>
+            `SK Order ID: ${m.sid}\nPhone: ${m.phone}\nRow data: ${JSON.stringify(m.row)}`
+          ).join("\n\n---\n\n");
+          GmailApp.sendEmail(adminEmail, "⚠️ Svaadh: Missed Order Row Detected & Auto-Recovered", body);
+        }
+      } catch(e) { console.error("Alert email failed:", e.message); }
+    }
+  } catch(e) {
+    console.error("_verifyAndAlertMissedOrders failed:", e.message);
+  }
+}
+
 // ── SUBMIT ORDER ─────────────────────────────────────────────
 function submitOrder(body) {
   const ss = getSpreadsheet();
@@ -1361,8 +1440,15 @@ function submitOrder(body) {
       }
 
       ordersWs.appendRow(row);
+      _missedOrderSafetyNet(ss, sid, row, profile.phone);  // safety net — verify write succeeded
     }
   }
+
+  // Force all buffered Sheets writes to disk before returning success
+  SpreadsheetApp.flush();
+
+  // Verify every row we just wrote actually landed; auto-recover + email if not
+  _verifyAndAlertMissedOrders(ss, submissionIds);
 
   // Upsert customer record
   _upsertCustomer(ss, profile);
