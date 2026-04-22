@@ -7942,7 +7942,7 @@
       try {
         const res  = await fetch(`${APPS_SCRIPT_URL}?action=getConfig`);
         const data = await res.json();
-        S.gatewayEnabled = !!(data && data.gateway_enabled);
+        S.gatewayEnabled = false; // LOCKED: awaiting HDFC bank approval — do not enable until approved
         S.gatewayEnv     = (data && data.gateway_env) || "test";
         console.log(`HDFC Gateway: ${S.gatewayEnabled ? "ENABLED (" + S.gatewayEnv + ")" : "disabled"}`);
       } catch (e) {
