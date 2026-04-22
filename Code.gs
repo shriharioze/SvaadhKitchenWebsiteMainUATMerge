@@ -1521,7 +1521,28 @@ function submitOrder(body) {
         set("Review_Discount",   meal._reviewDiscount || 0);
       }
       set("Net_Total",           netTotal);
-      
+
+      // ════ DUPLICATE CHECK — must run BEFORE wallet deduction ════
+      // If this phone+date+meal+items was already submitted within 5 min, skip entirely
+      // (including wallet deduction) to prevent double-charging on network retries.
+      const _incomingSig = _itemsSig(itemsObj);
+      const _dupRow = allOrderRows.find(r => {
+        if (_normalizePhone(r.Phone) !== _normPhone) return false;
+        if (_normDate(r.Order_Date) !== _normDate(orderDate)) return false;
+        if (r.Meal_Type !== mealType) return false;
+        const rMs = r.Submitted_At ? new Date(r.Submitted_At).getTime() : 0;
+        if (!rMs || (_dupNowMs - rMs) > _FIVE_MIN_MS) return false;
+        try {
+          const stored = typeof r.Items_JSON === "string" ? JSON.parse(r.Items_JSON) : (r.Items_JSON || {});
+          return _itemsSig(stored) === _incomingSig;
+        } catch(e) { return false; }
+      });
+      if (_dupRow) {
+        submissionIds[submissionIds.length - 1] = _dupRow.Submission_ID || sid;
+        console.log("Duplicate order skipped (wallet protected): " + _normPhone + " / " + orderDate + " / " + mealType);
+        continue;
+      }
+
       let pStat = payStatus;
       let walletCreditUsed = 0;
       // ════ WALLET DEDUCTION LOGIC ════
@@ -1592,25 +1613,6 @@ function submitOrder(body) {
           const finalCol = (masterMap[canonical]) ? masterMap[canonical] : canonical;
           set(finalCol, qty);
         });
-      }
-
-      // Duplicate guard: same phone + date + meal_type + identical items within 5 minutes → skip
-      const _incomingSig = _itemsSig(itemsObj);
-      const _dupRow = allOrderRows.find(r => {
-        if (_normalizePhone(r.Phone) !== _normPhone) return false;
-        if (_normDate(r.Order_Date) !== _normDate(orderDate)) return false;
-        if (r.Meal_Type !== mealType) return false;
-        const rMs = r.Submitted_At ? new Date(r.Submitted_At).getTime() : 0;
-        if (!rMs || (_dupNowMs - rMs) > _FIVE_MIN_MS) return false;
-        try {
-          const stored = typeof r.Items_JSON === "string" ? JSON.parse(r.Items_JSON) : (r.Items_JSON || {});
-          return _itemsSig(stored) === _incomingSig;
-        } catch(e) { return false; }
-      });
-      if (_dupRow) {
-        submissionIds[submissionIds.length - 1] = _dupRow.Submission_ID || sid;
-        console.log("Duplicate order skipped: " + _normPhone + " / " + orderDate + " / " + mealType);
-        continue;
       }
 
       ordersWs.appendRow(row);
