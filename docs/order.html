@@ -3780,85 +3780,143 @@
         </div>
       </div>
 
-      <div class="card" id="successCard" style="display:none;">
-        <div class="success-screen">
-          <div class="big-icon">🎉</div>
-          <h2 data-i18n="success_title">Order Placed!</h2>
-          <p data-i18n="success_msg">Your order is confirmed. Fresh food, on time, every time.</p>
-          <div class="order-ref"><span data-i18n="order_id_label">Order ID:</span> <strong
-              id="orderIdDisplay">—</strong></div>
-          <a href="https://chat.whatsapp.com/JvcTY6Bn7CgCFQJkdlLVoc?mode=gi_t" target="_blank" class="wa-group-banner" style="margin: 16px 0; justify-content: center;">
-            <span>📲 Join group for daily menu, updates and reminders</span>
-          </a>
+      <!-- ═══════════════════════════════════════════════════
+           SUCCESS SCREEN  — redesigned with Claude Design
+           All JS hooks (IDs, functions) preserved exactly
+           ═══════════════════════════════════════════════════ -->
+      <div id="successCard" style="display:none; background:#f7faf7; min-height:100vh; margin:-16px; padding:0; border-radius:0; box-shadow:none;">
 
-          <div id="successSummary" class="success-summary-box"></div>
+        <!-- ── Header hero ── -->
+        <div style="background:linear-gradient(160deg,#e8f5e9 0%,#f1f8f1 100%);
+                    padding:40px 24px 32px; text-align:center; position:relative; overflow:hidden;">
+          <!-- decorative leaf blobs -->
+          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;
+                      background:#c8e6c9;border-radius:50%;opacity:0.45;"></div>
+          <div style="position:absolute;bottom:-30px;left:-20px;width:80px;height:80px;
+                      background:#a5d6a7;border-radius:50%;opacity:0.3;"></div>
 
-          <!-- Delivery tip card — shown once, dismissible -->
-          <div id="deliveryTipCard" style="display:none; position:relative; margin:16px 0;
-               background:linear-gradient(135deg,#f0fdf4,#ecfdf5); border:1px solid #6ee7b7;
-               border-radius:14px; padding:16px 40px 16px 16px; text-align:left;">
+          <!-- check circle -->
+          <div style="display:inline-flex;align-items:center;justify-content:center;
+                      width:72px;height:72px;border-radius:50%;
+                      background:#2e7d32;box-shadow:0 4px 20px rgba(46,125,50,0.35);
+                      margin-bottom:18px;position:relative;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+
+          <h2 style="font-size:1.75rem;font-weight:800;color:#1b5e20;margin:0 0 6px;letter-spacing:-0.5px;">Order Placed!</h2>
+          <p style="font-size:0.9rem;color:#388e3c;margin:0 0 14px;">Your meal is being prepared with love 🍱</p>
+
+          <!-- order ID pill -->
+          <div style="display:inline-block;background:white;border:1px solid #c8e6c9;
+                      border-radius:20px;padding:5px 16px;font-size:0.78rem;
+                      font-weight:700;color:#2e7d32;letter-spacing:0.5px;">
+            #<span id="orderIdDisplay">—</span>
+          </div>
+        </div>
+
+        <!-- ── Body ── -->
+        <div style="padding:20px 16px 32px;">
+
+          <!-- Order Summary card -->
+          <div style="background:white;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.07);
+                      padding:18px;margin-bottom:14px;">
+            <div id="successSummary"></div>
+          </div>
+
+          <!-- Delivery Heads-Up card — shown once, dismissible -->
+          <div id="deliveryTipCard" style="display:none; position:relative;
+               background:linear-gradient(135deg,#fffbeb,#fef9ec);
+               border:1px solid #fde68a; border-radius:16px; padding:14px 40px 14px 14px;
+               margin-bottom:14px;">
             <button onclick="dismissDeliveryTip()" style="position:absolute;top:10px;right:12px;
-                background:none;border:none;font-size:1.1rem;cursor:pointer;color:#6b7280;
-                line-height:1;" title="Dismiss">✕</button>
-            <div style="font-size:1rem;margin-bottom:6px;">🛍️ <strong>Pro tip for smoother delivery</strong></div>
-            <div style="font-size:0.83rem;color:#065f46;line-height:1.6;">
-              Pre-approve entry for our delivery partner:<br>
-              <strong>Abhijeet Parekar — 📞 <a href="tel:8605512646" style="color:#065f46;">86055 12646</a></strong>
-              <br><br>
-              Also consider <strong>keeping a bag outside your door</strong> — our delivery partner can place food in
-              it without waiting for you, saving time for the next delivery stop. 🚀<br><br>
-              <span style="font-size:0.8rem;">You can set your handover preference anytime —
-                <a href="#" onclick="dismissDeliveryTip(); goToStep(1); return false;"
-                   style="color:#059669;font-weight:600;text-decoration:underline;">
-                  click here to update delivery instructions
-                </a>
-              </span>
+                background:none;border:none;font-size:1rem;cursor:pointer;color:#9ca3af;
+                line-height:1;padding:2px;" title="Dismiss">✕</button>
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="font-size:1.5rem;line-height:1;flex-shrink:0;">🛵</div>
+              <div>
+                <div style="font-size:0.85rem;font-weight:700;color:#92400e;margin-bottom:4px;">Delivery Heads-Up</div>
+                <div style="font-size:0.8rem;color:#78350f;line-height:1.55;">
+                  Keep your bag outside your door —
+                  Abhijeet will place the food in it without waiting, saving time for his next stop. 🚀<br>
+                  <span style="margin-top:6px;display:inline-block;font-size:0.75rem;color:#a16207;">
+                    Pre-approve: <a href="tel:8605512646" style="color:#92400e;font-weight:600;">Abhijeet Parekar · 86055 12646</a>
+                    &nbsp;·&nbsp;
+                    <a href="#" onclick="dismissDeliveryTip();goToStep(1);return false;"
+                       style="color:#92400e;font-weight:600;text-decoration:underline;">Update instructions</a>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Review Reward Prompt -->
-          <div id="successReviewPromo" class="card"
-            style="margin:16px 0; background:linear-gradient(135deg,#fff8e1,#fffde7); border:1px solid #ffd54f; padding:16px; border-radius:12px; text-align:center; display:none;">
-            <div style="font-size:1.5rem; margin-bottom:8px;">🎁</div>
+          <!-- Streak Progress badge (populated by buildBillScreen JS) -->
+          <div id="streakProgressBadge" style="display:none;margin-bottom:14px;"></div>
+
+          <!-- Review promo -->
+          <div id="successReviewPromo" style="display:none;background:linear-gradient(135deg,#fff8e1,#fffde7);
+               border:1px solid #fde68a;border-radius:16px;padding:16px;margin-bottom:14px;text-align:center;">
+            <div style="font-size:1.4rem;margin-bottom:6px;">🎁</div>
             <div id="claimDiscountSection">
-              <div style="font-weight:700; color:#856404; font-size:1rem; margin-bottom:4px;"
-                data-i18n="review_promo_text">Love the food?</div>
-              <div style="font-size:0.85rem; color:#92400e; line-height:1.5; margin-bottom:12px;"
-                data-i18n="review_promo_sub">
-                Leave us a <strong>5-star rating & review</strong> on Google and get <strong>10% OFF</strong> on your
-                next 3 orders!
+              <div style="font-weight:700;color:#856404;font-size:0.95rem;margin-bottom:4px;">Love the food?</div>
+              <div style="font-size:0.82rem;color:#92400e;line-height:1.5;margin-bottom:12px;">
+                Leave us a <strong>5-star rating</strong> on Google and get <strong>10% OFF</strong> on your next 3 orders!
               </div>
-              <a href="https://g.page/r/CasEH8gGAhzLEBM/review" target="_blank" class="btn btn-primary"
-                style="background:#f59e0b; border-color:#d97706; margin:0; font-size:0.9rem; padding:10px 16px;"
-                data-i18n="review_promo_cta">
-                Claim Your 10% Discount
+              <a href="https://g.page/r/CasEH8gGAhzLEBM/review" target="_blank"
+                 style="display:inline-block;background:#f59e0b;color:white;padding:9px 20px;
+                        border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;">
+                ⭐ Claim 10% Discount
               </a>
             </div>
             <div id="thanksReviewMessage" style="display:none;">
-              <h4 style="margin:0 0 8px;font-size:1.1rem;color:#856404;" data-i18n="review_thanks_title">Thank you! ❤️
-              </h4>
-              <p style="margin:0 0 0;font-size:0.9rem;color:#92400e;opacity:0.9;" data-i18n="review_thanks_msg">Your
-                5-star rating and review really means a lot to us.</p>
+              <div style="font-size:1.1rem;font-weight:700;color:#856404;margin-bottom:4px;">Thank you! ❤️</div>
+              <div style="font-size:0.85rem;color:#92400e;">Your 5-star rating really means a lot to us.</div>
             </div>
           </div>
 
-          <p class="text-sm" style="margin-top:8px;"><span data-i18n="success_whatsapp_hint">Questions? WhatsApp
-              us:</span> <a href="https://wa.me/919322246765" style="color:#c0392b;font-weight:600;">+91 93222 46765</a>
-          </p>
-          <p class="text-sm">Call us: <a href="tel:9930748908" style="color:#c0392b;font-weight:600;">+91 99307
-              48908</a> / <a href="tel:9819969682" style="color:#c0392b;font-weight:600;">+91 98199 69682</a></p>
-          <button class="btn btn-secondary" style="margin-top: 24px;" onclick="resetForAnotherOrder()"
-            data-i18n="btn_another_order">Place another order →</button>
-          <div
-            style="margin-top:16px; padding-top:12px; border-top:1px dashed #eee; display:flex; flex-direction:column; gap:8px;">
-            <div style="font-size:0.75rem; color:#888;">Help us improve Svaadh Kitchen!</div>
-            <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
+          <!-- WhatsApp group -->
+          <a href="https://chat.whatsapp.com/JvcTY6Bn7CgCFQJkdlLVoc?mode=gi_t" target="_blank"
+             style="display:flex;align-items:center;gap:10px;background:white;
+                    border:1px solid #e5e7eb;border-radius:14px;padding:12px 16px;
+                    text-decoration:none;margin-bottom:14px;">
+            <span style="font-size:1.3rem;">📲</span>
+            <span style="font-size:0.8rem;color:#374151;font-weight:500;line-height:1.4;">
+              Join our WhatsApp group for daily menu, updates &amp; reminders
+            </span>
+          </a>
+
+          <!-- Place Another Order CTA -->
+          <button onclick="resetForAnotherOrder()"
+                  style="width:100%;padding:16px;border-radius:14px;border:2px solid #2e7d32;
+                         background:white;color:#2e7d32;font-size:1rem;font-weight:700;
+                         cursor:pointer;margin-bottom:10px;letter-spacing:0.2px;">
+            + Place Another Order
+          </button>
+
+          <!-- Help / WhatsApp -->
+          <div style="text-align:center;margin-bottom:16px;">
+            <a href="https://wa.me/919322246765"
+               style="display:inline-flex;align-items:center;gap:6px;font-size:0.8rem;
+                      color:#25d366;font-weight:600;text-decoration:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#25d366">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Need help? Chat with us on WhatsApp
+            </a>
+          </div>
+
+          <!-- Feedback links -->
+          <div style="border-top:1px dashed #e5e7eb;padding-top:14px;text-align:center;">
+            <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;">Help us improve Svaadh Kitchen</div>
+            <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
               <a href="https://docs.google.com/forms/d/e/1FAIpQLSegGilECpH3x6jY0SmkfGlYbEQO9hPXfphpfy2prS6b-bSjGg/viewform?usp=success"
-                target="_blank" class="feedback-link">🗣️ Share Feedback</a>
-              <a href="https://forms.gle/sx563zFVvehuWvKbA" target="_blank" class="feedback-link satisfaction-link">🍱
-                Rate Meal & Service</a>
+                 target="_blank" class="feedback-link">🗣️ Share Feedback</a>
+              <a href="https://forms.gle/sx563zFVvehuWvKbA" target="_blank"
+                 class="feedback-link satisfaction-link">🍱 Rate Meal</a>
               <a href="https://docs.google.com/forms/d/e/1FAIpQLScqR82ZRF4R4h0Ea2P7U1WMo5ipenx-eM7R7WPXYKaM_4HShw/viewform?usp=success"
-                target="_blank" class="feedback-link bug-link">🐞 Found a Bug?</a>
+                 target="_blank" class="feedback-link bug-link">🐞 Found a Bug?</a>
             </div>
           </div>
           <a href="https://www.svaadhkitchen.in" class="btn btn-secondary"
@@ -5870,20 +5928,32 @@
               `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;
                 background:${i < sc ? '#059669' : '#d1d5db'};"></span>`
             ).join("");
+            // Progress bar segments (6 segments, filled = sc)
+            const segments = Array.from({length: 6}, (_, i) =>
+              `<div style="flex:1;height:6px;border-radius:3px;margin:0 2px;
+                           background:${i < sc ? '#2e7d32' : '#e5e7eb'};
+                           transition:background 0.3s;"></div>`
+            ).join("");
             streakBadge.innerHTML = `
-              <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;
-                          border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span style="font-size:1.2rem;">🔥</span>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:0.82rem;font-weight:700;color:#065f46;">
-                    ${sc}-day streak! ${remaining} more consecutive day${remaining > 1 ? 's' : ''} to unlock your loyalty reward
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:16px;
+                          padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:1.1rem;">🔥</span>
+                    <span style="font-size:0.85rem;font-weight:700;color:#111827;">Streak Progress</span>
                   </div>
-                  <div style="font-size:0.72rem;color:#047857;margin-top:3px;line-height:1.4;">
-                    On your 6th consecutive day, all market surcharges from those 6 days are refunded to you.
+                  <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:20px;
+                              padding:3px 10px;text-align:center;">
+                    <span style="font-size:0.8rem;font-weight:800;color:#c2410c;">${sc}/6</span>
+                    <span style="font-size:0.62rem;color:#9a3412;display:block;line-height:1;margin-top:1px;">days</span>
                   </div>
-                  <div style="margin-top:6px;">${dots}
-                    <span style="font-size:0.68rem;color:#6b7280;margin-left:4px;">${sc}/6 done</span>
-                  </div>
+                </div>
+                <div style="font-size:0.78rem;color:#6b7280;margin-bottom:8px;">
+                  ${remaining} more consecutive day${remaining > 1 ? 's' : ''} to unlock your surcharge refund!
+                </div>
+                <div style="display:flex;margin-bottom:10px;">${segments}</div>
+                <div style="font-size:0.75rem;color:#059669;font-weight:600;">
+                  🎁 Reward: Full surcharge refund on day 6
                 </div>
               </div>`;
             streakBadge.style.display = "block";
@@ -6764,37 +6834,75 @@
     }
 
     function renderSuccessSummary() {
+      const MEAL_ICONS  = { Breakfast: "🌅", Lunch: "☀️", Dinner: "🌙" };
+      const MEAL_TIMES  = { Breakfast: "8:30 AM", Lunch: "12:30 PM", Dinner: "6:00 PM" };
+      const MEAL_COLORS = { Breakfast: "#e65100", Lunch: "#1565c0", Dinner: "#4a148c" };
+
       let html = "";
-      let totalSaved = S.grandTotal;
+      let firstMeal = null; // track for delivery time hint
 
       for (const date of S.selectedDates) {
         const dayOrders = S.orders[date] || {};
         let dayHasMeals = false;
-        let dayHtml = `<div class="success-summary-date">📅 ${formatDate(date)}</div>`;
+
+        // date header row
+        let dateHtml = `
+          <div style="font-size:0.72rem;font-weight:700;color:#9ca3af;text-transform:uppercase;
+                      letter-spacing:0.6px;margin-bottom:10px;">
+            📅 ${formatDate(date)}
+          </div>`;
 
         ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
           const mObj = dayOrders[meal];
-          const sub = mObj?.subtotal || 0;
+          const sub  = mObj?.subtotal || 0;
           if (sub <= 0) return;
           dayHasMeals = true;
-          const icons = { Breakfast: "🌅", Lunch: "☀️", Dinner: "🌙" };
-          dayHtml += `<div class="success-summary-meal">${icons[meal]} ${meal}</div>`;
+          if (!firstMeal) firstMeal = meal;
+
+          // meal badge + delivery time
+          dateHtml += `
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.7rem;font-weight:700;color:white;
+                             background:${MEAL_COLORS[meal]};border-radius:6px;
+                             padding:2px 8px;">${MEAL_ICONS[meal]} ${meal}</span>
+              </div>
+              <span style="font-size:0.7rem;color:#6b7280;">by ${MEAL_TIMES[meal]}</span>
+            </div>`;
+
+          // items list
           for (const [colKey, qty] of Object.entries(mObj.items || {})) {
             if (qty <= 0) continue;
             const n = getItemName(colKey, meal, date);
-            dayHtml += `<div class="success-summary-item"><span>${qty} × ${n}</span><span>₹${getPrice(colKey, meal, date) * qty}</span></div>`;
+            const p = getPrice(colKey, meal, date) * qty;
+            dateHtml += `
+              <div style="display:flex;justify-content:space-between;align-items:center;
+                          padding:4px 0;font-size:0.83rem;color:#374151;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="width:6px;height:6px;border-radius:50%;
+                               background:${MEAL_COLORS[meal]};flex-shrink:0;display:inline-block;"></span>
+                  ${n} <span style="color:#9ca3af;">×${qty}</span>
+                </div>
+                <span style="font-weight:600;color:#111827;">₹${p}</span>
+              </div>`;
           }
+          dateHtml += `<div style="height:1px;background:#f3f4f6;margin:8px 0;"></div>`;
         });
 
-        if (dayHasMeals) html += `<div style="margin-bottom:16px;">${dayHtml}</div>`;
+        if (dayHasMeals) html += `<div style="margin-bottom:4px;">${dateHtml}</div>`;
       }
 
-      html += `<div class="success-summary-total">
-    <span>${t('bill_grand_total') || 'Grand Total'}</span>
-    <span>₹${totalSaved}</span>
-  </div>`;
+      // Grand total row
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding-top:4px;margin-top:2px;">
+          <span style="font-size:0.85rem;font-weight:600;color:#374151;">Total Paid</span>
+          <span style="font-size:1.15rem;font-weight:800;color:#2e7d32;">₹${S.grandTotal}</span>
+        </div>`;
 
       $("successSummary").innerHTML = html;
+
     }
     function dismissDeliveryTip() {
       localStorage.setItem("sk_delivery_tip_dismissed", "1");
