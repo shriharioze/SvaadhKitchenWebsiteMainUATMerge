@@ -4824,7 +4824,20 @@
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
       // (fetched async on page load) are always applied — avoids stale default cutoff
-      if (s === 2) renderCalendar();
+      if (s === 2) {
+        renderCalendar();
+        // Show refresh nudge once per session — here so auto-logged-in users see it too
+        if (!sessionStorage.getItem("sk_nudge_shown")) {
+          setTimeout(() => {
+            const nudge = $("refreshNudge");
+            if (nudge) {
+              nudge.style.display = "block";
+              sessionStorage.setItem("sk_nudge_shown", "1");
+              setTimeout(dismissRefreshNudge, 8000); // auto-dismiss after 8s
+            }
+          }, 1500);
+        }
+      }
 
       // Grace period timer — start on Step 3 (meal selection), stop on all other steps
       if (s === 3) {
@@ -8250,17 +8263,7 @@
       applyThemeIcon();
       hdfc_init();   // Check gateway config + handle any HDFC return URL params
 
-      // Show refresh nudge once per browser session
-      if (!sessionStorage.getItem("sk_nudge_shown")) {
-        setTimeout(() => {
-          const nudge = $("refreshNudge");
-          if (nudge) {
-            nudge.style.display = "block";
-            sessionStorage.setItem("sk_nudge_shown", "1");
-            setTimeout(dismissRefreshNudge, 8000); // auto-dismiss after 8s
-          }
-        }, 1500);
-      }
+      // Refresh nudge is shown when user reaches the calendar (step 2) — see updateNav()
 
 
       loadAreas();
