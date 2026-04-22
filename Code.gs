@@ -2037,41 +2037,47 @@ function deleteOrder(phone, rowId, refundType) {
     // Calc old day subtotal (including deleted row)
     const oldDaySubtotal = remainingDaySubtotal + (Number(r.Food_Subtotal) || 0);
 
-    // Discount eligibility helper
-    const discRate = (sub) => sub >= 450 ? 0.075 : sub >= 300 ? 0.05 : 0;
-    const oldRate = discRate(oldDaySubtotal);
-    const newRate = discRate(remainingDaySubtotal);
-
-    // Calc over-discount on remaining orders: they received discount at oldRate
-    // but now only deserve newRate. Also update those rows in the sheet so that
-    // a same-day reorder sees the corrected prevDayDiscAmt and gets the right discount.
+    // Over-discount claw-back: only claw back discounts that were ACTUALLY applied
+    // to remaining orders (read from their Discount_Amount column), not a theoretical
+    // volume tier. submitOrder only applies loyalty (6th-day) discounts, not volume tiers.
     let overDiscount = 0;
-    if (oldRate > newRate) {
-      const overOnRemaining = sameDayRows.reduce((s, x) => {
-        const xSub = Number(x.Food_Subtotal) || 0;
-        const oldD = Math.round(xSub * oldRate);
-        const newD = Math.round(xSub * newRate);
-        return s + (oldD - newD);
-      }, 0);
-      overDiscount = overOnRemaining;
+    {
+      const discColIdx = hIdx["Discount_Amount"];
+      const netColIdx  = hIdx["Net_Total"];
 
-      // ── Update remaining rows so their stored Discount_Amount and Net_Total
-      //    reflect the new (lower) tier. This ensures any re-order on the same
-      //    day computes prevDayDiscAmt correctly and gives the right discount.
-      if (overDiscount > 0) {
-        const discColIdx  = hIdx["Discount_Amount"];
-        const netColIdx   = hIdx["Net_Total"];
-        sameDayRows.forEach(x => {
-          const xSub      = Number(x.Food_Subtotal)      || 0;
-          const xSurcharge= Number(x.Inflation_Surcharge)|| 0;
-          const xDelivery = Number(x.Delivery_Charge)    || 0;
-          const xSmallFee = Number(x.Small_Order_Fee)    || 0;
-          const xReviewD  = Number(x.Review_Discount)    || 0;
-          const newDiscAmt= Math.round(xSub * newRate);          // 0 when newRate=0
-          const newNetTotal = xSub + xDelivery + xSmallFee + xSurcharge - newDiscAmt - xReviewD;
-          if (discColIdx) ws.getRange(x._row, discColIdx).setValue(newDiscAmt);
-          if (netColIdx)  ws.getRange(x._row, netColIdx) .setValue(newNetTotal);
-        });
+      // Sum of discounts actually applied to remaining rows
+      const totalActualDiscount = sameDayRows.reduce((s, x) => s + (Number(x.Discount_Amount) || 0), 0);
+
+      if (totalActualDiscount > 0) {
+        // Re-compute what discount the remaining orders SHOULD get after deletion.
+        // We use their total food subtotal and compare to what was actually given.
+        // For now: if the deleted order was the "trigger" for the day's loyalty discount,
+        // the remaining orders should have 0 discount (they didn't earn it alone).
+        // Claw back = (actual given) − (what they deserve now).
+        // Conservative: only claw back if none of the remaining rows have Loyalty_Discount=Yes.
+        const remainingHasLoyalty = sameDayRows.some(x =>
+          String(x.Loyalty_Discount || "").trim().toLowerCase() === "yes"
+        );
+
+        if (!remainingHasLoyalty) {
+          // No loyalty day in remaining rows — the deleted row was the discount trigger.
+          // Claw back all discounts from remaining rows.
+          overDiscount = totalActualDiscount;
+
+          // Update remaining rows: zero out their Discount_Amount and restore Net_Total
+          if (overDiscount > 0 && discColIdx && netColIdx) {
+            sameDayRows.forEach(x => {
+              const xSub      = Number(x.Food_Subtotal)       || 0;
+              const xSurcharge= Number(x.Inflation_Surcharge) || 0;
+              const xDelivery = Number(x.Delivery_Charge)     || 0;
+              const xSmallFee = Number(x.Small_Order_Fee)     || 0;
+              const xReviewD  = Number(x.Review_Discount)     || 0;
+              const newNetTotal = xSub + xDelivery + xSmallFee + xSurcharge - xReviewD; // discount = 0
+              ws.getRange(x._row, discColIdx).setValue(0);
+              ws.getRange(x._row, netColIdx) .setValue(newNetTotal);
+            });
+          }
+        }
       }
     }
 
