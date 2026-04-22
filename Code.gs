@@ -2135,12 +2135,13 @@ function deleteOrder(phone, rowId, refundType) {
     const phoneStr = _normalizePhone(phone);
     // Scan later days (up to 6 operational days ahead) to see if a payoff happened
     const laterPayoffs = rows.filter(x => {
+      if (String(x.Submission_ID) === String(rowId)) return false; // never include the row being deleted itself
       if (_normalizePhone(x.Phone) !== phoneStr) return false;
       const xStat = String(x.Payment_Status || "").toLowerCase();
       if (xStat.includes("cancelled") || xStat.includes("deleted")) return false;
       if (String(x.Loyalty_Discount).trim() !== "Yes") return false;
       const xDate = x.Order_Date instanceof Date ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(x.Order_Date).trim();
-      return xDate >= orderDateStr; // Include today just in case, but usually payoff is today or later
+      return xDate >= orderDateStr; // future or same-day loyalty payoff that may be invalidated
     });
 
     if (laterPayoffs.length > 0) {
