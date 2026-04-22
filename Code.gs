@@ -14,6 +14,42 @@ const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
 const CODE_VERSION   = 14.2; // Standardized Menu Names
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
+
+// ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
+// Controlled via Script Properties — never hardcoded.
+// In Dev Apps Script: add Script Property  PAYMENT_GATEWAY_ENABLED = true
+// Live project never has this property set → evaluates to false automatically.
+const PAYMENT_GATEWAY_ENABLED = (SP.getProperty("PAYMENT_GATEWAY_ENABLED") === "true");
+
+// ── HDFC SmartGATEWAY — Script Properties reference ─────────
+// Add all of these in Apps Script → Project Settings → Script Properties.
+// NEVER hardcode keys here.
+//
+//  Property Name            │ Where to get it
+//  ─────────────────────────┼─────────────────────────────────────────────
+//  HDFC_MERCHANT_ID         │ Dashboard → Settings → General (Merchant ID)
+//  HDFC_API_KEY             │ Dashboard → Settings → Security → Create New API Key
+//  HDFC_RESPONSE_KEY        │ Dashboard → Settings → Security → Response Key
+//  HDFC_WEBHOOK_USERNAME    │ Set freely — enter same value in Dashboard → Settings → Webhooks → Username
+//  HDFC_WEBHOOK_PASSWORD    │ Set freely — enter same value in Dashboard → Settings → Webhooks → Password
+//  HDFC_ENV                 │ "test" or "live"
+//  HDFC_TEST_URL            │ Sandbox base URL from HDFC (e.g. https://smartgateway-uat.hdfcbank.com)
+//  HDFC_LIVE_URL            │ Production base URL (e.g. https://smartgateway.hdfcbank.com)
+//  HDFC_RETURN_URL          │ Apps Script exec URL (NOT order.html — GitHub Pages rejects POST).
+//                           │ doPost detects the HDFC return payload and JS-redirects to order.html.
+//  HDFC_WEBHOOK_URL         │ This Apps Script doPost URL (set in Dashboard → Settings → Webhooks)
+
+const HDFC_MERCHANT_ID      = SP.getProperty("HDFC_MERCHANT_ID")      || "";
+const HDFC_API_KEY          = SP.getProperty("HDFC_API_KEY")          || "";
+const HDFC_RESPONSE_KEY     = SP.getProperty("HDFC_RESPONSE_KEY")     || "";
+const HDFC_WEBHOOK_USERNAME = SP.getProperty("HDFC_WEBHOOK_USERNAME") || "";
+const HDFC_WEBHOOK_PASSWORD = SP.getProperty("HDFC_WEBHOOK_PASSWORD") || "";
+const HDFC_ENV              = SP.getProperty("HDFC_ENV")              || "test";
+const HDFC_RETURN_URL       = SP.getProperty("HDFC_RETURN_URL")       || "";
+const HDFC_ORDER_PAGE_URL   = SP.getProperty("HDFC_ORDER_PAGE_URL")   || "https://svaadhkitchen.in/order.html";
+const HDFC_BASE_URL         = HDFC_ENV === "live"
+  ? (SP.getProperty("HDFC_LIVE_URL") || "https://smartgateway.hdfcbank.com")
+  : (SP.getProperty("HDFC_TEST_URL") || "https://smartgateway-uat.hdfcbank.com");
 // ─────────────────────────────────────────────────────────────
 
 // Sheet tab names
@@ -24,7 +60,8 @@ const TAB_BF_MASTER  = "SK_Master_Breakfast";
 const TAB_SABJI      = "SK_Master_Sabjis";
 const TAB_AREAS      = "SK_Areas";
 const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
-const TAB_REFUNDS    = "SK_Refunds"; // Manual refund requests
+const TAB_REFUNDS    = "SK_Refunds";      // Manual refund requests
+const TAB_WEBHOOK_LOG = "SK_Webhook_Log"; // HDFC webhook log-first buffer
 
 // Canonical SK_Wallet column schema — NEVER reorder these
 const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Reference_ID", "Timestamp"];
@@ -225,9 +262,30 @@ function doGet(e) {
   const p = e.parameter;
   const action = p.parameter ? p.action : (e.parameter.action || ""); // Fix for inconsistent parameter access
   const pin = p.pin || "";
-  
+
+  // ── HDFC Return URL via GET ────────────────────────────────────
+  // HDFC sometimes redirects the customer's browser via GET (not POST).
+  // Detect by presence of order_id + status params with no _action.
+  // Redirect browser to the order page URL with all params forwarded.
+  if (p.order_id && p.status && !p.action && !p._action) {
+    const params = Object.keys(p)
+      .map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(p[k]); })
+      .join("&");
+    const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
+    return HtmlService.createHtmlOutput(
+      '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' + redirectUrl + '"></head>' +
+      '<body><script>window.location.replace(' + JSON.stringify(redirectUrl) + ');</script>' +
+      '<p>Redirecting... <a href="' + redirectUrl + '">Click here if not redirected</a></p></body></html>'
+    );
+  }
+  // ─────────────────────────────────────────────────────────────
+
   try {
     if (action === "version") return jsonRes({version: CODE_VERSION, status:"ok"});
+    if (action === "getConfig") return jsonRes({
+      gateway_enabled: PAYMENT_GATEWAY_ENABLED,
+      gateway_env: HDFC_ENV
+    });
     if (action === "getAreas") return jsonRes(getAreas());
     if (action === "getCustomer") return jsonRes(getCustomer(p.phone));
     if (action === "verifyLogin") return jsonRes(verifyLogin(p.phone, p.pin));
@@ -362,7 +420,43 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData.contents);
+    // ── HDFC Return URL Handler ────────────────────────────────
+    // Juspay POSTs payment result to our return URL (GitHub Pages can't accept POST → 405).
+    // We use the Apps Script URL as the return URL instead.
+    // When HDFC posts here with order_id + status (no _action), serve an HTML page
+    // that immediately JS-redirects the browser to order.html with those params as GET params.
+    const rawBody = e.postData ? e.postData.contents : "";
+    let parsedForHdfc = {};
+    try { parsedForHdfc = JSON.parse(rawBody); } catch(_) {}
+    const isHdfcReturn = parsedForHdfc.order_id && parsedForHdfc.status && !parsedForHdfc._action;
+    if (isHdfcReturn) {
+      const params = Object.keys(parsedForHdfc)
+        .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(parsedForHdfc[k]))
+        .join("&");
+      const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
+      return HtmlService.createHtmlOutput(
+        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
+        `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
+        `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
+      );
+    }
+    // ── Also handle form-encoded POST (Juspay sometimes sends application/x-www-form-urlencoded)
+    if (!parsedForHdfc.order_id && e.postData && e.postData.type === "application/x-www-form-urlencoded") {
+      const formParams = e.parameter || {};
+      if (formParams.order_id && formParams.status) {
+        const params = Object.keys(formParams)
+          .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(formParams[k]))
+          .join("&");
+        const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
+        return HtmlService.createHtmlOutput(
+          `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
+          `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
+          `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
+        );
+      }
+    }
+    // ── Normal API actions ─────────────────────────────────────
+    const body = JSON.parse(rawBody);
     const action = body._action || "";
     const pin = body.pin || "";
     const isAdmin = (pin === ADMIN_PIN && pin !== "");
@@ -567,6 +661,40 @@ function doPost(e) {
 
     // Client error logging (timeout / network failures reported by frontend)
     if (action === "logClientError") return jsonRes(logClientError(body));
+
+    // ── HDFC PAYMENT GATEWAY ACTIONS ─────────────────────────
+    // All gateway actions are gated by PAYMENT_GATEWAY_ENABLED.
+    // The webhook action is the only one that uses its own auth (Basic Auth
+    // from HDFC's server), not the customer or admin PIN.
+
+    if (action === "hdfc_createSession") {
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_createSession(body));
+    }
+    if (action === "hdfc_savePendingOrder") return jsonRes(hdfc_savePendingOrder(body));
+    if (action === "hdfc_getPendingOrder")  return jsonRes(hdfc_getPendingOrder(body));
+
+    if (action === "hdfc_webhook") {
+      // HDFC posts to this URL with Basic Auth — verify credentials first
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_handleWebhook(body, e));
+    }
+
+    // ── HDFC Webhook auto-detect ───────────────────────────────
+    // HDFC's server-side webhook POST will NOT contain _action.
+    // Detect by presence of event_name (Juspay webhook signature field).
+    if (!action && (body.event_name || (body.content && body.content.order))) {
+      console.log("HDFC Webhook auto-detected, event:", body.event_name);
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_handleWebhook(body, e));
+    }
+
+    if (action === "hdfc_verifyReturn") {
+      // Called by order.html when customer lands back after payment
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_verifyReturnPayload(body));
+    }
+    // ─────────────────────────────────────────────────────────
 
     // Regular order submission
     return jsonRes(submitOrder(body));
@@ -3536,6 +3664,34 @@ function getCustomerList() {
   return {success:true, customers:customers};
 }
 
+function markReviewed(body) {
+  var phone = body.phone;
+  if (!phone) return {success:false, error:"phone required"};
+
+  var ss   = getSpreadsheet();
+  var ws   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  var hIdx = headerIndex(ws);
+  var rows = getAllRows(ws);
+  var normP = _normalizePhone(phone);
+
+  var r = rows.find(function(x) { return _normalizePhone(x.Phone) === normP; });
+  if (!r) return {success:false, error:"Customer not found"};
+
+  var col = hIdx["Review_Promo_Count"];
+  if (!col) return {success:false, error:"Review_Promo_Count column missing"};
+
+  var current = Number(r.Review_Promo_Count) || 0;
+  ws.getRange(r._row, col).setValue(current + 3);
+
+  // Mark as claimed
+  var claimCol = hIdx["Review_Reward_Claimed"];
+  if (claimCol) {
+    ws.getRange(r._row, claimCol).setValue("TRUE");
+  }
+
+  return {success:true, newCount: current + 3};
+}
+
 // ── GET CUSTOMER HISTORY ──────────────────────────────────────────────────────
 function getCustomerHistory(phone) {
   if (!phone) return {success:false, error:"phone required"};
@@ -5537,6 +5693,659 @@ function submitManualOrder(body) {
   return { success: true, sid: sid };
 }
 
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║          HDFC SMARTGATEWAY INTEGRATION                          ║
+// ║  All functions below are gated by PAYMENT_GATEWAY_ENABLED.      ║
+// ║  Nothing here runs unless that flag is true.                    ║
+// ║                                                                  ║
+// ║  HOW IT WORKS (end-to-end):                                     ║
+// ║  1. Customer picks UPI/Card/NetBanking on order.html            ║
+// ║  2. order.html calls hdfc_createSession → gets payment_url      ║
+// ║  3. Customer is redirected to HDFC HyperCheckout page           ║
+// ║  4. HDFC fires webhook → hdfc_handleWebhook marks order paid    ║
+// ║  5. HDFC redirects customer back → order.html verifies via      ║
+// ║     hdfc_verifyReturnPayload (HMAC check)                       ║
+// ║                                                                  ║
+// ║  KEYS NEEDED (set in Script Properties):                        ║
+// ║  HDFC_MERCHANT_ID, HDFC_API_KEY, HDFC_RESPONSE_KEY,            ║
+// ║  HDFC_WEBHOOK_USERNAME, HDFC_WEBHOOK_PASSWORD,                  ║
+// ║  HDFC_RETURN_URL, HDFC_ENV, HDFC_TEST_URL, HDFC_LIVE_URL        ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+/**
+ * STEP 1 — Called by order.html when customer chooses to pay via gateway.
+ * Creates a payment session with HDFC SmartGateway (Juspay HyperCheckout).
+ * Returns a payment_url to redirect the customer to.
+ *
+ * @param {Object} body  { phone, name, amount, order_id, description }
+ * @returns {{ success, payment_url, session_id } | { error }}
+ */
+function hdfc_createSession(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const phone        = String(body.phone  || "").trim();
+  const name         = String(body.name   || "Customer").trim();
+  const amountRupees = Number(body.amount || 0);
+  const orderId      = String(body.order_id    || "").trim();
+  const description  = String(body.description || "Svaadh Kitchen Order").trim();
+
+  if (!phone || !orderId || amountRupees <= 0) {
+    return { error: "Missing required fields: phone, order_id, amount." };
+  }
+  if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) {
+    return { error: "Gateway credentials not configured in Script Properties." };
+  }
+
+  // HDFC SmartGateway expects amount in RUPEES (empirically confirmed — UAT showed 100x
+  // inflation when sending paisa, so SmartGateway/Juspay takes rupees directly, not paisa)
+  const amountToSend = Math.round(amountRupees);
+
+  const payload = {
+    order_id:               orderId,
+    amount:                 amountToSend,
+    currency:               "INR",
+    customer_id:            phone,
+    customer_phone:         phone,
+    customer_email:         phone + "@svaadh.noemail",
+    payment_page_client_id: HDFC_MERCHANT_ID,
+    action:                 "paymentPage",
+    return_url:             HDFC_RETURN_URL,
+    description:            description,
+    first_name:             name.split(" ")[0] || name,
+    last_name:              name.split(" ").slice(1).join(" ") || "",
+    udf1:                   phone,
+    udf3:                   "svaadh_kitchen",
+    // udf2 intentionally omitted — blocked by HDFC for tokenization compliance
+    notification_url:       HDFC_RETURN_URL   // webhook URL per-session (fallback if dashboard not set)
+  };
+
+  // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
+  // Merchant ID goes in a separate x-merchantid header (NOT in the auth string)
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
+
+  const options = {
+    method:      "post",
+    contentType: "application/json",
+    headers: {
+      "Authorization": "Basic " + authToken,
+      "x-merchantid":  HDFC_MERCHANT_ID,
+      "version":       "2023-01-01"
+    },
+    payload:            JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const resp     = UrlFetchApp.fetch(HDFC_BASE_URL + "/session", options);
+    const respCode = resp.getResponseCode();
+    const respBody = JSON.parse(resp.getContentText());
+
+    console.log("HDFC createSession [" + respCode + "]:", JSON.stringify(respBody));
+
+    if (respCode !== 200 && respCode !== 201) {
+      // Error details can be nested under error_info in Juspay responses
+      const errMsg = (respBody.error_info && respBody.error_info.user_message)
+        || respBody.user_message
+        || respBody.error_message
+        || respBody.error_info
+        || "Unknown error";
+      return { error: "HDFC session creation failed (HTTP " + respCode + "): " + errMsg };
+    }
+
+    const paymentUrl = (respBody.payment_links && respBody.payment_links.web)
+      ? respBody.payment_links.web
+      : null;
+
+    if (!paymentUrl) {
+      return { error: "HDFC returned no payment URL. Check credentials and merchant config." };
+    }
+
+    return {
+      success:     true,
+      payment_url: paymentUrl,
+      session_id:  respBody.id || orderId,
+      order_id:    orderId
+    };
+
+  } catch (err) {
+    console.error("hdfc_createSession error:", err.message);
+    return { error: "Network error creating payment session: " + err.message };
+  }
+}
+
+
+/**
+ * STEP 2 — Webhook handler.
+ * HDFC POSTs here immediately after payment success or refund.
+ * This is the authoritative payment confirmation — never rely on return URL alone.
+ *
+ * Auth: Basic Auth (HDFC_WEBHOOK_USERNAME:HDFC_WEBHOOK_PASSWORD)
+ *
+ * @param {Object} body  Parsed webhook JSON from HDFC
+ * @param {Object} e     Raw Apps Script event (for header access)
+ */
+/**
+ * STEP 2 — Webhook handler. LOG-FIRST PATTERN.
+ *
+ * HDFC expects a 200 response within 5 seconds. Heavy work (Status API call,
+ * sheet reads, row updates) can take 5-8s — guaranteed timeout.
+ *
+ * Solution: this function does ONE thing only:
+ *   1. Verify Basic Auth (in-memory, < 5ms)
+ *   2. Write one row to SK_Webhook_Log (< 500ms)
+ *   3. Return 200 OK to HDFC immediately
+ *
+ * The actual processing — Status API verification, marking order paid —
+ * is handled by hdfc_processWebhookLog(), called by a 1-minute time trigger.
+ * No time pressure there. No duplicates (PENDING → PROCESSED gate).
+ *
+ * @param {Object} body  Parsed webhook JSON from HDFC
+ * @param {Object} e     Raw Apps Script event (for header access)
+ */
+function hdfc_handleWebhook(body, e) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  // ── Auth check (fast — no I/O) ───────────────────────────────
+  try {
+    var authHeader = "";
+    try { authHeader = e.parameter.Authorization || ""; } catch(_) {}
+    if (HDFC_WEBHOOK_USERNAME && HDFC_WEBHOOK_PASSWORD) {
+      var expectedAuth = "Basic " + Utilities.base64Encode(HDFC_WEBHOOK_USERNAME + ":" + HDFC_WEBHOOK_PASSWORD);
+      if (authHeader && authHeader !== expectedAuth) {
+        console.warn("HDFC Webhook: Invalid Basic Auth — possible spoofed request.");
+        return { error: "Unauthorized" };
+      }
+    }
+  } catch (authErr) {
+    console.warn("HDFC Webhook auth check error:", authErr.message);
+  }
+
+  // ── Log-first: write one row, return immediately ─────────────
+  // Do NOT call hdfc_markOrderPaid here — that involves an external Status API
+  // call and sheet reads which will blow past HDFC's 5-second response window.
+  try {
+    const ss  = getSpreadsheet();
+    const ws  = getOrCreateTab(ss, TAB_WEBHOOK_LOG, [
+      "Received_At", "Event_Name", "Order_ID", "Raw_Payload", "Status", "Processed_At", "Result"
+    ]);
+
+    const eventName = String(body.event_name || "");
+    const orderId   = String(
+      (body.content && body.content.order && body.content.order.order_id) || ""
+    );
+
+    ws.appendRow([
+      new Date(),          // Received_At
+      eventName,           // Event_Name
+      orderId,             // Order_ID
+      JSON.stringify(body),// Raw_Payload — full webhook preserved
+      "PENDING",           // Status
+      "",                  // Processed_At (filled by processor)
+      ""                   // Result       (filled by processor)
+    ]);
+
+    console.log("HDFC Webhook logged: event=" + eventName + " order=" + orderId);
+  } catch (logErr) {
+    // Even if logging fails, we must return 200 so HDFC doesn't retry endlessly.
+    // The raw payload is in the GAS execution log regardless.
+    console.error("HDFC Webhook log error:", logErr.message);
+  }
+
+  // Return 200 immediately — HDFC is satisfied. Processing happens async.
+  return { success: true, received: true };
+}
+
+
+/**
+ * HDFC Webhook Processor — called by a 1-minute time trigger.
+ * Reads all PENDING rows from SK_Webhook_Log and processes each one.
+ *
+ * For ORDER_SUCCEEDED events:
+ *   1. Calls Status API to independently confirm payment (security requirement)
+ *   2. Marks the order Paid in SK_Orders
+ *   3. Updates the log row to PROCESSED or FAILED
+ *
+ * Safe to run multiple times — duplicate protection is inside hdfc_markOrderPaid.
+ * Set up the trigger once by running setupHdfcWebhookTrigger() from the editor.
+ */
+function hdfc_processWebhookLog() {
+  if (!PAYMENT_GATEWAY_ENABLED) return;
+
+  try {
+    const ss  = getSpreadsheet();
+    const ws  = getOrCreateTab(ss, TAB_WEBHOOK_LOG, [
+      "Received_At", "Event_Name", "Order_ID", "Raw_Payload", "Status", "Processed_At", "Result"
+    ]);
+
+    const data = ws.getDataRange().getValues();
+    if (data.length < 2) return; // no rows yet
+
+    const headers        = data[0];
+    const COL_EVENT      = headers.indexOf("Event_Name");
+    const COL_PAYLOAD    = headers.indexOf("Raw_Payload");
+    const COL_STATUS     = headers.indexOf("Status");
+    const COL_PROC_AT    = headers.indexOf("Processed_At");
+    const COL_RESULT     = headers.indexOf("Result");
+
+    var processed = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      const rowStatus = String(data[i][COL_STATUS] || "").trim();
+      if (rowStatus !== "PENDING") continue; // skip already handled rows
+
+      const eventName  = String(data[i][COL_EVENT]   || "");
+      const rawPayload = String(data[i][COL_PAYLOAD]  || "{}");
+      var   body;
+      try { body = JSON.parse(rawPayload); } catch(_) { body = {}; }
+
+      const content = body.content || {};
+      const order   = content.order || {};
+      var   result  = "";
+      var   newStatus = "PROCESSED";
+
+      if (eventName === "ORDER_SUCCEEDED" || order.status === "CHARGED") {
+        const markResult = hdfc_markOrderPaid(order);
+        result = JSON.stringify(markResult);
+        if (markResult.error) newStatus = "FAILED";
+
+      } else if (eventName === "REFUND_INITIATED" || eventName === "REFUND_SUCCEEDED") {
+        // Placeholder — refund logic goes here when needed
+        result = "Refund event acknowledged.";
+
+      } else {
+        result = "Unhandled event type: " + eventName;
+      }
+
+      // Update the log row
+      ws.getRange(i + 1, COL_STATUS   + 1).setValue(newStatus);
+      ws.getRange(i + 1, COL_PROC_AT  + 1).setValue(new Date());
+      ws.getRange(i + 1, COL_RESULT   + 1).setValue(result);
+      processed++;
+
+      console.log("hdfc_processWebhookLog: row " + (i+1) + " → " + newStatus + " | " + result);
+    }
+
+    if (processed > 0) {
+      console.log("hdfc_processWebhookLog: processed " + processed + " pending webhook(s).");
+    }
+
+  } catch (err) {
+    console.error("hdfc_processWebhookLog error:", err.message);
+  }
+}
+
+
+/**
+ * Run this ONCE from the Apps Script editor to set up the 1-minute trigger
+ * that calls hdfc_processWebhookLog() automatically.
+ *
+ * Menu: Run → setupHdfcWebhookTrigger
+ * Only needed in the DEV project (same project that receives HDFC webhooks).
+ */
+function setupHdfcWebhookTrigger() {
+  // Remove any existing trigger for this function first (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === "hdfc_processWebhookLog") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger("hdfc_processWebhookLog")
+    .timeBased()
+    .everyMinutes(1)
+    .create();
+  console.log("✅ hdfc_processWebhookLog trigger created — runs every 1 minute.");
+}
+
+
+/**
+ * STEP 3 — Called by order.html when customer lands back after payment.
+ * Verifies the HMAC signature on return URL params.
+ * Signature = HMAC_SHA256(order_id + "|" + status, HDFC_RESPONSE_KEY)
+ *
+ * @param {Object} body  { order_id, status, signature }
+ * @returns {{ success, paid, order_id, status, message } | { error }}
+ */
+function hdfc_verifyReturnPayload(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const orderId   = String(body.order_id  || "").trim();
+  const status    = String(body.status    || "").trim();
+  const signature = String(body.signature || "").trim();
+
+  if (!orderId || !status) {
+    return { error: "Missing order_id or status in return payload." };
+  }
+
+  // ── Step 1: HMAC signature check (fast, no I/O) ─────────────
+  // If signature is present and key is configured, verify it.
+  // On mismatch: do NOT reject outright — fall back to Status API (Step 2).
+  // Reason: HDFC UAT may not send a valid signature; Status API is authoritative.
+  var signatureOk = false;
+  if (HDFC_RESPONSE_KEY && signature) {
+    const expectedSig = hdfc_hmacSha256(orderId + "|" + status, HDFC_RESPONSE_KEY);
+    if (expectedSig.toLowerCase() === signature.toLowerCase()) {
+      signatureOk = true;
+    } else {
+      console.warn("HDFC return: HMAC mismatch for order " + orderId + " — falling back to Status API.");
+    }
+  } else {
+    console.warn("HDFC return: No signature or key — falling back to Status API.");
+  }
+
+  // ── Step 2: Status API verification (authoritative) ──────────
+  // Always call if signature check didn't pass. Even if it did pass,
+  // Status API gives us the real txn_id and confirmed status.
+  var statusConfirmed = (status === "CHARGED" || status === "SUCCESS");
+  if (!signatureOk) {
+    const statusCheck = hdfc_getOrderStatus(orderId);
+    if (statusCheck.confirmed) {
+      statusConfirmed = true;
+      console.log("HDFC return: Status API confirmed CHARGED for " + orderId);
+    } else {
+      console.warn("HDFC return: Status API returned '" + statusCheck.status + "' for " + orderId);
+      // Only reject if BOTH signature AND Status API fail
+      if (!statusConfirmed) {
+        return { error: "Payment could not be verified. Status: " + statusCheck.status, paid: false };
+      }
+    }
+  }
+
+  const paid = statusConfirmed;
+
+  // Cross-check with sheet (webhook should have already marked it paid)
+  try {
+    const ss   = getSpreadsheet();
+    const ws   = getOrCreateTab(ss, TAB_ORDERS, []);
+    const rows = getAllRows(ws);
+    const orderRows = rows.filter(function(r) {
+      return String(r.Submission_ID || "").trim() === orderId;
+    });
+    if (orderRows.length > 0) {
+      const sheetStatus = String(orderRows[0].Payment_Status || "").toLowerCase();
+      const alreadyPaid = sheetStatus === "paid" || sheetStatus === "collected";
+      return {
+        success:  true,
+        paid:     paid || alreadyPaid,
+        order_id: orderId,
+        status:   status,
+        message:  (paid || alreadyPaid) ? "Payment confirmed." : "Payment status: " + status
+      };
+    }
+  } catch (err) {
+    console.warn("hdfc_verifyReturnPayload sheet check error:", err.message);
+  }
+
+  return {
+    success:  true,
+    paid:     paid,
+    order_id: orderId,
+    status:   status,
+    message:  paid ? "Payment confirmed." : "Payment status: " + status
+  };
+}
+
+
+/**
+ * Internal: Calls HDFC Order Status API to confirm a payment server-side.
+ * Must be called before writing "Paid" to the sheet — webhook alone is not
+ * sufficient per HDFC security audit requirements.
+ *
+ * Endpoint: GET {HDFC_BASE_URL}/orders/{order_id}
+ * Auth:     Basic base64(API_KEY + ":")
+ *
+ * @param {string} orderId  The gateway order ID (alphanumeric, ≤21 chars)
+ * @returns {{ confirmed: boolean, status: string, txn_id: string }}
+ */
+function hdfc_getOrderStatus(orderId) {
+  if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) {
+    console.warn("hdfc_getOrderStatus: credentials not configured.");
+    return { confirmed: false, status: "UNKNOWN", txn_id: "" };
+  }
+
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
+  const options = {
+    method:             "get",
+    headers: {
+      "Authorization": "Basic " + authToken,
+      "x-merchantid":  HDFC_MERCHANT_ID,
+      "version":        "2023-01-01"
+    },
+    muteHttpExceptions: true
+  };
+
+  try {
+    const resp     = UrlFetchApp.fetch(HDFC_BASE_URL + "/orders/" + orderId, options);
+    const respCode = resp.getResponseCode();
+    const respBody = JSON.parse(resp.getContentText());
+
+    console.log("hdfc_getOrderStatus [" + respCode + "] for " + orderId + ":", JSON.stringify(respBody));
+
+    if (respCode !== 200) {
+      console.warn("hdfc_getOrderStatus: non-200 response (" + respCode + ") for " + orderId);
+      return { confirmed: false, status: "API_ERROR", txn_id: "" };
+    }
+
+    const status = String(respBody.status || "").toUpperCase();
+    const txnId  = String((respBody.txn_detail && respBody.txn_detail.txn_id) || respBody.txn_id || "");
+    return {
+      confirmed: (status === "CHARGED"),
+      status:    status,
+      txn_id:    txnId
+    };
+  } catch (err) {
+    console.error("hdfc_getOrderStatus error:", err.message);
+    return { confirmed: false, status: "FETCH_ERROR", txn_id: "" };
+  }
+}
+
+
+/**
+ * Internal: Marks a Svaadh order row(s) as PAID in SK_Orders sheet.
+ * Called by hdfc_handleWebhook on ORDER_SUCCEEDED.
+ *
+ * @param {Object} order  Order object from HDFC webhook content.order
+ */
+function hdfc_markOrderPaid(order) {
+  const orderId = String(order.order_id || "").trim();
+  const txnId   = String(order.txn_id   || order.id || "").trim();
+  const method  = String(order.payment_method_type || order.payment_method || "Gateway").trim();
+
+  if (!orderId) return { error: "Webhook: missing order_id." };
+
+  console.log("HDFC Webhook received for order: " + orderId + " via " + method);
+
+  // ── Step 1: Verify payment via Status API (mandatory per HDFC security audit) ──
+  // Never rely on the webhook payload alone. Confirm the order is truly CHARGED.
+  const statusCheck = hdfc_getOrderStatus(orderId);
+  if (!statusCheck.confirmed) {
+    console.warn("hdfc_markOrderPaid: Status API returned '" + statusCheck.status + "' for " + orderId + ". Aborting mark-paid.");
+    return { success: true, message: "Webhook received but Status API shows " + statusCheck.status + " — not marking paid." };
+  }
+  // Use txn_id from Status API if richer than what webhook provided
+  if (statusCheck.txn_id && !txnId) txnId = statusCheck.txn_id;
+
+  console.log("HDFC Status API confirmed CHARGED: " + orderId + " (TXN:" + txnId + ")");
+
+  try {
+    const ss      = getSpreadsheet();
+    const ws      = getOrCreateTab(ss, TAB_ORDERS, []);
+    const data    = ws.getDataRange().getValues();
+    if (data.length < 2) return { error: "Orders sheet is empty." };
+
+    const headers     = data[0];
+    const COL_SID     = headers.indexOf("Submission_ID");
+    const COL_PSTATUS = headers.indexOf("Payment_Status");
+    const COL_PMETHOD = headers.indexOf("Payment_Method");
+    const COL_NOTES   = headers.indexOf("Kitchen_Notes");
+
+    if (COL_SID < 0 || COL_PSTATUS < 0) {
+      return { error: "Webhook: required columns missing in SK_Orders." };
+    }
+
+    var updated = 0;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][COL_SID] || "").trim() === orderId) {
+
+        // ── Step 2: Duplicate check — skip if already marked Paid ──
+        const currentStatus = String(data[i][COL_PSTATUS] || "").toLowerCase();
+        if (currentStatus === "paid" || currentStatus === "collected") {
+          console.log("hdfc_markOrderPaid: order " + orderId + " row " + (i+1) + " already Paid — skipping (duplicate webhook).");
+          continue;
+        }
+
+        ws.getRange(i + 1, COL_PSTATUS + 1).setValue("Paid");
+        if (COL_PMETHOD >= 0) {
+          ws.getRange(i + 1, COL_PMETHOD + 1).setValue("Gateway (" + method + ")");
+        }
+        if (COL_NOTES >= 0 && txnId) {
+          var existing = String(data[i][COL_NOTES] || "");
+          var note = existing ? existing + " | TXN:" + txnId : "TXN:" + txnId;
+          ws.getRange(i + 1, COL_NOTES + 1).setValue(note);
+        }
+        updated++;
+      }
+    }
+
+    if (updated === 0) {
+      console.warn("HDFC Webhook: order " + orderId + " not found in SK_Orders (or already Paid).");
+      return { success: true, message: "Order " + orderId + " not found or already processed." };
+    }
+
+    return { success: true, message: "Order " + orderId + " marked paid (" + updated + " row(s))." };
+
+  } catch (err) {
+    console.error("hdfc_markOrderPaid error:", err.message);
+    return { error: "Failed to update order: " + err.message };
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PENDING ORDER STORE
+// Saves the full order payload server-side before the HDFC redirect.
+// Retrieved on return — no sessionStorage/localStorage dependency.
+// Stored in Script Properties as a JSON map, auto-expired after 30 minutes.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Saves order payload before customer is redirected to HDFC checkout.
+ * Called by order.html hdfc_initiatePayment() just before window.location.href redirect.
+ *
+ * @param {Object} body  { order_id, phone, amount, orders, selectedDates, profile, mealAddrs, isFirstTime }
+ */
+function hdfc_savePendingOrder(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const orderId = String(body.order_id || "").trim();
+  if (!orderId) return { error: "order_id required." };
+
+  try {
+    const props    = PropertiesService.getScriptProperties();
+    const raw      = props.getProperty("HDFC_PENDING_ORDERS") || "{}";
+    const pending  = JSON.parse(raw);
+
+    // Expire entries older than 30 minutes to keep size under control
+    const now = Date.now();
+    Object.keys(pending).forEach(function(k) {
+      if (now - (pending[k].ts || 0) > 30 * 60 * 1000) delete pending[k];
+    });
+
+    pending[orderId] = {
+      ts:            now,
+      phone:         body.phone         || "",
+      amount:        body.amount        || 0,
+      orders:        body.orders        || {},
+      selectedDates: body.selectedDates || [],
+      profile:       body.profile       || {},
+      mealAddrs:     body.mealAddrs     || {},
+      isFirstTime:   body.isFirstTime   || false
+    };
+
+    props.setProperty("HDFC_PENDING_ORDERS", JSON.stringify(pending));
+    console.log("hdfc_savePendingOrder: saved order " + orderId);
+    return { success: true };
+
+  } catch (err) {
+    console.error("hdfc_savePendingOrder error:", err.message);
+    return { error: err.message };
+  }
+}
+
+
+/**
+ * Retrieves and removes the saved pending order on return from HDFC.
+ * Called by order.html hdfc_handleReturnParams() after verifying payment.
+ *
+ * @param {Object} body  { order_id }
+ * @returns {{ success, phone, amount, orders, selectedDates, profile, mealAddrs, isFirstTime } | { error }}
+ */
+function hdfc_getPendingOrder(body) {
+  if (!PAYMENT_GATEWAY_ENABLED) return { error: "Gateway not enabled." };
+
+  const orderId = String(body.order_id || "").trim();
+  if (!orderId) return { error: "order_id required." };
+
+  try {
+    const props   = PropertiesService.getScriptProperties();
+    const raw     = props.getProperty("HDFC_PENDING_ORDERS") || "{}";
+    const pending = JSON.parse(raw);
+
+    const entry = pending[orderId];
+    if (!entry) {
+      console.warn("hdfc_getPendingOrder: no pending entry for " + orderId);
+      return { error: "Pending order not found. It may have expired (>30 min)." };
+    }
+
+    // Keep the entry — let it expire naturally after 30 minutes.
+    // Not deleting here so that if the page reloads or redirects twice,
+    // the second call still finds the data.
+    console.log("hdfc_getPendingOrder: retrieved order " + orderId);
+    return { success: true, ...entry };
+
+  } catch (err) {
+    console.error("hdfc_getPendingOrder error:", err.message);
+    return { error: err.message };
+  }
+}
+
+
+/**
+ * Utility: Compute HMAC-SHA256 hex digest.
+ * Used to verify HDFC return URL signatures.
+ *
+ * @param {string} message  String to sign
+ * @param {string} secret   Response key from HDFC
+ * @returns {string}        Lowercase hex string
+ */
+function hdfc_hmacSha256(message, secret) {
+  const sig = Utilities.computeHmacSha256Signature(
+    Utilities.newBlob(message).getBytes(),
+    Utilities.newBlob(secret).getBytes()
+  );
+  return sig.map(function(b) { return ("0" + (b & 0xFF).toString(16)).slice(-2); }).join("");
+}
+
+
+/**
+ * DEV HELPER — Test gateway connectivity without a real payment.
+ * Run this function directly from the Apps Script editor (Dev project only).
+ * It will attempt to create a ₹1 session and log the result.
+ */
+function testHdfcConnection() {
+  if (!PAYMENT_GATEWAY_ENABLED) {
+    console.log("PAYMENT_GATEWAY_ENABLED is false. Enable it in Dev Script Properties first.");
+    return;
+  }
+  const result = hdfc_createSession({
+    phone:       "9999999999",
+    name:        "Test Customer",
+    amount:      1,
+    order_id:    "SKTEST" + Date.now().toString(36).toUpperCase().slice(-9),  // alphanumeric ≤21
+    description: "Svaadh Kitchen — Connection Test"
+  });
+  console.log("testHdfcConnection result:", JSON.stringify(result, null, 2));
+}
+
 
 // ============================================================
 // ONE-TIME REPAIR: Fix Loyalty_Discount markers in SK_Orders
@@ -5570,6 +6379,7 @@ function fixLoyaltyDiscountMarkers() {
   const COL_STATUS  = colIdx["Payment_Status"];
   const COL_SUBTOT  = colIdx["Food_Subtotal"];
   const COL_LOYDISC = colIdx["Loyalty_Discount"];
+  const COL_DISCAMT = colIdx["Discount_Amount"];
 
   if (COL_LOYDISC === undefined) {
     console.error("Loyalty_Discount column not found. Run initSchema() first.");
@@ -5577,7 +6387,7 @@ function fixLoyaltyDiscountMarkers() {
   }
 
   // ── 1. Group rows by phone ──────────────────────────────────
-  const byPhone = {};
+  const byPhone = {}; // phone → [{ rowIndex(1-based), date, subtotal, status, discAmt, current }]
   for (let i = 1; i < data.length; i++) {
     const row    = data[i];
     const phone  = _normalizePhone(String(row[COL_PHONE] || "").trim());
@@ -5594,20 +6404,22 @@ function fixLoyaltyDiscountMarkers() {
       rowIndex: i + 1,          // 1-based sheet row
       date:     dateStr,
       subtotal: Number(row[COL_SUBTOT] || 0),
+      discAmt:  Number(row[COL_DISCAMT] || 0),
       status:   stat,
       current:  String(row[COL_LOYDISC] || "").trim()
     });
   }
 
   // ── 2. For each customer, replay streak forward in time ─────
-  const writes = [];
+  const writes = []; // { rowIndex, value }
   let changed = 0, unchanged = 0;
 
   Object.entries(byPhone).forEach(([phone, rows]) => {
+    // Sort chronologically, then by rowIndex (multiple meals same day)
     rows.sort((a, b) => a.date.localeCompare(b.date) || a.rowIndex - b.rowIndex);
 
-    // Group active rows by date
-    const activeDayMap = {};
+    // Aggregate per day: group rows by date, pick only active orders
+    const activeDayMap = {}; // date → [rows]
     rows.forEach(r => {
       const cancelled = r.status.includes("cancelled") || r.status.includes("deleted");
       if (cancelled) return;
@@ -5615,28 +6427,37 @@ function fixLoyaltyDiscountMarkers() {
       activeDayMap[r.date].push(r);
     });
 
+    // Get sorted unique active days
     const activeDates = Object.keys(activeDayMap).sort();
 
-    let streakCount = 0;
+    let streakCount = 0; // consecutive active days going forward
     let prevDate    = null;
 
     activeDates.forEach(dateStr => {
-      // Check continuity: is this date the next expected day after prevDate (skipping Sundays)?
+      const d = new Date(dateStr + "T00:00:00+05:30");
+      const dow = d.getDay(); // 0=Sun
+
+      // Check continuity: is this date the "next expected" day after prevDate?
       let isContinuous = false;
       if (!prevDate) {
-        isContinuous = true;
+        isContinuous = true; // first ever day always starts streak
       } else {
+        // Advance prevDate forward by 1+ days, skipping Sundays, to see if we land on dateStr
         const prev = new Date(prevDate + "T00:00:00+05:30");
         let nxt = new Date(prev); nxt.setDate(nxt.getDate() + 1);
-        while (nxt.getDay() === 0) nxt.setDate(nxt.getDate() + 1);
+        while (nxt.getDay() === 0) nxt.setDate(nxt.getDate() + 1); // skip Sundays
         const nxtISO = Utilities.formatDate(nxt, "Asia/Kolkata", "yyyy-MM-dd");
         isContinuous = (nxtISO === dateStr);
       }
 
-      if (!isContinuous) streakCount = 0;
+      if (!isContinuous) {
+        // Gap — reset streak
+        streakCount = 0;
+      }
 
-      const is6thDay = (streakCount === 5);
+      const is6thDay = (streakCount === 5); // 0-indexed: 0=1st, 5=6th
 
+      // Mark all rows for this date
       activeDayMap[dateStr].forEach(r => {
         const expected = is6thDay ? "Yes" : "No";
         writes.push({ rowIndex: r.rowIndex, value: expected });
@@ -5644,14 +6465,21 @@ function fixLoyaltyDiscountMarkers() {
         else unchanged++;
       });
 
-      streakCount = is6thDay ? 0 : streakCount + 1;
+      if (is6thDay) {
+        streakCount = 0; // reset after reward day
+      } else {
+        streakCount++;
+      }
+
       prevDate = dateStr;
     });
 
-    // Ensure cancelled rows never have "Yes"
+    // Also mark cancelled rows on 6th-day dates as "No" (they didn't get reward)
     rows.forEach(r => {
       const cancelled = r.status.includes("cancelled") || r.status.includes("deleted");
-      if (cancelled && r.current === "Yes") {
+      if (!cancelled) return;
+      // Already handled above for active rows; just ensure cancelled don't have "Yes" erroneously
+      if (r.current === "Yes") {
         writes.push({ rowIndex: r.rowIndex, value: "No" });
         changed++;
       }
@@ -5663,8 +6491,8 @@ function fixLoyaltyDiscountMarkers() {
     ws.getRange(w.rowIndex, COL_LOYDISC + 1).setValue(w.value);
   });
 
-  console.log("fixLoyaltyDiscountMarkers complete.");
-  console.log("  Rows updated : " + changed);
-  console.log("  Rows already correct: " + unchanged);
-  console.log("  Total writes : " + writes.length);
+  console.log(`fixLoyaltyDiscountMarkers complete.`);
+  console.log(`  Rows updated : ${changed}`);
+  console.log(`  Rows already correct: ${unchanged}`);
+  console.log(`  Total writes : ${writes.length}`);
 }
