@@ -5020,7 +5020,7 @@ function renderBillingCards(customers, cycle) {
     const addrParts = [c.wing && `Wing ${c.wing}`, c.flat && `Flat ${c.flat}`, c.floor && `${c.floor} Floor`, c.society, c.area].filter(Boolean).join(', ');
 
     const bulkBtn = cycle !== 'Daily'
-      ? `<button class="btn-mark-collected" onclick="markBillingPaidJS(${JSON.stringify(allSids)},'${c.phone}')">✅ Mark All Paid</button>`
+      ? `<button class="btn-mark-collected" onclick="markBillingPaidJS(${JSON.stringify(allSids).replace(/"/g,'&quot;')},'${c.phone}')">✅ Mark All Paid</button>`
       : `<button class="btn-mark-collected" onclick="markSelectedPaid('${c.phone}')">✅ Mark Selected Paid</button>`;
 
     return `<div class="billing-cust-card" id="billingCard_${c.phone.replace(/\D/g,'')}">
