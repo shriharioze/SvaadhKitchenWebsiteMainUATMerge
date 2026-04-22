@@ -4166,6 +4166,16 @@
     </div>
   </div><!-- Replaced by shared modals-svaadh.js sConfirm and sAlert logic -->
 
+  <!-- Wallet Transactions Modal -->
+  <div id="walletTxnModal" class="bill-modal-overlay" style="display:none;z-index:30000;" onclick="if(event.target===this)closeWalletTxn()">
+    <div class="bill-modal-sheet" style="max-width:420px;">
+      <div class="bm-handle"><span></span></div>
+      <h2 class="bm-title" style="margin-bottom:4px;">💼 Wallet Transactions</h2>
+      <p id="walletTxnBalance" style="font-size:0.8rem;color:#555;text-align:center;margin-bottom:16px;"></p>
+      <div id="walletTxnList" style="max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+      <button class="bm-later" style="margin-top:16px;" onclick="closeWalletTxn()">Close</button>
+    </div>
+  </div>
 
   <!-- Global Svaadh Modals linked via modals-svaadh.js -->
 
@@ -6380,6 +6390,73 @@
     function closeWalletRecharge() {
       $('walletRechargeModal').style.display = 'none';
     }
+
+    async function openWalletTxn() {
+      const modal   = $('walletTxnModal');
+      const listEl  = $('walletTxnList');
+      const balEl   = $('walletTxnBalance');
+      modal.style.display = 'flex';
+      listEl.innerHTML = `<div style="text-align:center;padding:24px;color:#888;"><div class="spinner" style="margin:0 auto 8px;"></div>Loading…</div>`;
+      balEl.textContent = '';
+
+      try {
+        const res  = await apiFetch(`${APPS_SCRIPT_URL}?action=getWalletTransactions&phone=${encodeURIComponent(S.phone)}`);
+        const data = await res.json();
+        const txns = data.transactions || [];
+
+        const wb = S.walletBalance || 0;
+        balEl.textContent = `Current balance: ₹${wb}`;
+
+        if (!txns.length) {
+          listEl.innerHTML = `<div style="text-align:center;padding:24px;color:#aaa;font-size:0.85rem;">No transactions yet</div>`;
+          return;
+        }
+
+        const TYPE_LABEL = {
+          "recharge":                   { icon: "⬆️", label: "Wallet Recharge",        color: "#1b5e20" },
+          "order deduction":            { icon: "🍱", label: "Order Payment",           color: "#b71c1c" },
+          "order deduction (wallet":    { icon: "🍱", label: "Order Payment",           color: "#b71c1c" },
+          "order cancellation refund":  { icon: "↩️", label: "Refund",                 color: "#1b5e20" },
+          "loyalty":                    { icon: "🏆", label: "Loyalty Reward",          color: "#e65100" },
+          "admin credit":               { icon: "🎁", label: "Admin Credit",            color: "#1b5e20" },
+          "balance carry forward":      { icon: "📦", label: "Balance Carry Forward",   color: "#1565c0" },
+        };
+        function txnMeta(type) {
+          const tl = type.toLowerCase();
+          for (const [key, val] of Object.entries(TYPE_LABEL)) {
+            if (tl.startsWith(key)) return val;
+          }
+          return { icon: "💳", label: type, color: "#333" };
+        }
+
+        listEl.innerHTML = txns.map(t => {
+          const meta   = txnMeta(t.type);
+          const sign   = t.direction === "credit" ? "+" : "−";
+          const amtClr = t.direction === "credit" ? "#2e7d32" : "#c62828";
+          const pendingBadge = !t.verified
+            ? `<span style="font-size:0.62rem;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;border-radius:10px;padding:1px 6px;margin-left:4px;font-weight:700;">Pending</span>`
+            : '';
+          return `
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+                        background:#fafafa;border:1px solid #ececec;border-radius:10px;padding:10px 12px;">
+              <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+                <div style="font-size:1.3rem;line-height:1;margin-top:1px;">${meta.icon}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.82rem;font-weight:700;color:#1a1a1a;">${meta.label}${pendingBadge}</div>
+                  ${t.reference ? `<div style="font-size:0.68rem;color:#999;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.reference}</div>` : ''}
+                  <div style="font-size:0.68rem;color:#bbb;margin-top:2px;">${t.timestamp}</div>
+                </div>
+              </div>
+              <div style="font-size:1rem;font-weight:700;color:${amtClr};white-space:nowrap;">${sign}₹${t.amount}</div>
+            </div>`;
+        }).join('');
+      } catch(e) {
+        listEl.innerHTML = `<div style="text-align:center;padding:24px;color:#c62828;font-size:0.85rem;">Failed to load. Please try again.</div>`;
+      }
+    }
+    function closeWalletTxn() {
+      $('walletTxnModal').style.display = 'none';
+    }
     function setWalletRecharge(amt) {
       $('walletRechargeAmt').value = amt;
       updateWalletQr();
@@ -7276,7 +7353,10 @@
               </div>
             </div>
           </div>
-          <button onclick="openWalletRecharge()" class="btn btn-primary" style="padding:10px 16px;border-radius:10px;font-size:0.85rem;white-space:nowrap;margin:0;background:#2e7d32;border-color:#1b5e20;">➕ Add Funds</button>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+            <button onclick="openWalletRecharge()" class="btn btn-primary" style="padding:10px 16px;border-radius:10px;font-size:0.85rem;white-space:nowrap;margin:0;background:#2e7d32;border-color:#1b5e20;">➕ Add Funds</button>
+            <button onclick="openWalletTxn()" style="background:none;border:none;padding:0;font-size:0.75rem;color:#2e7d32;cursor:pointer;text-decoration:underline;font-weight:600;">View History</button>
+          </div>
         </div>
       </div>
     `;

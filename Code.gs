@@ -409,6 +409,7 @@ function doGet(e) {
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
     if (action === "getWalletValue") return jsonRes({wallet_balance: _calculateWalletBalance(p.phone)});
+    if (action === "getWalletTransactions") return jsonRes(getWalletTransactions(p.phone));
     if (action === "getDayTotalsForDates") return jsonRes(getDayTotalsForDates(p.phone, p.dates));
 
     return jsonRes({error:"Unknown action or Access Denied"});
@@ -933,6 +934,51 @@ function _calculateWalletBalance(phone) {
   });
 
   return Math.round(balance * 100) / 100;
+}
+
+/**
+ * Returns last 10 wallet transactions for a customer, newest first.
+ * Each entry: { type, amount, direction, verified, reference, timestamp, balance_after }
+ */
+function getWalletTransactions(phone) {
+  if (!phone) return { transactions: [] };
+  const ss   = getSpreadsheet();
+  const ws   = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  const rows = getAllRows(ws);
+  const pStr = _normalizePhone(phone);
+
+  // Filter to this customer's rows only, parse timestamps for sorting
+  const mine = rows
+    .filter(w => _normalizePhone(w.Phone) === pStr)
+    .map(w => {
+      const rType = String(w.Txn_Type || "").trim();
+      const rAmt  = Number(w.Amount) || 0;
+      const rVer  = String(w.Verified || "").trim().toUpperCase();
+      const verified = (rVer === "TRUE" || rVer === "YES" || rVer === "VERIFIED");
+      const typeLow  = rType.toLowerCase();
+      const isCredit = typeLow.includes("recharge") || typeLow.includes("refund")
+                    || typeLow.includes("credit") || typeLow.includes("carry forward")
+                    || typeLow.includes("carry-forward");
+      const rawTs  = w.Timestamp;
+      const tsDate = rawTs instanceof Date ? rawTs : new Date(rawTs || 0);
+      return {
+        type:      rType || "Transaction",
+        amount:    rAmt,
+        direction: isCredit ? "credit" : "debit",
+        verified,
+        reference: String(w.Reference_ID || "").trim(),
+        timestamp: rawTs instanceof Date
+          ? Utilities.formatDate(rawTs, "Asia/Kolkata", "dd MMM yyyy, h:mm a")
+          : String(rawTs || "").trim(),
+        _ts: tsDate.getTime()
+      };
+    });
+
+  // Sort newest first, take last 10
+  mine.sort((a, b) => b._ts - a._ts);
+  const top10 = mine.slice(0, 10).map(t => { delete t._ts; return t; });
+
+  return { transactions: top10 };
 }
 
 // ── GET MENU ─────────────────────────────────────────────────
