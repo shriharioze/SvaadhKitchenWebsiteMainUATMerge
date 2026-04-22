@@ -1780,7 +1780,16 @@ function _calculateLoyaltyStreak(phone) {
     if (stat.includes("cancelled") || stat.includes("deleted")) return;
 
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Order_Date).trim();
-    if (d >= todayISO) return; // Only past days
+
+    // For today's rows: only check if the loyalty reward was already given this morning
+    // (so a separate lunch submission doesn't double-apply the day-6 discount)
+    if (d === todayISO) {
+      if (String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes") {
+        rewardDays.add(d); // today's breakfast already got the reward → block second meal
+      }
+      return; // Don't count today in the backward streak totals
+    }
+    if (d > todayISO) return; // future dates — ignore
 
     if (!dailyTotals[d]) dailyTotals[d] = 0;
     dailyTotals[d] += (Number(r.Inflation_Surcharge) || (Math.ceil((Number(r.Food_Subtotal)||0)/20)));
@@ -1815,6 +1824,13 @@ function _calculateLoyaltyStreak(phone) {
       break; // gap in ordering — streak broken
     }
     d.setDate(d.getDate() - 1);
+  }
+
+  // If today itself already received the loyalty reward (e.g. breakfast was submitted
+  // first and marked Loyalty_Discount=Yes), treat it as a cycle already reset —
+  // return streak=0 so any subsequent meal on the same day doesn't get a double reward.
+  if (rewardDays.has(todayISO)) {
+    return { streak: 0, pastSurcharge: 0 };
   }
 
   return { streak: streakCount, pastSurcharge: accumulatedSurcharge };
