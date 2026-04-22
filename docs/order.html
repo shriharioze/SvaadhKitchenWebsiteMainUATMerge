@@ -5851,12 +5851,12 @@
         if (streakBadge) {
           if (sc === 0) {
             streakBadge.style.display = "none";
-          } else if (sc >= 5) {
+          } else if (sc >= 6) {
             // Will be shown as 6th day reward in billing — hide generic badge
             streakBadge.style.display = "none";
           } else {
-            const remaining = 5 - sc;
-            const dots = Array.from({length: 5}, (_, i) =>
+            const remaining = 6 - sc;
+            const dots = Array.from({length: 6}, (_, i) =>
               `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;
                 background:${i < sc ? '#059669' : '#d1d5db'};"></span>`
             ).join("");
@@ -5872,7 +5872,7 @@
                     On your 6th consecutive day, all market surcharges from those 6 days are refunded to you.
                   </div>
                   <div style="margin-top:6px;">${dots}
-                    <span style="font-size:0.68rem;color:#6b7280;margin-left:4px;">${sc}/5 done</span>
+                    <span style="font-size:0.68rem;color:#6b7280;margin-left:4px;">${sc}/6 done</span>
                   </div>
                 </div>
               </div>`;
