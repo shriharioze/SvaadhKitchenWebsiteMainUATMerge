@@ -2612,6 +2612,7 @@ function getKitchenSummary(date) {
   var orders = [];
 
   dayRows.forEach(function(r) {
+    if (_isOrderCancelled(r.Payment_Status)) return; // exclude cancelled/verify-pending orders
     var meal = String(r.Meal_Type || "");
     if (!meal) return;
     if (!meals[meal]) meals[meal] = {count: 0};
@@ -2938,7 +2939,7 @@ function getLabelOrders(date, meal) {
       var d = r.Order_Date instanceof Date
         ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
         : String(r.Order_Date).trim();
-      return d === date && String(r.Meal_Type) === meal;
+      return d === date && String(r.Meal_Type) === meal && !_isOrderCancelled(r.Payment_Status);
     })
     .map(function(r) {
       var obj = {
