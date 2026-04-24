@@ -38,6 +38,34 @@
   --shadow:     0 2px 12px rgba(0,0,0,0.07);
   --shadow-md:  0 4px 24px rgba(0,0,0,0.1);
 }
+
+/* ── DARK MODE ────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --ink:        #e8e0d8;
+  --ink2:       #b5a99a;
+  --muted:      #7a6f63;
+  --border:     #3a3330;
+  --surface:    #1e1a17;
+  --bg:         #141210;
+  --bg2:        #1a1714;
+  --red-soft:   #2d1210;
+  --red-border: #6b2218;
+  --gold-soft:  #2a2010;
+  --gold-border:#5a4018;
+  --green-soft: #0e1f16;
+  --green-border:#1e4a30;
+  --blue-soft:  #0e1828;
+  --shadow:     0 2px 12px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 24px rgba(0,0,0,0.5);
+}
+[data-theme="dark"] body  { background: var(--bg); color: var(--ink); }
+[data-theme="dark"] .topbar { background: #1a1714 !important; }
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+  background: var(--surface) !important; color: var(--ink) !important; border-color: var(--border) !important;
+}
+[data-theme="dark"] .page, [data-theme="dark"] .card-section, [data-theme="dark"] .billing-cust-card,
+[data-theme="dark"] .meal-section, [data-theme="dark"] .stat-card { background: var(--surface) !important; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 14px; }
 
@@ -227,7 +255,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .day-item:hover { background: var(--bg); }
 .day-item.active { background: var(--red-soft); border-color: var(--red-border); }
 .day-item.today .day-num { color: var(--red); }
-.day-item.sunday { opacity: .4; cursor: not-allowed; pointer-events: none; }
+/* Sundays are visually muted but still clickable in admin (to allow override) */
+.day-item.sunday { opacity: .5; }
+.day-item.sunday .day-name { color: #e74c3c; }
 .day-item .day-name { font-size: .7rem; font-weight: 600; color: var(--muted); width: 22px; }
 .day-item.active .day-name { color: var(--red); }
 .day-item .day-num { font-size: .88rem; font-weight: 600; min-width: 18px; }
@@ -862,6 +892,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <button class="topbar-btn" id="navBilling" onclick="switchPage('billing')">📋 On Account Billing</button>
     </div>
     <div class="topbar-right">
+      <button id="darkToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode" style="margin-right:6px;font-size:1rem;background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;color:inherit;opacity:0.8;">🌙</button>
       <button onclick="logout()">Logout</button>
     </div>
   </div>
@@ -1117,6 +1148,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           </div>
         </div>
 
+        <!-- Order search bar (shown after data loads) -->
+        <div id="orderSearchWrap" style="display:none;margin-bottom:12px;">
+          <input type="text" id="orderSearchInput" placeholder="🔍 Search by name or phone…"
+            oninput="_filterOrderRows()"
+            style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;background:var(--surface);color:var(--ink);box-sizing:border-box;">
+        </div>
         <div id="orderSummaryContent">
           <div style="text-align:center;padding:40px;color:#aaa;font-size:0.9rem;">Select a date and click Load to view orders</div>
         </div>
@@ -1591,7 +1628,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <select id="histAreaSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;">
             <option value="">All Areas</option>
           </select>
-          <input type="text" id="histSearch" placeholder="🔍 Name / Phone" oninput="histApplyFilters()"
+          <input type="text" id="histSearch" placeholder="🔍 Name / Phone" oninput="_dbHistSearch()"
             style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;min-width:150px;">
           <select id="histSortSel" style="padding:6px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.82rem;background:#fff;" onchange="histApplySortSel()">
             <option value="date_asc">Date ↑ (oldest)</option>
@@ -1649,7 +1686,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         </div>
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-          <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="filterCustomers()">
+          <input class="cust-search" type="text" id="custSearch" placeholder="🔍 Search by name or phone…" oninput="_dbCustSearch()">
           <button class="btn-primary" onclick="loadCustomers()">↺ Refresh</button>
           <button class="btn-primary" style="background:#8e44ad; border-color:#8e44ad;" onclick="whitelistNewVIP()">🌟 Whitelist VIP Number</button>
           <button class="btn-primary" style="background:#1e5fa8; border-color:#1e5fa8;" onclick="whitelistOnAccount()">💳 Manage On Account</button>
@@ -1741,7 +1778,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div class="page-title">Review Rewards <small>Mark customers as "Reviewed" to grant them a 10% discount on 3 meals</small></div>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-          <input class="cust-search" type="text" id="reviewUserSearch" placeholder="🔍 Search customer name or phone…" oninput="filterReviewUsers()">
+          <input class="cust-search" type="text" id="reviewUserSearch" placeholder="🔍 Search customer name or phone…" oninput="_dbReviewSearch()">
           <button class="btn-primary" onclick="loadReviewUsers()">↺ Refresh</button>
         </div>
         <div id="reviewGridWrap" class="cust-grid">
@@ -1879,6 +1916,34 @@ function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
 function $(id) { return document.getElementById(id); }
 
+// ── DARK MODE ────────────────────────────────────────────────
+(function initDarkMode() {
+  const saved = localStorage.getItem('sk_admin_theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+})();
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('sk_admin_theme', isDark ? 'light' : 'dark');
+  const btn = document.getElementById('darkToggleBtn');
+  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+}
+// Set correct icon after template renders
+function _syncDarkIcon() {
+  const btn = document.getElementById('darkToggleBtn');
+  if (btn) btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+}
+
+// ── DEBOUNCE ─────────────────────────────────────────────────
+function debounce(fn, ms) {
+  let timer;
+  return function(...args) { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), ms); };
+}
+// Debounced search handlers (300 ms) — avoids re-rendering on every keystroke
+const _dbHistSearch   = debounce(() => histApplyFilters(),  300);
+const _dbCustSearch   = debounce(() => filterCustomers(),   300);
+const _dbReviewSearch = debounce(() => filterReviewUsers(), 300);
+
 const GLOBAL_STAPLE_PRICES = {
   "Chapati": 9,
   "Without Oil Chapati": 8, "W/O Oil Chapati": 8,
@@ -1956,6 +2021,8 @@ let S = {
   menuDirty:      false, // true when unsaved changes exist on the menu page
   oosItems:       { Breakfast: [], Lunch: [], Dinner: [] },
   ordersClosed:   {},   // { Breakfast:bool, Lunch:bool, Dinner:bool }
+  stockLimits:    {},   // { Breakfast:{colKey:limit}, Lunch:{}, Dinner:{} }
+  unitsOrdered:   {},   // derived from units_remaining: ordered = limit - remaining
 };
 
 // ── RATE LIMITING ──
@@ -2036,6 +2103,7 @@ function bootApp() {
     tpl.remove();
   }
   document.getElementById("shell").classList.add("on");
+  _syncDarkIcon(); // set correct sun/moon icon after template is in DOM
   const ist   = getIST();
   S.sidebarYear  = ist.getFullYear();
   S.sidebarMonth = ist.getMonth();
@@ -2127,7 +2195,8 @@ function renderSidebar() {
     if (isToday) cls += " today";
     if (isActive)cls += " active";
 
-    html += `<div class="${cls}" ${!isSun ? `onclick="selectDate('${dateISO}')"` : ""}>
+    // Sundays are clickable in admin — admin can override by setting sabjis
+    html += `<div class="${cls}" onclick="selectDate('${dateISO}')" title="${isSun ? 'Sunday — rest day. Set sabjis to open.' : ''}">
       <div class="day-name">${DAYS[dow]}</div>
       <div class="day-num">${d}</div>
       <div class="day-month">${MONTHS[S.sidebarMonth].slice(0,3)}</div>
@@ -2184,6 +2253,16 @@ function selectDate(iso) {
     // Load OOS and orders closed state
     S.oosItems     = existing.oos_items     || { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = existing.orders_closed || {};
+    // Load stock limits + derive ordered-count from remaining
+    S.stockLimits  = existing.stock_limits  || {};
+    S.unitsOrdered = {};
+    ["Breakfast","Lunch","Dinner"].forEach(meal => {
+      S.unitsOrdered[meal] = {};
+      Object.entries(S.stockLimits[meal] || {}).forEach(([k, lim]) => {
+        const rem = ((existing.units_remaining || {})[meal] || {})[k];
+        S.unitsOrdered[meal][k] = (rem !== undefined) ? lim - rem : 0;
+      });
+    });
   } else {
     // Default-on items checked
     S.bfMaster.filter(m => m.default_on).forEach(m => { S.checkedBf[m.id] = true; });
@@ -2195,6 +2274,8 @@ function selectDate(iso) {
     // Reset OOS and orders closed
     S.oosItems     = { Breakfast: [], Lunch: [], Dinner: [] };
     S.ordersClosed = {};
+    S.stockLimits  = {};
+    S.unitsOrdered = {};
   }
 
   // Update hero date
@@ -2208,7 +2289,18 @@ function selectDate(iso) {
   const badges = document.getElementById("heroBadges");
   const todayBadge  = isToday  ? `<span class="badge badge-today">Today</span>` : "";
   const statusBadge = existing ? `<span class="badge badge-set">✓ Menu Set</span>` : `<span class="badge badge-notset">Not Set</span>`;
-  badges.innerHTML  = `${todayBadge}${statusBadge}
+  const isSunday    = d.getDay() === 0;
+  const hasSabjis   = existing && (existing.lunch_dry || existing.lunch_curry || existing.dinner_dry || existing.dinner_curry);
+  const sundayChip  = isSunday
+    ? `<span id="sundayStatusChip" style="display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:600;
+                    background:${hasSabjis ? '#e8f5e9' : '#fff3cd'};
+                    color:${hasSabjis ? '#2e7d32' : '#856404'};
+                    border:1px solid ${hasSabjis ? '#a5d6a7' : '#ffc107'};
+                    border-radius:20px;padding:3px 10px;" title="Sunday is a rest day by default. Set sabjis to keep kitchen open.">
+        ${hasSabjis ? '✅ Sunday Open' : '🔴 Sunday — Rest Day (set sabjis to open)'}
+      </span>`
+    : "";
+  badges.innerHTML  = `${todayBadge}${statusBadge}${sundayChip}
     <button class="save-hero-btn" id="saveHeroBtn" onclick="saveCurrentMenu()">
       <span id="saveBtnIcon">💾</span> Save Menu
     </button>`;
@@ -2271,6 +2363,20 @@ function selectSabji(key, name) {
   S[key] = S[key] === name ? "" : name; // click again to deselect
   setMenuDirty(true);
   renderSabjiLists();
+  refreshSundayChip(); // update "Sunday — Rest Day" chip if applicable
+}
+
+function refreshSundayChip() {
+  if (!S.selectedDate) return;
+  const d = new Date(S.selectedDate + "T00:00:00");
+  if (d.getDay() !== 0) return; // not a Sunday
+  const hasSabjis = S.lunchDry || S.lunchCurry || S.dinnerDry || S.dinnerCurry;
+  const chip = document.getElementById("sundayStatusChip");
+  if (!chip) return;
+  chip.style.background = hasSabjis ? '#e8f5e9' : '#fff3cd';
+  chip.style.color      = hasSabjis ? '#2e7d32' : '#856404';
+  chip.style.borderColor= hasSabjis ? '#a5d6a7' : '#ffc107';
+  chip.textContent      = hasSabjis ? '✅ Sunday Open' : '🔴 Sunday — Rest Day (set sabjis to open)';
 }
 
 // ════════════════════════════════════════════════════════
@@ -2311,17 +2417,43 @@ function renderOOSGrid(meal, gridId, items) {
   }
   const mealOOS = (S.oosItems[meal] || []);
   grid.innerHTML = items.map(item => {
-    const isOOS = mealOOS.includes(item.colKey);
+    const isOOS     = mealOOS.includes(item.colKey);
+    const safeKey   = item.colKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const limit     = (S.stockLimits[meal]  || {})[item.colKey];
+    const ordered   = (S.unitsOrdered[meal] || {})[item.colKey] || 0;
+    const remaining = (limit !== undefined) ? Math.max(0, limit - ordered) : null;
+    const stockTag  = (limit !== undefined)
+      ? `<div style="font-size:.62rem;color:var(--muted);margin-top:2px;white-space:nowrap;text-align:right;">
+           ${limit} set · ${ordered} ordered ·
+           <b style="color:${remaining<=10?'#e74c3c':'var(--green,#27ae60)'};">${remaining} left</b>
+         </div>`
+      : ``;
     return `<div class="bf-item ${isOOS ? 'on' : ''}"
-                 style="${isOOS ? 'border-color:#e74c3c;background:#fdf0ee;' : ''}margin-bottom:6px;cursor:pointer;"
-                 onclick="toggleOOS('${meal}','${item.colKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
-      <div class="bf-check" style="${isOOS ? 'background:#e74c3c;color:#fff;' : ''}">${isOOS ? '✕' : ''}</div>
-      <div class="bf-item-info">
+                 style="${isOOS ? 'border-color:#e74c3c;background:#fdf0ee;' : ''}margin-bottom:6px;cursor:pointer;">
+      <div class="bf-check" onclick="toggleOOS('${meal}','${safeKey}')" style="${isOOS ? 'background:#e74c3c;color:#fff;' : ''}">${isOOS ? '✕' : ''}</div>
+      <div class="bf-item-info" onclick="toggleOOS('${meal}','${safeKey}')" style="flex:1;">
         <div class="name">${item.label}</div>
         <div class="price" style="color:${isOOS ? '#e74c3c' : 'var(--muted)'};">${isOOS ? 'Sold Out' : 'In Stock'}</div>
       </div>
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-left:8px;" onclick="event.stopPropagation()">
+        <input type="number" min="1" placeholder="∞"
+          value="${limit != null ? limit : ''}"
+          style="width:52px;text-align:center;border:1px solid #ddd;border-radius:6px;padding:2px 4px;font-size:.75rem;background:var(--bg);"
+          oninput="setStockLimit('${meal}','${safeKey}',this.value)"
+          onclick="event.stopPropagation()"
+          title="Max units (blank = unlimited)">
+        ${stockTag}
+      </div>
     </div>`;
   }).join("");
+}
+
+function setStockLimit(meal, colKey, value) {
+  const v = parseInt(value);
+  if (!S.stockLimits[meal]) S.stockLimits[meal] = {};
+  if (!value || isNaN(v) || v <= 0) delete S.stockLimits[meal][colKey];
+  else S.stockLimits[meal][colKey] = v;
+  setMenuDirty(true);
 }
 
 function toggleOOS(meal, colKey) {
@@ -2395,6 +2527,7 @@ async function saveCurrentMenu() {
     cutoff_dinner:      timeToDecimal(document.getElementById("cutoffD").value)  || null,
     oos_items:          S.oosItems,
     orders_closed:      S.ordersClosed,
+    stock_limits:       S.stockLimits,
   };
 
   try {
@@ -2432,6 +2565,17 @@ async function saveCurrentMenu() {
       cutoff_overrides: cutoffOverrides,
       oos_items:        S.oosItems,
       orders_closed:    S.ordersClosed,
+      stock_limits:     S.stockLimits,
+      units_remaining:  (() => {
+        const out = {};
+        ["Breakfast","Lunch","Dinner"].forEach(meal => {
+          Object.entries(S.stockLimits[meal] || {}).forEach(([k, lim]) => {
+            if (!out[meal]) out[meal] = {};
+            out[meal][k] = Math.max(0, lim - ((S.unitsOrdered[meal] || {})[k] || 0));
+          });
+        });
+        return out;
+      })(),
     };
     if (idx >= 0) S.menuEntries[idx] = entry; else S.menuEntries.push(entry);
 
@@ -3289,7 +3433,9 @@ async function loadOrderSummary(manual=false) {
     if (manual) sLoading(false);
     if (data.error) { el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${data.error}</p>`; return; }
     el.innerHTML = renderOrderSummary(data);
-    
+    const srchWrap = document.getElementById("orderSearchWrap");
+    if (srchWrap) { srchWrap.style.display = "block"; const si = document.getElementById("orderSearchInput"); if (si) si.value = ""; }
+
     const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
     if (date === today) startOrdersAutoRefresh();
     else stopOrdersAutoRefresh();
@@ -3339,7 +3485,7 @@ function renderOrderSummary(data) {
     // Customer rows
     const custRows = m.customers.map(c => {
       const itemList = Object.entries(c.items).filter(([,q])=>q>0).map(([n,q])=>`${q}×${n}`).join(", ");
-      return `<tr>
+      return `<tr data-cust="${(c.name+' '+c.phone).replace(/"/g,'&quot;')}">
         <td><strong>${c.name}</strong><br><span style="color:#aaa;font-size:0.72rem;">${c.phone}</span></td>
         <td>${itemList||"—"}</td>
         <td><span class="area-chip">${c.area}</span><br><span style="font-size:0.7rem;color:#888;">${c.address}</span></td>
@@ -3382,6 +3528,16 @@ function renderOrderSummary(data) {
   });
 
   return html;
+}
+
+// ── ORDER SEARCH FILTER ─────────────────────────────────────
+function _filterOrderRows() {
+  const q = (document.getElementById("orderSearchInput")?.value || "").toLowerCase().trim();
+  const rows = document.querySelectorAll("#orderSummaryContent tr[data-cust]");
+  rows.forEach(tr => {
+    const txt = tr.dataset.cust || "";
+    tr.style.display = (!q || txt.toLowerCase().includes(q)) ? "" : "none";
+  });
 }
 
 function toggleMealSection(meal) {
@@ -5056,13 +5212,45 @@ async function markBillingPaidJS(sids, phone) {
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    toast(`✅ ${data.count} order(s) marked as Paid!`);
+    // Show toast with 8-second undo window
+    _toastWithUndo(`✅ ${data.count} order(s) marked as Paid`, sids, _currentBillingCycle);
     loadBillingTab(_currentBillingCycle);
   } catch(e) {
     toast('Error: ' + e.message);
   } finally {
     sLoading(false);
   }
+}
+
+// ── MARK PAID UNDO ────────────────────────────────────────────
+let _undoTimer = null;
+function _toastWithUndo(msg, sids, cycle) {
+  if (_undoTimer) clearTimeout(_undoTimer);
+  const toastEl = document.getElementById("toast");
+  if (!toastEl) { toast(msg); return; }
+  toastEl.innerHTML = `${msg} &nbsp;
+    <button onclick="_undoMarkPaid(${JSON.stringify(sids).replace(/"/g,"'")},'${cycle}')"
+      style="margin-left:10px;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:6px;padding:2px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;">Undo</button>`;
+  toastEl.classList.add("show");
+  _undoTimer = setTimeout(() => { toastEl.classList.remove("show"); toastEl.innerHTML = ""; }, 8000);
+}
+async function _undoMarkPaid(sids, cycle) {
+  if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+  const toastEl = document.getElementById("toast");
+  if (toastEl) { toastEl.classList.remove("show"); toastEl.innerHTML = ""; }
+  sLoading(true, 'Undoing…');
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ _action: 'undoMarkPaid', pin: S.sessionPin, submissionIds: sids })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Undo failed');
+    toast('↩ Mark Paid reversed — orders set back to Pending');
+    loadBillingTab(cycle);
+  } catch(e) {
+    toast('Undo error: ' + e.message);
+  } finally { sLoading(false); }
 }
 
 async function markSelectedPaid(phone) {

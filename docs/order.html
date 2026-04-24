@@ -876,6 +876,23 @@
       letter-spacing: 0.5px;
       margin: 10px 0 6px;
     }
+    /* Long sabji names: clamp to 2 lines, tap to expand */
+    .section-label.sabji-label {
+      text-transform: none;
+      font-size: 0.75rem;
+      color: #888;
+      letter-spacing: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .section-label.sabji-label.expanded {
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
 
     .item-row {
       display: flex;
@@ -4145,7 +4162,7 @@
       </div>
     </div>
 
-    <div style="text-align:center; padding: 30px 0 10px; color: #999; font-size: 0.7rem; font-weight: 500;">
+    <div style="text-align:center; padding: 30px 0 60px; color: #999; font-size: 0.7rem; font-weight: 500;">
       Svaadh Kitchen <span id="verLabel"></span>
     </div>
   </div><!-- /container -->
@@ -4276,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.22.01";
+    const APP_VERSION = "v26.04.24.07";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4537,6 +4554,32 @@
       if (banner) banner.style.display = "none";
     }
     // ── End Grace Period ─────────────────────────────────────────
+
+    // ═══════════════════════════════════════════════════════════
+    // STOCK LOW-SIGNAL MESSAGING
+    // ═══════════════════════════════════════════════════════════
+    // For non-curd/breakfast items, we deliberately hide the count and show
+    // a generic "limited" message so it doesn't imply pre-made food.
+    const STOCK_TEXT_ITEMS = {
+      "Chapati":"Limited portions — order soon",
+      "Without Oil Chapati":"Limited portions — order soon",
+      "Phulka":"Limited portions — order soon",
+      "Ghee Phulka":"Limited portions — order soon",
+      "Jowar Bhakri":"Limited portions — order soon",
+      "Bajra Bhakri":"Limited portions — order soon",
+      "Dry Sabji Mini (100ml)":"Limited servings available today",
+      "Dry Sabji Full (250ml)":"Limited servings available today",
+      "Curry Sabji Mini (100ml)":"Limited servings available today",
+      "Curry Sabji Full (250ml)":"Limited servings available today",
+      "Dal":"Limited servings — won't be prepared again today",
+      "Rice":"Limited servings — won't be prepared again today",
+      "Salad":"Limited portions today",
+    };
+    function getStockBadge(colKey, remaining) {
+      const txt = STOCK_TEXT_ITEMS[colKey];
+      const label = txt || `Only ${remaining} left`;
+      return `<span style="font-size:0.7rem;font-weight:600;color:#e67e22;background:#fef9ec;padding:3px 10px;border-radius:20px;border:1px solid #f5cba7;">⚡ ${label}</span>`;
+    }
 
     // ═══════════════════════════════════════════════════════════
     // FIXED MENU
@@ -5323,8 +5366,18 @@
         }
 
         if (S.step === 0) {
+          // Restore saved cart before navigating forward
+          const cartRestored = _restoreCart();
           loadExistingOrders(S.phone);
           goNext();
+          if (cartRestored) {
+            // Cart was restored — jump straight to meal screen
+            setTimeout(() => {
+              if (S.selectedDates.length && S.step === 1) {
+                toast('🛒 Your previous cart was restored!', 3000);
+              }
+            }, 800);
+          }
         }
       } else {
         S.isFirstTime = true;
@@ -5739,12 +5792,20 @@
         const key = override < DEFAULTS[meal] ? 'cutoff_reduced' : 'cutoff_extended';
         return t(key, { time: fmtHour(override) });
       };
-      const cutoffTxt = {
-        Breakfast: getCutoffTxt('Breakfast', '7:00 AM'),
-        Lunch: getCutoffTxt('Lunch', '9:00 AM'),
-        Dinner: getCutoffTxt('Dinner', '4:30 PM'),
-      };
-      $("mealSelectionContent").innerHTML = MEALS.map(meal => {
+      // Wallet balance strip (only when balance > 0)
+      const wb = S.walletBalance || 0;
+      const walletStrip = (S.phone && wb > 0)
+        ? `<div onclick="openWalletRecharge()" style="display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#e8f5e9,#f0faf4);border:1.5px solid #b7e4c7;border-radius:12px;padding:9px 14px;margin-bottom:12px;cursor:pointer;">
+             <span style="font-size:1.1rem;">💼</span>
+             <div style="flex:1;">
+               <div style="font-size:0.7rem;color:#888;font-weight:600;letter-spacing:.4px;">WALLET BALANCE</div>
+               <div style="font-size:1rem;font-weight:800;color:#1b5e20;">₹${wb}</div>
+             </div>
+             <div style="font-size:0.7rem;color:#2e7d32;font-weight:700;background:#fff;padding:4px 10px;border-radius:20px;border:1px solid #c8e6c9;">+ Recharge</div>
+           </div>`
+        : '';
+
+      $("mealSelectionContent").innerHTML = walletStrip + MEALS.map(meal => {
         const isAvail = avail[meal], sub = S.orders[date]?.[meal]?.subtotal || 0;
         const mAddr = getMealAddr(meal);
         const isAddrMissing = (mAddr.area !== "Self Pickup") && !mAddr.area;
@@ -5765,7 +5826,7 @@
           <span class="meal-icon">${ICONS[meal]}</span>
           <div>
             <div class="meal-title">${meal}</div>
-            <div class="meal-cutoff-txt">${isAvail ? cutoffTxt[meal] : ((S.menuCache[date]?.orders_closed || {})[meal] ? 'Not accepting orders' : t('cutoff_passed_meal', { meal }))}</div>
+            <div class="meal-cutoff-txt" id="cutdown_${date}_${meal}">${isAvail ? "" : ((S.menuCache[date]?.orders_closed || {})[meal] ? 'Not accepting orders' : t('cutoff_passed_meal', { meal }))}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -5788,7 +5849,59 @@
     </div>`;
       }).join("");
       refreshAllQtys(date);
+      startCutoffTimers(date);
     }
+
+    // ── LIVE CUTOFF COUNTDOWN ────────────────────────────────────
+    let _cutoffTimerDate = null;
+    function startCutoffTimers(date) {
+      _cutoffTimerDate = date;
+      if (window._cutoffInterval) clearInterval(window._cutoffInterval);
+      window._cutoffInterval = setInterval(_tickCutoffs, 1000);
+      _tickCutoffs();
+    }
+    function _tickCutoffs() {
+      const date = _cutoffTimerDate;
+      if (!date) return;
+      const isToday = date === todayISO();
+      const menu = S.menuCache[date] || {};
+      const ov   = menu.cutoff_overrides || {};
+      const DEFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
+      const now  = getIST();
+      const nowH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+      ["Breakfast","Lunch","Dinner"].forEach(meal => {
+        const el = $(`cutdown_${date}_${meal}`);
+        if (!el) return;
+        const isClosed = !!(menu.orders_closed || {})[meal];
+        if (isClosed) { el.textContent = 'Not accepting orders'; el.style.color = ''; return; }
+
+        // For future dates, show the cutoff time as a static label — no countdown needed.
+        if (!isToday) {
+          const ov2f = parseFloat(ov[meal]);
+          const cutHf = isNaN(ov2f) ? DEFS[meal] : ov2f;
+          el.textContent = `⏰ Order by ${fmtHour(cutHf)}`;
+          el.style.color = '';
+          el.style.fontWeight = '';
+          return;
+        }
+
+        const ov2 = parseFloat(ov[meal]);
+        const cutH = isNaN(ov2) ? DEFS[meal] : ov2;
+        const rem  = cutH - nowH;
+        if (rem <= 0) { el.textContent = t ? t('cutoff_passed_meal', { meal }) : `${meal} orders closed`; el.style.color = '#c0392b'; return; }
+        const totalSecs = Math.round(rem * 3600);
+        const h = Math.floor(totalSecs / 3600);
+        const m = Math.floor((totalSecs % 3600) / 60);
+        const s = totalSecs % 60;
+        const txt = h > 0
+          ? `${meal} closes in ${h}h ${String(m).padStart(2,'0')}m`
+          : `${meal} closes in ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        el.textContent = txt;
+        el.style.color = rem < 0.25 ? '#c0392b' : rem < 1 ? '#e67e22' : '';
+        el.style.fontWeight = rem < 1 ? '700' : '';
+      });
+    }
+
     function toggleMeal(date, meal) {
       const h = $(`mh_${date}_${meal}`), b = $(`mb_${date}_${meal}`);
       if (!h || !b) return;
@@ -5811,9 +5924,15 @@
         const curryName = meal === "Lunch" ? menu.lunch_curry : menu.dinner_curry;
         groups.forEach(g => {
           let label = g.group;
+          const isDynamic = g.dynamic === "dry" || g.dynamic === "curry";
           if (g.dynamic === "dry") label = dryName ? `${dryName} — Dry` : "Dry Sabji";
           if (g.dynamic === "curry") label = curryName ? `${curryName} — Curry` : "Curry Sabji";
-          html += `<div class="section-label">${label}</div>`;
+          // Long sabji names get a tap-to-expand clamp
+          if (isDynamic) {
+            html += `<div class="section-label sabji-label" onclick="this.classList.toggle('expanded')">${label}</div>`;
+          } else {
+            html += `<div class="section-label">${label}</div>`;
+          }
           html += g.items.map(item => itemRow(date, meal, item.name, item.price, item.colKey)).join("");
         });
       }
@@ -5833,6 +5952,9 @@
       const menu = S.menuCache[date] || {};
       const mealOOS = (menu.oos_items || {})[meal] || [];
       const isOOS = mealOOS.includes(colKey);
+      const remaining  = ((menu.units_remaining || {})[meal] || {})[colKey];
+      const isStockOOS = (remaining !== undefined && remaining <= 0);
+      const isLowStock = (remaining !== undefined && remaining > 0 && remaining <= 10);
       if (isOOS) {
         return `<div class="item-row" style="opacity:0.45;pointer-events:none;">
     <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
@@ -5841,10 +5963,22 @@
     </div>
   </div>`;
       }
+      if (isStockOOS) {
+        return `<div class="item-row" style="opacity:0.45;pointer-events:none;">
+    <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
+    <div class="qty-control">
+      <span style="font-size:0.72rem;font-weight:700;color:#c0392b;background:#fdf0ee;padding:4px 10px;border-radius:20px;border:1px solid #f4c6c0;">Sold Out</span>
+    </div>
+  </div>`;
+      }
       const qty = S.orders[date]?.[meal]?.items?.[colKey] || 0;
       const eid = `qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_");
       return `<div class="item-row">
-    <div><div class="item-name">${name}</div><div class="item-price">₹${price} each</div></div>
+    <div>
+      <div class="item-name">${name}</div>
+      <div class="item-price">₹${price} each</div>
+      ${isLowStock ? `<div style="margin-top:4px;">${getStockBadge(colKey, remaining)}</div>` : ''}
+    </div>
     <div class="qty-control">
       <button class="qty-btn" onclick="changeQty('${date}','${meal}','${colKey}',${price},-1)">−</button>
       <input class="qty-input" type="number" id="${eid}" min="0" value="${qty}"
@@ -5858,8 +5992,10 @@
     // QTY
     function changeQty(date, meal, colKey, price, delta) {
       if (!S.orders[date]?.[meal]) return;
-      const cur = S.orders[date][meal].items[colKey] || 0;
-      const nxt = Math.max(0, cur + delta);
+      const cur    = S.orders[date][meal].items[colKey] || 0;
+      const rem    = ((S.menuCache[date]?.units_remaining || {})[meal] || {})[colKey];
+      const maxQty = (rem !== undefined) ? rem : Infinity;
+      const nxt    = Math.min(maxQty, Math.max(0, cur + delta));
       S.orders[date][meal].items[colKey] = nxt;
       const el = $(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_"));
       if (el) el.value = nxt;
@@ -5867,7 +6003,9 @@
     }
     function setQty(date, meal, colKey, price, rawVal) {
       if (!S.orders[date]?.[meal]) return;
-      let v = parseInt(rawVal) || 0; v = Math.max(0, v);
+      const rem    = ((S.menuCache[date]?.units_remaining || {})[meal] || {})[colKey];
+      const maxQty = (rem !== undefined) ? rem : Infinity;
+      let v = Math.min(maxQty, Math.max(0, parseInt(rawVal) || 0));
       S.orders[date][meal].items[colKey] = v;
       const el = $(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_"));
       if (el && el.value != String(v)) el.value = v;
@@ -5887,6 +6025,96 @@
       let sub = 0;
       for (const [colKey, qty] of Object.entries(mObj.items)) { if (qty <= 0) continue; sub += getPrice(colKey, meal, date) * qty; }
       mObj.subtotal = sub;
+      _persistCart();
+    }
+
+    // ── CART PERSISTENCE (sessionStorage) ───────────────────────
+    // Saves cart across page reloads within the same tab session.
+    function _persistCart() {
+      if (!S.phone) return;
+      try {
+        sessionStorage.setItem('sk_cart_v2', JSON.stringify({
+          phone: S.phone,
+          orders: S.orders,
+          selectedDates: S.selectedDates,
+          menuCache: S.menuCache
+        }));
+      } catch(e) {}
+    }
+    function _restoreCart() {
+      try {
+        const raw = sessionStorage.getItem('sk_cart_v2');
+        if (!raw) return false;
+        const saved = JSON.parse(raw);
+        if (!saved || saved.phone !== S.phone) return false;
+        if (!saved.selectedDates || !saved.selectedDates.length) return false;
+        // Only restore if cart has actual items
+        const hasItems = saved.selectedDates.some(d =>
+          ["Breakfast","Lunch","Dinner"].some(m => (saved.orders[d]?.[m]?.subtotal || 0) > 0)
+        );
+        if (!hasItems) return false;
+        S.orders        = saved.orders;
+        S.selectedDates = saved.selectedDates;
+        S.menuCache     = saved.menuCache || {};
+        return true;
+      } catch(e) { return false; }
+    }
+    function _clearCart() {
+      try { sessionStorage.removeItem('sk_cart_v2'); } catch(e) {}
+    }
+
+    // ── ORDER AGAIN ─────────────────────────────────────────────
+    // items_raw: {itemName: qty} from past order (Items_JSON).
+    // Maps item names back to colKeys and pre-fills the cart for a chosen date.
+    function _reorderMeal(meal, itemsRawJson) {
+      let itemsRaw;
+      try { itemsRaw = JSON.parse(itemsRawJson); } catch(e) { toast("Could not read order data."); return; }
+
+      // Ask the user which date they want to reorder for (from currently selected dates)
+      const eligible = S.selectedDates.filter(d => {
+        const avail = getMealAvailability(d);
+        return avail[meal];
+      });
+      if (!eligible.length) {
+        toast(`No available ${meal} dates selected. Go back and select dates first.`, 3500); return;
+      }
+
+      // If only one eligible date, use it; otherwise pick first (can be extended to a picker)
+      const targetDate = eligible[0];
+
+      // Build colKey mapping: item name → colKey
+      // For Breakfast: use BREAKFAST_COL_MAP (name→colKey) + B_CURD
+      // For Lunch/Dinner: use FIXED_MEAL_ITEMS colKey directly
+      const nameToColKey = {};
+      if (meal === "Breakfast") {
+        Object.entries(BREAKFAST_COL_MAP || {}).forEach(([name, ck]) => { nameToColKey[name] = ck; });
+        nameToColKey["Breakfast Curd"] = "B_CURD";
+        nameToColKey["Curd"] = "B_CURD";
+      } else {
+        (FIXED_MEAL_ITEMS[meal] || []).forEach(g =>
+          g.items.forEach(it => { nameToColKey[it.name] = it.colKey; })
+        );
+      }
+
+      let filled = 0;
+      if (!S.orders[targetDate]) S.orders[targetDate] = { Breakfast:{items:{},notes:"",subtotal:0}, Lunch:{items:{},notes:"",subtotal:0}, Dinner:{items:{},notes:"",subtotal:0} };
+      const mObj = S.orders[targetDate][meal];
+      if (!mObj) { toast("Could not find meal slot."); return; }
+
+      Object.entries(itemsRaw).forEach(([name, qty]) => {
+        const ck = nameToColKey[name] || name;
+        if (qty > 0) { mObj.items[ck] = (mObj.items[ck] || 0) + Number(qty); filled++; }
+      });
+
+      if (!filled) { toast("No matching items found for reorder."); return; }
+      recalcSubtotal(targetDate, meal);
+
+      // Close manage orders panel and jump to meal screen
+      $("manageOrdersPanel").style.display = "none";
+      S.selectedDates = [...new Set([targetDate, ...S.selectedDates])];
+      goToStep(3);
+      setTimeout(() => { buildDateTabs(); renderMealContent(targetDate); }, 200);
+      toast(`✅ ${meal} items from past order added to ${formatDate(targetDate)}`, 3500);
     }
     function getPrice(colKey, meal, date) {
       if (meal === "Breakfast") {
@@ -6813,13 +7041,35 @@
             await sAlert(`🎉 Your order is placed — completely free thanks to your 6-day loyalty streak!\n\n💳 ₹${bonus} has been credited to your Svaadh Wallet.`, "Free Order Placed!", "🏆");
           } else if (payload.payment_method === "Split") {
             const upiDue = payload.wallet_credit ? (S.grandTotal - payload.wallet_credit) : S.grandTotal;
-            await sAlert(`✅ ₹${payload.wallet_credit} deducted from Wallet.\n\n📲 Please complete the remaining ₹${upiDue} via UPI. Admin will verify and confirm your order.`, "Order Placed — UPI Due", "🔀");
+            const splitBonus = Number(data.wallet_bonus || payload.wallet_bonus || 0);
+            const bonusLine  = splitBonus > 0
+              ? `\n\n🎁 ₹${splitBonus} loyalty bonus has also been credited to your Svaadh Wallet.`
+              : "";
+            await sAlert(`✅ ₹${payload.wallet_credit} deducted from Wallet.\n\n📲 Please complete the remaining ₹${upiDue} via UPI. Admin will verify and confirm your order.${bonusLine}`, "Order Placed — UPI Due", "🔀");
           } else if (payload.payment_status === "Pending") {
             await sAlert(t('toast_payment_submitted'), "Order Placed", "💸");
           } else {
             await sAlert("Your order has been placed successfully!", "Order Success", "✅");
           }
           showSuccess(data.submissionId);
+        }
+        else if (data.stock_conflicts && data.stock_conflicts.length) {
+          // Server rejected due to stock exhaustion — auto-reduce cart to available
+          data.stock_conflicts.forEach(({ date, meal, colKey, available }) => {
+            if (S.orders[date]?.[meal]?.items && S.orders[date][meal].items[colKey] !== undefined) {
+              S.orders[date][meal].items[colKey] = available;
+              // Keep the menu cache in sync so UI caps reflect reality
+              if (!S.menuCache[date]) S.menuCache[date] = {};
+              if (!S.menuCache[date].units_remaining) S.menuCache[date].units_remaining = {};
+              if (!S.menuCache[date].units_remaining[meal]) S.menuCache[date].units_remaining[meal] = {};
+              S.menuCache[date].units_remaining[meal][colKey] = available;
+              const el = $(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_"));
+              if (el) el.value = available;
+              recalcSubtotal(date, meal);
+              refreshBadge(date, meal);
+            }
+          });
+          await sAlert(data.error + "\n\nCart quantity has been adjusted — please review and try again.", "Stock Updated", "⚡");
         }
         else throw new Error(data.error || "Unknown error");
       } catch (err) {
@@ -6976,6 +7226,7 @@
       S.tempUpiMode = false;
       S.paymentChoice = null;
       S.step = 2; // Step 2 is the 'Dates' screen (0-indexed)
+      _clearCart(); // wipe persisted cart after successful order
 
       $("successCard").style.display = "none";
       $("bottomNav").style.display = "block";
@@ -7501,6 +7752,20 @@
       `;
         }
 
+        // ── Monthly spending summary chip ─────────────────────────
+        const ms = data.month_summary;
+        if (ms && ms.count > 0) {
+          walletDashHtml += `
+      <div style="background:#f9f4ff;border:1px solid #e0d0fa;border-radius:12px;
+                  padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.2rem;">📊</span>
+        <div style="font-size:0.82rem;color:#5b3da8;font-weight:600;">
+          You spent <strong>₹${ms.total.toLocaleString('en-IN')}</strong>
+          in ${ms.month} across <strong>${ms.count} order${ms.count === 1 ? '' : 's'}</strong>
+        </div>
+      </div>`;
+        }
+
         $("walletDashWrap").innerHTML = walletDashHtml;
 
         const today = todayISO();
@@ -7654,17 +7919,20 @@
         } else {
           pastRowsHtml = past.map(o => {
             const isCutoffToday = (o.date === today);
+            // items_raw may be present for "Order Again"
+            const itemsRawAttr = o.items_raw ? ` data-items='${JSON.stringify(o.items_raw).replace(/'/g,"&#39;")}'` : '';
             return `<div class="order-manage-row" style="opacity:${isCutoffToday ? '1' : '0.7'};">
           <div class="omr-top">
             <div class="omr-info">
               <div class="omr-title" style="color:#666;">${formatDate(o.date)} — ${o.meal}</div>
               <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
-              <div style="margin-top:5px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
                 ${o.payment_method?.toLowerCase().includes("wallet") ?
-                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;vertical-align:middle;">💳 Wallet</div>` :
-                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;vertical-align:middle;">📱 UPI</div>`}
+                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">💳 Wallet</div>` :
+                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">📱 UPI</div>`}
+                ${o.items_raw ? `<button onclick='_reorderMeal("${o.meal}", this.dataset.items)' ${itemsRawAttr}
+                  style="font-size:0.65rem;font-weight:700;padding:2px 9px;border-radius:99px;border:1.5px solid #c0392b;color:#c0392b;background:#fff5f4;cursor:pointer;">📋 Reorder</button>` : ''}
               </div>
-
             </div>
           </div>
         </div>`;
@@ -8297,11 +8565,12 @@
       // Close how modal on backdrop click
       $("howModal").addEventListener("click", e => { if (e.target === $("howModal")) $("howModal").style.display = "none"; });
 
-      const savedPhone = localStorage.getItem('sk_logged_in_phone');
+      const savedPhone = (localStorage.getItem('sk_logged_in_phone') || "").trim();
       const savedPin = localStorage.getItem('sk_logged_in_pin');
       if (savedPhone && savedPin) {
+        // Strip any accidental whitespace or stale country-code formatting before using.
         S.phone = savedPhone;
-        if ($("phoneInput")) $("phoneInput").value = savedPhone;
+        if ($("phoneInput")) $("phoneInput").value = savedPhone.replace(/^\+91/, "").replace(/\D/g, "");
         lookupCustomer();
       }
     });
@@ -8359,6 +8628,268 @@
       }
     });
   </script>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TIP BANNER                                              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- Tip pill (collapsed state) -->
+  <div id="tipPill" style="
+    display:none;
+    position:fixed; bottom:82px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#1a1a2e,#16213e);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:20px; padding:7px 16px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    z-index:9800; cursor:pointer;
+    display:none; align-items:center; gap:7px;
+    font-size:0.78rem; color:#a78bfa; font-weight:600;
+    white-space:nowrap;
+  " onclick="expandTips()">
+    💡 <span>Tip</span>
+    <span style="color:rgba(255,255,255,0.35);font-size:0.7rem;">▲ show</span>
+  </div>
+
+  <!-- Tip banner (expanded state) -->
+  <div id="tipBanner" style="
+    display:none;
+    position:fixed; bottom:82px; left:50%; transform:translateX(-50%);
+    width:calc(100% - 32px); max-width:480px;
+    background:linear-gradient(135deg,#1a1a2e,#16213e);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:16px;
+    padding:12px 14px 12px 16px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.45);
+    z-index:9800;
+    box-sizing:border-box;
+  ">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <span style="font-size:1.2rem;flex-shrink:0;margin-top:1px;">💡</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.62rem;font-weight:700;letter-spacing:.08em;color:#a78bfa;text-transform:uppercase;margin-bottom:3px;">
+          Tip <span id="tipCounter"></span>
+        </div>
+        <div id="tipText" style="font-size:0.82rem;color:#e2e8f0;line-height:1.45;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
+        <!-- Collapse -->
+        <button onclick="collapseTips()" style="
+          background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);
+          font-size:0.65rem;padding:0;line-height:1;white-space:nowrap;
+        " title="Minimise">▼ hide</button>
+        <!-- Dismiss -->
+        <button onclick="dismissTips()" style="
+          background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);
+          font-size:0.9rem;padding:0;line-height:1;
+        " title="Dismiss tips for this session">✕</button>
+      </div>
+    </div>
+    <!-- Nav row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+      <button onclick="prevTip()" style="
+        background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+        color:#cbd5e1;border-radius:8px;padding:4px 12px;font-size:0.75rem;cursor:pointer;
+      ">← Prev</button>
+      <div id="tipDots" style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:200px;"></div>
+      <button onclick="nextTip()" style="
+        background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+        color:#cbd5e1;border-radius:8px;padding:4px 12px;font-size:0.75rem;cursor:pointer;
+      ">Next →</button>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var TIPS = [
+      // 🍱 Ordering
+      "You can directly type a number into the quantity box instead of tapping + repeatedly.",
+      "Select multiple dates at once — order for the whole week in one go!",
+      "Use \"Copy meals to all dates\" to apply today's selection to every date you've picked — one tap, done.",
+      "Each meal (Breakfast, Lunch, Dinner) can go to a different address — breakfast at home, lunch at the office.",
+      "Tap a date again on the calendar to deselect it.",
+      "You can order several days in advance — great for planning a busy week.",
+      "Ordered something wrong? Go to Manage Orders to delete upcoming orders before the cutoff and place a fresh order.",
+      // ⏰ Cutoff Times
+      "Breakfast orders close at 7:00 AM — order the night before to be safe.",
+      "Lunch orders close at 9:00 AM — order the night before to be safe.",
+      "Dinner orders close at 4:30 PM — you can order in the morning for dinner.",
+      "The cutoff timer on the meal card counts down live — watch it tick!",
+      "Missed today's cutoff? You can still order for tomorrow and beyond.",
+      // 💰 Discounts & Savings
+      "Spend ₹300 or more in a day to unlock 5% off automatically — no code needed.",
+      "Spend ₹450 or more in a day for 7.5% off — the discount applies to the whole day's order.",
+      "Delivery is free if your meal total is ₹100 or more (or if you're in Bhosale Nagar).",
+      "Order 6 days in a row to earn a loyalty reward — all market surcharge from the last 6 days gets credited back as a discount!",
+      "Sundays don't break your streak — Saturday + Monday still counts as consecutive days.",
+      // 💳 Wallet
+      "Load your Svaadh Wallet for instant 1-tap checkout — no UPI app needed every time.",
+      "Wallet orders skip the payment step — just confirm and you're done.",
+      "Your wallet balance is shown on the order confirmation screen — keep it topped up!",
+      "Recharge your wallet anytime by sending the amount to our UPI.",
+      // 📍 Address & Delivery
+      "Your address is saved automatically — you won't need to type it again on your next order.",
+      "Leave a meal's address blank if you're not ordering that meal — it won't be included.",
+      "Add a Google Maps pin link to help the driver find you faster on the first delivery.",
+      "Use the Landmark / Directions field for tricky locations — \"blue gate on the left\" really helps.",
+      "Delivery point options let you choose: doorstep, lobby, gate, \"I'll come down\", and more.",
+      // 👤 Account
+      "Your phone number is your identity — no username or password to remember.",
+      "Your 4-digit PIN protects your wallet — keep it safe, don't share it.",
+      "Coming back after a while? Your details are pre-filled — just tap Continue if nothing changed.",
+      "The Manage Orders screen shows both upcoming and past orders — tap any to see full details.",
+      // 📅 Menu & Planning
+      "Check the \"Upcoming Menus\" popup to see what's being cooked in the next few days.",
+      "The sabji shown on each meal card is today's fresh preparation — it changes daily.",
+      "Breakfast items have fixed prices — mix and match Poha, Upma, Idli, and more.",
+      "Some items may be marked Out of Stock by the kitchen on high-demand days — order early!",
+      // 📱 App Behaviour
+      "The app works on any browser — no install needed. Add it to your home screen for quick access.",
+      "On iPhone, tap Share → Add to Home Screen to get a Svaadh app icon on your phone.",
+      "Your cart is saved during the session — accidentally navigated away? Come back and it's still there.",
+      "The app detects if you're already logged in — returning users go straight to their pre-filled details.",
+      "Tap the ₹ badge next to a meal to see your running subtotal for that meal.",
+      "The step indicator at the top shows exactly where you are in the ordering process.",
+      // 🌟 Pro Tips
+      "Order for multiple days at once to more easily hit the ₹300+ daily discount threshold.",
+      "The review discount (10% off next 3 orders) stacks with the daily volume discount!",
+      "Separate kitchen and driver notes — message the kitchen team and driver independently for precise instructions."
+    ];
+
+    var SESSION_KEY = "sk_tips_dismissed_v1";
+    var IDX_KEY     = "sk_tips_idx_v1";
+    var AUTO_MS     = 5 * 60 * 1000; // 5 minutes
+    var _timer      = null;
+    var _order      = [];
+    var _pos        = 0;
+
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      }
+      return a;
+    }
+
+    function initTips() {
+      if (sessionStorage.getItem(SESSION_KEY)) return; // user dismissed this session
+      // Build shuffled order — but keep saved position if available
+      var saved = sessionStorage.getItem(IDX_KEY);
+      _order = shuffle(TIPS.map(function(_,i){ return i; }));
+      _pos   = saved ? (parseInt(saved) || 0) : 0;
+      if (_pos >= _order.length) _pos = 0;
+      renderTip();
+      // Always start as pill (collapsed) — user taps to open
+      document.getElementById("tipPill").style.display = "flex";
+      scheduleNext();
+    }
+
+    function renderTip() {
+      var idx  = _order[_pos];
+      var text = TIPS[idx];
+      var el   = document.getElementById("tipText");
+      var ctr  = document.getElementById("tipCounter");
+      var dots = document.getElementById("tipDots");
+      if (!el) return;
+      // Animate in
+      el.style.opacity = "0";
+      el.style.transition = "opacity 0.3s";
+      setTimeout(function() {
+        el.textContent = text;
+        el.style.opacity = "1";
+      }, 150);
+      ctr.textContent = (_pos + 1) + " / " + TIPS.length;
+      // Dots — show up to 9 around current position
+      var total = TIPS.length, half = 4;
+      var start = Math.max(0, _pos - half), end = Math.min(total - 1, _pos + half);
+      var html = "";
+      for (var i = start; i <= end; i++) {
+        var active = i === _pos;
+        html += '<div style="width:' + (active?'18px':'6px') + ';height:6px;border-radius:3px;background:' +
+                (active ? '#a78bfa' : 'rgba(255,255,255,0.2)') +
+                ';transition:all .3s;flex-shrink:0;"></div>';
+      }
+      dots.innerHTML = html;
+      sessionStorage.setItem(IDX_KEY, _pos);
+    }
+
+    function nextTip() {
+      _pos = (_pos + 1) % TIPS.length;
+      renderTip();
+      resetTimer();
+    }
+
+    function prevTip() {
+      _pos = (_pos - 1 + TIPS.length) % TIPS.length;
+      renderTip();
+      resetTimer();
+    }
+
+    function collapseTips() {
+      var banner = document.getElementById("tipBanner");
+      var pill   = document.getElementById("tipPill");
+      if (banner) banner.style.display = "none";
+      if (pill)   pill.style.display   = "flex";
+      // Remove outside-click listener
+      document.removeEventListener("click", _outsideClickHandler, true);
+    }
+
+    function expandTips() {
+      var banner = document.getElementById("tipBanner");
+      var pill   = document.getElementById("tipPill");
+      if (pill)   pill.style.display   = "none";
+      if (banner) banner.style.display = "block";
+      // Attach outside-click listener with a tiny delay so the pill-click itself doesn't fire it
+      setTimeout(function() {
+        document.addEventListener("click", _outsideClickHandler, true);
+      }, 50);
+    }
+
+    function _outsideClickHandler(e) {
+      var banner = document.getElementById("tipBanner");
+      if (banner && !banner.contains(e.target)) {
+        collapseTips();
+      }
+    }
+
+    function dismissTips() {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      clearInterval(_timer);
+      document.removeEventListener("click", _outsideClickHandler, true);
+      var banner = document.getElementById("tipBanner");
+      var pill   = document.getElementById("tipPill");
+      [banner, pill].forEach(function(el) {
+        if (!el) return;
+        el.style.transition = "opacity 0.4s, transform 0.4s";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(-50%) translateY(20px)";
+        setTimeout(function(){ el.style.display = "none"; }, 400);
+      });
+    }
+
+    function scheduleNext() {
+      clearInterval(_timer);
+      _timer = setInterval(function() { nextTip(); }, AUTO_MS);
+    }
+
+    function resetTimer() { scheduleNext(); }
+
+    // Expose to global scope for onclick handlers
+    window.nextTip      = nextTip;
+    window.prevTip      = prevTip;
+    window.dismissTips  = dismissTips;
+    window.collapseTips = collapseTips;
+    window.expandTips   = expandTips;
+
+    // Init after page load
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initTips);
+    } else {
+      // Delay slightly so the main app init runs first
+      setTimeout(initTips, 1200);
+    }
+  })();
+  </script>
+
 </body>
 
 </html>

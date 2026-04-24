@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.2; // Standardized Menu Names
+const CODE_VERSION   = 14.3; // Sunday off by default; submitOrder cache invalidation; stock limits
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -257,11 +257,28 @@ const BUSINESS_CONTEXT = {
   }
 };
 
+// ── CONSTANT-TIME PIN COMPARISON ─────────────────────────────
+// Prevents timing-oracle attacks where comparing a wrong-length PIN
+// returns faster than a correct-length one, leaking PIN length.
+// Pads both sides to 32 chars, XORs every character, checks all at once.
+function _pinMatch(supplied, expected) {
+  const a = String(supplied || "").padEnd(32, "\0");
+  const b = String(expected  || "").padEnd(32, "\0");
+  let diff = 0;
+  for (let i = 0; i < 32; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Also require lengths match (padEnd would equalize lengths, so check originals)
+  return diff === 0 && String(supplied).length === String(expected).length;
+}
+
 // ── ENTRY POINT ──────────────────────────────────────────────
 function doGet(e) {
   const p = e.parameter;
   const action = p.parameter ? p.action : (e.parameter.action || ""); // Fix for inconsistent parameter access
   const pin = p.pin || "";
+
+  // Auth tiers resolved FIRST so every route below can safely reference them
+  const isAdmin = _pinMatch(pin, ADMIN_PIN) && pin !== "";
+  const isStaff = (_pinMatch(pin, KITCHEN_PIN) || _pinMatch(pin, ADMIN_PIN)) && pin !== "";
 
   // ── HDFC Return URL via GET ────────────────────────────────────
   // HDFC sometimes redirects the customer's browser via GET (not POST).
@@ -282,6 +299,17 @@ function doGet(e) {
 
   try {
     if (action === "version") return jsonRes({version: CODE_VERSION, status:"ok"});
+    if (action === "health") {
+      // Lightweight liveness probe — reads one cell to confirm sheet connectivity.
+      // Does NOT load orders or menu. Safe to call frequently from monitors.
+      try {
+        const ss = getSpreadsheet();
+        const sheetCount = ss.getNumSheets();
+        return jsonRes({ status: "ok", version: CODE_VERSION, sheets: sheetCount, ts: new Date().toISOString() });
+      } catch(hErr) {
+        return jsonRes({ status: "error", error: hErr.message, ts: new Date().toISOString() });
+      }
+    }
     if (action === "getConfig") return jsonRes({
       gateway_enabled: PAYMENT_GATEWAY_ENABLED,
       gateway_env: HDFC_ENV
@@ -300,10 +328,6 @@ function doGet(e) {
       return jsonRes(markOnAccount(p.phone, p.cycle, p.status));
     }
     
-    // Auth Tiers (STRICTLY ISOLATED)
-    const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (pin === KITCHEN_PIN || pin === ADMIN_PIN) && pin !== "";
-
     // KITCHEN & DRIVER ACCESS (Staff PIN ONLY)
     if (action === "getKitchenSummary") {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
@@ -459,13 +483,18 @@ function doPost(e) {
     const body = JSON.parse(rawBody);
     const action = body._action || "";
     const pin = body.pin || "";
-    const isAdmin = (pin === ADMIN_PIN && pin !== "");
-    const isStaff = (pin === KITCHEN_PIN || pin === ADMIN_PIN) && pin !== "";
+    const isAdmin = _pinMatch(pin, ADMIN_PIN) && pin !== "";
+    const isStaff = (_pinMatch(pin, KITCHEN_PIN) || _pinMatch(pin, ADMIN_PIN)) && pin !== "";
 
-    // Customer actions (pinned via their own phone/PIN handled inside functions)
-    if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType));
-    if (action === "getCustomerList") return jsonRes(getCustomerList());
+    // Customer self-service (phone-verified inside each function)
+    if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType, { isAdmin: isAdmin }));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
+
+    // Admin-only read: returns all customer profiles + wallet balances
+    if (action === "getCustomerList") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getCustomerList());
+    }
     
     // Delivery Actions (Staff PIN ONLY)
     if (action === "markDelivered") {
@@ -562,6 +591,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markBillingCollected(body.submissionIds));
     }
+    if (action === "undoMarkPaid") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(undoMarkPaid(body.submissionIds));
+    }
     if (action === "saveArea") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(saveArea(body));
@@ -581,7 +614,6 @@ function doPost(e) {
     if (action === "getReviews") return jsonRes(getReviews());
     if (action === "chat") return jsonRes(handleChat(body));
     if (action === "submitWalletRecharge") return jsonRes(submitWalletRecharge(body));
-    if (action === "payAllPendingWithWallet") return jsonRes(payAllPendingWithWallet(body));
     if (action === "markRefundRejected") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markRefundRejected(body.submissionId));
@@ -749,6 +781,28 @@ function getOrCreateTab(ss, name, headers) {
   return ws;
 }
 
+// ── CACHE HELPER ────────────────────────────────────────────
+// Cross-execution cache using Apps Script CacheService.
+// Falls back gracefully if value is too large (>100 KB) to store.
+function _cachedData(key, ttlSeconds, fetchFn) {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get(key);
+  if (hit !== null) {
+    try { return JSON.parse(hit); } catch(e) {}
+  }
+  const data = fetchFn();
+  try { cache.put(key, JSON.stringify(data), ttlSeconds); } catch(e) {
+    // Value may exceed 100 KB limit — silent fallback to uncached
+  }
+  return data;
+}
+
+function _invalidateCache() {
+  const keys = Array.from(arguments);
+  if (!keys.length) return;
+  try { CacheService.getScriptCache().removeAll(keys); } catch(e) {}
+}
+
 function getISTDate() {
   const now = new Date();
   // Cross-environment IST Date object
@@ -794,7 +848,7 @@ function initSchema() {
   getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
     "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
-    "OOS_JSON","Orders_Closed"
+    "OOS_JSON","Orders_Closed","Stock_JSON"
   ]);
   getOrCreateTab(ss, TAB_BF_MASTER, ["ID","Name","Price","Active"]);
   getOrCreateTab(ss, TAB_SABJI,     ["ID","Name","Type","Active"]);
@@ -814,12 +868,51 @@ function _isOrderCancelled(paymentStatus) {
   return s === "cancelled" || s.startsWith("cancelled");
 }
 
+// ── STOCK LIMIT HELPERS ─────────────────────────────────────
+// Map admin-stock colKey to the name used in Items_JSON.
+// Breakfast Curd is stored as "Breakfast Curd" (new rows) — old rows stored it
+// as plain "Curd". countOrderedUnits handles both for backward compat.
+function itemsJsonKey(colKey) { return colKey === "B_CURD" ? "Breakfast Curd" : colKey; }
+
+// Count ordered units per meal/item for a given date, excluding cancelled orders.
+function countOrderedUnits(ordersRows, dateStr) {
+  const counts = { Breakfast: {}, Lunch: {}, Dinner: {} };
+  ordersRows.forEach(row => {
+    if (_isOrderCancelled(row.Payment_Status)) return;
+    const d = row.Order_Date instanceof Date
+      ? Utilities.formatDate(row.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(row.Order_Date || "").trim();
+    if (d !== dateStr) return;
+    const meal = String(row.Meal_Type || "");
+    if (!counts[meal]) return;
+    let items = {};
+    try { items = JSON.parse(row.Items_JSON || "{}"); } catch(e) {}
+    Object.entries(items).forEach(([name, qty]) => {
+      // Backward compat: old Breakfast rows stored Curd as "Curd". Normalize to
+      // "Breakfast Curd" so aggregates match the new canonical key.
+      let k = name;
+      if (meal === "Breakfast" && name === "Curd") k = "Breakfast Curd";
+      counts[meal][k] = (counts[meal][k] || 0) + Number(qty || 0);
+    });
+  });
+  return counts;
+}
+
 function _normalizePhone(phone) {
   let p = String(phone || "").trim();
-  if (p.includes(".")) p = p.split(".")[0];
+  if (!p) return "";
+  // Scientific notation (Sheets quirk: 9.87654321e+9)
   if (p.toUpperCase().includes("E+") && !isNaN(Number(p))) {
     p = String(Math.round(Number(p)));
   }
+  // Trailing decimal from Sheets (9876543210.0)
+  if (p.includes(".")) p = p.split(".")[0];
+  // Strip everything that isn't a digit (removes +, spaces, dashes, parens, country-code prefixes)
+  p = p.replace(/\D/g, "");
+  // 12-digit with 91 country code → 10-digit
+  if (p.length === 12 && p.startsWith("91")) p = p.substring(2);
+  // 11-digit with leading zero → 10-digit
+  if (p.length === 11 && p.startsWith("0")) p = p.substring(1);
   return p;
 }
 
@@ -904,11 +997,11 @@ function verifyLogin(phone, pin) {
 }
 
 // ── WALLET HELPER ──────────────────────────────────────────
-function _calculateWalletBalance(phone) {
+function _calculateWalletBalance(phone, preloadedRows) {
   if (!phone) return 0;
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
-  const rows = getAllRows(ws);
+  const rows = Array.isArray(preloadedRows) ? preloadedRows : getAllRows(ws);
 
   let balance = 0;
   const pStr = _normalizePhone(phone);
@@ -983,6 +1076,12 @@ function getWalletTransactions(phone) {
 
 // ── GET MENU ─────────────────────────────────────────────────
 function getMenu(dateStr) {
+  // Cache per-date for 60 s. The hard stock-block in submitOrder (under LockService)
+  // prevents actual over-orders even when menu data is slightly stale.
+  return _cachedData("menu_v2_" + dateStr, 60, function() { return _getMenuUncached(dateStr); });
+}
+
+function _getMenuUncached(dateStr) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_MENU, []);
   const rows = getAllRows(ws);
@@ -1017,12 +1116,38 @@ function getMenu(dateStr) {
     };
   });
 
-  if (!r) return {
-    breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
-    cutoff_overrides:{},
-    oos_items: { Breakfast: [], Lunch: [], Dinner: [] },
-    orders_closed: {}
-  };
+  // Determine if this date is a Sunday with no sabjis set.
+  // Kitchen is closed on Sundays by default; admin can override by setting at least one sabji.
+  const _dayName   = Utilities.formatDate(new Date(dateStr + "T12:00:00+05:30"), "Asia/Kolkata", "EEEE");
+  const _isSunday  = _dayName === "Sunday";
+  const _hasSabjis = r && (r.Lunch_Dry || r.Lunch_Curry || r.Dinner_Dry || r.Dinner_Curry);
+
+  if (!r) {
+    // No menu row at all — if Sunday, close everything; otherwise return open empty menu.
+    return {
+      breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
+      cutoff_overrides:{},
+      oos_items: { Breakfast: [], Lunch: [], Dinner: [] },
+      orders_closed: _isSunday ? { Breakfast: true, Lunch: true, Dinner: true } : {},
+      stock_limits: {},
+      units_remaining: {},
+      sunday_closed: _isSunday
+    };
+  }
+
+  // Menu row exists but it's a Sunday with no sabjis — still treat as closed.
+  if (_isSunday && !_hasSabjis) {
+    let ordersClosed2 = { Breakfast: true, Lunch: true, Dinner: true };
+    return {
+      breakfast, lunch_dry:"", lunch_curry:"", dinner_dry:"", dinner_curry:"",
+      cutoff_overrides:{},
+      oos_items: { Breakfast: [], Lunch: [], Dinner: [] },
+      orders_closed: ordersClosed2,
+      stock_limits: {},
+      units_remaining: {},
+      sunday_closed: true
+    };
+  }
 
   const co = {};
   if (r && r.Cutoff_Breakfast) co.Breakfast = Number(r.Cutoff_Breakfast);
@@ -1057,6 +1182,20 @@ function getMenu(dateStr) {
   let ordersClosed = {};
   try { if (r && r.Orders_Closed) ordersClosed = JSON.parse(r.Orders_Closed); } catch(e) {}
 
+  let stockLimits = {};
+  try { if (r && r.Stock_JSON) stockLimits = JSON.parse(r.Stock_JSON); } catch(e) {}
+
+  const ordersWs2   = getOrCreateTab(ss, TAB_ORDERS, []);
+  const ordersRows2 = getAllRows(ordersWs2);
+  const orderedCounts = countOrderedUnits(ordersRows2, dateStr);
+  const unitsRemaining = {};
+  ["Breakfast","Lunch","Dinner"].forEach(meal => {
+    Object.entries(stockLimits[meal] || {}).forEach(([colKey, limit]) => {
+      if (!unitsRemaining[meal]) unitsRemaining[meal] = {};
+      unitsRemaining[meal][colKey] = Math.max(0, limit - (orderedCounts[meal][itemsJsonKey(colKey)] || 0));
+    });
+  });
+
   return {
     breakfast:    finalBreakfast,
     lunch_dry:    r ? (r.Lunch_Dry || "") : "",
@@ -1065,7 +1204,9 @@ function getMenu(dateStr) {
     dinner_curry: r ? (r.Dinner_Curry || "") : "",
     cutoff_overrides: co,
     oos_items:    oosItems,
-    orders_closed: ordersClosed
+    orders_closed: ordersClosed,
+    stock_limits: stockLimits,
+    units_remaining: unitsRemaining
   };
 }
 
@@ -1105,6 +1246,14 @@ function getWeeklyMenu() {
     const displayDate = Utilities.formatDate(d, "Asia/Kolkata", "dd MMM");
 
     const r = menuMap[dateStr];
+
+    // Skip Sundays that have no sabjis set — kitchen is closed by default on Sundays.
+    // A Sunday only appears in the weekly menu popup if the admin has explicitly
+    // set at least one sabji (Lunch or Dinner), signalling the kitchen is open that day.
+    const isSunday = dayName === "Sunday";
+    const hasSabjis = r && (r.Lunch_Dry || r.Lunch_Curry || r.Dinner_Dry || r.Dinner_Curry);
+    if (isSunday && !hasSabjis) return;
+
     let bfDaily = [];
     try {
       if (r && r.Breakfast_JSON) bfDaily = JSON.parse(r.Breakfast_JSON);
@@ -1143,23 +1292,34 @@ function getWeeklyMenu() {
  * @param {string} [refId]    Reference ID: Submission_ID for orders/refunds, or a recharge txn ref
  */
 function _appendWalletTransaction(phone, name, txnType, amount, isVerified, refId) {
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
-  const hIdx = headerIndex(ws);
+  // Serialize wallet writes. Apps Script LockService is re-entrant within the
+  // same execution, so this also works when the caller (e.g. submitOrder) is
+  // already holding the script lock.
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); }
+  catch(e) { throw new Error("Wallet busy — please retry in a few seconds."); }
+  try {
+    const ss = getSpreadsheet();
+    const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+    const hIdx = headerIndex(ws);
 
-  const totalCols = ws.getLastColumn();
-  const row = new Array(totalCols).fill("");
-  const set = (col, val) => { if (hIdx[col]) row[hIdx[col] - 1] = val; };
+    const totalCols = ws.getLastColumn();
+    const row = new Array(totalCols).fill("");
+    const set = (col, val) => { if (hIdx[col]) row[hIdx[col] - 1] = val; };
 
-  set("Phone",         phone);
-  set("Customer_Name", name);
-  set("Txn_Type",      txnType);
-  set("Amount",        amount);
-  set("Verified",      isVerified ? "TRUE" : "FALSE");
-  set("Reference_ID",  refId || "");
-  set("Timestamp",     getISTTimestamp());
+    set("Phone",         _normalizePhone(phone));
+    set("Customer_Name", name);
+    set("Txn_Type",      txnType);
+    set("Amount",        amount);
+    set("Verified",      isVerified ? "TRUE" : "FALSE");
+    set("Reference_ID",  refId || "");
+    set("Timestamp",     getISTTimestamp());
 
-  ws.appendRow(row);
+    ws.appendRow(row);
+    SpreadsheetApp.flush();
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
 }
 
 // ── MISSED-ORDER SAFETY NET ───────────────────────────────────
@@ -1243,6 +1403,18 @@ function _verifyAndAlertMissedOrders(ss, submissionIds) {
 
 // ── SUBMIT ORDER ─────────────────────────────────────────────
 function submitOrder(body) {
+  // Serialize submitOrder calls to prevent stock-race + wallet-race between concurrent customers
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); }
+  catch(e) { return { error: "Server busy — please retry in a few seconds." }; }
+  try {
+    return _submitOrderInternal(body);
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+function _submitOrderInternal(body) {
   const ss = getSpreadsheet();
   const ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const profile   = body.profile || {};
@@ -1262,10 +1434,20 @@ function submitOrder(body) {
   const DELIVERY  = 10;
 
   const submissionIds = [];
-  
+
+  // ── ONE-SHOT ROW FETCHES ────────────────────────────────────
+  // Fetch once, share everywhere. Previously these tabs were re-read 5+ times
+  // per submitOrder (day totals, loyalty, duplicate check, stock check, wallet).
+  const allOrderRows  = getAllRows(ordersWs);
+  const walletWsRef   = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  const allWalletRows = getAllRows(walletWsRef);
+  // Menu rows read once here — reused by stock check below (avoids duplicate sheet fetch)
+  const menuWsOnce  = getOrCreateTab(ss, TAB_MENU, []);
+  const menuRowsAll = getAllRows(menuWsOnce);
+
   // Fetch existing orders once for all dates in this submission to calculate combined-day fees/discounts
   const submissionDates = orders.map(o => o.date);
-  const existingDayTotals = getDayTotalsForDates(profile.phone, submissionDates.join(',')).dayTotals || {};
+  const existingDayTotals = getDayTotalsForDates(profile.phone, submissionDates.join(','), allOrderRows).dayTotals || {};
 
   // Fetch current promo state
   const custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
@@ -1316,12 +1498,64 @@ function submitOrder(body) {
 
   // Sort orders by date to ensure virtual streak runs chronologically
   orders.sort((a,b) => a.date.localeCompare(b.date));
-  const initialStreakInfo = _calculateLoyaltyStreak(profile.phone);
+  const initialStreakInfo = _calculateLoyaltyStreak(profile.phone, allOrderRows);
   let virtualStreakCount = initialStreakInfo.streak;
   let virtualPastSurcharge = initialStreakInfo.pastSurcharge;
 
-  // Pre-fetch existing orders once for duplicate detection
-  const allOrderRows = getAllRows(ordersWs);
+  // ════ STOCK LIMIT PRE-FLIGHT ════
+  // Hard-block submission if any requested item exceeds remaining stock.
+  // Runs under LockService so concurrent submissions see each other's counts.
+  {
+    const menuRowsStk = menuRowsAll;   // reuse the already-fetched menu rows
+    const stockConflicts = [];
+    for (const dateOrder of orders) {
+      const dateStrStk = dateOrder.date;
+      const menuRowStk = menuRowsStk.find(mr => {
+        const d = mr.Date instanceof Date
+          ? Utilities.formatDate(mr.Date, "Asia/Kolkata", "yyyy-MM-dd")
+          : String(mr.Date).trim();
+        return d === dateStrStk;
+      });
+      let stockLimitsStk = {};
+      try { if (menuRowStk && menuRowStk.Stock_JSON) stockLimitsStk = JSON.parse(menuRowStk.Stock_JSON); } catch(e) {}
+      if (!Object.keys(stockLimitsStk).length) continue;
+
+      const countedStk = countOrderedUnits(allOrderRows, dateStrStk);
+      for (const mealStk of (dateOrder.meals || [])) {
+        const mealLimits = stockLimitsStk[mealStk.type] || {};
+        let mealItems = mealStk.items || [];
+        if (typeof mealItems === "string") {
+          try { mealItems = JSON.parse(mealItems); } catch(e) { mealItems = []; }
+        }
+        if (!Array.isArray(mealItems)) mealItems = [];
+        for (const it of mealItems) {
+          const colKeyStk = it.colKey;
+          const qtyStk = Number(it.qty) || 0;
+          if (qtyStk <= 0) continue;
+          const limitStk = mealLimits[colKeyStk];
+          if (limitStk === undefined) continue;
+          const usedStk = countedStk[mealStk.type][itemsJsonKey(colKeyStk)] || 0;
+          if (usedStk + qtyStk > limitStk) {
+            stockConflicts.push({
+              date: dateStrStk,
+              meal: mealStk.type,
+              colKey: colKeyStk,
+              available: Math.max(0, limitStk - usedStk)
+            });
+          }
+        }
+      }
+    }
+    if (stockConflicts.length) {
+      const first = stockConflicts[0];
+      const nm = first.colKey === "B_CURD" ? "Curd (Breakfast)" : first.colKey;
+      return {
+        error: `Only ${first.available} of "${nm}" left for ${first.meal} on ${first.date}. Please reduce your quantity.`,
+        stock_conflicts: stockConflicts
+      };
+    }
+  }
+
   const _dupNowMs = Date.now();
   const _FIVE_MIN_MS = 5 * 60 * 1000;
   const _normPhone = _normalizePhone(profile.phone);
@@ -1455,9 +1689,13 @@ function submitOrder(body) {
 
 
       // Build items JSON
+      // Breakfast Curd gets a distinct key ("Breakfast Curd") so kitchen prep
+      // and admin reports can tell it apart from Lunch/Dinner Curd.
       const itemsObj = {};
       items.forEach(({colKey, qty}) => {
-        const canonical = resolveName(colKey); // Use name instead of ID
+        let canonical;
+        if (colKey === "B_CURD") canonical = "Breakfast Curd";
+        else canonical = resolveName(colKey);
         itemsObj[canonical] = qty;
       });
 
@@ -1486,7 +1724,7 @@ function submitOrder(body) {
       set("Order_Date",          orderDate);
       set("Meal_Type",           mealType);
       set("Customer_Name",       profile.name     || "");
-      set("Phone",               profile.phone    || "");
+      set("Phone",               _normalizePhone(profile.phone));
       set("Area",                area);
       set("Wing",                wing);
       set("Flat",                flat);
@@ -1547,10 +1785,13 @@ function submitOrder(body) {
       let walletCreditUsed = 0;
       // ════ WALLET DEDUCTION LOGIC ════
       if (payMethod === "Wallet") {
-        let currentBalance = _calculateWalletBalance(profile.phone);
+        let currentBalance = _calculateWalletBalance(profile.phone, allWalletRows);
 
         if (currentBalance >= netTotal) {
           _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction", netTotal, true, sid);
+          // Reflect the new debit in our in-memory wallet cache so subsequent
+          // meals in the same submission see the updated balance.
+          allWalletRows.push({ Phone: _normalizePhone(profile.phone), Txn_Type: "Order Deduction", Amount: netTotal, Verified: "TRUE" });
           pStat = "Wallet Paid";
           walletCreditUsed = netTotal;
         } else {
@@ -1560,9 +1801,10 @@ function submitOrder(body) {
         // Split: deduct wallet portion now, UPI portion remains pending
         const requestedCredit = Math.min(Number(body.wallet_credit) || 0, netTotal);
         if (requestedCredit > 0) {
-          const currentBalance = _calculateWalletBalance(profile.phone);
+          const currentBalance = _calculateWalletBalance(profile.phone, allWalletRows);
           if (currentBalance >= requestedCredit) {
             _appendWalletTransaction(profile.phone || "", profile.name || "Customer", "Order Deduction (Wallet Part)", requestedCredit, true, sid);
+            allWalletRows.push({ Phone: _normalizePhone(profile.phone), Txn_Type: "Order Deduction", Amount: requestedCredit, Verified: "TRUE" });
             walletCreditUsed = requestedCredit;
             pStat = "Pending"; // UPI portion still outstanding
           } else {
@@ -1661,6 +1903,12 @@ function submitOrder(body) {
     } catch(e) { /* non-fatal */ }
   }
 
+  // Invalidate menu cache for all ordered dates so units_remaining is fresh on next getMenu call.
+  // (Cache had 60s TTL — without this, customers would see stale stock counts after placing an order.)
+  if (submissionDates.length) {
+    _invalidateCache(...submissionDates.map(d => "menu_v2_" + d));
+  }
+
   return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: walletBonus};
 }
 
@@ -1721,7 +1969,7 @@ function _upsertCustomer(ss, profile) {
     const newRow = CUSTOMERS_HEADERS.map(h => {
       let val = "";
       switch(h) {
-        case "Phone":           val = profile.phone || ""; break;
+        case "Phone":           val = _normalizePhone(profile.phone); break;
         case "Customer_Name":   val = profile.name || ""; break;
         case "Area":            val = profile.area || ""; break;
         case "Wing":            val = profile.wing || ""; break;
@@ -1772,21 +2020,26 @@ function markOnAccount(phone, cycle, status) {
 // ── GET DAY TOTALS FOR DATES (used to compute combined-day fees) ─
 // Returns existing meal subtotals per date for the given phone,
 // excluding the current cart being built (which is not yet placed).
-function getDayTotalsForDates(phone, datesParam) {
+function getDayTotalsForDates(phone, datesParam, preloadedRows) {
   if (!phone || !datesParam) return { dayTotals: {} };
   const dates = String(datesParam).split(',').map(d => d.trim()).filter(Boolean);
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  const rows = getAllRows(ws);
+  // Allow caller to pass pre-fetched rows (submitOrder) so we don't re-hit the sheet.
+  const rows = Array.isArray(preloadedRows) ? preloadedRows : getAllRows(ws);
 
   const result = {};
   dates.forEach(d => { result[d] = {}; });
 
+  // Canonicalize target phone so +91/space/decimal/scientific variants all match.
+  const targetPhone = _normalizePhone(phone);
+
   rows.filter(r => {
-    const rPhone = String(r.Phone || '').trim();
-    const pStat  = String(r.Payment_Status || '').toLowerCase();
-    if (rPhone !== String(phone).trim()) return false;
-    if (pStat.includes('deleted') || pStat.includes('cancelled')) return false;
+    // Always group by Order_Date column (never submission timestamp) — this is what
+    // keeps bills for a single meal-day intact even if the customer hits "place order"
+    // on either side of IST midnight.
+    if (_normalizePhone(r.Phone) !== targetPhone) return false;
+    if (_isOrderCancelled(r.Payment_Status)) return false;
     const rDate = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
       : String(r.Order_Date).trim();
@@ -1811,11 +2064,11 @@ function getDayTotalsForDates(phone, datesParam) {
  * Calculates current streak and accumulated surcharges for a customer.
  * Skips Sundays (kitchen closed).
  */
-function _calculateLoyaltyStreak(phone) {
+function _calculateLoyaltyStreak(phone, preloadedRows) {
   if (!phone) return { streak: 0, pastSurcharge: 0 };
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  const rows = getAllRows(ws);
+  const rows = Array.isArray(preloadedRows) ? preloadedRows : getAllRows(ws);
   const phoneStr = _normalizePhone(phone);
   const todayISO = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
 
@@ -1824,8 +2077,11 @@ function _calculateLoyaltyStreak(phone) {
 
   rows.forEach(r => {
     if (_normalizePhone(r.Phone) !== phoneStr) return;
+    // Cancelled rows (soft or hard) must NOT contribute to streak count —
+    // otherwise a user could cancel days 3/4 and still hit day-6 reward.
+    if (_isOrderCancelled(r.Payment_Status)) return;
     const stat = String(r.Payment_Status || "").toLowerCase();
-    if (stat.includes("cancelled") || stat.includes("deleted")) return;
+    if (stat.includes("deleted")) return;
 
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Order_Date).trim();
 
@@ -1939,11 +2195,15 @@ function getCustomerOrders(phone) {
     .slice(0, 10)
     .map(r => {
       const delTracker = deliveryMap[String(r.Submission_ID)] || {};
+      // items_raw: structured {itemName: qty} for "Order Again" feature on frontend
+      let itemsRaw = {};
+      try { itemsRaw = JSON.parse(r.Items_JSON || "{}"); } catch(e) {}
       return {
         rowId:              r.Submission_ID,
         date:               fmtD(r),
         meal:               r.Meal_Type,
         summary:            _buildSummary(r),
+        items_raw:          itemsRaw,
         total:              r.Net_Total,
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         loyalty_discount:   String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes",
@@ -1959,11 +2219,30 @@ function getCustomerOrders(phone) {
     .filter(r => String(r.Payment_Status || "").toLowerCase() === "on account")
     .reduce((sum, r) => sum + (Number(r.Net_Total) || 0), 0);
 
+  // ── Monthly spending summary ──────────────────────────────────
+  // Compute current calendar month's total spend + order count.
+  // Used by order.html to show "You spent ₹X in April across N orders".
+  const nowIST = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM");
+  let monthTotal = 0, monthCount = 0;
+  allFiltered.forEach(r => {
+    const d = fmtD(r);
+    if (d.startsWith(nowIST)) {
+      monthTotal += Number(r.Net_Total) || 0;
+      monthCount++;
+    }
+  });
+  const monthName = Utilities.formatDate(new Date(), "Asia/Kolkata", "MMMM");
+
   return {
     orders: upcoming,
     past_orders: past,
     wallet_balance: _calculateWalletBalance(phone),
-    on_account_balance: onAccountBalance
+    on_account_balance: onAccountBalance,
+    month_summary: {
+      month: monthName,
+      total: monthTotal,
+      count: monthCount
+    }
   };
 }
 
@@ -1978,7 +2257,9 @@ function _buildSummary(r) {
 }
 
 // ── DELETE ORDER (with Refund Logic) ─────────────────────────
-function deleteOrder(phone, rowId, refundType) {
+function deleteOrder(phone, rowId, refundType, opts) {
+  opts = opts || {};
+  const isAdminCall = !!opts.isAdmin;
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(ws);
@@ -1988,17 +2269,28 @@ function deleteOrder(phone, rowId, refundType) {
   const hourIST = now.getHours() + now.getMinutes() / 60;
   const CUTOFFS = { Breakfast: 7, Lunch: 9, Dinner: 16.5 };
 
+  // ── Ownership guard ──────────────────────────────────────────
+  // Customers: must pass BOTH the exact Submission_ID and the matching phone.
+  // Admin: can delete by Submission_ID alone (phone not required).
+  // Submission_ID is compared as a full exact string (case-insensitive) to
+  // prevent the old "digits-only" collision bug where SK-20250101-XYZ and
+  // SK-20250101-ABC both reduced to "20250101".
+  const targetId = String(rowId || "").trim().toUpperCase();
+  if (!targetId) {
+    return { success: false, error: "Missing order identifier." };
+  }
+  const normTargetPhone = _normalizePhone(phone);
+
   const r = rows.find(x => {
-    // Deep Normalization: Keep only digits to handle commas, decimals (123.0), or scientific notation
-    const cleanSheetId = String(x.Submission_ID || "").replace(/\D/g, "");
-    const cleanTargetId = String(rowId || "").replace(/\D/g, "");
-    const sheetPhone = String(x.Phone || "").trim();
-    const targetPhone = String(phone || "").trim();
-    return cleanSheetId === cleanTargetId && sheetPhone === targetPhone;
+    const sheetId = String(x.Submission_ID || "").trim().toUpperCase();
+    if (sheetId !== targetId) return false;
+    if (isAdminCall) return true; // Admin bypass — PIN already verified
+    // Customer must also match phone
+    return _normalizePhone(x.Phone) === normTargetPhone;
   });
   if (!r) {
-    console.error(`CANCELLATION FAILED: Submission ID ${rowId} (Clean: ${String(rowId).replace(/\D/g,"")}) not found for phone ${phone}.`);
-    return {success: false, error: "Order record not found in system."};
+    console.error(`CANCELLATION FAILED: Submission ID "${rowId}" not found or phone mismatch for ${phone} (admin=${isAdminCall}).`);
+    return {success: false, error: "Order record not found or you do not have permission to cancel it."};
   }
   const orderDateStr = r.Order_Date instanceof Date
     ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
@@ -2316,6 +2608,10 @@ function deleteOrder(phone, rowId, refundType) {
 
 // ── ADMIN: GET ALL DATA ──────────────────────────────────────
 function getAdminData() {
+  return _cachedData("adminData_v1", 30, _getAdminDataUncached);
+}
+
+function _getAdminDataUncached() {
   const ss = getSpreadsheet();
 
   const bfWs   = getOrCreateTab(ss, TAB_BF_MASTER, []);
@@ -2325,6 +2621,9 @@ function getAdminData() {
   const bfRows    = getAllRows(bfWs);
   const sabjiRows = getAllRows(sabjiWs);
   const menuRows  = getAllRows(menuWs);
+
+  const ordersWsAdm = getOrCreateTab(ss, TAB_ORDERS, []);
+  const allOrdersAdm = getAllRows(ordersWsAdm);
 
   const breakfastMaster = bfRows.map(r => ({
     id: String(r.ID), name: String(r.Name), price: Number(r.Price),
@@ -2350,6 +2649,16 @@ function getAdminData() {
     try { if (r.OOS_JSON) oosItems = JSON.parse(r.OOS_JSON); } catch(e) {}
     let ordersClosed = {};
     try { if (r.Orders_Closed) ordersClosed = JSON.parse(r.Orders_Closed); } catch(e) {}
+    let stockLimits = {};
+    try { if (r.Stock_JSON) stockLimits = JSON.parse(r.Stock_JSON); } catch(e) {}
+    const orderedCounts = countOrderedUnits(allOrdersAdm, d);
+    const unitsRemaining = {};
+    ["Breakfast","Lunch","Dinner"].forEach(meal => {
+      Object.entries(stockLimits[meal] || {}).forEach(([colKey, limit]) => {
+        if (!unitsRemaining[meal]) unitsRemaining[meal] = {};
+        unitsRemaining[meal][colKey] = Math.max(0, limit - (orderedCounts[meal][itemsJsonKey(colKey)] || 0));
+      });
+    });
     return {
       date:             d,
       breakfast:        breakfast,
@@ -2360,6 +2669,8 @@ function getAdminData() {
       cutoff_overrides: co,
       oos_items:        oosItems,
       orders_closed:    ordersClosed,
+      stock_limits:     stockLimits,
+      units_remaining:  unitsRemaining,
     };
   });
 
@@ -2373,7 +2684,7 @@ function saveMenu(body) {
   const ws = getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
     "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
-    "OOS_JSON","Orders_Closed"
+    "OOS_JSON","Orders_Closed","Stock_JSON"
   ]);
   const rows = getAllRows(ws);
   const hIdx = headerIndex(ws);
@@ -2403,6 +2714,7 @@ function saveMenu(body) {
     body.cutoff_dinner    || body.cutoffD     || "",
     JSON.stringify(body.oos_items    || { Breakfast: [], Lunch: [], Dinner: [] }),
     JSON.stringify(body.orders_closed || {}),
+    JSON.stringify(body.stock_limits || {}),
   ];
 
   if (existing) {
@@ -2410,6 +2722,8 @@ function saveMenu(body) {
   } else {
     ws.appendRow(newRow);
   }
+  // Bust per-date menu cache and the aggregated admin-data cache
+  _invalidateCache("menu_v2_" + dateStr, "adminData_v1");
   return {success: true, action: existing ? "updated" : "saved"};
 }
 
@@ -2429,11 +2743,13 @@ function saveBreakfastItem(body) {
       ws.getRange(r._row, hIdx["Name"]).setValue(body.name);
       ws.getRange(r._row, hIdx["Price"]).setValue(body.price);
       ws.getRange(r._row, hIdx["Active"]).setValue(isActive ? "true" : "false");
+      _invalidateCache("adminData_v1");
       return {success: true};
     }
   }
   const newId = "BF-" + new Date().getTime();
   ws.appendRow([newId, body.name, body.price, isActive ? "true" : "false"]);
+  _invalidateCache("adminData_v1");
   return {success: true, id: newId};
 }
 
@@ -2444,6 +2760,7 @@ function deleteBreakfastItem(id) {
   const r = rows.find(x => String(x.ID) === String(id));
   if (!r) return {success: false, error: "Not found"};
   ws.deleteRow(r._row);
+  _invalidateCache("adminData_v1");
   return {success: true};
 }
 
@@ -2460,11 +2777,13 @@ function saveSabjiItem(body) {
       ws.getRange(r._row, hIdx["Name"]).setValue(body.name);
       ws.getRange(r._row, hIdx["Type"]).setValue(body.type);
       ws.getRange(r._row, hIdx["Active"]).setValue(body.active !== false ? "true" : "false");
+      _invalidateCache("adminData_v1");
       return {success: true};
     }
   }
   const newId = "SB-" + new Date().getTime();
   ws.appendRow([newId, body.name, body.type || "Dry", "true"]);
+  _invalidateCache("adminData_v1");
   return {success: true, id: newId};
 }
 
@@ -2592,16 +2911,18 @@ const DEFAULT_AREAS = [
 ];
 
 function getAreas() {
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_AREAS, AREAS_HEADERS);
-  const rows = getAllRows(ws);
-  // Seed defaults on first run
-  if (rows.length === 0) {
-    DEFAULT_AREAS.forEach(function(r) { ws.appendRow(r); });
-    return DEFAULT_AREAS.map(function(r) { return {name:r[0], label:r[1], free:true}; });
-  }
-  return rows.map(function(r) {
-    return {name: r.Area_Name, label: r.Area_Label, free: r.Free_Delivery === true || String(r.Free_Delivery).toUpperCase() === "TRUE"};
+  return _cachedData("areas_v1", 300, function() {
+    const ss = getSpreadsheet();
+    const ws = getOrCreateTab(ss, TAB_AREAS, AREAS_HEADERS);
+    const rows = getAllRows(ws);
+    // Seed defaults on first run
+    if (rows.length === 0) {
+      DEFAULT_AREAS.forEach(function(r) { ws.appendRow(r); });
+      return DEFAULT_AREAS.map(function(r) { return {name:r[0], label:r[1], free:true}; });
+    }
+    return rows.map(function(r) {
+      return {name: r.Area_Name, label: r.Area_Label, free: r.Free_Delivery === true || String(r.Free_Delivery).toUpperCase() === "TRUE"};
+    });
   });
 }
 
@@ -2619,11 +2940,13 @@ function saveArea(body) {
       data[i][labelIdx] = body.label;
       data[i][freeIdx]  = body.free ? "TRUE" : "FALSE";
       ws.getDataRange().setValues(data);
+      _invalidateCache("areas_v1");
       return {success: true};
     }
   }
   // Add new
   ws.appendRow([body.name, body.label, body.free ? "TRUE" : "FALSE"]);
+  _invalidateCache("areas_v1");
   return {success: true};
 }
 
@@ -2635,6 +2958,7 @@ function deleteArea(body) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][nameIdx]) === String(body.name)) {
       ws.deleteRow(i + 1);
+      _invalidateCache("areas_v1");
       return {success: true};
     }
   }
@@ -4448,7 +4772,12 @@ function getExpenseAnalytics(body) {
 
 // ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────
 const TAB_ERROR_LOG     = "SK_Error_Log";
-const ERROR_LOG_HEADERS = ["Timestamp","Date","Phone","Version","Type","Action","Attempt","Duration_ms","Message","URL"];
+// Column layout: structured JSON fields extracted for easy Sheets filtering.
+// "Extra_JSON" holds any additional fields the client sends beyond the core set.
+const ERROR_LOG_HEADERS = [
+  "Timestamp","Date","Phone","Version","Type","Action",
+  "Attempt","Duration_ms","Message","URL","Extra_JSON"
+];
 
 function logClientError(body) {
   try {
@@ -4456,6 +4785,12 @@ function logClientError(body) {
     var ws  = getOrCreateTab(ss, TAB_ERROR_LOG, ERROR_LOG_HEADERS);
     var now = new Date();
     var dateStr = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+
+    // Extract known fields; stash everything else in Extra_JSON for debugging
+    var known = ["phone","version","type","action","attempt","ms","msg","url"];
+    var extra  = {};
+    Object.keys(body).forEach(function(k) { if (known.indexOf(k) === -1) extra[k] = body[k]; });
+
     ws.appendRow([
       getISTTimestamp(),
       dateStr,
@@ -4466,7 +4801,8 @@ function logClientError(body) {
       Number(body.attempt  || 1),
       Number(body.ms       || 0),
       String(body.msg      || ""),
-      String(body.url      || "")
+      String(body.url      || ""),
+      Object.keys(extra).length ? JSON.stringify(extra) : ""
     ]);
     return { success: true };
   } catch(e) {
@@ -5454,6 +5790,30 @@ function markBillingCollected(submissionIds) {
 }
 
 /**
+ * Undo markBillingCollected: set orders back to "Pending" by submission ID array.
+ * Used by the 8-second undo toast in billing tab.
+ */
+function undoMarkPaid(submissionIds) {
+  if (!submissionIds || !submissionIds.length) return { success: false, error: 'No IDs' };
+  const ss  = getSpreadsheet();
+  const ws  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const hIdx = headerIndex(ws);
+  const rows = getAllRows(ws);
+  const statusCol = hIdx['Payment_Status'];
+  if (!statusCol) return { success: false, error: 'Column missing' };
+  const idSet = new Set(submissionIds.map(id => String(id).trim()));
+  let count = 0;
+  rows.forEach(r => {
+    if (idSet.has(String(r.Submission_ID || '').trim())) {
+      ws.getRange(r._row, statusCol).setValue('Pending');
+      count++;
+    }
+  });
+  SpreadsheetApp.flush();
+  return { success: true, count };
+}
+
+/**
  * VIP / Fee Exempt Logic
  */
 function toggleFeeExempt(phone, status) {
@@ -5681,7 +6041,7 @@ function submitManualOrder(body) {
   set("Order_Date",     date);
   set("Meal_Type",      mealType);
   set("Customer_Name",  name || (custRecord && custRecord.Customer_Name) || "");
-  set("Phone",          phone);
+  set("Phone",          _normalizePhone(phone));
   set("Food_Subtotal",  amount);
   set("Net_Total",      amount);
   set("Payment_Method", orderPayMethod);
