@@ -234,9 +234,22 @@ def generate_label_pdf(
         label_bottom = start_y + height_mm
 
         # Name line (always Helvetica bold for legibility)
-        pdf.set_font("Helvetica", style="B", size=font_size)
+        # Auto-shrink then ellipsize so long names never wrap into the next label.
+        name_text = f"Name: {name.strip()}"
+        name_fs   = font_size
+        pdf.set_font("Helvetica", style="B", size=name_fs)
+        while pdf.get_string_width(name_text) > max_w and name_fs > min_fs:
+            name_fs -= 0.5
+            pdf.set_font("Helvetica", style="B", size=name_fs)
+        # If still too wide at min font, truncate with a real ellipsis character.
+        if pdf.get_string_width(name_text) > max_w:
+            while len(name_text) > 3 and pdf.get_string_width(name_text + "…") > max_w:
+                name_text = name_text[:-1]
+            name_text = name_text.rstrip() + "…"
         pdf.set_xy(left_margin, start_y + 2)
-        pdf.multi_cell(max_w, 6, f"Name: {name.strip()}", align="L")
+        pdf.cell(max_w, 6, name_text, ln=1, align="L")
+        # Restore default name-line font size for downstream math that assumes `font_size`
+        pdf.set_font("Helvetica", style="B", size=font_size)
 
         # Summary line
         pdf.set_font(base_font, size=font_size)

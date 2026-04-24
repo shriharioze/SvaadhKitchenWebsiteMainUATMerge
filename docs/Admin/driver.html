@@ -349,8 +349,8 @@ async function loadOrders() {
   }
 }
 
-// ── AUTO-POLL (delivery status sync every 45s) ────────────────────────────────
-function startPoll()  { stopPoll(); _pollTimer = setInterval(silentPoll, 45000); }
+// ── AUTO-POLL (delivery status sync every 30s) ────────────────────────────────
+function startPoll()  { stopPoll(); _pollTimer = setInterval(silentPoll, 30000); }
 function stopPoll()   { if (_pollTimer) clearInterval(_pollTimer); }
 
 async function silentPoll() {
@@ -599,40 +599,107 @@ function renderCard(o, i, meal) {
   </div>`;
 }
 
+// ── OFFLINE DELIVERY QUEUE ───────────────────────────────────────────────────
+// If markDelivered fails (no signal), we queue it in localStorage and flush later.
+const _OFFLINE_KEY = "sk_driver_offline_queue";
+
+function _queueDelivery(submissionId, meal, deliveredAt) {
+  let q = [];
+  try { q = JSON.parse(localStorage.getItem(_OFFLINE_KEY) || "[]"); } catch(e) {}
+  // Deduplicate by submissionId
+  if (!q.find(x => x.submissionId === submissionId)) {
+    q.push({ submissionId, meal, deliveredAt, pin: D.sessionPin });
+    localStorage.setItem(_OFFLINE_KEY, JSON.stringify(q));
+    _showOfflineBadge(q.length);
+  }
+}
+function _showOfflineBadge(count) {
+  let badge = document.getElementById("offlineQueueBadge");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.id = "offlineQueueBadge";
+    badge.onclick = _flushOfflineQueue;
+    badge.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e67e22;color:#fff;font-size:0.78rem;font-weight:700;padding:8px 16px;border-radius:20px;cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);";
+    document.body.appendChild(badge);
+  }
+  badge.textContent = `⚠️ ${count} delivery offline — tap to sync`;
+  badge.style.display = count > 0 ? "block" : "none";
+}
+
+async function _flushOfflineQueue() {
+  let q = [];
+  try { q = JSON.parse(localStorage.getItem(_OFFLINE_KEY) || "[]"); } catch(e) {}
+  if (!q.length) return;
+  let flushed = 0;
+  const remaining = [];
+  for (const item of q) {
+    try {
+      const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
+        body: JSON.stringify({_action:"markDelivered", pin: item.pin || D.sessionPin, submissionId: item.submissionId, deliveredAt: item.deliveredAt})});
+      const data = await res.json();
+      if (data.success) {
+        flushed++;
+        // Update UI if card still visible
+        const btn = document.getElementById("dbtn_"+item.submissionId);
+        if (btn && !btn.classList.contains("done")) {
+          btn.className = "btn-delivered done";
+          btn.innerHTML = `✅ Delivered at ${fmtTime(item.deliveredAt)}`;
+        }
+        const card = document.getElementById("dcard_"+item.submissionId);
+        if (card) card.classList.add("delivered");
+      } else { remaining.push(item); }
+    } catch(e) { remaining.push(item); }
+  }
+  localStorage.setItem(_OFFLINE_KEY, JSON.stringify(remaining));
+  _showOfflineBadge(remaining.length);
+  if (flushed) silentPoll(); // refresh delivery counts
+}
+
+// Flush queue on connectivity restored or tab becomes visible
+window.addEventListener("online", _flushOfflineQueue);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && navigator.onLine) _flushOfflineQueue(); });
+
+// Check on load for any pending offline items
+window.addEventListener("load", () => {
+  try {
+    const q = JSON.parse(localStorage.getItem(_OFFLINE_KEY) || "[]");
+    if (q.length) _showOfflineBadge(q.length);
+  } catch(e) {}
+});
+
 // ── MARK DELIVERED ────────────────────────────────────────────────────────────
 async function markDelivered(submissionId, meal, btn) {
   if (!submissionId || btn.classList.contains("done")) return;
   sBtnLoading(btn, true, "Marking");
   const deliveredAt = new Date().toISOString(); // proper UTC — fmtTime adds +5:30 for display
+
+  // Optimistically update UI immediately for better field UX
+  btn.className = "btn-delivered done";
+  btn.innerHTML = `✅ Delivered at ${fmtTime(deliveredAt)}`;
+  const card = document.getElementById("dcard_"+submissionId);
+  if (card) card.classList.add("delivered");
+  const tag = document.getElementById("dtag_"+submissionId);
+  if (tag) { tag.style.display=""; tag.textContent = `✅ ${fmtTime(deliveredAt)}`; }
+  const order = (_ordersData[meal]||[]).find(o=>o.submissionId===submissionId);
+  if (order) order.deliveredAt = deliveredAt;
+  updateProgress(meal);
+  setTimeout(() => { const panel = document.getElementById("panel_"+meal); if (card && panel) panel.appendChild(card); }, 500);
+
   try {
     const res  = await fetch(APPS_SCRIPT_URL, {method:"POST",
       body: JSON.stringify({_action:"markDelivered", pin:D.sessionPin, submissionId, deliveredAt})});
     const data = await res.json();
     if (!data.success) throw new Error(data.error || "Failed");
-
-    // Update button + badge
-    btn.className = "btn-delivered done";
-    btn.innerHTML = `✅ Delivered at ${fmtTime(deliveredAt)}`;
-    const card = document.getElementById("dcard_"+submissionId);
-    if (card) card.classList.add("delivered");
-    const tag = document.getElementById("dtag_"+submissionId);
-    if (tag) { tag.style.display=""; tag.textContent = `✅ ${fmtTime(deliveredAt)}`; }
-
-    // Update local data
-    const order = (_ordersData[meal]||[]).find(o=>o.submissionId===submissionId);
-    if (order) order.deliveredAt = deliveredAt;
-
-    // Push card to bottom of panel after a short pause so user sees the green flash
-    setTimeout(() => {
-      const panel = document.getElementById("panel_"+meal);
-      if (card && panel) panel.appendChild(card);
-    }, 500);
-
-    // Refresh progress strip
-    updateProgress(meal);
+    // Success — clear any stale offline queue entry for this order
+    try {
+      let q = JSON.parse(localStorage.getItem(_OFFLINE_KEY) || "[]");
+      q = q.filter(x => x.submissionId !== submissionId);
+      localStorage.setItem(_OFFLINE_KEY, JSON.stringify(q));
+      _showOfflineBadge(q.length);
+    } catch(e) {}
   } catch(e) {
-    sBtnLoading(btn, false);
-    await sAlert("Error: " + e.message, "Update Failed", "❌");
+    // Network failure — queue for later sync
+    _queueDelivery(submissionId, meal, deliveredAt);
   }
 }
 

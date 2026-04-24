@@ -1509,6 +1509,13 @@
       const fmtDate = d => { const p = d.split("-"); return `${p[2]}/${p[1]}/${p[0]}`; };
       let html = `<div style="text-align:center;font-size:0.75rem;color:#666;margin-bottom:14px;">📦 Labeled Packing - ${fmtDate(_lastData.date)}</div>`;
 
+      // ── Bulk Pack All button ─────────────────────────────────
+      html += `<div style="text-align:center;margin-bottom:12px;">
+        <button onclick="packAllOrders()" style="background:#059669;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:0.95rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(5,150,105,0.3);">
+          ✅ Pack All (${activeOrders.length})
+        </button>
+      </div>`;
+
       html += '<div style="display:flex; flex-direction:column; gap:12px; padding:10px;">';
       html += activeOrders.map(o => {
         // Create a copy of MR and add common kitchen instructions
@@ -1552,8 +1559,9 @@
         const summarySize = getFittedFontSize(summaryMar, 16);
         const noteSize = getFittedFontSize(noteMar, 14);
 
+        const hasNote = !!(noteMar || o.Special_Notes_Kitchen);
         return `
-        <div class="label-block" id="label_${o.Submission_ID}" style="background:white; border-radius:12px; border:1px solid #eee; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid var(--red); margin-bottom:12px;">
+        <div class="label-block" id="label_${o.Submission_ID}" style="background:${hasNote ? 'linear-gradient(135deg,#fffbeb,#fff)' : 'white'}; border-radius:12px; border:1px solid ${hasNote ? '#f59e0b' : '#eee'}; padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-left:4px solid ${hasNote ? '#f59e0b' : 'var(--red)'}; margin-bottom:12px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
             <div style="font-weight:700; color:#1e293b; font-size:${nameSize}; line-height:1.2;">${o.Customer_Name}</div>
           </div>
@@ -1615,6 +1623,38 @@
       }
     }
 
+    // ── BULK PACK ALL ────────────────────────────────────────
+    async function packAllOrders() {
+      const currentMeal = _manualMeal || getCurrentMeal();
+      const remaining = (_lastData?.orders || []).filter(o => !o.Packed && o.Meal_Type === currentMeal);
+      if (!remaining.length) { alert("No orders left to pack!"); return; }
+      if (!confirm(`Mark all ${remaining.length} ${currentMeal} orders as packed?`)) return;
+
+      // Dim all cards
+      remaining.forEach(o => {
+        const b = document.getElementById("label_" + o.Submission_ID);
+        if (b) b.style.opacity = "0.4";
+      });
+
+      let failed = 0;
+      for (const o of remaining) {
+        try {
+          const res  = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ _action: "markOrderPacked", pin: K.sessionPin, submissionId: o.Submission_ID })
+          });
+          const data = await res.json();
+          if (data.success) {
+            o.Packed = true;
+            const block = document.getElementById("label_" + o.Submission_ID);
+            if (block) block.remove();
+          } else { failed++; }
+        } catch(e) { failed++; }
+      }
+
+      if (failed) alert(`${failed} order(s) failed to mark. Please retry individually.`);
+      renderLabelsTab();
+    }
 
     // ── AUTO-SET DATE ON LOAD ──
     (function () {
