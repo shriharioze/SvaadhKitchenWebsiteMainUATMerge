@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.5; // Loyalty streak fix: charge surcharge on day 6, discount covers all 6 days
+const CODE_VERSION   = 14.6; // verifyOrderPlaced endpoint for timeout auto-recovery
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -489,6 +489,7 @@ function doPost(e) {
     // Customer self-service (phone-verified inside each function)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType, { isAdmin: isAdmin }));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
+    if (action === "verifyOrderPlaced") return jsonRes(verifyOrderPlaced(body));
 
     // Admin-only read: returns all customer profiles + wallet balances
     if (action === "getCustomerList") {
@@ -2147,6 +2148,62 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
   }
 
   return { streak: streakCount, pastSurcharge: accumulatedSurcharge };
+}
+
+// ── VERIFY ORDER PLACED (timeout recovery) ───────────────────
+// Called by the frontend after a network timeout to check if the order
+// actually landed on the backend. Matches by phone + every date/meal combo
+// in the cart, within a 10-minute recency window.
+// Returns { found: true, submissionId } or { found: false }.
+function verifyOrderPlaced(body) {
+  const phone = _normalizePhone(String(body.phone || ""));
+  if (!phone) return { found: false };
+
+  // cart = [{date: "yyyy-MM-dd", meal: "Breakfast"|"Lunch"|"Dinner"}]
+  // Derived from body.orders (same format as submitOrder)
+  const orders = body.orders || [];
+  const cartEntries = []; // [{date, meal}]
+  for (const dateOrder of orders) {
+    for (const meal of (dateOrder.meals || [])) {
+      if ((Number(meal.subtotal) || 0) > 0) {
+        cartEntries.push({ date: dateOrder.date, meal: meal.type });
+      }
+    }
+  }
+  if (!cartEntries.length) return { found: false };
+
+  const ss  = getSpreadsheet();
+  const ws  = getOrCreateTab(ss, TAB_ORDERS, []);
+  const rows = getAllRows(ws);
+
+  const nowMs     = Date.now();
+  const TEN_MIN   = 10 * 60 * 1000;
+  const normDate  = (d) => {
+    if (!d) return "";
+    if (d instanceof Date) return Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    return String(d).trim().substring(0, 10);
+  };
+
+  // Recent rows for this phone (last 10 min)
+  const recent = rows.filter(r => {
+    if (_normalizePhone(String(r.Phone || "")) !== phone) return false;
+    const rMs = r.Submitted_At ? new Date(r.Submitted_At).getTime() : 0;
+    return rMs > 0 && (nowMs - rMs) <= TEN_MIN;
+  });
+
+  if (!recent.length) return { found: false };
+
+  // Every cart entry must have a matching recent row
+  let firstId = null;
+  for (const entry of cartEntries) {
+    const match = recent.find(r =>
+      normDate(r.Order_Date) === entry.date && r.Meal_Type === entry.meal
+    );
+    if (!match) return { found: false };
+    if (!firstId) firstId = String(match.Submission_ID || "");
+  }
+
+  return firstId ? { found: true, submissionId: firstId } : { found: false };
 }
 
 function getCustomerOrders(phone) {
