@@ -3447,11 +3447,6 @@
             onclick="event.stopPropagation();toast('Tap multiple dates to seamlessly plan your meals for the whole week in advance!',6000)"
             style="margin-left:8px;background:#eee;color:#7f8c8d;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;font-weight:700;">?</span>
         </h2>
-        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-bottom:12px;">
-          <span>📅 View Upcoming Days' Tentative Menu</span>
-          <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
-        </button>
-        <div id="step3ReviewPromo"></div>
 
         <div class="info-box" id="cutoffInfoBox">
           <strong>Order cutoff times:</strong><br>
@@ -3479,6 +3474,14 @@
         <div class="cal-grid" id="calGrid"></div>
         <div class="selected-dates-summary" id="selectedDatesSummary" data-i18n="tap_dates_hint">Tap dates to select
           (multiple OK)</div>
+
+        <!-- Streak + extras shown BELOW the calendar so ordering stays front-and-centre -->
+        <div id="streakBannerDates" style="margin-top:14px;"></div>
+        <div id="step3ReviewPromo" style="margin-top:10px;"></div>
+        <button class="wm-btn" onclick="openWeeklyMenu()" id="weeklyMenuBtn_step3" style="margin-top:10px;">
+          <span>📅 View Upcoming Days' Tentative Menu</span>
+          <span style="font-size:0.75rem; font-weight:400; opacity:0.8;">(Subject to change based on market availability)</span>
+        </button>
       </div>
     </div>
 
@@ -3491,6 +3494,7 @@
             off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
         </div>
         <p class="mr-note" style="margin-bottom:0;">🚚 १ जेवण असल्यास ₹१०० वर <strong>मोफत डिलिव्हरी</strong>, २ किंवा अधिक असल्यास ₹१५० वर मोफत &nbsp;·&nbsp; 🎉 ₹३०० वर <strong>५% सूट</strong> · ₹४५० वर <strong>७.५% सूट</strong></p>
+        <div id="streakBannerMeals" style="margin-top:10px;"></div>
       </div>
       <div style="margin-bottom:8px;">
         <div id="dateTabsWrap"
@@ -4293,7 +4297,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.18";
+    const APP_VERSION = "v26.04.25.19";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4851,6 +4855,85 @@
     // ═══════════════════════════════════════════════════════════
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════
+    // ── Streak motivator banner ───────────────────────────────────────────────
+    function renderStreakBanner(...ids) {
+      const sc = S.loyaltyInfo?.count || 0;
+      const surcharge = S.loyaltyInfo?.surcharge || 0;
+
+      let html = "";
+      if (sc === 0) {
+        // Brand-new customer or streak reset: gentle intro teaser
+        html = `<div style="background:linear-gradient(135deg,#fff8f0,#fff3e0);border:1px solid #fcd9a8;
+                             border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:1.6rem;line-height:1;">🔥</span>
+          <div style="flex:1;">
+            <div style="font-size:0.82rem;font-weight:700;color:#b45309;">Start your Svaadh Streak!</div>
+            <div style="font-size:0.74rem;color:#92400e;margin-top:2px;line-height:1.4;">
+              Order 6 days in a row → get <strong>all market surcharges back</strong> as a discount.
+              Sunday doesn't break it — Sat + Mon still counts! 🎁
+            </div>
+          </div>
+        </div>`;
+      } else if (sc >= 1 && sc <= 4) {
+        // Mid-streak: show progress bar + encouraging message
+        const remaining = 6 - sc;
+        const segments = Array.from({length:6}, (_,i) =>
+          `<div style="flex:1;height:7px;border-radius:4px;margin:0 2px;
+                       background:${i < sc ? 'linear-gradient(90deg,#f59e0b,#ef4444)' : '#e5e7eb'};"></div>`
+        ).join("");
+        const flames = "🔥".repeat(sc);
+        html = `<div style="background:linear-gradient(135deg,#fffbeb,#fff8f0);border:1px solid #fcd9a8;
+                             border-radius:14px;padding:13px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span style="font-size:1.3rem;line-height:1;">${flames}</span>
+              <span style="font-size:0.85rem;font-weight:800;color:#b45309;">${sc}-Day Streak!</span>
+            </div>
+            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:20px;
+                        padding:3px 10px;font-size:0.78rem;font-weight:800;color:#92400e;">${sc}/6</div>
+          </div>
+          <div style="display:flex;margin-bottom:9px;">${segments}</div>
+          <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">
+            <strong>${remaining} more day${remaining>1?'s':''}</strong> to unlock your reward —
+            <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(sc*8)}</strong> surcharge refund coming your way!
+            Keep ordering to claim it 💪
+          </div>
+        </div>`;
+      } else if (sc === 5) {
+        // ONE DAY AWAY — high energy!
+        html = `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;
+                             border-radius:14px;padding:13px 14px;animation:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="font-size:1.6rem;">🔥🔥🔥🔥🔥</span>
+          </div>
+          <div style="font-size:0.9rem;font-weight:800;color:#92400e;margin-bottom:5px;">
+            ONE more day — your reward is right there! 🏆
+          </div>
+          <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">
+            You've ordered <strong>5 days in a row!</strong> Order today to complete your 6-day streak and get
+            <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(5*9)}</strong> back as a loyalty discount. Don't break the chain!
+          </div>
+        </div>`;
+      } else {
+        // sc >= 6: streak complete — celebration (rare on date/meal screens, usually on bill)
+        html = `<div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #34d399;
+                             border-radius:14px;padding:13px 14px;">
+          <div style="font-size:0.9rem;font-weight:800;color:#065f46;margin-bottom:4px;">
+            🎉 6-Day Streak Complete! Your reward is applied to this bill!
+          </div>
+          <div style="font-size:0.76rem;color:#047857;line-height:1.4;">
+            All your market surcharges (₹${surcharge}) are being refunded.
+            Keep ordering to start your next streak! 🔥
+          </div>
+        </div>`;
+      }
+
+      ids.forEach(id => {
+        const el = $(id);
+        if (el) el.innerHTML = html;
+      });
+    }
+
     function updateNav() {
       const s = S.step;
       const STEPS = t('steps');
@@ -4881,6 +4964,10 @@
             .catch(() => {});
         }
       }
+
+      // Streak motivator — shown on date-selection and meal-selection screens
+      if (s === 2) renderStreakBanner("streakBannerDates");
+      if (s === 3) renderStreakBanner("streakBannerMeals");
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
       // (fetched async on page load) are always applied — avoids stale default cutoff
