@@ -1007,8 +1007,8 @@
 
       const pinToVerify = autoPin || K.pin;
       try {
-        const today = todayIST();
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${today}&pin=${pinToVerify}&_t=${Date.now()}`);
+        const fetchDate = document.getElementById("datePicker").value || todayIST();
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${fetchDate}&pin=${pinToVerify}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.error) {
           if (!autoPin) {
@@ -1027,9 +1027,8 @@
         K.pin = ""; renderDots();
         document.getElementById("loginWrap").style.display = "none";
         document.getElementById("shell").style.display = "block";
-        document.getElementById("datePicker").value = today;
         _lastData = data;
-        renderView();
+        switchKTab(_currentTab);
         _lastUpdated = new Date();
         startAutoRefresh();
       } catch (e) {
@@ -1690,14 +1689,22 @@
       renderLabelsTab();
     }
 
-    // ── AUTO-SET DATE ON LOAD ──
+    // ── INITIAL STATE ON LOAD ──
     (function () {
-      document.getElementById("datePicker").value = todayIST();
+      const savedDate = sessionStorage.getItem('sk_kitchen_date');
+      if (savedDate) document.getElementById("datePicker").value = savedDate;
+      else document.getElementById("datePicker").value = todayIST();
+
+      const savedTab = sessionStorage.getItem('sk_kitchen_tab');
+      if (savedTab) _currentTab = savedTab;
+
+      const savedMeal = sessionStorage.getItem('sk_kitchen_meal');
+      if (savedMeal) _manualMeal = savedMeal;
 
       // Auto-Login
-      const saved = localStorage.getItem('sk-kitchen-pin');
-      if (saved && saved.length === 4) {
-        verifyPin(saved);
+      const savedPin = localStorage.getItem('sk-kitchen-pin');
+      if (savedPin && savedPin.length === 4) {
+        verifyPin(savedPin);
       }
     })();
 
@@ -1715,8 +1722,11 @@
       }
 
       function doRefresh() {
-        scheduleNext();
-        loadKitchen();
+        sessionStorage.setItem('sk_kitchen_date', document.getElementById("datePicker").value);
+        sessionStorage.setItem('sk_kitchen_tab', _currentTab);
+        if (_manualMeal) sessionStorage.setItem('sk_kitchen_meal', _manualMeal);
+        else sessionStorage.removeItem('sk_kitchen_meal');
+        window.location.reload();
       }
 
       scheduleNext();
