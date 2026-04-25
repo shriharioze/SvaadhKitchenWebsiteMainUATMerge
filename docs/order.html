@@ -4296,7 +4296,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.20";
+    const APP_VERSION = "v26.04.25.21";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7364,6 +7364,11 @@
       if (tipCard) {
         tipCard.style.display = "block";
       }
+
+      // Streak banner — below delivery tip, above review promo
+      renderStreakBanner("streakProgressBadge");
+      const sb = $("streakProgressBadge");
+      if (sb) sb.style.display = "block";
 
       window.scrollTo(0, 0);
 
