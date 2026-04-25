@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.09";
+    const APP_VERSION = "v26.04.25.14";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7154,12 +7154,14 @@
         }
         else throw new Error(data.error || "Unknown error");
       } catch (err) {
-        clearTimeout(_pTid);
-        if (err.name === "AbortError") {
-          // ── Auto-verify: keep button locked, check silently if order landed ──
-          sBtnLoading($("btnNext"), true, "⏳ Verifying order…");
-          _showSlowBanner(true);
-          if (_slowBannerEl) _slowBannerEl.textContent = "⏳ Verifying your order with our servers…";
+        // ── Auto-verify for ANY error (timeout, JSON parse, network, etc.) ──
+        // The POST may have succeeded (order in sheet) even though the
+        // response was lost, garbled, or timed out.  Always verify.
+        console.warn('[placeOrder] catch:', err.name, err.message);
+        sBtnLoading($("btnNext"), true, "⏳ Verifying order…");
+        _showSlowBanner(true);
+        if (_slowBannerEl) _slowBannerEl.textContent = "⏳ Verifying your order with our servers…";
+        try {
           const confirmedId = await _verifyOrderAfterTimeout(orders, _preSubmitRowIds);
           _showSlowBanner(false);
           sBtnLoading($("btnNext"), false);
@@ -7170,21 +7172,22 @@
             showSuccess(confirmedId);
             return;
           }
-          // Could not confirm — show manual fallback
-          await sAlert(
-            `The server took too long to respond — this can happen occasionally.\n\n` +
-            `<b>Before placing the order again:</b>\n` +
-            `👉 Go to <b>Manage Orders</b> and check if your order already appears there.\n\n` +
-            `✅ <b>Order visible?</b> You're all set — do NOT place it again.\n` +
-            `❌ <b>Order not visible?</b> Go ahead and place it again.`,
-            "Request Timed Out", "⏱️"
-          );
-        } else {
+        } catch (verifyErr) {
+          console.warn('[placeOrder] verify also failed:', verifyErr);
+          _showSlowBanner(false);
           sBtnLoading($("btnNext"), false);
           S.isPlacingOrder = false;
           $("btnNext").style.pointerEvents = "auto";
-          await sAlert("Error: " + err.message, "Placement Failed", "❌");
         }
+        // Could not confirm — show manual fallback
+        await sAlert(
+          `The server took too long to respond — this can happen occasionally.\n\n` +
+          `<b>Before placing the order again:</b>\n` +
+          `👉 Go to <b>Manage Orders</b> and check if your order already appears there.\n\n` +
+          `✅ <b>Order visible?</b> You're all set — do NOT place it again.\n` +
+          `❌ <b>Order not visible?</b> Go ahead and place it again.`,
+          "Request Timed Out", "⏱️"
+        );
       }
     }
 
@@ -7257,7 +7260,7 @@
       $("freeOrderCard").style.display = "none";
 
       $("successCard").style.display = "block";
-      $("orderIdDisplay").textContent = id.toUpperCase();
+      $("orderIdDisplay").textContent = id ? id.toUpperCase() : "CONFIRMED";
       $("bottomNav").style.display = "none";
 
       // Show delivery tip once (dismissed state saved in localStorage)
