@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.05";
+    const APP_VERSION = "v26.04.25.06";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5837,7 +5837,7 @@
           <span class="meal-icon">${ICONS[meal]}</span>
           <div>
             <div class="meal-title">${meal}</div>
-            <div class="meal-cutoff-txt" id="cutdown_${date}_${meal}">${isAvail ? "" : ((S.menuCache[date]?.orders_closed || {})[meal] ? 'Not accepting orders' : t('cutoff_passed_meal', { meal }))}</div>
+            <div class="meal-cutoff-txt" id="cutdown_${date}_${meal}"></div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -5899,7 +5899,7 @@
         const ov2 = parseFloat(ov[meal]);
         const cutH = isNaN(ov2) ? DEFS[meal] : ov2;
         const rem  = cutH - nowH;
-        if (rem <= 0) { el.textContent = t ? t('cutoff_passed_meal', { meal }) : `${meal} orders closed`; el.style.color = '#c0392b'; return; }
+        if (rem <= 0) { el.textContent = ""; el.style.color = ''; el.style.fontWeight = ''; return; }
         const totalSecs = Math.round(rem * 3600);
         const h = Math.floor(totalSecs / 3600);
         const m = Math.floor((totalSecs % 3600) / 60);
