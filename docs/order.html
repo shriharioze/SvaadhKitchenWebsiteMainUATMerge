@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.14";
+    const APP_VERSION = "v26.04.25.15";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4731,10 +4731,15 @@
       trackGA("upi_id_copied");
     }
 
-    async function syncWalletValue() {
+    let _lastWalletSync = 0;
+    async function syncWalletValue(force) {
       if (!S.phone) return;
+      // Debounce: skip if last sync was < 30s ago (unless forced)
+      const now = Date.now();
+      if (!force && now - _lastWalletSync < 30000) return;
+      _lastWalletSync = now;
       try {
-        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getWalletValue&phone=${S.phone}`, {}, { silent: true });
         const data = await res.json();
         if (data.wallet_balance !== undefined) {
           const wb = Number(data.wallet_balance) || 0;
@@ -4849,7 +4854,7 @@
     function updateNav() {
       const s = S.step;
       const STEPS = t('steps');
-      if (s > 0) syncWalletValue(); // Refresh balance on navigation to ensure accuracy
+      if (s >= 2) syncWalletValue(); // Refresh balance on steps where wallet chip is visible (debounced)
       document.querySelectorAll(".screen").forEach((el, i) => el.classList.toggle("active", i === s));
       document.querySelectorAll(".step-dot").forEach((d, i) => { d.classList.remove("active", "done"); if (i === s) d.classList.add("active"); else if (i < s) d.classList.add("done"); });
       $("stepLabel").textContent = `Step ${s + 1} of 5 — ${STEPS[s]}`;
@@ -5726,11 +5731,22 @@
     // ═══════════════════════════════════════════════════════════
     async function loadMealScreen() {
       $("mealSelectionContent").innerHTML = `<div class="loader"><div class="spinner"></div><p style="font-size:0.78rem;color:#888;margin-top:4px;">${t('loading_menu')}</p></div>`;
-      await Promise.all(S.selectedDates.map(async date => {
-        if (!S.menuCache[date]) {
-          try { const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenu&date=${date}`); S.menuCache[date] = await res.json(); }
-          catch (fetchErr) { console.error('[DEBUG] fetch failed for', date, fetchErr); S.menuCache[date] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} }; }
+      const datesToFetch = S.selectedDates.filter(d => !S.menuCache[d]);
+      if (datesToFetch.length > 0) {
+        try {
+          const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getMenuBatch&dates=${datesToFetch.join(',')}`);
+          const data = await res.json();
+          datesToFetch.forEach(d => {
+            S.menuCache[d] = data[d] || { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} };
+          });
+        } catch (fetchErr) {
+          console.error('[DEBUG] batch fetch failed for', datesToFetch, fetchErr);
+          datesToFetch.forEach(d => {
+            S.menuCache[d] = { breakfast: [], lunch_dry: "", lunch_curry: "", dinner_dry: "", dinner_curry: "", cutoff_overrides: {} };
+          });
         }
+      }
+      S.selectedDates.forEach(date => {
         if (!S.orders[date]) {
           const def = { area: S.profile.area, wing: S.profile.wing, flat: S.profile.flat, floor: S.profile.floor, society: S.profile.society, maps: S.profile.maps, landmark: S.profile.landmark };
           S.orders[date] = {
@@ -5739,7 +5755,7 @@
             Dinner: { items: {}, notes: "", subtotal: 0, ...def },
           };
         }
-      }));
+      });
       buildDateTabs();
       renderMealContent(S.selectedDates[0]);
     }
@@ -6827,7 +6843,7 @@
 
         await sAlert(t('toast_recharge_submitted'), "Recharge Submitted", "✅");
         closeWalletRecharge();
-        syncWalletValue(); // Refresh UI balance after recharge request
+        syncWalletValue(true); // Refresh UI balance after recharge request (force bypass debounce)
       } catch (err) {
         sBtnLoading(btn, false);
         await sAlert("Error: " + err.message, "Submission Failed", "❌");
@@ -7405,7 +7421,7 @@
     }
     function hideManageOrders() {
       $("manageOrdersPanel").style.display = "none";
-      syncWalletValue(); // Refresh main chip balance when closing manage orders
+      syncWalletValue(true); // Refresh main chip balance when closing manage orders (force bypass debounce)
     }
 
     function showPricingInfo() {
@@ -8176,7 +8192,7 @@
           } else {
             await sAlert("Order cancelled successfully.", "Done", "✅");
           }
-          syncWalletValue(); // Update main UI balance
+          syncWalletValue(true); // Update main UI balance (force bypass debounce)
           loadExistingOrders(S.phone); // Refresh upcoming list
         } else {
           throw new Error("Action failed for one or more items.");

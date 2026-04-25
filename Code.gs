@@ -430,6 +430,7 @@ function doGet(e) {
 
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));
+    if (action === "getMenuBatch") return jsonRes(getMenuBatch(p.dates));
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
     if (action === "getWalletValue") return jsonRes({wallet_balance: _calculateWalletBalance(p.phone)});
@@ -841,6 +842,19 @@ function getAllRows(ws) {
   });
 }
 
+function getRecentRows(ws, maxRows) {
+  const last = ws.getLastRow();
+  if (last < 2) return [];
+  const startRow = Math.max(2, last - maxRows + 1);
+  const data = ws.getRange(startRow, 1, last - startRow + 1, ws.getLastColumn()).getValues();
+  const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  return data.map((row, ri) => {
+    const obj = {_row: ri + startRow};
+    headers.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  });
+}
+
 // ── SCHEMA INIT ──────────────────────────────────────────────
 function initSchema() {
   const ss = getSpreadsheet();
@@ -1082,6 +1096,16 @@ function getMenu(dateStr) {
   return _cachedData("menu_v2_" + dateStr, 60, function() { return _getMenuUncached(dateStr); });
 }
 
+function getMenuBatch(datesStr) {
+  const dates = String(datesStr || "").split(',').map(d => d.trim()).filter(Boolean);
+  const result = {};
+  dates.forEach(d => {
+    // Rely on the existing cached helper so we don't duplicate logic
+    result[d] = getMenu(d);
+  });
+  return result;
+}
+
 function _getMenuUncached(dateStr) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_MENU, []);
@@ -1187,7 +1211,9 @@ function _getMenuUncached(dateStr) {
   try { if (r && r.Stock_JSON) stockLimits = JSON.parse(r.Stock_JSON); } catch(e) {}
 
   const ordersWs2   = getOrCreateTab(ss, TAB_ORDERS, []);
-  const ordersRows2 = getAllRows(ordersWs2);
+  // OPTIMIZATION: Only read the last 500 rows to compute stock limit (covers today and yesterday).
+  // This prevents scanning thousands of old orders just to check today's stock.
+  const ordersRows2 = getRecentRows(ordersWs2, 500);
   const orderedCounts = countOrderedUnits(ordersRows2, dateStr);
   const unitsRemaining = {};
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
