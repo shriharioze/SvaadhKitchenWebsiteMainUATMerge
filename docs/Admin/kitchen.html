@@ -1805,6 +1805,12 @@
       const s = ist.getUTCSeconds();
       const minsTotal = h * 60 + m + (s / 60);
 
+      // Only show if we are looking at the current operational date
+      if (document.getElementById("datePicker").value !== todayIST()) {
+        el.style.display = "none";
+        return;
+      }
+
       // System cutoffs or defaults
       const cutoffs = {
         Breakfast: _lastCutoffs.Breakfast || 7,
