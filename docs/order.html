@@ -3494,7 +3494,6 @@
             off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
         </div>
         <p class="mr-note" style="margin-bottom:0;">🚚 १ जेवण असल्यास ₹१०० वर <strong>मोफत डिलिव्हरी</strong>, २ किंवा अधिक असल्यास ₹१५० वर मोफत &nbsp;·&nbsp; 🎉 ₹३०० वर <strong>५% सूट</strong> · ₹४५० वर <strong>७.५% सूट</strong></p>
-        <div id="streakBannerMeals" style="margin-top:10px;"></div>
       </div>
       <div style="margin-bottom:8px;">
         <div id="dateTabsWrap"
@@ -4297,7 +4296,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.19";
+    const APP_VERSION = "v26.04.25.20";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4967,7 +4966,6 @@
 
       // Streak motivator — shown on date-selection and meal-selection screens
       if (s === 2) renderStreakBanner("streakBannerDates");
-      if (s === 3) renderStreakBanner("streakBannerMeals");
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
       // (fetched async on page load) are always applied — avoids stale default cutoff
