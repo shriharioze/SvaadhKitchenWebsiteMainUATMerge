@@ -1137,10 +1137,7 @@
         }
       }
 
-      const fmtWeight = (g) => {
-        if (g >= 1000) return (g / 1000).toFixed(2) + " kg";
-        return Math.round(g) + " g";
-      };
+      const fmtWeight = (g) => Math.round(g) + " g";
 
       if (!w || w === 0) {
         // No gram data — just show unit count so staff can manage
@@ -1284,14 +1281,14 @@
           <div class="cook-label">🍴 <strong>${dryDisplayName}</strong></div>
           <div class="cook-val">${dRes.val}</div>
           <div class="cook-unit">${dRes.unit}</div>
-          <div class="cook-breakdown">${s.dry_mini || 0} Mini + ${s.dry_full || 0} Full</div>
+          <div class="cook-breakdown">${s.dry_mini || 0}×0.6 + ${s.dry_full || 0}×1.4 = ${((s.dry_mini||0)*0.6+(s.dry_full||0)*1.4).toFixed(1)}</div>
         </div>` : ""}
         ${showCurry ? `
         <div class="sabji-cook-card">
           <div class="cook-label">🍲 <strong>${curryDisplayName}</strong></div>
           <div class="cook-val">${cRes.val}</div>
           <div class="cook-unit">${cRes.unit}</div>
-          <div class="cook-breakdown">${s.curry_mini || 0} Mini + ${s.curry_full || 0} Full</div>
+          <div class="cook-breakdown">${s.curry_mini || 0}×0.6 + ${s.curry_full || 0}×1.4 = ${((s.curry_mini||0)*0.6+(s.curry_full||0)*1.4).toFixed(1)}</div>
         </div>` : ""}
       </div>`;
 

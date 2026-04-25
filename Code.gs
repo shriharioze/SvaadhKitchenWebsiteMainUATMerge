@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.3; // Sunday off by default; submitOrder cache invalidation; stock limits
+const CODE_VERSION   = 14.4; // Loyalty streak fix: server-computed excess credit, surcharge zeroed on 6th day
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -1559,6 +1559,7 @@ function _submitOrderInternal(body) {
   const _dupNowMs = Date.now();
   const _FIVE_MIN_MS = 5 * 60 * 1000;
   const _normPhone = _normalizePhone(profile.phone);
+  let loyaltyExcessCredit = 0; // accumulates surplus when 6th-day discount exceeds the bill
   // Normalize an items object to a stable JSON signature (sorted keys)
   const _itemsSig = (obj) => JSON.stringify(
     Object.keys(obj).sort().reduce((a, k) => { a[k] = obj[k]; return a; }, {})
@@ -1674,7 +1675,10 @@ function _submitOrderInternal(body) {
       const mealCredit = submissionDayFoodTotal > 0 ? Math.round(totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
 
       const discAmt = getDisc(sub);
-      const inflationSurcharge = Math.ceil(sub / 20);
+      // On the 6th day, day 6's surcharge is NOT added to the bill — it is already factored
+      // into the loyalty discount (totalWaiver includes it). Charging it and then discounting
+      // it would cancel out and the customer would only recover days 1–5, not all 6.
+      const inflationSurcharge = is6thDay ? 0 : Math.ceil(sub / 20);
 
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
@@ -1684,7 +1688,13 @@ function _submitOrderInternal(body) {
         promoCount--;
       }
 
-      const netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
+      let netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
+      // If the 6th-day loyalty discount exceeds this meal's bill, clamp to ₹0 and
+      // accumulate the surplus — it gets credited to the customer's wallet after all rows are written.
+      if (is6thDay && netTotal < 0) {
+        loyaltyExcessCredit += Math.abs(netTotal);
+        netTotal = 0;
+      }
       meal._reviewDiscount = reviewDiscount; // carry for set() below
 
 
@@ -1891,14 +1901,13 @@ function _submitOrderInternal(body) {
     custWs.getRange(realRow, cIdx["Review_Promo_Count"]).setValue(finalValue);
   }
 
-  // If loyalty reward exceeded the bill, credit the bonus to wallet
-  const walletBonus = Number(body.wallet_bonus) || 0;
-  if (walletBonus > 0) {
+  // If 6th-day loyalty discount exceeded the bill, credit the excess to wallet (server-computed)
+  if (loyaltyExcessCredit > 0) {
     try {
       _appendWalletTransaction(
         profile.phone || "", profile.name || "Customer",
         "Loyalty Streak Reward (Excess Credit)",
-        walletBonus, true, submissionIds[0] || ""
+        loyaltyExcessCredit, true, submissionIds[0] || ""
       );
     } catch(e) { /* non-fatal */ }
   }
