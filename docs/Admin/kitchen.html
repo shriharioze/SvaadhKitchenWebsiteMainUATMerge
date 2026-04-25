@@ -1199,12 +1199,49 @@
       else if (_currentTab === "PrintLabel") renderPrintLabelsTab();
     }
 
+    let _dismissedCutoff = null;
+    function getCutoffAlertHtml() {
+      const now = new Date();
+      const ist = new Date(now.getTime() + 5.5 * 3600000);
+      const h = ist.getUTCHours();
+      const m = ist.getUTCMinutes();
+      const mins = h * 60 + m;
+      const mmdd = `${ist.getUTCMonth()+1}${ist.getUTCDate()}`;
+
+      let currentCutoff = null;
+      if (mins >= 570 && mins <= 575) currentCutoff = `Lunch_${mmdd}`; // 9:30 AM - 9:35 AM
+      else if (mins >= 1020 && mins <= 1025) currentCutoff = `Dinner_${mmdd}`; // 5:00 PM - 5:05 PM
+      
+      if (!currentCutoff || _dismissedCutoff === currentCutoff) return "";
+
+      return `
+        <div id="kitchenCutoffAlert" style="position:relative;background:linear-gradient(135deg,#fff8e1,#ffecb3);border:1px solid #ffe082;border-radius:12px;padding:16px;margin-bottom:16px;color:#d35400;box-shadow:0 4px 12px rgba(211,84,0,0.15);text-align:center;animation: pulseAlert 2s infinite;">
+          <button onclick="dismissCutoffAlert('${currentCutoff}')" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.4rem;color:#d35400;cursor:pointer;line-height:1;">✕</button>
+          <div style="font-size:1.8rem;margin-bottom:6px;">🔔</div>
+          <div style="font-size:1.1rem;font-weight:900;">अंतिम मोजणी तयार आहे, तयारी पूर्ण करा आणि स्वयंपाक सुरू करा</div>
+        </div>
+        <style>
+          @keyframes pulseAlert {
+            0% { box-shadow: 0 0 0 0 rgba(211,84,0, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(211,84,0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(211,84,0, 0); }
+          }
+        </style>
+      `;
+    }
+
+    function dismissCutoffAlert(id) {
+      _dismissedCutoff = id;
+      const el = document.getElementById("kitchenCutoffAlert");
+      if (el) el.style.display = "none";
+    }
+
     function renderKitchen(data) {
       const meals = data.meals || {};
-      let html = "";
+      let html = getCutoffAlertHtml();
 
       if (!Object.keys(meals).length) {
-        html = `<div class="no-orders" style="display:flex;flex-direction:column;align-items:center;padding:40px;">
+        html += `<div class="no-orders" style="display:flex;flex-direction:column;align-items:center;padding:40px;">
       <div style="font-size:3rem;margin-bottom:10px;">😴</div>
       No orders set for ${data.date}</div>`;
         document.getElementById("kbody").innerHTML = html;
@@ -1329,10 +1366,10 @@
 
     function renderPacking(data) {
       const meals = data.meals || {};
-      let html = "";
+      let html = getCutoffAlertHtml();
 
       if (!Object.keys(meals).length) {
-        html = `<div class="no-orders">No orders set for ${data.date}</div>`;
+        html += `<div class="no-orders">No orders set for ${data.date}</div>`;
         document.getElementById("kbody").innerHTML = html;
         return;
       }
