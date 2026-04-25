@@ -3506,7 +3506,10 @@
     <!-- STEP 5: BILL + PAYMENT -->
     <div class="screen" id="screen4">
       <div class="card" id="summaryCard">
-        <h2 data-i18n="step5_summary_title">🧾 Order Summary</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h2 data-i18n="step5_summary_title" style="margin:0;">🧾 Order Summary</h2>
+          <button onclick="promptResetCart()" style="background:none;border:none;color:#ef4444;font-size:0.8rem;font-weight:600;cursor:pointer;text-decoration:underline;">Reset Cart</button>
+        </div>
         <div id="streakProgressBadge" style="display:none; margin-bottom:14px;"></div>
         <div id="walletBalMsg" class="wallet-bal-msg"
           style="display:none;margin-bottom:12px;text-align:center;font-size:0.85rem;color:#2e7d32;background:#e8f5e9;padding:10px;border-radius:10px;border:1px solid #c8e6c9;">
@@ -4293,7 +4296,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.15";
+    const APP_VERSION = "v26.04.25.16";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5498,6 +5501,9 @@
         "तुम्ही लॉग आउट करू इच्छिता?"
       );
       if (!confirmed) return;
+      _clearCart();
+      S.orders = {};
+      S.selectedDates = [];
       localStorage.removeItem('sk_logged_in_phone');
       localStorage.removeItem('sk_logged_in_pin');
       location.reload();
@@ -6057,38 +6063,30 @@
     }
 
     // ── CART PERSISTENCE (sessionStorage) ───────────────────────
-    // Saves cart across page reloads within the same tab session.
-    function _persistCart() {
-      if (!S.phone) return;
-      try {
-        sessionStorage.setItem('sk_cart_v2', JSON.stringify({
-          phone: S.phone,
-          orders: S.orders,
-          selectedDates: S.selectedDates,
-          menuCache: S.menuCache
-        }));
-      } catch(e) {}
-    }
-    function _restoreCart() {
-      try {
-        const raw = sessionStorage.getItem('sk_cart_v2');
-        if (!raw) return false;
-        const saved = JSON.parse(raw);
-        if (!saved || saved.phone !== S.phone) return false;
-        if (!saved.selectedDates || !saved.selectedDates.length) return false;
-        // Only restore if cart has actual items
-        const hasItems = saved.selectedDates.some(d =>
-          ["Breakfast","Lunch","Dinner"].some(m => (saved.orders[d]?.[m]?.subtotal || 0) > 0)
-        );
-        if (!hasItems) return false;
-        S.orders        = saved.orders;
-        S.selectedDates = saved.selectedDates;
-        S.menuCache     = saved.menuCache || {};
-        return true;
-      } catch(e) { return false; }
-    }
+    // User requested to reset cart on refresh, so we disable persistence.
+    function _persistCart() { }
+    function _restoreCart() { return false; }
     function _clearCart() {
       try { sessionStorage.removeItem('sk_cart_v2'); } catch(e) {}
+    }
+
+    async function promptResetCart() {
+      const confirmed = await showUIConfirm(
+        "Are you sure you want to clear all items from your cart?",
+        "Reset Cart",
+        "🗑️",
+        "तुम्हाला कार्टमधील सर्व आयटम काढायचे आहेत का?"
+      );
+      if (!confirmed) return;
+      _clearCart();
+      S.orders = {};
+      S.selectedDates = [];
+      S.step = 1; // Go back to calendar step
+      updateNav();
+      renderCalendar();
+      updateDateSummary();
+      window.scrollTo(0, 0);
+      toast("Cart has been reset.", 2000);
     }
 
     // ── ORDER AGAIN ─────────────────────────────────────────────
@@ -7301,6 +7299,13 @@
         // Even for UPI, refresh balance just in case
         setTimeout(refreshWalletBalance, 500);
       }
+
+      // Explicitly clear cart in memory so navigating back or placing a new order starts fresh
+      _clearCart();
+      S.orders = {};
+      S.selectedDates = [];
+      if (typeof renderCalendar === 'function') renderCalendar();
+      if (typeof updateDateSummary === 'function') updateDateSummary();
     }
 
     function renderSuccessSummary() {
@@ -7403,11 +7408,7 @@
       window.scrollTo(0, 0);
     }
 
-    function logoutCustomer() {
-      localStorage.removeItem('sk_logged_in_phone');
-      localStorage.removeItem('sk_logged_in_pin');
-      location.reload();
-    }
+
 
     // ═══════════════════════════════════════════════════════════
     // MANAGE ORDERS — inline edit + delete
@@ -8205,11 +8206,7 @@
       }
     }
 
-    function logoutCustomer() {
-      localStorage.removeItem('sk_logged_in_phone');
-      localStorage.removeItem('sk_logged_in_pin');
-      window.location.reload();
-    }
+
 
     // ═══════════════════════════════════════════════════════════
     // THEME TOGGLE
