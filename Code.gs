@@ -2518,38 +2518,40 @@ function deleteOrder(phone, rowId, refundType, opts) {
 
     // Loyalty Clawback Logic
     // If deleting an order breaks a streak that received a reward on a later date.
+    // Admin cancellations are EXEMPT — streak is not penalised when kitchen cancels.
     let loyaltyClawback = 0;
+    let loyaltyClawbackNote = "";
     const phoneStr = _normalizePhone(phone);
-    // Scan later days (up to 6 operational days ahead) to see if a payoff happened
-    const laterPayoffs = rows.filter(x => {
-      if (String(x.Submission_ID) === String(rowId)) return false; // never include the row being deleted itself
-      if (_normalizePhone(x.Phone) !== phoneStr) return false;
-      const xStat = String(x.Payment_Status || "").toLowerCase();
-      if (xStat.includes("cancelled") || xStat.includes("deleted")) return false;
-      if (String(x.Loyalty_Discount).trim() !== "Yes") return false;
-      const xDate = x.Order_Date instanceof Date ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : String(x.Order_Date).trim();
-      return xDate >= orderDateStr; // future or same-day loyalty payoff that may be invalidated
-    });
 
-    if (laterPayoffs.length > 0) {
-      // Find the LATEST payoff within a reasonable window (6 operational days)
-      // Actually, any payoff that triggered after this date might be invalidated.
-      // We'll subtract the Discount_Amount of the first payoff we find.
-      loyaltyClawback = Number(laterPayoffs[0].Discount_Amount) || 0;
-      // Mark it as "Clawed Back" in the sheet to prevent multiple deductions?
-      // Actually, we should only claw back if the streak is NOW invalid.
-      // For simplicity: subtract the reward.
+    if (!isAdminCall) {
+      // Scan for a later streak-reward order that this cancellation would invalidate.
+      const laterPayoffs = rows.filter(x => {
+        if (String(x.Submission_ID) === String(rowId)) return false;
+        if (_normalizePhone(x.Phone) !== phoneStr) return false;
+        const xStat = String(x.Payment_Status || "").toLowerCase();
+        if (xStat.includes("cancelled") || xStat.includes("deleted")) return false;
+        if (String(x.Loyalty_Discount || "").trim().toLowerCase() !== "yes") return false;
+        const xDate = x.Order_Date instanceof Date
+          ? Utilities.formatDate(x.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+          : String(x.Order_Date).trim();
+        return xDate >= orderDateStr; // payoff on or after the cancelled order's date
+      });
+
+      if (laterPayoffs.length > 0) {
+        loyaltyClawback = Number(laterPayoffs[0].Discount_Amount) || 0;
+        loyaltyClawbackNote = `Loyalty reward of ₹${loyaltyClawback} was applied on ${
+          (() => { const d = laterPayoffs[0].Order_Date; return d instanceof Date ? Utilities.formatDate(d,"Asia/Kolkata","dd MMM") : String(d); })()
+        } — cancelling this order breaks your streak, so that reward is reversed.`;
+      }
     }
 
     // Refund = Net_Total − adjustment
     // Net_Total already correctly encodes: food + delivery + fees + surcharge − discount − mealCredit − reviewDiscount
-    // mealCredit (retroactive delivery/fee credit for same-day orders) is baked into Net_Total silently;
-    // using Net_Total as base ensures we never over-refund that credit.
-    // The adjustment claws back over-discount on remaining rows, and delivery/fees now owed
-    // by remaining rows (those amounts are deducted from THIS refund instead of charging customer again).
     const adjustment = overDiscount + deliveryOwed + smallFeeOwed + loyaltyClawback;
     const rawRefund = Number(r.Net_Total) || 0;
-    const refundAmt = Math.max(0, rawRefund - adjustment);
+    const netRefund = rawRefund - adjustment;           // may be negative
+    const refundAmt = Math.max(0, netRefund);           // amount actually returned
+    const cancellationCharge = Math.max(0, -netRefund); // deficit charged to wallet if order < clawback
 
     // ── HUMAN-READABLE REFUND BREAKDOWN ────────────────────────────────────
     function buildRefundBreakdown() {
@@ -2577,9 +2579,14 @@ function deleteOrder(phone, rowId, refundType, opts) {
         lines.push(`  • -₹${smallFeeOwed} — small cart fee: a remaining order under ₹50 had its ₹10 small cart fee waived (day total was ₹150+). Now that drops below ₹150, the fee applies.`);
       }
       if (loyaltyClawback > 0) {
-        lines.push(`  • -₹${loyaltyClawback} — loyalty reward reversal: a streak reward on a later order is no longer valid since this cancellation breaks your streak.`);
+        lines.push(`  • -₹${loyaltyClawback} — loyalty reward reversal: ${loyaltyClawbackNote}`);
       }
-      lines.push(`Refund: ₹${rawRefund} − ₹${adjustment} = ₹${refundAmt}`);
+      if (cancellationCharge > 0) {
+        lines.push(`Refund: ₹${rawRefund} − ₹${adjustment} = -₹${cancellationCharge}`);
+        lines.push(`Since the deduction (₹${adjustment}) exceeds your order amount (₹${rawRefund}), ₹${cancellationCharge} has been charged to your Svaadh Wallet. This will be deducted from your next order.`);
+      } else {
+        lines.push(`Refund: ₹${rawRefund} − ₹${adjustment} = ₹${refundAmt}`);
+      }
       return lines.join("\n");
     }
 
@@ -2617,18 +2624,35 @@ function deleteOrder(phone, rowId, refundType, opts) {
       msgSuffix = "\n(Consolidated to Wallet since other items in this meal were Wallet Paid.)";
     }
 
+    // If cancellation charge > 0 (loyalty clawback exceeded the order value):
+    // debit the deficit from the wallet — it'll show as a negative balance
+    // that gets collected on the customer's next order.
+    if (cancellationCharge > 0) {
+      _appendWalletTransaction(phone, custName,
+        `Cancellation Charge (streak reward reversal — ₹${loyaltyClawback} reward was applied to an order because of this order. Cancelling it breaks your streak, so ₹${cancellationCharge} is recovered here.)`,
+        -cancellationCharge, true, String(rowId));
+    }
+
     if (finalType === "wallet") {
-      _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
-      msg = buildRefundBreakdown() + `\n\n₹${refundAmt} refunded to your Wallet.${msgSuffix}`;
+      if (refundAmt > 0) {
+        _appendWalletTransaction(phone, custName, "Order Cancellation Refund", refundAmt, true, String(rowId));
+      }
+      const walletLine = cancellationCharge > 0
+        ? `₹0 refunded — ₹${cancellationCharge} charged to your Wallet (will be collected on your next order).`
+        : `₹${refundAmt} refunded to your Wallet.${msgSuffix}`;
+      msg = buildRefundBreakdown() + `\n\n` + walletLine;
     }
     else if (finalType === "manual_upi") {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
       const note = adjustment > 0
-        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed})`
+        ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed}, loyaltyClawback:${loyaltyClawback})`
         : "";
       refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note, "upi"]);
-      msg = buildRefundBreakdown() + `\n\n₹${refundAmt} refund request raised — we'll process it within 1-2 days.`;
+      const upiLine = cancellationCharge > 0
+        ? `₹0 refunded via UPI — ₹${cancellationCharge} charged to your Wallet (will be collected on your next order).`
+        : `₹${refundAmt} refund request raised — we'll process it within 1-2 days.`;
+      msg = buildRefundBreakdown() + `\n\n` + upiLine;
     }
   } 
   // ── SOFT CANCELLATION FOR UPI / SPLIT ──────────────────────────────────────
