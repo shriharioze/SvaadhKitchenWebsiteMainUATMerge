@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.4; // Loyalty streak fix: server-computed excess credit, surcharge zeroed on 6th day
+const CODE_VERSION   = 14.5; // Loyalty streak fix: charge surcharge on day 6, discount covers all 6 days
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -1675,10 +1675,10 @@ function _submitOrderInternal(body) {
       const mealCredit = submissionDayFoodTotal > 0 ? Math.round(totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
 
       const discAmt = getDisc(sub);
-      // On the 6th day, day 6's surcharge is NOT added to the bill — it is already factored
-      // into the loyalty discount (totalWaiver includes it). Charging it and then discounting
-      // it would cancel out and the customer would only recover days 1–5, not all 6.
-      const inflationSurcharge = is6thDay ? 0 : Math.ceil(sub / 20);
+      // On the 6th day, the surcharge IS charged (consistency), and the loyalty discount
+      // (totalWaiver) includes all 6 days of surcharge so it covers it. Net effect:
+      // the 6th-day surcharge charge and refund cancel each other; customer gets back days 1–5.
+      const inflationSurcharge = Math.ceil(sub / 20);
 
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;

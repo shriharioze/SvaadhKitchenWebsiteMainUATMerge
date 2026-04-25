@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.02";
+    const APP_VERSION = "v26.04.25.03";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6287,7 +6287,7 @@
             const _cms = _sub+(_ex[meal]?.subtotal||0);
             if (!S.profile.feeExempt&&!_isFD&&!_isP&&(meal==="Lunch"||meal==="Dinner")&&_sub>0&&_cms<50) _tsm+=10;
             if (!S.profile.feeExempt&&!_isFD&&!_isP&&!_isFA&&_sub>0) _tdel+=DELIVERY_CHARGE;
-            if (!_is6) _tsu += Math.ceil(_sub/20); // no surcharge on 6th day — waiver already covers it
+            _tsu += Math.ceil(_sub/20); // surcharge always charged; loyalty discount covers it on day 6
           });
           const _net = _dft - _da + _tdel + _tsm + _tsu - _tcred - _trev;
           _dayNets[_d] = { net: _net, is6: _is6 };
@@ -6461,9 +6461,9 @@
             totalDelivery += fee;
           }
 
-          // 5. Market Surcharge (suppressed on 6th day — already factored into loyalty waiver)
+          // 5. Market Surcharge (always charged; on 6th day the loyalty discount covers it)
           const surcharge = Math.ceil(sub / 20);
-          if (surcharge > 0 && !is6thDay) {
+          if (surcharge > 0) {
             mealExtras.push({ icon: "📈", name: "Market Surcharge", val: surcharge, desc: "A minimal % charge to help us offset the rapidly rising costs of fresh vegetables & ingredients in the market." });
             totalInflationSurcharge += surcharge;
           }
