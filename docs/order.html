@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.07";
+    const APP_VERSION = "v26.04.25.08";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7104,6 +7104,10 @@
       }
       // ── End duplicate guard ──────────────────────────────────
 
+      // Snapshot existing order rowIds before submitting — used by verify to
+      // detect NEW orders that appeared after the submit (timeout recovery).
+      const _preSubmitRowIds = new Set((S.existingOrders || []).map(o => o.rowId));
+
       try {
         const res = await apiPost(payload);
         const data = await res.json();
@@ -7155,7 +7159,7 @@
           sBtnLoading($("btnNext"), true, "⏳ Verifying order…");
           _showSlowBanner(true);
           if (_slowBannerEl) _slowBannerEl.textContent = "⏳ Verifying your order with our servers…";
-          const confirmedId = await _verifyOrderAfterTimeout(orders);
+          const confirmedId = await _verifyOrderAfterTimeout(orders, _preSubmitRowIds);
           _showSlowBanner(false);
           sBtnLoading($("btnNext"), false);
           S.isPlacingOrder = false;
@@ -7184,29 +7188,50 @@
     }
 
     // ── POST-TIMEOUT ORDER VERIFICATION ─────────────────────────
-    // Uses direct fetch (NOT apiFetch) to avoid the 3-retry × 25s overhead.
-    // Each attempt is a single shot with a 12s timeout.
-    // Polls up to 5 times, 5s apart (max ~85s total window).
-    async function _verifyOrderAfterTimeout(orders) {
+    // Uses the already-deployed getCustomerOrders endpoint (no new GAS deploy needed).
+    // Compares returned upcoming orders against pre-submit snapshot to detect
+    // any NEW order that matches a cart date+meal — that's the one that landed.
+    // Single-shot fetch per poll (12s timeout) — no apiFetch retry overhead.
+    async function _verifyOrderAfterTimeout(orders, preSubmitRowIds) {
       const MAX_POLLS  = 5;
       const POLL_DELAY = 5000;
-      const PER_TIMEOUT = 12000; // 12s per attempt
-      const body = JSON.stringify({
-        _action: "verifyOrderPlaced",
-        phone:   S.phone,
-        orders
-      });
+      const PER_TIMEOUT = 12000;
+      const knownIds = preSubmitRowIds || new Set();
+
+      // Flatten cart to [{date, meal}] entries we need to find
+      const cartEntries = [];
+      for (const dateOrder of orders) {
+        for (const meal of dateOrder.meals) {
+          cartEntries.push({ date: dateOrder.date, meal: meal.type });
+        }
+      }
+      if (!cartEntries.length) return null;
+
+      const url = `${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${encodeURIComponent(S.phone)}`;
+
       for (let i = 0; i < MAX_POLLS; i++) {
         if (i > 0) await _sleep(POLL_DELAY);
         try {
           const ctrl = new AbortController();
           const tid  = setTimeout(() => ctrl.abort(), PER_TIMEOUT);
-          const res  = await fetch(APPS_SCRIPT_URL, {
-            method: "POST", body, signal: ctrl.signal
-          });
+          const res  = await fetch(url, { signal: ctrl.signal });
           clearTimeout(tid);
           const data = await res.json();
-          if (data.found && data.submissionId) return data.submissionId;
+          const upcoming = data.orders || [];
+
+          // Look for a NEW order (not in pre-submit snapshot) matching any cart entry
+          for (const entry of cartEntries) {
+            const match = upcoming.find(o =>
+              o.date === entry.date &&
+              o.meal === entry.meal &&
+              !knownIds.has(o.rowId)
+            );
+            if (match && match.rowId) {
+              // Also refresh S.existingOrders so duplicate guard is up to date
+              S.existingOrders = upcoming;
+              return match.rowId;
+            }
+          }
         } catch(e) { /* timeout or network — retry */ }
       }
       return null;
