@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.06";
+    const APP_VERSION = "v26.04.25.07";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7150,17 +7150,17 @@
         else throw new Error(data.error || "Unknown error");
       } catch (err) {
         clearTimeout(_pTid);
-        sBtnLoading($("btnNext"), false);
-        S.isPlacingOrder = false;
-        $("btnNext").style.pointerEvents = "auto";
         if (err.name === "AbortError") {
-          // ── Auto-verify: check silently if order actually landed ──
+          // ── Auto-verify: keep button locked, check silently if order landed ──
+          sBtnLoading($("btnNext"), true, "⏳ Verifying order…");
           _showSlowBanner(true);
           if (_slowBannerEl) _slowBannerEl.textContent = "⏳ Verifying your order with our servers…";
           const confirmedId = await _verifyOrderAfterTimeout(orders);
           _showSlowBanner(false);
+          sBtnLoading($("btnNext"), false);
+          S.isPlacingOrder = false;
+          $("btnNext").style.pointerEvents = "auto";
           if (confirmedId) {
-            // Order landed successfully despite the timeout — go to success page
             S.isPlaced = true;
             showSuccess(confirmedId);
             return;
@@ -7174,32 +7174,40 @@
             `❌ <b>Order not visible?</b> Go ahead and place it again.`,
             "Request Timed Out", "⏱️"
           );
+        } else {
+          sBtnLoading($("btnNext"), false);
+          S.isPlacingOrder = false;
+          $("btnNext").style.pointerEvents = "auto";
+          await sAlert("Error: " + err.message, "Placement Failed", "❌");
         }
-        else { await sAlert("Error: " + err.message, "Placement Failed", "❌"); }
       }
     }
 
     // ── POST-TIMEOUT ORDER VERIFICATION ─────────────────────────
-    // Polls the backend up to 4 times (3 s apart) to see if the order
-    // actually landed despite the network timeout. Returns the submissionId
-    // string if confirmed, or null if not found after all attempts.
+    // Uses direct fetch (NOT apiFetch) to avoid the 3-retry × 25s overhead.
+    // Each attempt is a single shot with a 12s timeout.
+    // Polls up to 5 times, 5s apart (max ~85s total window).
     async function _verifyOrderAfterTimeout(orders) {
-      const MAX_POLLS   = 4;
-      const POLL_DELAY  = 3000; // ms between polls
+      const MAX_POLLS  = 5;
+      const POLL_DELAY = 5000;
+      const PER_TIMEOUT = 12000; // 12s per attempt
+      const body = JSON.stringify({
+        _action: "verifyOrderPlaced",
+        phone:   S.phone,
+        orders
+      });
       for (let i = 0; i < MAX_POLLS; i++) {
         if (i > 0) await _sleep(POLL_DELAY);
         try {
-          const res = await apiFetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            body:   JSON.stringify({
-              _action: "verifyOrderPlaced",
-              phone:   S.phone,
-              orders   // same array built in placeOrder
-            })
-          }, { silent: true });
+          const ctrl = new AbortController();
+          const tid  = setTimeout(() => ctrl.abort(), PER_TIMEOUT);
+          const res  = await fetch(APPS_SCRIPT_URL, {
+            method: "POST", body, signal: ctrl.signal
+          });
+          clearTimeout(tid);
           const data = await res.json();
           if (data.found && data.submissionId) return data.submissionId;
-        } catch(e) { /* network issue — keep polling */ }
+        } catch(e) { /* timeout or network — retry */ }
       }
       return null;
     }
