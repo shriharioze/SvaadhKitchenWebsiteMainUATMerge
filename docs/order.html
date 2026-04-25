@@ -3874,14 +3874,11 @@
             <div id="successSummary"></div>
           </div>
 
-          <!-- Delivery Heads-Up card — shown once, dismissible -->
+          <!-- Delivery Heads-Up card — permanent -->
           <div id="deliveryTipCard" style="display:none; position:relative;
                background:linear-gradient(135deg,#fffbeb,#fef9ec);
-               border:1px solid #fde68a; border-radius:16px; padding:14px 40px 14px 14px;
+               border:1px solid #fde68a; border-radius:16px; padding:14px;
                margin-bottom:14px;">
-            <button onclick="dismissDeliveryTip()" style="position:absolute;top:10px;right:12px;
-                background:none;border:none;font-size:1rem;cursor:pointer;color:#9ca3af;
-                line-height:1;padding:2px;" title="Dismiss">✕</button>
             <div style="display:flex;align-items:flex-start;gap:10px;">
               <div style="font-size:1.5rem;line-height:1;flex-shrink:0;">🛵</div>
               <div>
@@ -3890,11 +3887,11 @@
                   <span style="display:inline-block;margin-bottom:4px;">
                     Pre-approve: <a href="tel:8605512646" style="color:#92400e;font-weight:600;">Abhijeet Parekar · 86055 12646</a> for gate entry
                   </span><br>
-                  Keep your bag outside your door —
-                  Abhijeet will place the food in it without waiting, saving time for his next stop. 🚀<br>
+                  For delivery updates please call him <a href="tel:8605512646" style="color:#92400e;font-weight:600;">Abhijeet Parekar · 86055 12646</a><br>
+                  Keep your bag outside your door — Abhijeet will place the food in it without waiting, saving time for his next stop. 🚀<br>
                   <span style="margin-top:6px;display:inline-block;font-size:0.75rem;color:#a16207;">
-                    <a href="#" onclick="dismissDeliveryTip();goToStep(1);return false;"
-                       style="color:#92400e;font-weight:600;text-decoration:underline;">Update instructions</a>
+                    Update instructions for delivery? <a href="#" onclick="goToStep(1);return false;"
+                       style="color:#92400e;font-weight:600;text-decoration:underline;">Click here</a>
                   </span>
                 </div>
               </div>
@@ -4296,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.16";
+    const APP_VERSION = "v26.04.25.17";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5494,7 +5491,7 @@
     }
 
     async function logoutCustomer() {
-      const confirmed = await showUIConfirm(
+      const confirmed = await sConfirm(
         "Are you sure you want to log out from your Svaadh account?",
         "Confirm Logout",
         "🚪",
@@ -6071,7 +6068,7 @@
     }
 
     async function promptResetCart() {
-      const confirmed = await showUIConfirm(
+      const confirmed = await sConfirm(
         "Are you sure you want to clear all items from your cart?",
         "Reset Cart",
         "🗑️",
@@ -7277,10 +7274,10 @@
       $("orderIdDisplay").textContent = id ? id.toUpperCase() : "CONFIRMED";
       $("bottomNav").style.display = "none";
 
-      // Show delivery tip once (dismissed state saved in localStorage)
+      // Show delivery tip permanently on success page
       const tipCard = $("deliveryTipCard");
       if (tipCard) {
-        tipCard.style.display = localStorage.getItem("sk_delivery_tip_dismissed") ? "none" : "block";
+        tipCard.style.display = "block";
       }
 
       window.scrollTo(0, 0);
@@ -7378,11 +7375,6 @@
 
       $("successSummary").innerHTML = html;
 
-    }
-    function dismissDeliveryTip() {
-      localStorage.setItem("sk_delivery_tip_dismissed", "1");
-      const el = $("deliveryTipCard");
-      if (el) el.style.display = "none";
     }
 
     function resetForAnotherOrder() {
