@@ -930,6 +930,7 @@
       <button class="m-tab" id="mtab_Lunch" onclick="setManualMeal('Lunch')">☀️ Lunch</button>
       <button class="m-tab" id="mtab_Dinner" onclick="setManualMeal('Dinner')">🌙 Dinner</button>
     </div>
+    <div id="countdownTimer" style="display:none; text-align:center; padding:12px; background:#fff8e1; border-radius:12px; margin: 0 20px 14px; border: 1.5px solid #ffe082; font-weight:800; color:#d35400; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
     <div class="kbody" id="kbody">
       <div class="no-orders">Select a date and tap Load</div>
     </div>
@@ -953,6 +954,7 @@
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
     let K = { pin: "", sessionPin: "" };
     let _lastData = null;
+    let _lastCutoffs = {};
     let _currentTab = "Summary";
     let _manualMeal = null; // null means auto-detect based on time
 
@@ -1028,6 +1030,7 @@
         document.getElementById("loginWrap").style.display = "none";
         document.getElementById("shell").style.display = "block";
         _lastData = data;
+        _lastCutoffs = data.cutoffs || {};
         switchKTab(_currentTab);
         _lastUpdated = new Date();
         startAutoRefresh();
@@ -1059,6 +1062,7 @@
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         _lastData = data;
+        _lastCutoffs = data.cutoffs || {};
         renderView();
         _lastUpdated = new Date();
       } catch (e) {
@@ -1716,6 +1720,7 @@
     function startAutoRefresh() {
       if (window._rt) clearInterval(window._rt);
       if (window._ct) clearInterval(window._ct);
+      if (window._td) clearInterval(window._td);
 
       function scheduleNext() {
         _nextRefresh = new Date(Date.now() + REFRESH_SECS * 1000);
@@ -1741,6 +1746,9 @@
         const updStr = _lastUpdated ? _lastUpdated.toLocaleTimeString("en-IN") : "—";
         el.textContent = `Updated: ${updStr}  ·  Refresh in ${m}:${s}`;
       }, 1000);
+
+      window._td = setInterval(updateCountdown, 1000);
+      updateCountdown();
 
       // Screen Wake Lock
       let wakeLock = null;
@@ -1785,6 +1793,56 @@
       document.addEventListener("visibilitychange", window._visHandler);
       requestWakeLock(); // Initial request
     }
+
+    function updateCountdown() {
+      const el = document.getElementById("countdownTimer");
+      if (!el) return;
+
+      const now = new Date();
+      const ist = new Date(now.getTime() + 5.5 * 3600000);
+      const h = ist.getUTCHours();
+      const m = ist.getUTCMinutes();
+      const s = ist.getUTCSeconds();
+      const minsTotal = h * 60 + m + (s / 60);
+
+      // System cutoffs or defaults
+      const cutoffs = {
+        Breakfast: _lastCutoffs.Breakfast || 7,
+        Lunch: _lastCutoffs.Lunch || 9.5,
+        Dinner: _lastCutoffs.Dinner || 17
+      };
+
+      // Find the next upcoming cutoff
+      let targetMeal = null;
+      let targetMins = 0;
+
+      if (minsTotal < cutoffs.Breakfast) { targetMeal = "Breakfast"; targetMins = cutoffs.Breakfast; }
+      else if (minsTotal < cutoffs.Lunch) { targetMeal = "Lunch"; targetMins = cutoffs.Lunch; }
+      else if (minsTotal < cutoffs.Dinner) { targetMeal = "Dinner"; targetMins = cutoffs.Dinner; }
+
+      if (targetMeal) {
+        const diffMins = targetMins * 60 - (h * 60 + m + s/60);
+        
+        // Show if within 30 minutes of cutoff
+        if (diffMins > 0 && diffMins <= 30) {
+          const remM = Math.floor(diffMins);
+          const remS = Math.floor((diffMins - remM) * 60);
+          const timeStr = `${remM}:${String(remS).padStart(2, "0")}`;
+          
+          const labels = {
+            Breakfast: "न्याहारी",
+            Lunch: "दुपारचे जेवण",
+            Dinner: "रात्रीचे जेवण"
+          };
+          
+          el.innerHTML = `⏳ <span style="font-size:0.85rem; color:#784100; font-weight:600;">(${labels[targetMeal]})</span> स्वयंपाक सुरू होण्यास: <span style="font-size:1.4rem; color:#d35400;">${timeStr}</span>`;
+          el.style.display = "block";
+          return;
+        }
+      }
+      el.style.display = "none";
+    }
+
 
     function setManualMeal(m) {
       _manualMeal = m;

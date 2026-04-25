@@ -3292,7 +3292,12 @@ function getKitchenSummary(date) {
     if (m.other && m.other.Dal) m.other.Dal.kg = Math.round(m.other.Dal.kg * 100) / 100;
   });
 
-  return {date: date, meals: meals, orders: orders};
+  return {
+    date: date,
+    meals: meals,
+    orders: orders,
+    cutoffs: menu.cutoff_overrides || {}
+  };
 }
 
 // ── DRIVER ORDERS ─────────────────────────────────────────────
