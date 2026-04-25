@@ -4293,7 +4293,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.04";
+    const APP_VERSION = "v26.04.25.05";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4864,7 +4864,18 @@
       btn.innerHTML = labels[s];
       // Disable if nothing ordered yet
       if (s === 3 && !hasAnyOrder()) { $("btnNext").disabled = true; $("btnNext").style.opacity = "0.45"; }
-      if (s === 4) { checkPaymentConfirmation(); }
+      if (s === 4) {
+        checkPaymentConfirmation();
+        // Silently pre-fetch upcoming orders for duplicate detection at checkout.
+        // Fire-and-forget — doesn't block UI, populates S.existingOrders in background.
+        if (S.phone && !S._existingOrdersPrefetched) {
+          S._existingOrdersPrefetched = true;
+          apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${S.phone}`, {}, { silent: true })
+            .then(r => r.json())
+            .then(d => { if (d.orders) S.existingOrders = d.orders; })
+            .catch(() => {});
+        }
+      }
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
       // (fetched async on page load) are always applied — avoids stale default cutoff
@@ -6931,6 +6942,35 @@
     // ═══════════════════════════════════════════════════════════
     // PLACE ORDER
     // ═══════════════════════════════════════════════════════════
+    // ── Duplicate-order sig helpers ──────────────────────────────
+    // Build a normalised signature from cart items [{colKey, qty}].
+    // Strips display-suffix like "(250ml)" so "Dry Sabji Full (250ml)" → "Dry Sabji Full".
+    function _dupStripSuffix(name) {
+      return String(name)
+        .replace(/\s*\[[^\]]*\]/g, '')
+        .replace(/\s*\([^)]*\)/g, '')
+        .trim().toLowerCase();
+    }
+    function _dupSig(cartItems, meal, date) {
+      if (!cartItems || !cartItems.length) return null;
+      const parts = cartItems
+        .filter(({qty}) => qty > 0)
+        .map(({colKey, qty}) => {
+          const name = getItemName(colKey, meal, date); // existing frontend helper
+          return `${_dupStripSuffix(name)}:${qty}`;
+        });
+      if (!parts.length) return null;
+      return parts.sort().join('|');
+    }
+    function _dupSigFromRaw(itemsRaw) {
+      const entries = Object.entries(itemsRaw || {}).filter(([, q]) => q > 0);
+      if (!entries.length) return null;
+      return entries
+        .map(([name, qty]) => `${_dupStripSuffix(name)}:${qty}`)
+        .sort().join('|');
+    }
+    // ─────────────────────────────────────────────────────────────
+
     async function placeOrder(settleAll = false) {
       if (S.isPlacingOrder) return;
       const isWalletOrder    = S.paymentChoice === "Wallet";
@@ -7028,6 +7068,42 @@
         wallet_bonus:  isFreeOrder ? (Number(S.walletBonus) || 0) : 0,
         settle_all: settleAll
       };
+
+      // ── Duplicate-order guard ────────────────────────────────
+      // If S.existingOrders is available (pre-fetched on step 4 entry),
+      // check whether any cart date+meal is an exact repeat of a placed order.
+      if (Array.isArray(S.existingOrders) && S.existingOrders.length) {
+        const dupLines = [];
+        for (const dateOrder of orders) {
+          for (const meal of dateOrder.meals) {
+            const existing = (S.existingOrders || []).find(
+              o => o.date === dateOrder.date && o.meal === meal.type && o.items_raw
+            );
+            if (!existing) continue;
+            const cartSig = _dupSig(meal.items, meal.type, dateOrder.date);
+            const existSig = _dupSigFromRaw(existing.items_raw);
+            if (cartSig && cartSig === existSig) {
+              dupLines.push(`${ICONS[meal.type] || ''} <strong>${meal.type}</strong> on <strong>${formatDate(dateOrder.date)}</strong><br><span style="font-size:0.78rem;color:#888;">${existing.summary}</span>`);
+            }
+          }
+        }
+        if (dupLines.length) {
+          const dupConfirmed = await sConfirm(
+            `You already have an identical order placed for:\n\n<div style="margin:10px 0 4px;line-height:1.8;">${dupLines.join('<br>')}</div>\n\nThis looks like a duplicate — did you mean to place it again?`,
+            "Duplicate Order Detected", "⚠️",
+            "Check your existing orders before placing again.",
+            { confirmLabel: "Place Anyway →", cancelLabel: "Cancel" }
+          );
+          if (!dupConfirmed) {
+            sBtnLoading(btn, false);
+            S.isPlacingOrder = false;
+            btn.style.pointerEvents = "auto";
+            return;
+          }
+        }
+      }
+      // ── End duplicate guard ──────────────────────────────────
+
       try {
         const res = await apiPost(payload);
         const data = await res.json();

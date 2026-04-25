@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.6; // verifyOrderPlaced endpoint for timeout auto-recovery
+const CODE_VERSION   = 14.7; // items_raw in upcoming orders + verifyOrderPlaced
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -2239,11 +2239,14 @@ function getCustomerOrders(phone) {
     .sort((a,b) => fmtD(a).localeCompare(fmtD(b)))
     .map(r => {
       const delTracker = deliveryMap[String(r.Submission_ID)] || {};
+      let itemsRaw = {};
+      try { itemsRaw = JSON.parse(r.Items_JSON || "{}"); } catch(e) {}
       return {
         rowId:              r.Submission_ID,
         date:               fmtD(r),
         meal:               r.Meal_Type,
         summary:            _buildSummary(r),
+        items_raw:          itemsRaw,
         total:              r.Net_Total,
         inflation_surcharge: Number(r.Inflation_Surcharge) || 0,
         loyalty_discount:   String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes",
