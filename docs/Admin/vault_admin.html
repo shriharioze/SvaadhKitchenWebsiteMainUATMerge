@@ -4622,6 +4622,8 @@ async function loadCustomerDetail(phone) {
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
     wrap.innerHTML = renderCustomerDetail(data);
+    // Render bulk calendar now that the DOM element exists
+    if (typeof window.renderBulkCalendar === 'function') window.renderBulkCalendar();
     // Wire up ⚡ Place buttons via event delegation (avoids HTML escaping issues)
     wrap.querySelectorAll('.qe-place-btn').forEach(btn => {
       btn.onclick = () => {
@@ -4867,17 +4869,31 @@ function renderCustomerDetail(data) {
 
   // Render Bulk Placement Tool
   const today = getIST();
-  const bulkCalHtml = generateCalendar(today.getUTCFullYear(), today.getUTCMonth(), [], "toggleBulkDate");
+  window._bulkCalYear  = today.getUTCFullYear();
+  window._bulkCalMonth = today.getUTCMonth();
+
+  window.renderBulkCalendar = function() {
+    const y = window._bulkCalYear, m = window._bulkCalMonth;
+    const calEl = document.getElementById('bulkCalendar');
+    if (!calEl) return;
+    calEl.innerHTML =
+      `<div class="cal-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+         <button onclick="window._bulkCalMonth--;if(window._bulkCalMonth<0){window._bulkCalMonth=11;window._bulkCalYear--;}window.renderBulkCalendar();"
+           style="background:none;border:1px solid #ddd;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:1rem;">‹</button>
+         <span style="font-weight:700;">${MONTHS[m]} ${y}</span>
+         <button onclick="window._bulkCalMonth++;if(window._bulkCalMonth>11){window._bulkCalMonth=0;window._bulkCalYear++;}window.renderBulkCalendar();"
+           style="background:none;border:1px solid #ddd;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:1rem;">›</button>
+       </div>` +
+      generateCalendar(y, m, window._bulkSelected || [], "toggleBulkDate");
+  };
+
   const bulkTool = `
     <div class="bulk-panel">
       <div class="bulk-title">🗓️ Bulk Order Multi-Placement</div>
       <div style="font-size:0.75rem; color:#856404; margin-bottom:12px;">Select multiple dates. Use the <b>tick boxes</b> on your favorites above to decide what to place for each date. Only one favorite per meal type can be ticked.</div>
-      
+
       <div style="display:grid; grid-template-columns: 1fr 200px; gap:20px;">
-        <div id="bulkCalendar" class="bulk-cal-wrap">
-          <div class="cal-header"><span>${MONTHS[today.getUTCMonth()]} ${today.getUTCFullYear()}</span></div>
-          ${bulkCalHtml}
-        </div>
+        <div id="bulkCalendar" class="bulk-cal-wrap"></div>
         <div>
           <button class="btn-primary" style="width:100%; padding:10px; background:var(--red); border-color:var(--red);" onclick="handleBulkOrderTrigger('${data.phone}', '${data.name.replace(/'/g, "\\'")}')">🚚 Place Bulk Orders</button>
           <div style="font-size:0.68rem; color:var(--muted); margin-top:10px; line-height:1.2;">
