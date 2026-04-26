@@ -1945,7 +1945,7 @@ function _submitOrderInternal(body) {
     _invalidateCache(...submissionDates.map(d => "menu_v2_" + d));
   }
 
-  return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: walletBonus};
+  return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: loyaltyExcessCredit};
 }
 
 
