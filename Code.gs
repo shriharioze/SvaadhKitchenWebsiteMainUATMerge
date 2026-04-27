@@ -2365,6 +2365,14 @@ function deleteOrder(phone, rowId, refundType, opts) {
   }
   try {
     return _deleteOrderInternal(phone, rowId, refundType, opts);
+  } catch (e) {
+    // Top-level safety net so transient Drive/Sheets errors don't surface
+    // as raw "Service error: Drive" to the user. Logged for diagnosis.
+    console.error(`deleteOrder failed for rowId=${rowId} phone=${phone}: ${e && e.message}\n${e && e.stack}`);
+    return {
+      success: false,
+      error: "Could not cancel right now (a Google service blip). Please try again in a few seconds."
+    };
   } finally {
     try { lock.releaseLock(); } catch (e) {}
   }
