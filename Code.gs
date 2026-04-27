@@ -2353,6 +2353,24 @@ function _buildSummary(r) {
 
 // ── DELETE ORDER (with Refund Logic) ─────────────────────────
 function deleteOrder(phone, rowId, refundType, opts) {
+  // ─── CONCURRENCY GUARD ─────────────────────────────────────────────
+  // Prevents parallel deletes (double-clicks, retries) from both finding
+  // the same row, both appending refunds, and both calling deleteRow on
+  // shifted indices. Without this, the second call deleted the wrong row.
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch (e) {
+    return { success: false, error: "System busy. Please try again in a moment." };
+  }
+  try {
+    return _deleteOrderInternal(phone, rowId, refundType, opts);
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function _deleteOrderInternal(phone, rowId, refundType, opts) {
   opts = opts || {};
   const isAdminCall = !!opts.isAdmin;
   const ss = getSpreadsheet();
@@ -2393,12 +2411,37 @@ function deleteOrder(phone, rowId, refundType, opts) {
   if (orderDateStr < today) return {success: false, error: "Cannot delete past orders"};
 
   // Block deletion if cutoff has passed for today's orders
+  // Normalize meal type — strip whitespace + title-case — to avoid silent skip when value is " breakfast" or "BREAKFAST"
+  const mealNorm = String(r.Meal_Type || "").trim().toLowerCase();
+  const mealKey  = mealNorm.charAt(0).toUpperCase() + mealNorm.slice(1);
   if (orderDateStr === today) {
-    const cutoffHour = CUTOFFS[r.Meal_Type];
+    const cutoffHour = CUTOFFS[mealKey];
     if (cutoffHour !== undefined && hourIST >= cutoffHour) {
-      return {success: false, error: `Cutoff for ${r.Meal_Type} has already passed`};
+      return {success: false, error: `Cutoff for ${mealKey} has already passed`};
     }
   }
+
+  // ─── IDEMPOTENCY GUARD ────────────────────────────────────────────
+  // If a pending refund already exists for this Submission_ID, do NOT add another.
+  // Customer-side double-clicks or retries hit this branch; previously each retry
+  // appended a duplicate refund row in TAB_REFUNDS.
+  try {
+    const refundsWs = ss.getSheetByName(TAB_REFUNDS);
+    if (refundsWs && refundsWs.getLastRow() > 1) {
+      const refRows = getAllRows(refundsWs);
+      const existingPending = refRows.find(rf => {
+        const rfId = String(rf.Submission_ID || "").trim().toUpperCase();
+        const rfStat = String(rf.Status || "").trim().toLowerCase();
+        return rfId === targetId && rfStat === "pending";
+      });
+      if (existingPending) {
+        return {
+          success: true,
+          message: "A cancellation request for this order is already in progress. Admin will process the refund within 1-2 days."
+        };
+      }
+    }
+  } catch (e) { /* non-fatal — proceed with normal flow */ }
 
   // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
@@ -2694,7 +2737,30 @@ function deleteOrder(phone, rowId, refundType, opts) {
     }
   }
 
-  ws.deleteRow(r._row);
+  // ─── ROBUST DELETE ────────────────────────────────────────────────
+  // Re-find the row's current position by Submission_ID (in case _row drifted),
+  // then delete + flush + verify. If the deletion failed, throw so the caller
+  // sees an error rather than silently leaving the row in place.
+  try {
+    const liveRows = getAllRows(ws);
+    const live = liveRows.find(x => String(x.Submission_ID || "").trim().toUpperCase() === targetId);
+    if (!live) {
+      console.warn(`deleteOrder: row ${targetId} already gone before deleteRow.`);
+    } else {
+      ws.deleteRow(live._row);
+      SpreadsheetApp.flush();
+      // Verify
+      const afterRows = getAllRows(ws);
+      const stillThere = afterRows.find(x => String(x.Submission_ID || "").trim().toUpperCase() === targetId);
+      if (stillThere) {
+        console.error(`deleteOrder: ws.deleteRow ran for ${targetId} but the row is still present at row ${stillThere._row}.`);
+        return { success: false, error: "Order deletion did not complete. Please refresh and try again." };
+      }
+    }
+  } catch (e) {
+    console.error(`deleteOrder: deleteRow threw for ${targetId}: ${e && e.message}`);
+    return { success: false, error: "Order deletion failed: " + (e && e.message || "unknown error") };
+  }
 
   // Also remove from customer ledger if it exists (10-day billing)
   try {
