@@ -2563,13 +2563,7 @@ function deleteOrder(phone, rowId, refundType, opts) {
       lines.push(`Order total: ₹${rawRefund}`);
       lines.push(`Deductions (₹${adjustment} total):`);
       if (overDiscount > 0) {
-        const oldPct = Math.round(oldRate * 100);
-        const newPct = Math.round(newRate * 100);
-        if (newRate === 0) {
-          lines.push(`  • -₹${overDiscount} — discount reversal: remaining day total drops below ₹300, so the ${oldPct}% discount on your other order(s) is removed.`);
-        } else {
-          lines.push(`  • -₹${overDiscount} — discount reduction: remaining day total drops from the ${oldPct}% tier to ${newPct}%, so discount on your other order(s) is reduced.`);
-        }
+        lines.push(`  • -₹${overDiscount} — discount reversal: a loyalty discount applied to your other order(s) on this day is reversed since it was earned as part of this streak order.`);
       }
       if (deliveryOwed > 0) {
         const numOrders = deliveryOwed / 10;
