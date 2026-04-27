@@ -2429,27 +2429,35 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     }
   }
 
-  // ─── IDEMPOTENCY GUARD ────────────────────────────────────────────
-  // If a pending refund already exists for this Submission_ID, do NOT add another.
-  // Customer-side double-clicks or retries hit this branch; previously each retry
-  // appended a duplicate refund row in TAB_REFUNDS.
+  // ─── IDEMPOTENCY / RECOVERY GUARD ─────────────────────────────────
+  // If a pending refund already exists for this Submission_ID, DON'T add
+  // another, but DO finish the cancellation by deleting the order row.
+  // (Previous attempt may have written the refund then failed before delete.)
+  let existingPendingRefund = null;
   try {
     const refundsWs = ss.getSheetByName(TAB_REFUNDS);
     if (refundsWs && refundsWs.getLastRow() > 1) {
       const refRows = getAllRows(refundsWs);
-      const existingPending = refRows.find(rf => {
+      existingPendingRefund = refRows.find(rf => {
         const rfId = String(rf.Submission_ID || "").trim().toUpperCase();
         const rfStat = String(rf.Status || "").trim().toLowerCase();
         return rfId === targetId && rfStat === "pending";
-      });
-      if (existingPending) {
-        return {
-          success: true,
-          message: "A cancellation request for this order is already in progress. Admin will process the refund within 1-2 days."
-        };
-      }
+      }) || null;
     }
-  } catch (e) { /* non-fatal — proceed with normal flow */ }
+  } catch (e) { /* non-fatal */ }
+
+  if (existingPendingRefund) {
+    // Recovery path: finish the unfinished delete. No new refund row.
+    try {
+      ws.deleteRow(r._row);
+    } catch (e) {
+      return { success: false, error: "Order deletion failed (refund already in queue): " + (e && e.message || "unknown error") };
+    }
+    return {
+      success: true,
+      message: "Cancellation completed. Your refund was already in the queue and will be processed within 1-2 days."
+    };
+  }
 
   // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
