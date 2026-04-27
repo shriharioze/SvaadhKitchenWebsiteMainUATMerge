@@ -7915,7 +7915,13 @@
 
       let count = 0;
       let surcharge = 0;
-      let d = new Date(); d.setDate(d.getDate() - 1);
+      let d = new Date();
+      // If customer hasn't ordered today yet, start counting from yesterday
+      // (don't break the streak just because today's order isn't placed yet)
+      const todayIso = d.toISOString().split('T')[0];
+      if (dailyTotals[todayIso] === undefined) {
+        d.setDate(d.getDate() - 1);
+      }
       let safety = 0;
 
       while (safety < 30) {
@@ -8257,6 +8263,34 @@
         const choice = await sPromptRefund(`Your payment of ₹${potentialAmt} is currently <b>Pending Admin Verification</b>. Once the admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?", { wallet: "Svaadh Wallet (Upto 3 working days)" });
         if (choice === "exit") return;
         refundType = (choice === "wallet") ? "wallet" : "manual_upi";
+      }
+
+      // ── Preview: show human-readable breakdown before final confirm ──────────
+      sLoading(true, "Calculating refund…");
+      let previewText = "";
+      try {
+        const prev = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ _action: "previewCancellation", phone: S.phone, rowId: allIds[0], refundType })
+        }).then(r => r.json());
+        if (prev.success && prev.dryRun) {
+          previewText = prev.breakdownText || "";
+        }
+      } catch(e) { /* non-fatal — proceed without preview */ }
+      sLoading(false);
+
+      if (previewText) {
+        // Format for display: replace newlines with <br>, bold bullet lines
+        const previewHtml = previewText
+          .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+          .replace(/\n/g,"<br>")
+          .replace(/(• .+?)(<br>|$)/g, "<span style='display:block;margin-left:10px;'>$1</span>");
+        const goAhead = await sConfirm(
+          `<div style='font-size:.85rem;line-height:1.7;'>${previewHtml}</div>`,
+          "Confirm Cancellation", "💸",
+          "वरील तपशील बघून रद्द करायचे आहे का?"
+        );
+        if (!goAhead) return;
       }
 
       sLoading(true, "Processing cancellation...");

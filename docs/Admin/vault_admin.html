@@ -1495,7 +1495,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <!-- ════ PAGE: ARCHIVE ════ -->
       <div class="page" id="pageArchive">
         <div class="page-header">
-          <div class="page-title">Quarterly Archive <small>Safely archive old orders &amp; wallet data to keep the system fast</small></div>
+          <div class="page-title">Monthly Archive <small>Safely archive old orders &amp; wallet data to keep the system fast</small></div>
         </div>
         <div style="max-width:560px;margin:0 auto;">
 
@@ -1503,8 +1503,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #7dd3fc;border-radius:14px;padding:16px 18px;margin-bottom:18px;font-size:.82rem;color:#0c4a6e;line-height:1.6;">
             <div style="font-weight:700;font-size:.88rem;margin-bottom:6px;">📦 How it works</div>
             <ul style="margin:0;padding-left:18px;">
-              <li>Creates a new Google Spreadsheet: <em>Svaadh Kitchen Archive — Q[N] [Year]</em></li>
-              <li>Copies all <strong>SK_Orders</strong> and <strong>SK_Wallet</strong> rows for that quarter</li>
+              <li>Creates a new Google Spreadsheet: <em>Svaadh Kitchen Archive — Apr 2026</em></li>
+              <li>Copies all <strong>SK_Orders</strong> and <strong>SK_Wallet</strong> rows for that month</li>
               <li>Writes <strong>Balance Carry Forward</strong> snapshots so active wallet balances are preserved</li>
               <li>Deletes the archived rows from the live sheet — keeping it fast and lean</li>
             </ul>
@@ -1521,13 +1521,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
                   style="width:90px;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);">
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:.72rem;font-weight:600;color:#475569;">Quarter</label>
-                <select id="archiveQuarter"
+                <label style="font-size:.72rem;font-weight:600;color:#475569;">Month</label>
+                <select id="archiveMonth"
                   style="padding:8px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.85rem;background:var(--bg);cursor:pointer;">
-                  <option value="1">Q1 — Jan · Feb · Mar</option>
-                  <option value="2">Q2 — Apr · May · Jun</option>
-                  <option value="3">Q3 — Jul · Aug · Sep</option>
-                  <option value="4">Q4 — Oct · Nov · Dec</option>
+                  <option value="1">January</option>
+                  <option value="2">February</option>
+                  <option value="3">March</option>
+                  <option value="4">April</option>
+                  <option value="5">May</option>
+                  <option value="6">June</option>
+                  <option value="7">July</option>
+                  <option value="8">August</option>
+                  <option value="9">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
                 </select>
               </div>
               <button class="btn-primary" onclick="runManualArchive()" style="height:38px;padding:0 18px;">
@@ -1541,8 +1549,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;">
             <div style="font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#64748b;margin-bottom:8px;">⏰ AUTO-ARCHIVE TRIGGER</div>
             <div style="font-size:.82rem;color:#475569;margin-bottom:12px;line-height:1.5;">
-              Registers a time-based trigger to run automatically on the <strong>10th of each quarter-end month</strong>
-              (Apr 10, Jul 10, Oct 10, Jan 10). Run this once after deploying a new version.
+              Registers a time-based trigger to run automatically on the <strong>10th of every month</strong> at ~2 AM IST.
+              Archives the previous month's data. Run this once after deploying a new version.
             </div>
             <button class="btn-secondary" onclick="setupAutoTrigger()" style="font-size:.82rem;">
               ⚙️ Setup Auto-Trigger (run once)
@@ -5732,8 +5740,8 @@ async function loadRefunds() {
       const ts = new Date(r.Timestamp).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
       html += `<tr style="${rowStyle}" class="refund-row">
         <td>
-          <input type="checkbox" class="refund-check" 
-                 data-sid="${r.Submission_ID}" data-name="${r.Name}" data-amount="${r.Amount}"
+          <input type="checkbox" class="refund-check"
+                 data-submission-id="${r.Submission_ID}" data-name="${r.Name}" data-amount="${r.Amount}"
                  onchange="updateBatchBar('refunds')">
         </td>
         <td>
@@ -7057,31 +7065,31 @@ async function deleteInvEntry(id) {
 // ── ARCHIVE PANEL ──────────────────────────────────────────────────────────
 function _initArchivePage() {
   const now = new Date();
-  document.getElementById("archiveYear").value = now.getFullYear();
-  // Default to previous completed quarter
-  const q = Math.floor(now.getMonth() / 3); // 0-based current quarter
-  const prevQ = q === 0 ? 4 : q;
-  document.getElementById("archiveQuarter").value = String(prevQ);
+  // Default to previous completed month
+  const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth(); // getMonth() is 0-based, so getMonth()=0 means Jan, prev = Dec(12)
+  const prevYear  = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  document.getElementById("archiveYear").value  = prevYear;
+  document.getElementById("archiveMonth").value = String(prevMonth);
 }
 
 async function runManualArchive() {
-  const year    = parseInt(document.getElementById("archiveYear").value);
-  const quarter = parseInt(document.getElementById("archiveQuarter").value);
+  const year     = parseInt(document.getElementById("archiveYear").value);
+  const month    = parseInt(document.getElementById("archiveMonth").value);
   const statusEl = document.getElementById("archiveStatus");
 
-  if (!year || !quarter || quarter < 1 || quarter > 4) {
-    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Please select a valid year and quarter.</div>`;
+  if (!year || !month || month < 1 || month > 12) {
+    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Please select a valid year and month.</div>`;
     return;
   }
 
-  const qLabels = { 1:"Jan–Mar", 2:"Apr–Jun", 3:"Jul–Sep", 4:"Oct–Dec" };
-  const confirmMsg = `Archive Q${quarter} ${year} (${qLabels[quarter]})?\n\nThis will:\n• Copy SK_Orders + SK_Wallet rows to a new file\n• Write Balance Carry Forward snapshots\n• DELETE archived rows from the live sheet\n\nThis CANNOT be undone. Proceed?`;
+  const mLabels = ["","January","February","March","April","May","June","July","August","September","October","November","December"];
+  const confirmMsg = `Archive ${mLabels[month]} ${year}?\n\nThis will:\n• Copy SK_Orders + SK_Wallet rows to a new file\n• Write Balance Carry Forward snapshots\n• DELETE archived rows from the live sheet\n\nThis CANNOT be undone. Proceed?`;
   if (!confirm(confirmMsg)) return;
 
   statusEl.innerHTML = `<div style="color:#0369a1;font-size:.82rem;">⏳ Archiving… this may take 30–60 seconds. Please wait.</div>`;
 
   try {
-    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"triggerManualArchive", year, quarter, pin: S.sessionPin }) }).then(r=>r.json());
+    const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"triggerManualArchive", year, month, pin: S.sessionPin }) }).then(r=>r.json());
     if (res.error) {
       statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error}</div>`;
       return;
@@ -7111,7 +7119,7 @@ async function setupAutoTrigger() {
   try {
     const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"setupQuarterlyArchiveTrigger", pin: S.sessionPin }) }).then(r=>r.json());
     if (res && res.success) {
-      statusEl.innerHTML = `<div style="color:#166534;font-size:.82rem;">✅ Trigger registered! Auto-archive will run on Apr 10, Jul 10, Oct 10, and Jan 10 each year.</div>`;
+      statusEl.innerHTML = `<div style="color:#166534;font-size:.82rem;">✅ Trigger registered! Auto-archive will run on the 10th of every month at ~2 AM IST.</div>`;
     } else {
       statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${(res && res.error) || "Failed to set up trigger"}</div>`;
     }

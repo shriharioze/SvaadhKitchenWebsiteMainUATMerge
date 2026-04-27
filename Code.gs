@@ -489,6 +489,7 @@ function doPost(e) {
 
     // Customer self-service (phone-verified inside each function)
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType, { isAdmin: isAdmin }));
+    if (action === "previewCancellation") return jsonRes(_deleteOrderInternal(body.phone, body.rowId, body.refundType || "wallet", { dryRun: true }));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
     if (action === "verifyOrderPlaced") return jsonRes(verifyOrderPlaced(body));
 
@@ -2641,6 +2642,18 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
         lines.push(`Refund: ₹${rawRefund} − ₹${adjustment} = ₹${refundAmt}`);
       }
       return lines.join("\n");
+    }
+
+    // ── DRY RUN: return breakdown without making any changes ─────────────────
+    if (opts.dryRun) {
+      return {
+        success:            true,
+        dryRun:             true,
+        refundAmt:          refundAmt,
+        adjustment:         adjustment,
+        cancellationCharge: cancellationCharge,
+        breakdownText:      buildRefundBreakdown()
+      };
     }
 
     // Multi-Payment Logic: If any OTHER order for this meal/date is Wallet Paid,
@@ -5016,25 +5029,26 @@ function setupKeepAliveTrigger() {
 
 // ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────
 /*
-  Archives SK_Orders and SK_Wallet for a given quarter into a new Google
+  Archives SK_Orders and SK_Wallet for a given month into a new Google
   Spreadsheet, writes Balance Carry Forward snapshots so wallet balances are
   preserved, then deletes the archived rows from the main sheet.
 
-  Quarter map:
-    Q1 = Jan–Mar   (archive trigger: April 10)
-    Q2 = Apr–Jun   (archive trigger: July 10)
-    Q3 = Jul–Sep   (archive trigger: October 10)
-    Q4 = Oct–Dec   (archive trigger: January 10 of next year)
+  Runs on the 10th of every month — archives the previous calendar month.
+  e.g. May 10 → archives April data.
 */
-function archiveQuarter(year, quarter) {
-  var Q = {
-    1: {from: year+"-01-01", to: year+"-03-31", label: "Q1 Jan–Mar"},
-    2: {from: year+"-04-01", to: year+"-06-30", label: "Q2 Apr–Jun"},
-    3: {from: year+"-07-01", to: year+"-09-30", label: "Q3 Jul–Sep"},
-    4: {from: year+"-10-01", to: year+"-12-31", label: "Q4 Oct–Dec"}
+function archiveMonth(year, month) {
+  if (!year || !month || month < 1 || month > 12)
+    return {success:false, error:"Invalid year/month"};
+
+  var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var pad = function(n) { return n < 10 ? "0"+n : String(n); };
+  // Last day of month: day 0 of next month
+  var lastDay = new Date(year, month, 0).getDate();
+  var qr = {
+    from:  year + "-" + pad(month) + "-01",
+    to:    year + "-" + pad(month) + "-" + pad(lastDay),
+    label: MONTH_NAMES[month - 1] + " " + year
   };
-  var qr = Q[quarter];
-  if (!qr) return {success:false, error:"Invalid quarter — must be 1, 2, 3 or 4"};
 
   var ss = getSpreadsheet();
   var fmtDate = function(v) {
@@ -5044,7 +5058,7 @@ function archiveQuarter(year, quarter) {
   };
 
   // ── STEP 1: Create archive spreadsheet ────────────────────────────────────
-  var archiveName = "Svaadh Kitchen Archive — " + qr.label + " " + year;
+  var archiveName = "Svaadh Kitchen Archive — " + qr.label;
   var archiveSS   = SpreadsheetApp.create(archiveName);
   var log = [];
 
@@ -5077,7 +5091,7 @@ function archiveQuarter(year, quarter) {
     }
     log.push(toArchiveOrders.length + " orders archived ✓");
   } else {
-    log.push("No orders found for this quarter.");
+    log.push("No orders found for this month.");
   }
 
   // ── STEP 3: Archive SK_Wallet ──────────────────────────────────────────────
@@ -5109,7 +5123,7 @@ function archiveQuarter(year, quarter) {
     }
     log.push(toArchiveWallet.length + " wallet transactions archived ✓");
   } else {
-    log.push("No wallet transactions found for this quarter.");
+    log.push("No wallet transactions found for this month.");
   }
 
   // ── STEP 4: Write Balance Carry Forward snapshots ─────────────────────────
@@ -5124,7 +5138,7 @@ function archiveQuarter(year, quarter) {
 
   var snapshotCount = 0;
   var snapTime      = new Date();
-  var refId         = "ARCHIVE-Q" + quarter + "-" + year;
+  var refId         = "ARCHIVE-" + year + "-" + pad(month);
   Object.keys(activePhones).forEach(function(ph) {
     var balance = _calculateWalletBalance(ph);
     if (balance > 0) {
@@ -5160,41 +5174,50 @@ function archiveQuarter(year, quarter) {
   };
 }
 
-// Called by admin UI — wraps archiveQuarter with PIN check (handled by router)
+// Called by admin UI — wraps archiveMonth with PIN check (handled by router)
 function triggerManualArchive(body) {
-  var year    = parseInt(body.year);
-  var quarter = parseInt(body.quarter);
-  if (!year || !quarter) return {success:false, error:"year and quarter required"};
-  return archiveQuarter(year, quarter);
+  var year  = parseInt(body.year);
+  var month = parseInt(body.month);
+  if (!year || !month) return {success:false, error:"year and month required"};
+  return archiveMonth(year, month);
 }
 
-// ── Time-based trigger: auto-archive previous quarter on the 10th ─────────
-// Run setupQuarterlyArchiveTrigger() once from Apps Script editor to register.
-function setupQuarterlyArchiveTrigger() {
+// ── Time-based trigger: auto-archive previous month on the 10th ──────────
+// Run setupMonthlyArchiveTrigger() once from Apps Script editor to register.
+// Also registered from admin UI via the setupQuarterlyArchiveTrigger action name (kept for compat).
+function setupMonthlyArchiveTrigger() {
   // Remove any existing trigger for runScheduledArchive
   ScriptApp.getProjectTriggers().forEach(function(t) {
     if (t.getHandlerFunction() === "runScheduledArchive") ScriptApp.deleteTrigger(t);
   });
-  // Fire on the 10th of every month at 2 AM IST (Apps Script uses server time ≈ UTC)
+  // Fire on the 10th of every month at 21:00 UTC = 02:30 IST (safe off-peak window)
   ScriptApp.newTrigger("runScheduledArchive")
     .timeBased()
     .onMonthDay(10)
-    .atHour(21)   // 21:00 UTC = 02:30 IST next day ≈ 2 AM IST on the 10th
+    .atHour(21)
     .create();
-  return "Quarterly archive trigger set — fires on 10th of Apr, Jul, Oct, Jan.";
+  return "Monthly archive trigger set — fires on the 10th of every month at ~2 AM IST.";
+}
+
+// Keep old name working (admin UI may still call this action)
+function setupQuarterlyArchiveTrigger() {
+  return setupMonthlyArchiveTrigger();
 }
 
 function runScheduledArchive() {
-  // Determine which quarter just ended based on today's month
-  var now     = new Date();
-  var month   = now.getMonth() + 1; // 1–12
-  var year    = now.getFullYear();
-  var qMap    = {4:1, 7:2, 10:3, 1:4}; // trigger month → quarter to archive
-  var qNum    = qMap[month];
-  if (!qNum) { Logger.log("runScheduledArchive: not an archive month (" + month + "), skipping."); return; }
-  var archiveYear = (month === 1) ? year - 1 : year; // Jan trigger → archive Q4 of last year
-  var result  = archiveQuarter(archiveYear, qNum);
-  Logger.log("Archive result: " + JSON.stringify(result));
+  // Archive the previous calendar month.
+  // e.g. trigger fires May 10 → archive April (month 4, year this year)
+  var now   = new Date();
+  var year  = now.getFullYear();
+  var month = now.getMonth() + 1; // 1–12, current month
+
+  // Previous month
+  var archiveMonth_ = month - 1;
+  var archiveYear   = year;
+  if (archiveMonth_ === 0) { archiveMonth_ = 12; archiveYear = year - 1; }
+
+  var result = archiveMonth(archiveYear, archiveMonth_);
+  Logger.log("Monthly archive result: " + JSON.stringify(result));
 }
 
 // ── CHURN REPORT ──────────────────────────────────────────────────────────────
