@@ -2746,22 +2746,10 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
   }
 
   // ─── DELETE THE ROW ───────────────────────────────────────────────
-  // Re-find by Submission_ID right before delete (in case _row drifted from
-  // earlier same-day-row updates) and trust deleteRow. flush() commits the
-  // pending writes before returning success to the caller.
-  try {
-    const liveRows = getAllRows(ws);
-    const live = liveRows.find(x => String(x.Submission_ID || "").trim().toUpperCase() === targetId);
-    if (live) {
-      ws.deleteRow(live._row);
-    } else {
-      console.warn(`deleteOrder: row ${targetId} already gone before deleteRow.`);
-    }
-    SpreadsheetApp.flush();
-  } catch (e) {
-    console.error(`deleteOrder: deleteRow threw for ${targetId}: ${e && e.message}`);
-    return { success: false, error: "Order deletion failed: " + (e && e.message || "unknown error") };
-  }
+  // We're inside LockService so r._row hasn't been shifted by parallel calls,
+  // and the only writes done above are setValue() updates to other rows
+  // (which never change row positions). Direct deleteRow is safe.
+  ws.deleteRow(r._row);
 
   // Also remove from customer ledger if it exists (10-day billing)
   try {
