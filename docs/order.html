@@ -4296,7 +4296,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.04.25.23";
+    const APP_VERSION = "v26.04.25.24";
     const UPI_VPA = "svaadhkitchen.36727659@hdfcbank";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -8295,7 +8295,9 @@
           syncWalletValue(true); // Update main UI balance (force bypass debounce)
           loadExistingOrders(S.phone); // Refresh upcoming list
         } else {
-          throw new Error("Action failed for one or more items.");
+          // Surface the actual server-side error instead of a generic message
+          const firstErr = results.find(r => !r.success && r.error)?.error;
+          throw new Error(firstErr || "Cancellation failed. Please refresh and try again.");
         }
       } catch (e) {
         sLoading(false);

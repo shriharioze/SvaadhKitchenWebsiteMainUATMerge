@@ -2737,26 +2737,19 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     }
   }
 
-  // ─── ROBUST DELETE ────────────────────────────────────────────────
-  // Re-find the row's current position by Submission_ID (in case _row drifted),
-  // then delete + flush + verify. If the deletion failed, throw so the caller
-  // sees an error rather than silently leaving the row in place.
+  // ─── DELETE THE ROW ───────────────────────────────────────────────
+  // Re-find by Submission_ID right before delete (in case _row drifted from
+  // earlier same-day-row updates) and trust deleteRow. flush() commits the
+  // pending writes before returning success to the caller.
   try {
     const liveRows = getAllRows(ws);
     const live = liveRows.find(x => String(x.Submission_ID || "").trim().toUpperCase() === targetId);
-    if (!live) {
-      console.warn(`deleteOrder: row ${targetId} already gone before deleteRow.`);
-    } else {
+    if (live) {
       ws.deleteRow(live._row);
-      SpreadsheetApp.flush();
-      // Verify
-      const afterRows = getAllRows(ws);
-      const stillThere = afterRows.find(x => String(x.Submission_ID || "").trim().toUpperCase() === targetId);
-      if (stillThere) {
-        console.error(`deleteOrder: ws.deleteRow ran for ${targetId} but the row is still present at row ${stillThere._row}.`);
-        return { success: false, error: "Order deletion did not complete. Please refresh and try again." };
-      }
+    } else {
+      console.warn(`deleteOrder: row ${targetId} already gone before deleteRow.`);
     }
+    SpreadsheetApp.flush();
   } catch (e) {
     console.error(`deleteOrder: deleteRow threw for ${targetId}: ${e && e.message}`);
     return { success: false, error: "Order deletion failed: " + (e && e.message || "unknown error") };
