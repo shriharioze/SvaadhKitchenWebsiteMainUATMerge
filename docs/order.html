@@ -341,7 +341,7 @@
     }
 
     .step-dot.done {
-      background: #27ae60;
+      background: #E8C840;
     }
 
     .step-label {
@@ -744,9 +744,9 @@
     }
 
     .cal-day.selected {
-      background: #2D1A5E;
-      color: white;
-      border-color: #2D1A5E;
+      background: #E8C840;
+      color: #1a1400;
+      border-color: #c9ab00;
       font-weight: 700;
     }
 
@@ -769,13 +769,13 @@
 
     .date-chip {
       display: inline-block;
-      background: #2D1A5E;
-      color: white;
+      background: #E8C840;
+      color: #1a1400;
       padding: 2px 9px;
       border-radius: 99px;
       font-size: 0.72rem;
       margin: 2px 3px 2px 0;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     /* MEAL ACCORDION */
@@ -945,6 +945,24 @@
       background: #f5e8e5;
     }
 
+    /* Golden qty control — shown when item has qty > 0 */
+    .qty-control.qty-active .qty-btn {
+      background: #E8C840;
+      border-color: #c9ab00;
+      color: #1a1400;
+    }
+
+    .qty-control.qty-active .qty-btn:hover {
+      background: #d4b200;
+    }
+
+    .qty-control.qty-active .qty-input {
+      border-color: #c9ab00;
+      background: #fffbe6;
+      color: #1a1400;
+      font-weight: 700;
+    }
+
     .qty-input {
       width: 42px;
       height: 28px;
@@ -1024,6 +1042,21 @@
 
     .info-box strong {
       color: #e07b00;
+    }
+
+    .info-box-gold {
+      background: #fffbe6;
+      border: 1.5px solid #E8C840;
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-size: 0.74rem;
+      color: #5a4000;
+      margin: 10px 0;
+      line-height: 1.6;
+    }
+
+    .info-box-gold strong {
+      color: #3d2b00;
     }
 
     .warn-box {
@@ -1643,11 +1676,11 @@
     }
 
     [data-theme="dark"] .step-dot.active {
-      background: #e97060;
+      background: #7C5CC4;
     }
 
     [data-theme="dark"] .step-dot.done {
-      background: #6abf8a;
+      background: #E8C840;
     }
 
     [data-theme="dark"] .step-label {
@@ -1890,6 +1923,43 @@
 
     [data-theme="dark"] .selected-dates-summary {
       color: #888;
+    }
+
+    [data-theme="dark"] .cal-day.selected {
+      background: #E8C840;
+      color: #1a1400;
+      border-color: #c9ab00;
+    }
+
+    [data-theme="dark"] .date-chip {
+      background: #E8C840;
+      color: #1a1400;
+    }
+
+    [data-theme="dark"] .info-box-gold {
+      background: #2a2200;
+      border-color: #c9ab00;
+      color: #e8d080;
+    }
+
+    [data-theme="dark"] .info-box-gold strong {
+      color: #E8C840;
+    }
+
+    [data-theme="dark"] .qty-control.qty-active .qty-btn {
+      background: #c9ab00;
+      border-color: #a08900;
+      color: #1a1400;
+    }
+
+    [data-theme="dark"] .qty-control.qty-active .qty-btn:hover {
+      background: #E8C840;
+    }
+
+    [data-theme="dark"] .qty-control.qty-active .qty-input {
+      border-color: #c9ab00;
+      background: #2a2000;
+      color: #E8C840;
     }
 
     [data-theme="dark"] .meal-cutoff-txt {
@@ -3489,9 +3559,8 @@
     <div class="screen" id="screen3">
       <div class="card" style="padding-bottom:12px;">
         <h2 data-i18n="step4_title">🍱 Choose Your Meals</h2>
-        <div class="info-box" style="margin-top:4px;font-size:0.74rem;line-height:1.6;" data-i18n-html="step3_tip">
-          🚚 <strong>Free delivery</strong> if total ≥ ₹100 (for 1 meal) or ≥ ₹150 (for 2+ meals) &nbsp;·&nbsp; 🎉 <strong>5%
-            off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
+        <div class="info-box-gold" style="margin-top:4px;" data-i18n-html="step3_tip">
+          🚚 <strong>Free delivery</strong> if meal total ≥ ₹100 &nbsp;·&nbsp; <strong>5% off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
         </div>
         <p class="mr-note" style="margin-bottom:0;">🚚 १ जेवण असल्यास ₹१०० वर <strong>मोफत डिलिव्हरी</strong>, २ किंवा अधिक असल्यास ₹१५० वर मोफत &nbsp;·&nbsp; 🎉 ₹३०० वर <strong>५% सूट</strong> · ₹४५० वर <strong>७.५% सूट</strong></p>
       </div>
@@ -4680,7 +4749,7 @@
       calYear: 0, calMonth: 0,
       grandTotal: 0, runningTotal: 0, walletBalance: 0, walletCredit: 0,
       tempUpiMode: false,
-      version: "14.1.18"
+      version: "14.2.0"
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -6095,7 +6164,7 @@
       <div class="item-price">₹${price} each</div>
       ${isLowStock ? `<div style="margin-top:4px;">${getStockBadge(colKey, remaining)}</div>` : ''}
     </div>
-    <div class="qty-control">
+    <div class="qty-control${qty > 0 ? ' qty-active' : ''}">
       <button class="qty-btn" onclick="changeQty('${date}','${meal}','${colKey}',${price},-1)">−</button>
       <input class="qty-input" type="number" id="${eid}" min="0" value="${qty}"
         oninput="setQty('${date}','${meal}','${colKey}',${price},this.value)">
@@ -6106,6 +6175,13 @@
     }
 
     // QTY
+    function _syncQtyActiveClass(el, qty) {
+      if (!el) return;
+      const wrap = el.closest ? el.closest('.qty-control') : el.parentElement;
+      if (!wrap) return;
+      if (qty > 0) wrap.classList.add('qty-active');
+      else wrap.classList.remove('qty-active');
+    }
     function changeQty(date, meal, colKey, price, delta) {
       if (!S.orders[date]?.[meal]) return;
       const cur    = S.orders[date][meal].items[colKey] || 0;
@@ -6115,6 +6191,7 @@
       S.orders[date][meal].items[colKey] = nxt;
       const el = $(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_"));
       if (el) el.value = nxt;
+      _syncQtyActiveClass(el, nxt);
       recalcSubtotal(date, meal); refreshBadge(date, meal);
     }
     function setQty(date, meal, colKey, price, rawVal) {
@@ -6125,6 +6202,7 @@
       S.orders[date][meal].items[colKey] = v;
       const el = $(`qty_${date}_${meal}_${colKey}`.replace(/[^a-zA-Z0-9_]/g, "_"));
       if (el && el.value != String(v)) el.value = v;
+      _syncQtyActiveClass(el, v);
       recalcSubtotal(date, meal); refreshBadge(date, meal);
     }
     function refreshAllQtys(date) {
