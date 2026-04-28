@@ -24,6 +24,10 @@
   --red:        #c0392b;
   --red-soft:   #fdf0ee;
   --red-border: #f4c6c0;
+  --brand:      #2D1A5E;
+  --brand-dark: #1E1240;
+  --brand-soft: #f3eeff;
+  --brand-border:#d6c9ff;
   --gold:       #c8922a;
   --gold-soft:  #fdf6e8;
   --gold-border:#e8d59a;
@@ -257,7 +261,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .day-item.today .day-num { color: var(--red); }
 /* Sundays are visually muted but still clickable in admin (to allow override) */
 .day-item.sunday { opacity: .5; }
-.day-item.sunday .day-name { color: #e74c3c; }
+.day-item.sunday .day-name { color: #2D1A5E; }
 .day-item .day-name { font-size: .7rem; font-weight: 600; color: var(--muted); width: 22px; }
 .day-item.active .day-name { color: var(--red); }
 .day-item .day-num { font-size: .88rem; font-weight: 600; min-width: 18px; }
@@ -464,7 +468,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   background: white; color: var(--muted); transition: all .15s;
 }
 .action-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-soft); }
-.action-btn.del:hover { border-color: #f0a090; color: #c0392b; }
+.action-btn.del:hover { border-color: #f0a090; color: var(--red); }
 
 /* Add row */
 .add-row {
@@ -514,7 +518,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .orders-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;}
 .stat-card{background:#fff;border:1.5px solid #eee;border-radius:12px;padding:14px 16px;text-align:center;}
-.stat-card .sv{font-size:1.6rem;font-weight:700;color:#c0392b;}
+.stat-card .sv{font-size:1.6rem;font-weight:700;color:#1E1240;}
 .stat-card .sl{font-size:0.72rem;color:#888;margin-top:2px;}
 .stat-card.green .sv{color:#27ae60;}
 .stat-card.orange .sv{color:#e67e22;}
@@ -527,7 +531,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .item-totals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:16px;}
 .item-total-chip{background:#fef9f0;border:1px solid #f5e6c8;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}
 .item-total-chip .iname{font-size:0.78rem;color:#555;}
-.item-total-chip .iqty{font-size:1.1rem;font-weight:700;color:#c0392b;}
+.item-total-chip .iqty{font-size:1.1rem;font-weight:700;color:#1E1240;}
 .cust-table{width:100%;border-collapse:collapse;font-size:0.78rem;}
 .cust-table th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee;}
 .cust-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;}
@@ -544,9 +548,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .pkg-table{width:100%;border-collapse:collapse;font-size:0.85rem;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
 .pkg-table th{background:#f5f5f5;padding:10px 14px;text-align:left;font-weight:600;border-bottom:2px solid #eee;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.04em;color:#888;}
 .pkg-table td{padding:12px 14px;border-bottom:1px solid #f0f0f0;color:#333;}
-.pkg-table tr:last-child td{border-bottom:none;font-weight:700;background:#fef9f0;color:#c0392b;}
+.pkg-table tr:last-child td{border-bottom:none;font-weight:700;background:#fef9f0;color:#1E1240;}
 .pkg-table td:nth-child(2),.pkg-table td:nth-child(3),.pkg-table td:nth-child(4){text-align:right;}
-.pkg-total-card{background:#c0392b;color:#fff;border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.pkg-total-card{background:#1E1240;color:#fff;border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
 .pkg-total-card .label{font-size:0.85rem;opacity:0.85;}
 .pkg-total-card .value{font-size:2rem;font-weight:800;}
 .pkg-meta{display:flex;gap:12px;margin-bottom:16px;font-size:0.78rem;color:#888;}
@@ -558,7 +562,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .label-controls .ctrl-group{display:flex;flex-direction:column;gap:5px;}
 .label-controls label{font-size:0.72rem;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.04em;}
 .label-controls select,.label-controls input[type=date]{padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;color:#333;min-width:140px;}
-.gen-btn{background:#c0392b;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap;align-self:flex-end;}
+.gen-btn{background:#1E1240;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.85rem;white-space:nowrap;align-self:flex-end;}
 .gen-btn:hover{background:#a93226;}
 .label-preview{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
 .label-preview h3{font-size:0.85rem;color:#888;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.04em;}
@@ -1608,7 +1612,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
           <!-- View toggle -->
           <div style="margin-left:auto;display:flex;gap:4px;background:#f0ede8;border-radius:8px;padding:3px;">
             <button id="hvBtn-table" onclick="histSetView('table')"
-              style="border:none;background:#c0392b;color:#fff;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">⊞ Table</button>
+              style="border:none;background:#1E1240;color:#fff;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">⊞ Table</button>
             <button id="hvBtn-list" onclick="histSetView('list')"
               style="border:none;background:transparent;color:#666;border-radius:6px;padding:5px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;">≡ List</button>
           </div>
@@ -2433,15 +2437,15 @@ function renderOOSGrid(meal, gridId, items) {
     const stockTag  = (limit !== undefined)
       ? `<div style="font-size:.62rem;color:var(--muted);margin-top:2px;white-space:nowrap;text-align:right;">
            ${limit} set · ${ordered} ordered ·
-           <b style="color:${remaining<=10?'#e74c3c':'var(--green,#27ae60)'};">${remaining} left</b>
+           <b style="color:${remaining<=10?'#2D1A5E':'var(--green,#27ae60)'};">${remaining} left</b>
          </div>`
       : ``;
     return `<div class="bf-item ${isOOS ? 'on' : ''}"
-                 style="${isOOS ? 'border-color:#e74c3c;background:#fdf0ee;' : ''}margin-bottom:6px;cursor:pointer;">
-      <div class="bf-check" onclick="toggleOOS('${meal}','${safeKey}')" style="${isOOS ? 'background:#e74c3c;color:#fff;' : ''}">${isOOS ? '✕' : ''}</div>
+                 style="${isOOS ? 'border-color:#2D1A5E;background:#fdf0ee;' : ''}margin-bottom:6px;cursor:pointer;">
+      <div class="bf-check" onclick="toggleOOS('${meal}','${safeKey}')" style="${isOOS ? 'background:#2D1A5E;color:#fff;' : ''}">${isOOS ? '✕' : ''}</div>
       <div class="bf-item-info" onclick="toggleOOS('${meal}','${safeKey}')" style="flex:1;">
         <div class="name">${item.label}</div>
-        <div class="price" style="color:${isOOS ? '#e74c3c' : 'var(--muted)'};">${isOOS ? 'Sold Out' : 'In Stock'}</div>
+        <div class="price" style="color:${isOOS ? '#2D1A5E' : 'var(--muted)'};">${isOOS ? 'Sold Out' : 'In Stock'}</div>
       </div>
       <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding-left:8px;" onclick="event.stopPropagation()">
         <input type="number" min="1" placeholder="∞"
@@ -2496,7 +2500,7 @@ function renderOrdersClosedPanel() {
       <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">${m.icon} ${m.key}</div>
       <button class="toggle ${isClosed ? '' : 'on'}"
               onclick="toggleOrdersClosed('${m.key}')"></button>
-      <div style="font-size:.72rem;margin-top:6px;font-weight:600;color:${isClosed ? '#e74c3c' : 'var(--green)'};">
+      <div style="font-size:.72rem;margin-top:6px;font-weight:600;color:${isClosed ? '#2D1A5E' : 'var(--green)'};">
         ${isClosed ? 'Closed' : 'Open'}
       </div>
     </div>`;
@@ -3065,7 +3069,7 @@ async function loadPackaging() {
     _pkgData = data;
     el.innerHTML = _pkgMode === "day" ? renderPackagingDay(data) : renderPackagingRange(data);
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">${e.message}</p>`;
   }
 }
 
@@ -3102,7 +3106,7 @@ function renderPackagingDay(data) {
         </tr>`).join("")}
         <tr style="font-weight:700;background:#fdf0ee;">
           <td colspan="3" style="text-align:right;">Grand Total</td>
-          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
+          <td style="text-align:right;color:#1E1240;">${fmt(data.total)}</td>
         </tr>
       </tbody>
     </table>
@@ -3124,7 +3128,7 @@ function renderPackagingRange(data) {
   let html = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">
       <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
-        <div style="font-size:1.6rem;font-weight:800;color:#c0392b;">${fmt(data.total)}</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1E1240;">${fmt(data.total)}</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Total Cost</div>
       </div>
       <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center;">
@@ -3161,7 +3165,7 @@ function renderPackagingRange(data) {
         </tr>`).join("")}
         <tr style="font-weight:700;background:#fdf0ee;">
           <td colspan="3" style="text-align:right;">Grand Total</td>
-          <td style="text-align:right;color:#c0392b;">${fmt(data.total)}</td>
+          <td style="text-align:right;color:#1E1240;">${fmt(data.total)}</td>
           <td style="text-align:right;">100%</td>
         </tr>
       </tbody>
@@ -3328,7 +3332,7 @@ async function generateLabels() {
     document.getElementById("downloadLabelBtn").dataset.lang = lang;
 
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;padding:20px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);padding:20px;">Error: ${e.message}</p>`;
   }
 }
 
@@ -3439,7 +3443,7 @@ async function loadOrderSummary(manual=false) {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getOrderSummary&date=${date}&pin=${S.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (manual) sLoading(false);
-    if (data.error) { el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">${data.error}</p>`; return; }
+    if (data.error) { el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">${data.error}</p>`; return; }
     el.innerHTML = renderOrderSummary(data);
     const srchWrap = document.getElementById("orderSearchWrap");
     if (srchWrap) { srchWrap.style.display = "block"; const si = document.getElementById("orderSearchInput"); if (si) si.value = ""; }
@@ -3449,7 +3453,7 @@ async function loadOrderSummary(manual=false) {
     else stopOrdersAutoRefresh();
   } catch(e) {
     if (manual) sLoading(false);
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 
@@ -3661,7 +3665,7 @@ async function generateLabels() {
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getLabelOrders&pin=${S.sessionPin}&date=${date}&meal=${meal}&_t=${Date.now()}`);
     const data = await res.json();
-    if (data.error) { preview.innerHTML = `<p style="color:#c0392b;padding:20px;">Error: ${data.error}</p>`; return; }
+    if (data.error) { preview.innerHTML = `<p style="color:var(--red);padding:20px;">Error: ${data.error}</p>`; return; }
 
     labelOrders = data.orders || [];
     if (!labelOrders.length) {
@@ -4001,7 +4005,7 @@ async function loadAnalytics() {
     if (!data.success) throw new Error(data.error);
     el.innerHTML = renderAnalytics(data, from, to);
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 function renderAnalytics(data, from, to) {
@@ -4150,7 +4154,7 @@ async function loadChurn(days) {
           <div style="font-size:.78rem;margin-top:6px;">Last order: <strong>${fmtD(c.lastDate)}</strong> · ${c.orderCount} total orders</div>
         </div>`).join("")}
       </div>`;
-  } catch(e) { el.innerHTML = `<span style="color:#c0392b;">Error: ${e.message}</span>`; }
+  } catch(e) { el.innerHTML = `<span style="color:var(--red);">Error: ${e.message}</span>`; }
 }
 
 // ════════════════════════════════════════════════════════
@@ -4191,7 +4195,7 @@ async function loadTenday() {
     el.innerHTML = renderTenday(data);
     if (data.customers.length) document.getElementById("tendayWaBtn").style.display = "flex";
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 function renderTenday(data) {
@@ -4274,9 +4278,9 @@ let _histView = "table"; // "table" | "list"
 
 function histSetView(v) {
   _histView = v;
-  document.getElementById("hvBtn-table").style.background = v==="table" ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-table").style.background = v==="table" ? "#1E1240" : "transparent";
   document.getElementById("hvBtn-table").style.color      = v==="table" ? "#fff"    : "#666";
-  document.getElementById("hvBtn-list").style.background  = v==="list"  ? "#c0392b" : "transparent";
+  document.getElementById("hvBtn-list").style.background  = v==="list"  ? "#1E1240" : "transparent";
   document.getElementById("hvBtn-list").style.color       = v==="list"  ? "#fff"    : "#666";
   renderHistTable();
 }
@@ -4383,7 +4387,7 @@ async function loadHistory() {
     ctrlEl.style.display = "block";
     renderHistTable();
   } catch(e) {
-    statsEl.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    statsEl.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 
@@ -4569,7 +4573,7 @@ async function loadCustomers() {
     _custData = data.customers;
     applyCustomerFilters();
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 function setCustPayFilter(f) {
@@ -4644,7 +4648,7 @@ async function loadCustomerDetail(phone) {
       };
     });
   } catch(e) {
-    wrap.innerHTML = `<p style="color:#c0392b;padding:16px;">Error: ${e.message}</p>`;
+    wrap.innerHTML = `<p style="color:var(--red);padding:16px;">Error: ${e.message}</p>`;
   }
 }
 
@@ -5031,7 +5035,7 @@ async function loadPayments() {
     if (!data.success) throw new Error(data.error);
     el.innerHTML = renderPayments(data);
   } catch(e) {
-    el.innerHTML = `<p style="color:#c0392b;text-align:center;padding:30px;">Error: ${e.message}</p>`;
+    el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">Error: ${e.message}</p>`;
   }
 }
 function renderPayments(data) {
@@ -5161,7 +5165,7 @@ async function loadBillingTab(cycle) {
     }
     content.innerHTML = renderBillingCards(data.customers, cycle);
   } catch(e) {
-    content.innerHTML = `<p style="color:#c0392b;padding:16px;">Error: ${e.message}</p>`;
+    content.innerHTML = `<p style="color:var(--red);padding:16px;">Error: ${e.message}</p>`;
   }
 }
 
@@ -5254,7 +5258,7 @@ function _toastWithUndo(msg, sids, cycle) {
   if (!toastEl) { toast(msg); return; }
   toastEl.innerHTML = `${msg} &nbsp;
     <button onclick="_undoMarkPaid(${JSON.stringify(sids).replace(/"/g,"'")},'${cycle}')"
-      style="margin-left:10px;background:#fff;color:#c0392b;border:1.5px solid #c0392b;border-radius:6px;padding:2px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;">Undo</button>`;
+      style="margin-left:10px;background:#fff;color:#1E1240;border:1.5px solid #1E1240;border-radius:6px;padding:2px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;">Undo</button>`;
   toastEl.classList.add("show");
   _undoTimer = setTimeout(() => { toastEl.classList.remove("show"); toastEl.innerHTML = ""; }, 8000);
 }
@@ -7078,7 +7082,7 @@ async function runManualArchive() {
   const statusEl = document.getElementById("archiveStatus");
 
   if (!year || !month || month < 1 || month > 12) {
-    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Please select a valid year and month.</div>`;
+    statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ Please select a valid year and month.</div>`;
     return;
   }
 
@@ -7091,11 +7095,11 @@ async function runManualArchive() {
   try {
     const res = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"triggerManualArchive", year, month, pin: S.sessionPin }) }).then(r=>r.json());
     if (res.error) {
-      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error}</div>`;
+      statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ ${res.error}</div>`;
       return;
     }
     if (!res.success) {
-      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${res.error || "Archive failed"}</div>`;
+      statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ ${res.error || "Archive failed"}</div>`;
       return;
     }
     statusEl.innerHTML = `
@@ -7109,7 +7113,7 @@ async function runManualArchive() {
         ${res.log && res.log.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer;color:#475569;">View log (${res.log.length} steps)</summary><pre style="font-size:.72rem;margin-top:4px;white-space:pre-wrap;">${res.log.join("\n")}</pre></details>` : ""}
       </div>`;
   } catch(e) {
-    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
+    statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ Error: ${e.message}</div>`;
   }
 }
 
@@ -7121,10 +7125,10 @@ async function setupAutoTrigger() {
     if (res && res.success) {
       statusEl.innerHTML = `<div style="color:#166534;font-size:.82rem;">✅ Trigger registered! Auto-archive will run on the 10th of every month at ~2 AM IST.</div>`;
     } else {
-      statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ ${(res && res.error) || "Failed to set up trigger"}</div>`;
+      statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ ${(res && res.error) || "Failed to set up trigger"}</div>`;
     }
   } catch(e) {
-    statusEl.innerHTML = `<div style="color:#e74c3c;font-size:.82rem;">❌ Error: ${e.message}</div>`;
+    statusEl.innerHTML = `<div style="color:#2D1A5E;font-size:.82rem;">❌ Error: ${e.message}</div>`;
   }
 }
 </script>
