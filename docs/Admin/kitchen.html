@@ -1727,11 +1727,7 @@
       }
 
       function doRefresh() {
-        sessionStorage.setItem('sk_kitchen_date', document.getElementById("datePicker").value);
-        sessionStorage.setItem('sk_kitchen_tab', _currentTab);
-        if (_manualMeal) sessionStorage.setItem('sk_kitchen_meal', _manualMeal);
-        else sessionStorage.removeItem('sk_kitchen_meal');
-        window.location.reload();
+        loadKitchen();
       }
 
       scheduleNext();
