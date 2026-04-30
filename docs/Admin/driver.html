@@ -942,9 +942,9 @@ function _defaultExportMeal() {
   // Use IST time (UTC+5:30) to pick the most relevant meal
   const nowUtc  = new Date();
   const istHour = (nowUtc.getUTCHours() + 5) + (nowUtc.getUTCMinutes() + 30) / 60;
-  // before 13:00 IST → Breakfast | before 16:00 IST → Lunch | else → Dinner
-  if (istHour < 13)  return "Breakfast";
-  if (istHour < 16)  return "Lunch";
+  // before 08:00 IST → Breakfast | before 14:00 IST → Lunch | else → Dinner
+  if (istHour < 8)   return "Breakfast";
+  if (istHour < 14)  return "Lunch";
   return "Dinner";
 }
 
