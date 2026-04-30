@@ -938,13 +938,25 @@ window.onload = () => {
 };
 
 // ── EXPORT DELIVERY SHEET ────────────────────────────────────────────────────
+function _defaultExportMeal() {
+  // Use IST time (UTC+5:30) to pick the most relevant meal
+  const nowUtc  = new Date();
+  const istHour = (nowUtc.getUTCHours() + 5) + (nowUtc.getUTCMinutes() + 30) / 60;
+  // before 13:00 IST → Breakfast | before 16:00 IST → Lunch | else → Dinner
+  if (istHour < 13)  return "Breakfast";
+  if (istHour < 16)  return "Lunch";
+  return "Dinner";
+}
+
 function openExportModal() {
-  // Pre-fill with currently selected date and active meal tab
-  const dateVal = document.getElementById("datePicker").value;
-  const activeMeal = ["Breakfast","Lunch","Dinner"].find(m =>
-    document.getElementById("tab_" + m).classList.contains("active")) || "Lunch";
-  document.getElementById("exportDate").value = dateVal;
-  document.getElementById("exportMeal").value = activeMeal;
+  // Default: today's date + time-based meal; user can override
+  const todayIST = (() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset() + 330); // shift to IST
+    return d.toISOString().slice(0, 10);
+  })();
+  document.getElementById("exportDate").value = todayIST;
+  document.getElementById("exportMeal").value = _defaultExportMeal();
   document.getElementById("exportModal").style.display = "flex";
 }
 
