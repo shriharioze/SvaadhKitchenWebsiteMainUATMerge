@@ -976,7 +976,7 @@ async function confirmExport() {
   try {
     const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
-    orders = (data.orders && data.orders[meal]) || [];
+    orders = (data.meals && data.meals[meal]) || [];
   } catch(e) {
     alert("Could not fetch orders. Please check your connection.");
     return;
