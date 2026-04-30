@@ -41,6 +41,19 @@
   .topbar-date input[type=date]{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 10px;border-radius:8px;font-size:0.8rem;flex:1;}
   .topbar-date input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
   .load-btn{background:#fff;color:#1E1240;border:none;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap;}
+  .export-btn{background:#E8C840;color:#1a1400;border:none;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap;}
+  .export-btn:active{background:#c9ab00;}
+
+  /* ── EXPORT MODAL ── */
+  .export-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .export-modal{background:#fff;border-radius:16px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.18);}
+  .export-modal h3{margin:0 0 16px;font-size:1rem;color:#1E1240;}
+  .export-modal label{display:block;font-size:0.78rem;font-weight:600;color:#555;margin-bottom:4px;margin-top:12px;}
+  .export-modal select,.export-modal input[type=date]{width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:0.85rem;box-sizing:border-box;}
+  .export-modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .export-modal-actions button{flex:1;padding:11px;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;}
+  .export-cancel-btn{background:#f0f0f0;color:#555;}
+  .export-confirm-btn{background:#E8C840;color:#1a1400;}
 
   /* ── TABS ── */
   .tabs{display:flex;background:#fff;border-bottom:2px solid #eee;position:sticky;top:90px;z-index:9;}
@@ -180,6 +193,26 @@
     <div class="topbar-date">
       <input type="date" id="datePicker" onchange="loadOrders()">
       <button class="load-btn" onclick="loadOrders()">↻ Refresh</button>
+      <button class="export-btn" onclick="openExportModal()">⬇ Export</button>
+    </div>
+  </div>
+
+  <!-- EXPORT MODAL -->
+  <div class="export-modal-overlay" id="exportModal" style="display:none;" onclick="if(event.target===this)closeExportModal()">
+    <div class="export-modal">
+      <h3>📋 Export Delivery Sheet</h3>
+      <label>Date</label>
+      <input type="date" id="exportDate">
+      <label>Meal</label>
+      <select id="exportMeal">
+        <option value="Breakfast">🌅 Breakfast</option>
+        <option value="Lunch">☀️ Lunch</option>
+        <option value="Dinner">🌙 Dinner</option>
+      </select>
+      <div class="export-modal-actions">
+        <button class="export-cancel-btn" onclick="closeExportModal()">Cancel</button>
+        <button class="export-confirm-btn" onclick="confirmExport()">⬇ Download CSV</button>
+      </div>
     </div>
   </div>
 
@@ -903,6 +936,80 @@ window.onload = () => {
     verifyPin(saved);
   }
 };
+
+// ── EXPORT DELIVERY SHEET ────────────────────────────────────────────────────
+function openExportModal() {
+  // Pre-fill with currently selected date and active meal tab
+  const dateVal = document.getElementById("datePicker").value;
+  const activeMeal = ["Breakfast","Lunch","Dinner"].find(m =>
+    document.getElementById("tab_" + m).classList.contains("active")) || "Lunch";
+  document.getElementById("exportDate").value = dateVal;
+  document.getElementById("exportMeal").value = activeMeal;
+  document.getElementById("exportModal").style.display = "flex";
+}
+
+function closeExportModal() {
+  document.getElementById("exportModal").style.display = "none";
+}
+
+async function confirmExport() {
+  const date = document.getElementById("exportDate").value;
+  const meal = document.getElementById("exportMeal").value;
+  if (!date) { alert("Please select a date."); return; }
+
+  closeExportModal();
+
+  // Fetch fresh data for the selected date
+  let orders = [];
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
+    const data = await res.json();
+    orders = (data.orders && data.orders[meal]) || [];
+  } catch(e) {
+    alert("Could not fetch orders. Please check your connection.");
+    return;
+  }
+
+  if (!orders.length) {
+    alert(`No orders found for ${meal} on ${date}.`);
+    return;
+  }
+
+  // Build CSV
+  const escape = v => {
+    const s = String(v || "").replace(/"/g, '""');
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s}"` : s;
+  };
+
+  const rows = [
+    ["Name", "Phone", "Address", "Maps Link", "Landmark", "Delivery Point", "Notes"].map(escape).join(",")
+  ];
+
+  orders.forEach(o => {
+    rows.push([
+      o.name,
+      o.phone,
+      o.address,
+      o.maps || "",
+      o.landmark || "",
+      o.deliveryPoint || "",
+      o.notes || ""
+    ].map(escape).join(","));
+  });
+
+  const csv     = "﻿" + rows.join("\r\n");  // BOM for Excel UTF-8
+  const blob    = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url     = URL.createObjectURL(blob);
+  const link    = document.createElement("a");
+  const fmtDate = date.split("-").reverse().join("-");  // dd-mm-yyyy
+  link.href     = url;
+  link.download = `Delivery_${meal}_${fmtDate}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+// ─────────────────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>
