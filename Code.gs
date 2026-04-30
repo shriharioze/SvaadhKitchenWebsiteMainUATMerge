@@ -337,6 +337,10 @@ function doGet(e) {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getDriverOrders(p.date));
     }
+    if (action === "createDeliverySheet") {
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+      return jsonRes(createDeliverySheet(p.date, p.meal));
+    }
     if (action === "getLabelOrders") {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getLabelOrders(p.date, p.meal));
@@ -3490,6 +3494,63 @@ function getDriverOrders(date) {
   }
 
   return {date: date, meals: meals};
+}
+
+/**
+ * Creates a Google Sheet in Drive with delivery details for a given date + meal.
+ * Returns the spreadsheet URL so the client can open it directly.
+ */
+function createDeliverySheet(date, meal) {
+  var data = getDriverOrders(date);
+  var orders = (data.meals && data.meals[meal]) || [];
+
+  var mealLabel = meal;
+  var dateParts = date.split("-"); // yyyy-mm-dd
+  var displayDate = dateParts[2] + "/" + dateParts[1] + "/" + dateParts[0];
+  var title = "Delivery — " + mealLabel + " " + displayDate;
+
+  var ss   = SpreadsheetApp.create(title);
+  var sheet = ss.getActiveSheet();
+  sheet.setName(mealLabel);
+
+  // Headers
+  var headers = ["Name", "Phone", "Address", "Maps Link", "Landmark", "Delivery Point", "Notes"];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  // Style header row
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground("#1E1240");
+  headerRange.setFontColor("#ffffff");
+  headerRange.setFontWeight("bold");
+  headerRange.setFontSize(11);
+
+  // Data rows
+  if (orders.length > 0) {
+    var rows = orders.map(function(o) {
+      return [
+        o.name        || "",
+        o.phone       || "",
+        o.address     || "",
+        o.maps        || "",
+        o.landmark    || "",
+        o.deliveryPoint || "",
+        o.notes       || ""
+      ];
+    });
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  // Auto-resize columns for readability
+  headers.forEach(function(_, i) { sheet.autoResizeColumn(i + 1); });
+
+  // Freeze header row
+  sheet.setFrozenRows(1);
+
+  // Make the sheet accessible to anyone with the link (view + comment)
+  var file = DriveApp.getFileById(ss.getId());
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.EDIT);
+
+  return { success: true, url: ss.getUrl(), title: title, count: orders.length };
 }
 
 // Shared coord extractor for Apps Script (mirrors client-side regex)

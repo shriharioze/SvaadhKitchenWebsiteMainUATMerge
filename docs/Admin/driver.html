@@ -211,7 +211,7 @@
       </select>
       <div class="export-modal-actions">
         <button class="export-cancel-btn" onclick="closeExportModal()">Cancel</button>
-        <button class="export-confirm-btn" onclick="confirmExport()">⬇ Download CSV</button>
+        <button class="export-confirm-btn" onclick="confirmExport()">📄 Save to Drive</button>
       </div>
     </div>
   </div>
@@ -970,56 +970,19 @@ async function confirmExport() {
   if (!date) { alert("Please select a date."); return; }
 
   closeExportModal();
+  sLoading(true, "Creating Google Sheet…");
 
-  // Fetch fresh data for the selected date
-  let orders = [];
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=createDeliverySheet&date=${date}&meal=${encodeURIComponent(meal)}&pin=${D.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
-    orders = (data.meals && data.meals[meal]) || [];
+    if (data.error) throw new Error(data.error);
+    if (!data.count) { alert(`No orders found for ${meal} on ${date}.`); return; }
+    window.open(data.url, "_blank");
   } catch(e) {
-    alert("Could not fetch orders. Please check your connection.");
-    return;
+    alert("Could not create sheet: " + e.message);
+  } finally {
+    sLoading(false);
   }
-
-  if (!orders.length) {
-    alert(`No orders found for ${meal} on ${date}.`);
-    return;
-  }
-
-  // Build CSV
-  const escape = v => {
-    const s = String(v || "").replace(/"/g, '""');
-    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s}"` : s;
-  };
-
-  const rows = [
-    ["Name", "Phone", "Address", "Maps Link", "Landmark", "Delivery Point", "Notes"].map(escape).join(",")
-  ];
-
-  orders.forEach(o => {
-    rows.push([
-      o.name,
-      o.phone,
-      o.address,
-      o.maps || "",
-      o.landmark || "",
-      o.deliveryPoint || "",
-      o.notes || ""
-    ].map(escape).join(","));
-  });
-
-  const csv     = "﻿" + rows.join("\r\n");  // BOM for Excel UTF-8
-  const blob    = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url     = URL.createObjectURL(blob);
-  const link    = document.createElement("a");
-  const fmtDate = date.split("-").reverse().join("-");  // dd-mm-yyyy
-  link.href     = url;
-  link.download = `Delivery_${meal}_${fmtDate}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 // ─────────────────────────────────────────────────────────────────────────────
 </script>
