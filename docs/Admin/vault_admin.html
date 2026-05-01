@@ -1951,10 +1951,22 @@ function debounce(fn, ms) {
   let timer;
   return function(...args) { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), ms); };
 }
-// Debounced search handlers (300 ms) — avoids re-rendering on every keystroke
-const _dbHistSearch   = debounce(() => histApplyFilters(),  300);
-const _dbCustSearch   = debounce(() => filterCustomers(),   300);
-const _dbReviewSearch = debounce(() => filterReviewUsers(), 300);
+// Debounced search handlers (300 ms) — avoids re-rendering on every keystroke.
+// If data hasn't been loaded yet (typical when user lands on a tab and starts
+// typing immediately), the loader is triggered automatically — no need to hit
+// the Load/Refresh button first.
+const _dbHistSearch = debounce(() => {
+  if (!Array.isArray(_histAllOrders) || _histAllOrders.length === 0) loadHistory();
+  else histApplyFilters();
+}, 300);
+const _dbCustSearch = debounce(() => {
+  if (!Array.isArray(_custData) || _custData.length === 0) loadCustomers();
+  else filterCustomers();
+}, 300);
+const _dbReviewSearch = debounce(() => {
+  if (!Array.isArray(_reviewUsers) || _reviewUsers.length === 0) loadReviewUsers();
+  else filterReviewUsers();
+}, 300);
 
 const GLOBAL_STAPLE_PRICES = {
   "Chapati": 9,
