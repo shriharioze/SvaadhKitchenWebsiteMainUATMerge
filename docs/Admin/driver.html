@@ -252,7 +252,8 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949
 
 // ── KITCHEN LOCATION — update to your actual kitchen lat/lng ──────────────────
 // Current: approx Bhosale Nagar, Hadapsar, Pune
-const KITCHEN = { lat: 18.5036109, lng: 73.9310764 };
+// Svaadh Kitchen — verified from Maps share link (!3d/!4d coords from URL)
+const KITCHEN = { lat: 18.5034868, lng: 73.9337571 };
 
 let D = { pin: "", sessionPin: "" };
 let _ordersData = { Breakfast: [], Lunch: [], Dinner: [] };
@@ -541,6 +542,10 @@ function renderMealPanel(orders, meal) {
       : ""}
     <span class="route-info" id="routeInfo_${meal}"></span>
     <a id="routeLink_${meal}" class="route-maps-link" style="display:none;" target="_blank">📍 Open in Maps</a>
+    <a href="https://www.google.com/maps/search/?api=1&query=${KITCHEN.lat},${KITCHEN.lng}"
+       target="_blank"
+       style="font-size:0.62rem;color:#888;text-decoration:none;margin-left:auto;"
+       title="Verify kitchen start/end point">🏠 Kitchen pin</a>
   </div>`;
 
   return routeBar + orders.map((o, i) => renderCard(o, i, meal)).join("");
@@ -619,6 +624,15 @@ function renderCard(o, i, meal) {
         ? `<a class="btn-whatsapp" href="https://wa.me/${waNum}?text=${waText}" target="_blank">💬</a>`
         : ""}
     </div>
+    ${(() => {
+       const c = extractCoords(o);
+       if (!c) return `<div style="margin-top:6px;font-size:0.65rem;color:#c0392b;">⚠️ No coordinates extracted — this stop will be skipped during route optimization</div>`;
+       return `<div style="margin-top:6px;font-size:0.65rem;color:#888;">
+         📍 Pin used:
+         <a href="https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}" target="_blank"
+            style="color:#1a73e8;text-decoration:none;font-weight:600;">${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}</a>
+       </div>`;
+     })()}
     <div style="margin-top:10px;">
       <button class="btn-delivered${isDelivered?" done":""}" 
         style="width:100%;margin-top:0;padding:14px;font-size:1rem;${(!o.enRouteAt && !isDelivered) ? 'opacity:0.5; cursor:not-allowed;' : ''}" 
