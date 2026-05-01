@@ -4339,8 +4339,8 @@
     <div style="display:flex;align-items:flex-start;gap:10px;">
       <span style="font-size:1.2rem;flex-shrink:0;">✨</span>
       <div style="flex:1;">
-        <div style="font-weight:700;margin-bottom:2px;">You're on the latest version</div>
-        <div style="font-size:0.72rem;color:#ccc;">For the best experience, try a quick refresh if anything looks off.</div>
+        <div style="font-weight:700;margin-bottom:2px;">A new version is available</div>
+        <div style="font-size:0.72rem;color:#ccc;">Refresh to get the latest updates. Your cart will be preserved.</div>
       </div>
       <button onclick="dismissRefreshNudge()"
         style="background:none;border:none;color:#aaa;font-size:1.1rem;cursor:pointer;padding:0;margin-left:4px;flex-shrink:0;line-height:1;">✕</button>
@@ -5040,8 +5040,13 @@
       // (fetched async on page load) are always applied — avoids stale default cutoff
       if (s === 2) {
         renderCalendar();
-        // Show refresh nudge once per session — here so auto-logged-in users see it too
-        if (!sessionStorage.getItem("sk_nudge_shown")) {
+        // Show refresh nudge ONLY when there's an actual version mismatch:
+        // i.e. the saved version differs from APP_VERSION AND the auto-reload
+        // was skipped (because cart wasn't empty). For matching versions or
+        // first-time visitors, no nudge is shown.
+        const savedVer = localStorage.getItem("sk_force_refresh_ver");
+        const hasMismatch = savedVer && savedVer !== APP_VERSION;
+        if (hasMismatch && !sessionStorage.getItem("sk_nudge_shown")) {
           setTimeout(() => {
             const nudge = $("refreshNudge");
             if (nudge) {
