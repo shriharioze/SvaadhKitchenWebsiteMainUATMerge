@@ -6079,13 +6079,18 @@
         const cutH = isNaN(ov2) ? DEFS[meal] : ov2;
         const rem  = cutH - nowH;
         if (rem <= 0) { el.textContent = ""; el.style.color = ''; el.style.fontWeight = ''; return; }
-        const totalSecs = Math.round(rem * 3600);
-        const h = Math.floor(totalSecs / 3600);
-        const m = Math.floor((totalSecs % 3600) / 60);
-        const s = totalSecs % 60;
-        const txt = h > 0
-          ? `${meal} closes in ${h}h ${String(m).padStart(2,'0')}m`
-          : `${meal} closes in ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+        let txt;
+        if (rem >= 1) {
+          // More than 1 hour left → show the cutoff as a clock time
+          txt = `⏰ Order by ${fmtHour(cutH)}`;
+        } else {
+          // Final hour → live countdown timer (MM:SS)
+          const totalSecs = Math.round(rem * 3600);
+          const m = Math.floor(totalSecs / 60);
+          const s = totalSecs % 60;
+          txt = `⏰ Closes in ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
         el.textContent = txt;
         el.style.color = rem < 0.25 ? '#c0392b' : rem < 1 ? '#e67e22' : '';
         el.style.fontWeight = rem < 1 ? '700' : '';
