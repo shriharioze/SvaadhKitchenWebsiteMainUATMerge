@@ -1805,13 +1805,21 @@ function _submitOrderInternal(body) {
       // ════ DUPLICATE CHECK — must run BEFORE wallet deduction ════
       // If this phone+date+meal+items was already submitted within 5 min, skip entirely
       // (including wallet deduction) to prevent double-charging on network retries.
+      //
+      // CRITICAL: We re-read sheet rows fresh here (not the snapshot from top of
+      // function) so concurrent multi-meal submissions can't slip through the
+      // window between the snapshot and the second meal's write. The script-level
+      // LockService wrapper should already serialize calls, but this is a
+      // belt-and-braces safeguard that costs ~50ms.
+      const _freshRows  = getAllRows(ordersWs);
+      const _nowMsFresh = Date.now();
       const _incomingSig = _itemsSig(itemsObj);
-      const _dupRow = allOrderRows.find(r => {
+      const _dupRow = _freshRows.find(r => {
         if (_normalizePhone(r.Phone) !== _normPhone) return false;
         if (_normDate(r.Order_Date) !== _normDate(orderDate)) return false;
         if (r.Meal_Type !== mealType) return false;
         const rMs = r.Submitted_At ? new Date(r.Submitted_At).getTime() : 0;
-        if (!rMs || (_dupNowMs - rMs) > _FIVE_MIN_MS) return false;
+        if (!rMs || (_nowMsFresh - rMs) > _FIVE_MIN_MS) return false;
         try {
           const stored = typeof r.Items_JSON === "string" ? JSON.parse(r.Items_JSON) : (r.Items_JSON || {});
           return _itemsSig(stored) === _incomingSig;
