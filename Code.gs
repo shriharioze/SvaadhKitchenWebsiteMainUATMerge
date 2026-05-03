@@ -1803,17 +1803,31 @@ function _submitOrderInternal(body) {
       set("Net_Total",           netTotal);
 
       // ════ DUPLICATE CHECK — must run BEFORE wallet deduction ════
-      // If this phone+date+meal+items was already submitted within 5 min, skip entirely
-      // (including wallet deduction) to prevent double-charging on network retries.
+      // Three layers of protection (any one catching is enough):
       //
-      // CRITICAL: We re-read sheet rows fresh here (not the snapshot from top of
-      // function) so concurrent multi-meal submissions can't slip through the
-      // window between the snapshot and the second meal's write. The script-level
-      // LockService wrapper should already serialize calls, but this is a
-      // belt-and-braces safeguard that costs ~50ms.
+      //   1. CacheService (fast, in-memory, atomic across script invocations).
+      //      Bulletproof against sheet-read staleness — if A wrote here in the
+      //      last 5 min, B's cache.get(key) will see it instantly even if
+      //      A's appendRow hasn't propagated to a fresh getAllRows yet.
+      //   2. Fresh sheet re-read (catches anything cache evicted under load).
+      //   3. The original allOrderRows snapshot (legacy, kept for safety).
+      //
+      // After the row is written, we cache.put(key) so future calls hit layer 1.
+      const _incomingSig = _itemsSig(itemsObj);
+      const _dupKey      = `dup_${_normPhone}_${_normDate(orderDate)}_${mealType}_${_incomingSig}`;
+      const _cache       = CacheService.getScriptCache();
+
+      // Layer 1: cache lookup
+      const _cachedSid = _cache.get(_dupKey);
+      if (_cachedSid) {
+        submissionIds[submissionIds.length - 1] = _cachedSid;
+        console.log("Duplicate caught by cache: " + _dupKey + " → " + _cachedSid);
+        continue;
+      }
+
+      // Layer 2 + 3: fresh sheet re-read (covers cache eviction edge cases)
       const _freshRows  = getAllRows(ordersWs);
       const _nowMsFresh = Date.now();
-      const _incomingSig = _itemsSig(itemsObj);
       const _dupRow = _freshRows.find(r => {
         if (_normalizePhone(r.Phone) !== _normPhone) return false;
         if (_normDate(r.Order_Date) !== _normDate(orderDate)) return false;
@@ -1827,9 +1841,15 @@ function _submitOrderInternal(body) {
       });
       if (_dupRow) {
         submissionIds[submissionIds.length - 1] = _dupRow.Submission_ID || sid;
-        console.log("Duplicate order skipped (wallet protected): " + _normPhone + " / " + orderDate + " / " + mealType);
+        // Backfill cache so subsequent calls hit layer 1 (faster + more reliable)
+        try { _cache.put(_dupKey, _dupRow.Submission_ID || sid, 300); } catch(e) {}
+        console.log("Duplicate order skipped (sheet check): " + _normPhone + " / " + orderDate + " / " + mealType);
         continue;
       }
+
+      // Reserve the cache key BEFORE the wallet deduction + row write so any
+      // concurrent retry that arrives during this meal's processing hits layer 1.
+      try { _cache.put(_dupKey, sid, 300); } catch(e) {}
 
       let pStat = payStatus;
       let walletCreditUsed = 0;
