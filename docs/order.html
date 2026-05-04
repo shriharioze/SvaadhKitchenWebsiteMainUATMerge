@@ -3638,25 +3638,17 @@
               <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
             </div>
 
-            <a id="upiDeepLink" href="#" class="btn btn-primary"
-              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:12px;">
-              👆 Pay via UPI App
-            </a>
-            <p style="font-size:0.68rem;color:#64748b;text-align:center;margin-top:6px;">Recommended: HDFC Bank App or CRED UPI</p>
-
-            <!-- Pay button not working -->
-            <div style="margin-top:10px;text-align:center;">
-              <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('span').textContent=this.nextElementSibling.style.display==='none'?'▾':'▴';"
-                style="background:none;border:none;font-size:0.72rem;color:#94a3b8;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px;">
-                Pay button not working? <span>▾</span>
-              </button>
-              <div style="display:none;background:#fff4e5;border:1px solid #ffe8cc;border-radius:10px;padding:10px 12px;margin-top:6px;text-align:left;line-height:1.5;">
-                <div style="font-size:0.75rem;color:#862e08;">
-                  Tap the <strong>UPI ID</strong> above to copy it, then paste and pay in any UPI app.<br>
-                  <span class="mr-note" style="display:block;margin-top:4px;">वरील UPI ID कॉपी करा, GPay/PhonePe मध्ये पेस्ट करा, पेमेंट करा — मग खाली टिक करा.</span>
-                </div>
+            <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;text-align:center;">
+              <div style="font-size:0.8rem;font-weight:700;color:#78350f;margin-bottom:4px;">📋 How to Pay via UPI</div>
+              <div style="font-size:0.75rem;color:#92400e;line-height:1.6;">
+                1. Tap the UPI ID above to <strong>copy</strong> it<br>
+                2. Open GPay / PhonePe / Paytm / any UPI app<br>
+                3. Paste the UPI ID and enter the amount<br>
+                4. Complete payment, then confirm below
               </div>
+              <div class="mr-note" style="font-size:0.72rem;color:#b45309;margin-top:6px;">UPI ID वर टॅप करा → कॉपी करा → GPay/PhonePe मध्ये पेस्ट करून पेमेंट करा</div>
             </div>
+
           </div>
 
           <!-- Step 2: Confirm checkbox -->
@@ -3828,10 +3820,16 @@
               <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
             </div>
 
-            <a id="splitUpiDeepLink" href="#" class="btn btn-primary"
-              style="text-decoration:none;font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:12px;">
-              👆 Pay ₹<span id="splitUpiDeepLinkAmt">0</span> via UPI App
-            </a>
+            <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:12px 14px;text-align:center;">
+              <div style="font-size:0.8rem;font-weight:700;color:#1e3a8a;margin-bottom:4px;">📋 How to Pay via UPI</div>
+              <div style="font-size:0.75rem;color:#1e40af;line-height:1.6;">
+                1. Tap the UPI ID above to <strong>copy</strong> it<br>
+                2. Open GPay / PhonePe / Paytm / any UPI app<br>
+                3. Paste the UPI ID and pay ₹<span id="splitUpiDeepLinkAmt">0</span><br>
+                4. Complete payment, then confirm below
+              </div>
+              <div class="mr-note" style="font-size:0.72rem;color:#1d4ed8;margin-top:6px;">UPI ID वर टॅप करा → कॉपी करा → GPay/PhonePe मध्ये पेस्ट करून पेमेंट करा</div>
+            </div>
           </div>
 
           <!-- Confirm checkbox -->
@@ -4365,7 +4363,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.04.1";
+    const APP_VERSION = "v26.05.04.2";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7022,72 +7020,28 @@
       const qid = isOnAccount ? "qrcodeOnAccount" : "qrcode";
       const amtId = isOnAccount ? "upiAmountDisplayOnAccount" : "upiAmountDisplay";
       const noteId = isOnAccount ? "upiNoteDisplayOnAccount" : "upiNoteDisplay";
-      const linkId = isOnAccount ? "upiDeepLinkOnAccount" : "upiDeepLink";
 
       $(amtId).textContent = `₹${amount}`;
 
-      // Build smart UPI note: name + dates
       const note = `Svaadh ${S.phone.slice(-4)}`;
       if ($(noteId)) $(noteId).textContent = note;
 
-      // Split UPI IDs: HDFC for QR/Copy, Merchant VPA for Deep Link
       const hdfcVpa = "9819969682@hdfc";
-      const merchantVpa = "9819969682@hdfc";
-      const payeeName = "Svaadh Kitchen";
-      const mccCode = "5812"; // Standard for Restaurants/Tiffin Services
-
       const qrUpiStr = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
-      
-      // Deep link with merchant trust parameters (mc, pn, tr, mode) to avoid GPay "Risky" flag
-      const txRef = `SK${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      const deepUpiStr = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
-      
+
       const qrEl = $(qid);
       qrEl.innerHTML = "";
       new QRCode(qrEl, { text: qrUpiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
-
-      // Disable QR click as requested
       qrEl.style.cursor = "default";
-      qrEl.title = "Please use the 'Pay via UPI App' button below";
       qrEl.onclick = null;
-
-      const deepLinkBtn = $(linkId);
-      if (isIOS()) {
-        deepLinkBtn.removeAttribute("href");
-        deepLinkBtn.textContent = t('upi_copy_label');
-        deepLinkBtn.onclick = (e) => {
-          e.preventDefault();
-          navigator.clipboard?.writeText(hdfcVpa).then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
-            .catch(() => {
-              const el = document.createElement("input"); el.value = hdfcVpa; document.body.appendChild(el);
-              el.select(); document.execCommand("copy"); document.body.removeChild(el);
-              toast(t('upi_copied_toast', { amt: amount }), 3500);
-            });
-        };
-        // Show iOS-specific instructions below the QR
-        const upiIdEl = $("upiDeepLink").closest(".upi-section")?.querySelector(".upi-id");
-        if (upiIdEl) upiIdEl.insertAdjacentHTML("afterend",
-          `<div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:8px;padding:8px 10px;font-size:0.75rem;color:#78350f;margin:8px 0;text-align:left;">
-        ${t('ios_hint', { amt: amount })}
-      </div>`);
-      } else {
-        deepLinkBtn.href = deepUpiStr;
-        deepLinkBtn.onclick = null;
-        deepLinkBtn.innerHTML = `👆 Pay ₹${amount} via UPI App`;
-      }
     }
 
 
     // ── SPLIT UPI SETUP ──────────────────────────────────────────
     function setupSplitUPI(amount) {
-      const hdfcVpa     = "9819969682@hdfc";
-      const merchantVpa = "9819969682@hdfc";
-      const payeeName   = "Svaadh Kitchen";
-      const mccCode     = "5812";
-      const note        = `Svaadh ${S.phone.slice(-4)}`;
-      const txRef       = `SK${Date.now()}${Math.floor(Math.random()*1000)}`;
-      const qrUpiStr    = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
-      const deepUpiStr  = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(payeeName)}&mc=${mccCode}&tr=${txRef}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR&mode=02`;
+      const hdfcVpa  = "9819969682@hdfc";
+      const note     = `Svaadh ${S.phone.slice(-4)}`;
+      const qrUpiStr = `upi://pay?pa=${hdfcVpa}&am=${Number(amount).toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
 
       ["splitUpiQrAmt","splitUpiAmtDisplay","splitUpiDeepLinkAmt"].forEach(id => {
         if ($(id)) $(id).textContent = amount;
@@ -7099,28 +7053,6 @@
         new QRCode(qrEl, { text: qrUpiStr, width: 176, height: 176, correctLevel: QRCode.CorrectLevel.M });
         qrEl.style.cursor = "default";
         qrEl.onclick = null;
-      }
-
-      const btn = $("splitUpiDeepLink");
-      if (btn) {
-        if (isIOS()) {
-          btn.removeAttribute("href");
-          btn.textContent = t('upi_copy_label');
-          btn.onclick = (e) => {
-            e.preventDefault();
-            navigator.clipboard?.writeText(hdfcVpa)
-              .then(() => toast(t('upi_copied_toast', { amt: amount }), 3500))
-              .catch(() => {
-                const el = document.createElement("input"); el.value = hdfcVpa;
-                document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
-                toast(t('upi_copied_toast', { amt: amount }), 3500);
-              });
-          };
-        } else {
-          btn.href = deepUpiStr;
-          btn.onclick = null;
-          btn.innerHTML = `👆 Pay ₹${amount} via UPI App`;
-        }
       }
     }
 
