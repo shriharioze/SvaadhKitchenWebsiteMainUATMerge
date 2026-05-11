@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.7; // items_raw in upcoming orders + verifyOrderPlaced
+const CODE_VERSION   = 14.8; // Archive: atomic rebuild + year-folder + cross-archive analytics
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -4210,7 +4210,10 @@ function getOrderHistory(p) {
 function getCustomerList() {
   var ss   = getSpreadsheet();
   var ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  var ordRows = getAllRows(ordersWs);
+  // Include archived orders so lifetime stats (order_count, total_spent)
+  // don't reset every month after archiving. Live + archived merged.
+  var today = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  var ordRows = getOrdersInRangeWithArchive("2024-01-01", today);
 
   var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
   var custRows = getAllRows(custWs);
@@ -4633,14 +4636,25 @@ function getAnalytics(p) {
   var dateFrom = p.dateFrom, dateTo = p.dateTo;
   if (!dateFrom || !dateTo) return {success:false, error:"dateFrom and dateTo required"};
   var ss  = getSpreadsheet();
-  var ws  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   var fmtDate = function(v) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
-  var rows = getAllRows(ws).filter(function(r) {
-    var d = fmtDate(r.Order_Date);
-    return d >= dateFrom && d <= dateTo && !_isOrderCancelled(r.Payment_Status);
+  // Pull from BOTH the live sheet and any archived monthly files that
+  // overlap this date range. 10-min CacheService cache keeps repeat
+  // queries fast.
+  var combined = getOrdersInRangeWithArchive(dateFrom, dateTo);
+  var rows = combined.filter(function(r) {
+    return !_isOrderCancelled(r.Payment_Status);
   });
+  var liveCount = 0;
+  try {
+    var ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+    liveCount = getAllRows(ws).filter(function(r) {
+      var d = fmtDate(r.Order_Date);
+      return d >= dateFrom && d <= dateTo;
+    }).length;
+  } catch(_) {}
+  var archivedCount = combined.length - liveCount;
 
   // ── Option B: Exact Small Order Fee backfill ──────────────────────────────
   // Pre-pass 1: build VIP set from profiles (Fee_Exempt = Yes)
@@ -4741,7 +4755,10 @@ function getAnalytics(p) {
       paid:Math.round(totalPaid),pending:Math.round(totalRev-totalPaid),
       avgPerDay:days.length>0?Math.round(totalRev/days.length):0,
       delivery:Math.round(totalDelivery),surcharge:Math.round(totalSurcharge),smallFee:Math.round(totalSmallFee)},
-    meals:mealStats,days:days,topItems:topItems,allItems:allItems};
+    meals:mealStats,days:days,topItems:topItems,allItems:allItems,
+    // Lets the admin UI show "Including X archived orders" so they know
+    // the report pulled across archive files (which is slower than live-only).
+    archived:{count: archivedCount, included: archivedCount > 0}};
 }
 
 // ── ADMIN WALLET CREDIT ───────────────────────────────────────────────────────
@@ -5183,128 +5200,392 @@ function archiveMonth(year, month) {
     label: MONTH_NAMES[month - 1] + " " + year
   };
 
-  var ss = getSpreadsheet();
+  // Single global lock for the whole archive operation. Without this, a
+  // simultaneous order submission could write to SK_Orders between our
+  // read and our rebuild, causing data loss.
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30 * 60 * 1000); } catch (e) {
+    return {success:false, error:"Could not acquire script lock (system busy). Try again in a minute."};
+  }
+
+  try {
+    var ss = getSpreadsheet();
+    var fmtDate = function(v) {
+      return v instanceof Date
+        ? Utilities.formatDate(v, "Asia/Kolkata", "yyyy-MM-dd")
+        : String(v || "").trim().slice(0, 10);
+    };
+
+    // ── STEP 1: Create archive spreadsheet IN THE RIGHT YEAR FOLDER ─────────
+    var archiveName = "Svaadh Kitchen Archive — " + qr.label;
+    var archiveSS   = SpreadsheetApp.create(archiveName);
+    var archiveFile = DriveApp.getFileById(archiveSS.getId());
+
+    // Move to: Drive > Web Based Ordering > Archive > <year>/
+    var yearFolder  = _getArchiveYearFolder(year);
+    if (yearFolder) {
+      try {
+        var parents = archiveFile.getParents();
+        while (parents.hasNext()) {
+          var parent = parents.next();
+          if (parent.getId() !== yearFolder.getId()) parent.removeFile(archiveFile);
+        }
+        yearFolder.addFile(archiveFile);
+      } catch (e) {
+        Logger.log("archiveMonth: could not move file to year folder: " + e.message);
+      }
+    }
+
+    var log = [];
+
+    // ── STEP 2: Read live SK_Orders into memory ─────────────────────────────
+    var ordersWs      = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+    var allOrderData  = ordersWs.getDataRange().getValues();
+    var oHeaders      = allOrderData[0];
+    var oDateIdx      = oHeaders.indexOf("Order_Date");
+
+    // Partition into archive vs keep
+    var toArchiveOrders = [];
+    var keepOrders      = [];
+    for (var i = 1; i < allOrderData.length; i++) {
+      var d = fmtDate(allOrderData[i][oDateIdx]);
+      if (d >= qr.from && d <= qr.to) {
+        toArchiveOrders.push(allOrderData[i]);
+      } else {
+        keepOrders.push(allOrderData[i]);
+      }
+    }
+
+    // ── STEP 3: Write SK_Orders to archive (verify) ─────────────────────────
+    if (toArchiveOrders.length > 0) {
+      var archiveOrderSheet = archiveSS.getActiveSheet();
+      archiveOrderSheet.setName("SK_Orders");
+      archiveOrderSheet.getRange(1, 1, 1, oHeaders.length).setValues([oHeaders]);
+      archiveOrderSheet.getRange(2, 1, toArchiveOrders.length, oHeaders.length)
+                       .setValues(toArchiveOrders);
+      SpreadsheetApp.flush();
+      var oWritten = archiveOrderSheet.getLastRow() - 1;
+      if (oWritten !== toArchiveOrders.length) {
+        return {success:false, error:"Order archive verification failed. Expected "
+          + toArchiveOrders.length + ", got " + oWritten + ". Nothing deleted from live sheet."};
+      }
+      log.push(toArchiveOrders.length + " orders archived ✓");
+    } else {
+      log.push("No orders found for this month.");
+    }
+
+    // ── STEP 4: Read live SK_Wallet into memory ─────────────────────────────
+    var walletWs      = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+    var allWalletData = walletWs.getDataRange().getValues();
+    var wHeaders      = allWalletData[0];
+    var wTsIdx        = wHeaders.indexOf("Timestamp");
+    var wPhoneIdx     = wHeaders.indexOf("Phone");
+    var wNameIdx      = wHeaders.indexOf("Customer_Name");
+
+    var toArchiveWallet = [];
+    var keepWallet      = [];
+    for (var j = 1; j < allWalletData.length; j++) {
+      var ts = allWalletData[j][wTsIdx];
+      var wd = fmtDate(ts instanceof Date ? ts : new Date(ts));
+      if (wd >= qr.from && wd <= qr.to) {
+        toArchiveWallet.push(allWalletData[j]);
+      } else {
+        keepWallet.push(allWalletData[j]);
+      }
+    }
+
+    // ── STEP 5: Write SK_Wallet to archive (verify) ─────────────────────────
+    if (toArchiveWallet.length > 0) {
+      var archiveWalletSheet = archiveSS.insertSheet("SK_Wallet");
+      archiveWalletSheet.getRange(1, 1, 1, wHeaders.length).setValues([wHeaders]);
+      archiveWalletSheet.getRange(2, 1, toArchiveWallet.length, wHeaders.length)
+                        .setValues(toArchiveWallet);
+      SpreadsheetApp.flush();
+      var wWritten = archiveWalletSheet.getLastRow() - 1;
+      if (wWritten !== toArchiveWallet.length) {
+        return {success:false, error:"Wallet archive verification failed. Expected "
+          + toArchiveWallet.length + ", got " + wWritten + ". Nothing deleted from live sheet."};
+      }
+      log.push(toArchiveWallet.length + " wallet transactions archived ✓");
+    } else {
+      log.push("No wallet transactions found for this month.");
+    }
+
+    // ── STEP 6: Compute Balance Carry-Forward (BEFORE wallet rebuild) ───────
+    var activePhones = {};
+    toArchiveWallet.forEach(function(row) {
+      var ph   = String(row[wPhoneIdx] || "").trim();
+      var name = String(row[wNameIdx]  || "").trim();
+      if (ph) activePhones[ph] = name;
+    });
+
+    var snapshotCount = 0;
+    var snapTime      = new Date();
+    var refId         = "ARCHIVE-" + year + "-" + pad(month);
+    var carryFwdRows  = [];
+    Object.keys(activePhones).forEach(function(ph) {
+      var balance = _calculateWalletBalance(ph);
+      if (balance > 0) {
+        var newRow = new Array(wHeaders.length).fill("");
+        wHeaders.forEach(function(h, idx) {
+          if (h === "Phone")          newRow[idx] = ph;
+          else if (h === "Customer_Name") newRow[idx] = activePhones[ph];
+          else if (h === "Txn_Type")  newRow[idx] = "Balance Carry Forward";
+          else if (h === "Amount")    newRow[idx] = balance;
+          else if (h === "Verified")  newRow[idx] = "TRUE";
+          else if (h === "Reference_ID") newRow[idx] = refId;
+          else if (h === "Timestamp") newRow[idx] = snapTime;
+        });
+        carryFwdRows.push(newRow);
+        snapshotCount++;
+      }
+    });
+    if (snapshotCount > 0) log.push(snapshotCount + " balance snapshots prepared ✓");
+
+    // ── STEP 7: REBUILD live sheets atomically ──────────────────────────────
+    // Critical fix for the "half-deleted" bug: clear data range and re-write
+    // only kept rows in one operation instead of N deleteRow() calls.
+    function rebuildSheet(ws, headers, keepRows, appendRows) {
+      var allKeep = keepRows.concat(appendRows || []);
+      var lastRow = ws.getLastRow();
+      var lastCol = ws.getLastColumn();
+      if (lastRow > 1) {
+        ws.getRange(2, 1, lastRow - 1, Math.max(lastCol, headers.length)).clearContent();
+      }
+      if (allKeep.length > 0) {
+        ws.getRange(2, 1, allKeep.length, headers.length).setValues(allKeep);
+      }
+      SpreadsheetApp.flush();
+      var nowRows = ws.getLastRow() - 1;
+      return nowRows === allKeep.length
+        ? {success:true, written: nowRows}
+        : {success:false, expected: allKeep.length, actual: nowRows};
+    }
+
+    if (toArchiveOrders.length > 0) {
+      var oRebuild = rebuildSheet(ordersWs, oHeaders, keepOrders);
+      if (!oRebuild.success) {
+        return {success:false,
+          error:"Order rebuild verification failed. Expected " + oRebuild.expected
+                + ", got " + oRebuild.actual + ". Archive file IS created — please verify manually before retrying.",
+          archiveUrl: archiveSS.getUrl()};
+      }
+      log.push(toArchiveOrders.length + " order rows removed from live sheet ✓");
+    }
+
+    if (toArchiveWallet.length > 0 || carryFwdRows.length > 0) {
+      var wRebuild = rebuildSheet(walletWs, wHeaders, keepWallet, carryFwdRows);
+      if (!wRebuild.success) {
+        return {success:false,
+          error:"Wallet rebuild verification failed. Expected " + wRebuild.expected
+                + ", got " + wRebuild.actual + ". Archive file IS created — please verify manually before retrying.",
+          archiveUrl: archiveSS.getUrl()};
+      }
+      log.push(toArchiveWallet.length + " wallet rows removed + " + carryFwdRows.length + " carry-forward rows added ✓");
+    }
+
+    return {
+      success:        true,
+      archiveName:    archiveName,
+      archiveUrl:     archiveSS.getUrl(),
+      archiveFolder:  yearFolder ? yearFolder.getName() : "(My Drive)",
+      ordersArchived: toArchiveOrders.length,
+      walletArchived: toArchiveWallet.length,
+      snapshots:      snapshotCount,
+      log:            log
+    };
+  } finally {
+    try { lock.releaseLock(); } catch(_) {}
+  }
+}
+
+/**
+ * Returns (creating if needed) the Drive folder for a given year:
+ *   My Drive > Web Based Ordering > Archive > <year>
+ * Returns null if the parent "Web Based Ordering" folder cannot be located.
+ *
+ * The parent-folder ID can be set via Script Property ARCHIVE_PARENT_FOLDER_ID
+ * to bypass the name-based lookup (faster and more reliable across accounts).
+ */
+function _getArchiveYearFolder(year) {
+  var yearStr = String(year);
+  try {
+    var archiveFolder = null;
+    var props = PropertiesService.getScriptProperties();
+    var configuredId = props.getProperty("ARCHIVE_PARENT_FOLDER_ID");
+    if (configuredId) {
+      try { archiveFolder = DriveApp.getFolderById(configuredId); } catch(_) {}
+    }
+
+    if (!archiveFolder) {
+      var rootFolders = DriveApp.getFoldersByName("Web Based Ordering");
+      var webOrdering = null;
+      if (rootFolders.hasNext()) webOrdering = rootFolders.next();
+      if (!webOrdering) {
+        Logger.log("_getArchiveYearFolder: 'Web Based Ordering' folder not found. Archive will stay in My Drive root.");
+        return null;
+      }
+      var archiveFolders = webOrdering.getFoldersByName("Archive");
+      archiveFolder = archiveFolders.hasNext() ? archiveFolders.next() : webOrdering.createFolder("Archive");
+      try { props.setProperty("ARCHIVE_PARENT_FOLDER_ID", archiveFolder.getId()); } catch(_) {}
+    }
+
+    var yearFolders = archiveFolder.getFoldersByName(yearStr);
+    if (yearFolders.hasNext()) return yearFolders.next();
+    return archiveFolder.createFolder(yearStr);
+  } catch (e) {
+    Logger.log("_getArchiveYearFolder error: " + e.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ARCHIVE LOOKUP — for analytics across archived data
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Lists all archive spreadsheet files whose MONTH overlaps the given date range.
+ * Filename pattern: "Svaadh Kitchen Archive — <MMM> <YYYY>" (e.g. "...— Apr 2026")
+ */
+function _listArchiveFilesInRange(dateFrom, dateTo) {
+  var out = [];
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var configuredId = props.getProperty("ARCHIVE_PARENT_FOLDER_ID");
+    var archiveFolder = null;
+    if (configuredId) {
+      try { archiveFolder = DriveApp.getFolderById(configuredId); } catch(_) {}
+    }
+    if (!archiveFolder) {
+      var rootFolders = DriveApp.getFoldersByName("Web Based Ordering");
+      if (!rootFolders.hasNext()) return out;
+      var webOrdering = rootFolders.next();
+      var archiveFolders = webOrdering.getFoldersByName("Archive");
+      if (!archiveFolders.hasNext()) return out;
+      archiveFolder = archiveFolders.next();
+    }
+
+    var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var monthIdx = function(m) { return MONTH_NAMES.indexOf(m); };
+    var pad = function(n) { return n < 10 ? "0"+n : String(n); };
+
+    // Pattern: "Svaadh Kitchen Archive — <Mon> <Year>"
+    var fileNameRe = /Archive\s+—?\s*([A-Z][a-z]{2})\s+(\d{4})/;
+
+    var processFile = function(file) {
+      var name = file.getName();
+      var m = name.match(fileNameRe);
+      if (!m) return;
+      var mIdx = monthIdx(m[1]);
+      if (mIdx < 0) return;
+      var yr = parseInt(m[2], 10);
+      var lastDay = new Date(yr, mIdx + 1, 0).getDate();
+      var rFrom = yr + "-" + pad(mIdx + 1) + "-01";
+      var rTo   = yr + "-" + pad(mIdx + 1) + "-" + pad(lastDay);
+      if (rTo < dateFrom || rFrom > dateTo) return;
+      out.push({ file: file, year: yr, month: mIdx + 1, from: rFrom, to: rTo });
+    };
+
+    var yearFolders = archiveFolder.getFolders();
+    while (yearFolders.hasNext()) {
+      var yearFolder = yearFolders.next();
+      var files = yearFolder.getFilesByType(MimeType.GOOGLE_SHEETS);
+      while (files.hasNext()) processFile(files.next());
+    }
+    var looseFiles = archiveFolder.getFilesByType(MimeType.GOOGLE_SHEETS);
+    while (looseFiles.hasNext()) processFile(looseFiles.next());
+
+    out.sort(function(a, b) {
+      if (a.year !== b.year) return a.year - b.year;
+      return a.month - b.month;
+    });
+  } catch (e) {
+    Logger.log("_listArchiveFilesInRange error: " + e.message);
+  }
+  return out;
+}
+
+/**
+ * Reads SK_Orders rows from all archived files matching the date range.
+ * Returns plain row objects (same shape as getAllRows() — keys = headers).
+ * 10-min CacheService cache per file to avoid re-reading on every UI click.
+ */
+function _readArchivedOrdersInRange(dateFrom, dateTo) {
+  var archives = _listArchiveFilesInRange(dateFrom, dateTo);
+  if (!archives.length) return [];
+
+  var cache = CacheService.getScriptCache();
   var fmtDate = function(v) {
     return v instanceof Date
       ? Utilities.formatDate(v, "Asia/Kolkata", "yyyy-MM-dd")
       : String(v || "").trim().slice(0, 10);
   };
 
-  // ── STEP 1: Create archive spreadsheet ────────────────────────────────────
-  var archiveName = "Svaadh Kitchen Archive — " + qr.label;
-  var archiveSS   = SpreadsheetApp.create(archiveName);
-  var log = [];
-
-  // ── STEP 2: Archive SK_Orders ──────────────────────────────────────────────
-  var ordersWs      = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  var allOrderData  = ordersWs.getDataRange().getValues();
-  var oHeaders      = allOrderData[0];
-  var oDateIdx      = oHeaders.indexOf("Order_Date");
-
-  // Collect rows that fall in the quarter (track 1-based sheet row numbers)
-  var toArchiveOrders = []; // { sheetRow (1-based), vals }
-  for (var i = 1; i < allOrderData.length; i++) {
-    var d = fmtDate(allOrderData[i][oDateIdx]);
-    if (d >= qr.from && d <= qr.to) {
-      toArchiveOrders.push({sheetRow: i + 1, vals: allOrderData[i]});
+  var allRows = [];
+  archives.forEach(function(meta) {
+    var cacheKey = "arch_orders_" + meta.file.getId();
+    var cached;
+    try { cached = cache.get(cacheKey); } catch(_) {}
+    var rows;
+    if (cached) {
+      try { rows = JSON.parse(cached); } catch(_) { rows = null; }
     }
-  }
-
-  if (toArchiveOrders.length > 0) {
-    var archiveOrderSheet = archiveSS.getActiveSheet();
-    archiveOrderSheet.setName("SK_Orders");
-    archiveOrderSheet.getRange(1, 1, 1, oHeaders.length).setValues([oHeaders]);
-    var oData = toArchiveOrders.map(function(r) { return r.vals; });
-    archiveOrderSheet.getRange(2, 1, oData.length, oHeaders.length).setValues(oData);
-    // Verify
-    var oWritten = archiveOrderSheet.getLastRow() - 1;
-    if (oWritten !== toArchiveOrders.length) {
-      return {success:false, error:"Order archive verification failed. Expected "
-        + toArchiveOrders.length + ", got " + oWritten + ". Nothing deleted."};
+    if (!rows) {
+      try {
+        var aSS = SpreadsheetApp.openById(meta.file.getId());
+        var sheet = aSS.getSheetByName("SK_Orders");
+        if (!sheet) return;
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return;
+        var headers = data[0];
+        rows = [];
+        for (var r = 1; r < data.length; r++) {
+          var obj = {};
+          for (var c = 0; c < headers.length; c++) obj[headers[c]] = data[r][c];
+          rows.push(obj);
+        }
+        try {
+          var serialised = JSON.stringify(rows);
+          if (serialised.length <= 95 * 1024) cache.put(cacheKey, serialised, 600);
+        } catch(_) {}
+      } catch (e) {
+        Logger.log("_readArchivedOrdersInRange: could not read " + meta.file.getName() + ": " + e.message);
+        return;
+      }
     }
-    log.push(toArchiveOrders.length + " orders archived ✓");
-  } else {
-    log.push("No orders found for this month.");
-  }
-
-  // ── STEP 3: Archive SK_Wallet ──────────────────────────────────────────────
-  var walletWs     = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
-  var allWalletData = walletWs.getDataRange().getValues();
-  var wHeaders      = allWalletData[0];
-  var wTsIdx        = wHeaders.indexOf("Timestamp");
-  var wPhoneIdx     = wHeaders.indexOf("Phone");
-  var wNameIdx      = wHeaders.indexOf("Customer_Name");
-
-  var toArchiveWallet = [];
-  for (var j = 1; j < allWalletData.length; j++) {
-    var ts = allWalletData[j][wTsIdx];
-    var wd = fmtDate(ts instanceof Date ? ts : new Date(ts));
-    if (wd >= qr.from && wd <= qr.to) {
-      toArchiveWallet.push({sheetRow: j + 1, vals: allWalletData[j]});
-    }
-  }
-
-  if (toArchiveWallet.length > 0) {
-    var archiveWalletSheet = archiveSS.insertSheet("SK_Wallet");
-    archiveWalletSheet.getRange(1, 1, 1, wHeaders.length).setValues([wHeaders]);
-    var wData = toArchiveWallet.map(function(r) { return r.vals; });
-    archiveWalletSheet.getRange(2, 1, wData.length, wHeaders.length).setValues(wData);
-    var wWritten = archiveWalletSheet.getLastRow() - 1;
-    if (wWritten !== toArchiveWallet.length) {
-      return {success:false, error:"Wallet archive verification failed. Expected "
-        + toArchiveWallet.length + ", got " + wWritten + ". Nothing deleted."};
-    }
-    log.push(toArchiveWallet.length + " wallet transactions archived ✓");
-  } else {
-    log.push("No wallet transactions found for this month.");
-  }
-
-  // ── STEP 4: Write Balance Carry Forward snapshots ─────────────────────────
-  // Calculate BEFORE deleting anything — reads full live wallet sheet
-  // Only needed for phones that had activity in this quarter AND have balance > 0
-  var activePhones = {};
-  toArchiveWallet.forEach(function(r) {
-    var ph   = String(r.vals[wPhoneIdx] || "").trim();
-    var name = String(r.vals[wNameIdx]  || "").trim();
-    if (ph) activePhones[ph] = name;
+    rows.forEach(function(row) {
+      var d = fmtDate(row.Order_Date);
+      if (d >= dateFrom && d <= dateTo) allRows.push(row);
+    });
   });
 
-  var snapshotCount = 0;
-  var snapTime      = new Date();
-  var refId         = "ARCHIVE-" + year + "-" + pad(month);
-  Object.keys(activePhones).forEach(function(ph) {
-    var balance = _calculateWalletBalance(ph);
-    if (balance > 0) {
-      walletWs.appendRow([ph, activePhones[ph], "Balance Carry Forward",
-                          balance, "TRUE", refId, snapTime]);
-      snapshotCount++;
-    }
-    // balance = 0 → no snapshot needed, no carry-forward required
-  });
-  if (snapshotCount > 0) log.push(snapshotCount + " balance snapshots written ✓");
+  return allRows;
+}
 
-  // ── STEP 5: Delete archived rows — bottom to top so indices don't shift ───
-  // Wallet rows
-  var wRowNums = toArchiveWallet.map(function(r){return r.sheetRow;})
-                                .sort(function(a,b){return b-a;});
-  wRowNums.forEach(function(rowNum) { walletWs.deleteRow(rowNum); });
-  if (wRowNums.length) log.push(wRowNums.length + " wallet rows deleted from main ✓");
-
-  // Order rows
-  var oRowNums = toArchiveOrders.map(function(r){return r.sheetRow;})
-                                .sort(function(a,b){return b-a;});
-  oRowNums.forEach(function(rowNum) { ordersWs.deleteRow(rowNum); });
-  if (oRowNums.length) log.push(oRowNums.length + " order rows deleted from main ✓");
-
-  return {
-    success:          true,
-    archiveName:      archiveName,
-    archiveUrl:       archiveSS.getUrl(),
-    ordersArchived:   toArchiveOrders.length,
-    walletArchived:   toArchiveWallet.length,
-    snapshots:        snapshotCount,
-    log:              log
+/**
+ * Combined order rows for a date range — live SK_Orders + matching archives.
+ */
+function getOrdersInRangeWithArchive(dateFrom, dateTo) {
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  var fmtDate = function(v) {
+    return v instanceof Date
+      ? Utilities.formatDate(v, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(v || "").trim().slice(0, 10);
   };
+  var liveRows = getAllRows(ws).filter(function(r) {
+    var d = fmtDate(r.Order_Date);
+    return d >= dateFrom && d <= dateTo;
+  });
+  var archivedRows = _readArchivedOrdersInRange(dateFrom, dateTo);
+  var seen = {};
+  var combined = [];
+  archivedRows.concat(liveRows).forEach(function(r) {
+    var id = String(r.Submission_ID || "").trim();
+    if (id && seen[id]) return;
+    if (id) seen[id] = true;
+    combined.push(r);
+  });
+  return combined;
 }
 
 // Called by admin UI — wraps archiveMonth with PIN check (handled by router)
@@ -5356,19 +5637,38 @@ function runScheduledArchive() {
 // ── CHURN REPORT ──────────────────────────────────────────────────────────────
 function getChurnReport(sinceDate) {
   if (!sinceDate) return {success:false, error:"sinceDate required"};
-  var ss=getSpreadsheet(), ws=getOrCreateTab(ss,TAB_ORDERS,ORDERS_HEADERS);
-  var fmtDate=function(v){return v instanceof Date?Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd"):String(v).trim();};
-  var map={};
-  getAllRows(ws).forEach(function(r){
-    if(_isOrderCancelled(r.Payment_Status))return;
-    var phone=String(r.Phone||"").trim(); if(!phone)return;
-    var d=fmtDate(r.Order_Date);
-    if(!map[phone])map[phone]={phone:phone,name:String(r.Customer_Name||"").trim(),area:String(r.Area||"").trim(),lastDate:"",orderCount:0};
+  var fmtDate = function(v) {
+    return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
+  };
+  // To detect churn we need every customer's MOST RECENT order — so we must
+  // scan all archives too, not just the live sheet. Otherwise customers whose
+  // last order was in an archived month would always appear "churned".
+  var today = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  var earliest = "2024-01-01"; // conservative — covers everything ever archived
+  var allRows = getOrdersInRangeWithArchive(earliest, today);
+
+  var map = {};
+  allRows.forEach(function(r) {
+    if (_isOrderCancelled(r.Payment_Status)) return;
+    var phone = String(r.Phone||"").trim();
+    if (!phone) return;
+    var d = fmtDate(r.Order_Date);
+    if (!map[phone]) map[phone] = {
+      phone:phone,
+      name:String(r.Customer_Name||"").trim(),
+      area:String(r.Area||"").trim(),
+      lastDate:"",
+      orderCount:0
+    };
     map[phone].orderCount++;
-    if(d>map[phone].lastDate){map[phone].lastDate=d;map[phone].name=String(r.Customer_Name||map[phone].name).trim();}
+    if (d > map[phone].lastDate) {
+      map[phone].lastDate = d;
+      map[phone].name = String(r.Customer_Name||map[phone].name).trim();
+    }
   });
-  var churned=Object.values(map).filter(function(c){return c.lastDate<sinceDate;}).sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
-  return {success:true,sinceDate:sinceDate,customers:churned,count:churned.length};
+  var churned = Object.values(map).filter(function(c) { return c.lastDate < sinceDate; })
+                                  .sort(function(a,b) { return b.lastDate.localeCompare(a.lastDate); });
+  return {success:true, sinceDate:sinceDate, customers:churned, count:churned.length, archive_inclusive:true};
 }
 
 
