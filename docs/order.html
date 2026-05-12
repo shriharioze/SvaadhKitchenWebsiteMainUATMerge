@@ -5730,8 +5730,8 @@
           chip.style.borderColor = netDue > 0 ? "#f5c6cb" : "#b7e4c7";
           chip.style.color       = netDue > 0 ? "#b71c1c" : "#1a6640";
         }
-        if ($("walletChipIcon")) $("walletChipIcon").textContent = "Settle Bill";
-        if ($("headerWalletBalance")) $("headerWalletBalance").textContent = netDue > 0 ? `₹${netDue} due` : "✅ Paid";
+        if ($("walletChipIcon")) $("walletChipIcon").textContent = "Click here to";
+        if ($("headerWalletBalance")) $("headerWalletBalance").textContent = netDue > 0 ? `settle bill · ₹${netDue} due` : "✅ Paid";
         if ($("walletChipPlus")) $("walletChipPlus").style.display = "none";
       } else {
         // Regular users: show wallet balance
