@@ -3638,6 +3638,18 @@
               <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
             </div>
 
+            <!-- Backup UPI — shown smaller and dimmer so it's clearly secondary -->
+            <div style="text-align:center;margin-bottom:14px;padding:8px 10px;background:#f9fafb;border:1px dashed #cbd5e1;border-radius:10px;">
+              <div style="font-size:0.68rem;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.2px;text-transform:uppercase;">Alternate UPI ID (Backup)</div>
+              <div class="upi-id" onclick="copyBackupUPI()" title="Click to copy backup UPI ID"
+                style="cursor:pointer;font-weight:600;color:#475569;font-size:0.82rem;letter-spacing:0.3px;display:inline-block;background:#fff;padding:4px 12px;border-radius:16px;border:1px solid #e2e8f0;">
+                shriharioze07-1@okhdfcbank
+              </div>
+              <div style="font-size:0.66rem;color:#94a3b8;margin-top:4px;line-height:1.3;">
+                Use only if the primary UPI ID above doesn't work
+              </div>
+            </div>
+
             <div style="background:#fff8e1;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;text-align:center;">
               <div style="font-size:0.8rem;font-weight:700;color:#78350f;margin-bottom:4px;">📋 How to Pay via UPI</div>
               <div style="font-size:0.75rem;color:#92400e;line-height:1.6;">
@@ -3821,6 +3833,18 @@
                 9819969682@hdfc
               </div>
               <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
+            </div>
+
+            <!-- Backup UPI — shown smaller and dimmer so it's clearly secondary -->
+            <div style="text-align:center;margin-bottom:12px;padding:8px 10px;background:#f9fafb;border:1px dashed #cbd5e1;border-radius:10px;">
+              <div style="font-size:0.68rem;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.2px;text-transform:uppercase;">Alternate UPI ID (Backup)</div>
+              <div class="upi-id" onclick="copyBackupUPI()" title="Click to copy backup UPI ID"
+                style="cursor:pointer;font-weight:600;color:#475569;font-size:0.82rem;letter-spacing:0.3px;display:inline-block;background:#fff;padding:4px 12px;border-radius:16px;border:1px solid #e2e8f0;">
+                shriharioze07-1@okhdfcbank
+              </div>
+              <div style="font-size:0.66rem;color:#94a3b8;margin-top:4px;line-height:1.3;">
+                Use only if the primary UPI ID above doesn't work
+              </div>
             </div>
 
             <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:12px 14px;text-align:center;">
@@ -4302,11 +4326,23 @@
         <div style="font-size:0.8rem;text-align:center;margin-bottom:8px;color:#2e7d32;font-weight:600;">Scan QR or Tap
         </div>
         <img id="walletQrImg" class="bm-qr" src="" alt="QR">
-        <div style="margin: 12px 0 15px;">
+        <div style="margin: 12px 0 8px;">
           <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID" style="cursor:pointer; font-weight:800; color:#1a3c8f; font-size: 0.95rem; letter-spacing: 0.5px; text-align: center;">
             UPI ID: 9819969682@hdfc
           </div>
           <div style="font-size:0.75rem; color:#7f8c8d; margin-top:2px; text-align: center;">(tap to copy)</div>
+        </div>
+
+        <!-- Backup UPI — clearly marked as secondary so it isn't used first -->
+        <div style="margin: 6px 0 12px; padding:8px 10px; background:#f9fafb; border:1px dashed #cbd5e1; border-radius:10px; text-align:center;">
+          <div style="font-size:0.68rem; color:#64748b; margin-bottom:4px; font-weight:600; letter-spacing:0.2px; text-transform:uppercase;">Alternate UPI ID (Backup)</div>
+          <div class="upi-id" onclick="copyBackupUPI()" title="Click to copy backup UPI ID"
+            style="cursor:pointer; font-weight:600; color:#475569; font-size:0.82rem; letter-spacing:0.3px; display:inline-block; background:#fff; padding:4px 12px; border-radius:16px; border:1px solid #e2e8f0;">
+            shriharioze07-1@okhdfcbank
+          </div>
+          <div style="font-size:0.66rem; color:#94a3b8; margin-top:4px; line-height:1.3;">
+            Use only if the primary UPI ID above doesn't work
+          </div>
         </div>
         <a id="walletUpiLink" href="#" class="btn btn-primary"
           style="margin-top:12px;background:#2e7d32;border-color:#1b5e20;">👆 Open GPay / PhonePe</a>
@@ -4369,7 +4405,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.04.3";
+    const APP_VERSION = "v26.05.13.1";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4788,8 +4824,8 @@
       }
     };
 
-    function copyUPI() {
-      const vpa = UPI_VPA;
+    function copyUPI(customVpa) {
+      const vpa = customVpa || UPI_VPA;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(vpa).then(() => {
           toast("📋 UPI ID Copied! Now paste it in your payment app.", 4000);
@@ -4806,6 +4842,10 @@
       }
       trackGA("upi_id_copied");
     }
+    // Backup UPI ID — shown as a secondary option in case the primary HDFC VPA fails
+    // (e.g. some banks reject the primary intermittently). User must tap to copy.
+    const UPI_VPA_BACKUP = "shriharioze07-1@okhdfcbank";
+    function copyBackupUPI() { copyUPI(UPI_VPA_BACKUP); trackGA("upi_backup_id_copied"); }
 
     let _lastWalletSync = 0;
     async function syncWalletValue(force) {
