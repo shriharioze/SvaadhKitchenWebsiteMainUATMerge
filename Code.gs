@@ -1119,35 +1119,48 @@ function verifyLogin(phone, pin) {
 
 // ── AUTO-SETTLE PENDING ORDERS ──────────────────────────────
 function _autoSettlePendingOrders(phone) {
+  const pStr = _normalizePhone(phone);
+  
   const ss = getSpreadsheet();
+  const profWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const profRows = getAllRows(profWs);
+  const profile = profRows.find(r => _normalizePhone(r.Phone) === pStr);
+  
+  // Rule 1: Only for On Account users
+  if (!profile || (String(profile.On_Account).trim().toLowerCase() !== "yes")) {
+    return { settled: 0, msg: "" };
+  }
+
   const wsOrders = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const rows = getAllRows(wsOrders);
   const hIdx = headerIndex(wsOrders);
 
-  const pStr = _normalizePhone(phone);
+  // Rule 2: Only target "on account" orders (ignore normal Pending/UPI)
   const pendingOrders = rows.filter(r => 
     _normalizePhone(r.Phone) === pStr &&
-    (String(r.Payment_Status).trim().toLowerCase() === "pending" || 
-     String(r.Payment_Status).trim().toLowerCase() === "on account" || 
-     !String(r.Payment_Status).trim()) &&
+    String(r.Payment_Status).trim().toLowerCase() === "on account" &&
     (Number(r.Net_Total) > 0)
   );
 
   if (pendingOrders.length === 0) return { settled: 0, msg: "" };
 
-  // Sort by date (oldest first)
   pendingOrders.sort((a, b) => String(a.Order_Date).localeCompare(String(b.Order_Date)));
 
   let walletBalance = _calculateWalletBalance(phone);
+  if (walletBalance <= 0) return { settled: 0, msg: "" };
+
   let totalSettled = 0;
   let ordersSettledCount = 0;
+  let originalPendingAmount = pendingOrders.reduce((sum, o) => sum + (Number(o.Net_Total) || 0), 0);
+  
+  let currentWallet = walletBalance;
 
   for (let order of pendingOrders) {
     const amount = Number(order.Net_Total) || 0;
-    if (walletBalance >= amount) {
+    if (currentWallet >= amount) {
       wsOrders.getRange(order._row, hIdx["Payment_Status"]).setValue("Paid");
-      _appendWalletTransaction(phone, order.Customer_Name || "Customer", "Auto-deducted for pending order " + (order.Submission_ID || order.Order_Date), amount, true, "AUTO-" + Date.now() + "-" + Math.floor(Math.random()*1000));
-      walletBalance -= amount;
+      _appendWalletTransaction(phone, order.Customer_Name || "Customer", "Auto-deducted for On Account order " + (order.Submission_ID || order.Order_Date), amount, true, "AUTO-" + Date.now() + "-" + Math.floor(Math.random()*1000));
+      currentWallet -= amount;
       totalSettled += amount;
       ordersSettledCount++;
     } else {
@@ -1156,9 +1169,25 @@ function _autoSettlePendingOrders(phone) {
   }
 
   if (ordersSettledCount > 0) {
-    return { 
-      settled: totalSettled, 
-      msg: `Wallet recharge automatically used to clear ${ordersSettledCount} pending order(s) (₹${totalSettled}). New Wallet Balance is: ₹${walletBalance}` 
+    if (originalPendingAmount <= walletBalance) {
+      return { 
+        settled: totalSettled, 
+        msg: `Wallet recharge used against the pending orders. Balance is now: Wallet ₹${currentWallet}` 
+      };
+    } else {
+      // Wallet < Pending overall
+      return { 
+        settled: totalSettled, 
+        msg: `Wallet recharge applied! Note: ₹${originalPendingAmount - totalSettled} is still pending on account.` 
+      };
+    }
+  }
+
+  // If we couldn't settle even one full order but they have wallet balance
+  if (originalPendingAmount > 0 && walletBalance > 0 && walletBalance < originalPendingAmount) {
+    return {
+      settled: 0,
+      msg: `Recharge added to wallet (₹${walletBalance}). You still have ₹${originalPendingAmount} pending on account.`
     };
   }
 
