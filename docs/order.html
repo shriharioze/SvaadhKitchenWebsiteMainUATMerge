@@ -4311,7 +4311,13 @@
       <p style="font-size:0.8rem;color:#777;text-align:center;margin-bottom:16px;">Admin will verify your payment and
         credit it to your account within 1-2 hours.</p>
 
-      <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div id="walletPendingAmountWrap" style="display:none; text-align:center; margin-bottom:16px; padding:12px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px;">
+        <div style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">Net Pending Due</div>
+        <div id="walletPendingAmountVal" style="font-size:1.8rem; font-weight:800; color:#b71c1c; margin:4px 0;">₹0</div>
+        <div style="font-size:0.75rem; color:#7f8c8d;">(This amount will be auto-filled below)</div>
+      </div>
+
+      <div id="walletQuickAmounts" style="display:flex;gap:8px;margin-bottom:16px;">
         <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(100)">₹100</button>
         <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(500)">₹500</button>
         <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(1000)">₹1000</button>
@@ -6947,8 +6953,37 @@
           : "Admin will verify your payment and credit it to your account within 1-2 hours.";
       }
 
-      $('walletRechargeAmt').value = '';
+      if (isOA) {
+        const rawPending = S.profile.pending_amount || 0;
+        const currentWallet = S.walletBalance || 0;
+        const netDue = Math.max(0, rawPending - currentWallet);
+        
+        if (netDue > 0) {
+          $('walletQuickAmounts').innerHTML = `<button class="wm-tab" style="flex:1; border-color:#b71c1c; color:#b71c1c; font-weight:800; background:#fff5f5;" onclick="setWalletRecharge(${netDue})">Pay Outstanding: ₹${netDue}</button>`;
+        } else {
+          $('walletQuickAmounts').innerHTML = `<div style="flex:1; text-align:center; font-size:0.85rem; color:#2e7d32; font-weight:600; padding:8px; background:#f0faf4; border-radius:8px;">✅ All clear! No pending dues.</div>`;
+        }
+        
+        $('walletQuickAmounts').style.display = 'flex';
+        $('walletPendingAmountWrap').style.display = 'none'; // We'll use the button instead of this wrap to keep it clean
+        $('walletRechargeAmt').value = netDue > 0 ? netDue : '';
+        $('walletRechargeAmt').placeholder = "Or enter any amount to recharge";
+      } else {
+        $('walletQuickAmounts').style.display = 'flex';
+        $('walletQuickAmounts').innerHTML = `
+          <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(100)">₹100</button>
+          <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(500)">₹500</button>
+          <button class="wm-tab" style="flex:1" onclick="setWalletRecharge(1000)">₹1000</button>
+        `;
+        $('walletPendingAmountWrap').style.display = 'none';
+        $('walletRechargeAmt').value = '';
+        $('walletRechargeAmt').placeholder = "Or enter custom amount (Min. 100)";
+      }
+
       $('walletQrWrap').style.display = 'none';
+      if (isOA && $('walletRechargeAmt').value) {
+        updateWalletQr(); // Auto-show QR if we pre-filled the net due
+      }
       $('walletRechargeModal').style.display = 'flex';
     }
     function closeWalletRecharge() {

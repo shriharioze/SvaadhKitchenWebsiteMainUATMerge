@@ -1091,6 +1091,17 @@ function verifyLogin(phone, pin) {
   if (!r) return {success: false, error: "Account not found."};
   if (String(r.PIN).trim() !== String(pin).trim()) return {success: false, error: "Incorrect PIN."};
   
+  let pendingAmount = 0;
+  if (r.On_Account === "Yes") {
+    const wsOrders = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+    const orderRows = getAllRows(wsOrders);
+    for (const ord of orderRows) {
+      if (_normalizePhone(ord.Phone) === pStr && String(ord.Payment_Status).trim().toLowerCase() === "on account") {
+        pendingAmount += (Number(ord.Net_Total) || 0);
+      }
+    }
+  }
+
   return {
     success: true,
     profile: {
@@ -1112,7 +1123,8 @@ function verifyLogin(phone, pin) {
       wallet_balance:     _calculateWalletBalance(phone),
       feeExempt:          (r.Fee_Exempt === "Yes" || r.Fee_Exempt === true),
       onAccount:          r.On_Account || "No",
-      billingCycle:       r.Billing_Cycle || "Daily"
+      billingCycle:       r.Billing_Cycle || "Daily",
+      pending_amount:     pendingAmount
     }
   };
 }
@@ -4247,7 +4259,11 @@ function getUnpaidCustomers(p) {
     map[key].orderCount += 1;
   });
 
-  const customers = Object.values(map).map(c => ({...c, total: Math.round(c.total)}));
+  const customers = Object.values(map).map(c => {
+    const wb = _calculateWalletBalance(c.phone);
+    const net = Math.round(c.total - wb);
+    return { ...c, total: net, walletBalance: Math.round(wb) };
+  });
   const grandTotal = customers.reduce((s,c) => s + c.total, 0);
   return {success:true, customers, period:{from:dateFrom, to:dateTo}, grandTotal};
 }
@@ -4451,7 +4467,15 @@ function getCustomerList() {
   });
 
   var customers = Object.values(map)
-    .map(function(c){return Object.assign({},c,{totalSpent:Math.round(c.totalSpent),pendingAmt:Math.round(c.pendingAmt)});})
+    .map(function(c){
+      const wb = _calculateWalletBalance(c.phone);
+      const net = Math.round(c.pendingAmt - wb);
+      return Object.assign({}, c, {
+        totalSpent: Math.round(c.totalSpent),
+        pendingAmt: net,
+        walletBalance: Math.round(wb)
+      });
+    })
     .sort(function(a,b){return b.lastDate.localeCompare(a.lastDate);});
 
   return {success:true, customers:customers};
