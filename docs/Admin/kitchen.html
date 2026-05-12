@@ -952,6 +952,19 @@
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
+    
+    // ── FETCH WITH TIMEOUT (prevents GAS cold-start hangs) ──
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
     let K = { pin: "", sessionPin: "" };
     let _lastData = null;
     let _lastCutoffs = {};
@@ -1010,7 +1023,7 @@
       const pinToVerify = autoPin || K.pin;
       try {
         const fetchDate = document.getElementById("datePicker").value || todayIST();
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${fetchDate}&pin=${pinToVerify}&_t=${Date.now()}`);
+        const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${fetchDate}&pin=${pinToVerify}&_t=${Date.now()}`);
         const data = await res.json();
         if (data.error) {
           if (!autoPin) {
@@ -1035,7 +1048,14 @@
         _lastUpdated = new Date();
         startAutoRefresh();
       } catch (e) {
-        document.getElementById("kErr").textContent = "Error: " + e.message;
+        if (autoPin) {
+          localStorage.removeItem('sk-kitchen-pin');
+          document.getElementById("kErr").textContent = "Auto-login failed — please enter PIN manually";
+        } else {
+          document.getElementById("kErr").textContent = e.name === 'AbortError'
+            ? "Connection timed out — please try again"
+            : "Incorrect PIN";
+        }
         K.pin = ""; renderDots();
       } finally {
         pinAuthInProgress = false;
@@ -1058,7 +1078,7 @@
       if (!date) { await sAlert("Please select a date first.", "Date Required", "📅"); return; }
       sLoading(true, "Fetching data...");
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
+        const res = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getKitchenSummary&date=${date}&pin=${K.sessionPin}&_t=${Date.now()}`, { redirect: "follow", cache: "no-store" });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         _lastData = data;
@@ -1113,13 +1133,13 @@
 
     const SABJI_WEIGHTS = {
       // Dry Sabjis
-      "Cauliflower": { "फ्लॉवर": 85, "टोमॅटो": 20, "मटार": 10 },
-      "Cabbage": 72, "Bhindi": 100,
+      "Cauliflower": { "फ्लॉवर": 90, "टोमॅटो": 20, "मटार": 10 },
+      "Cabbage": 70, "Bhindi": 100,
       "French Beans": 80, "French_Beans": 80,
       "Beans": 80, "Matki masala": 55,
       "Shimla Besan": { "ढोबळी": 75 }, "Sev tomato": { "टोमॅटो": 80, "कांदा": 20 },
-      "Dal kanda": { "डाळ": 33, "कांदा": 10, "टोमॅटो": 10 },
-      "Green Moong (Dry)": 30, "Green Moong": 30,
+      "Dal kanda": { "डाळ": 34, "कांदा": 21, "टोमॅटो": 21 },
+      "Green Moong Masala(Dry)": 30, "Green Moong": 30,
 
       // Curry Sabjis
       "Soyabean": 10, "Gavari": 42, "Matki (Curry)": 34, "Pithla": { "बेसन": 23 },

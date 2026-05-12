@@ -250,6 +250,18 @@
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec";
 
+// ── FETCH WITH TIMEOUT (prevents GAS cold-start hangs) ──
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // ── KITCHEN LOCATION — update to your actual kitchen lat/lng ──────────────────
 // Current: approx Bhosale Nagar, Hadapsar, Pune
 // Svaadh Kitchen — verified from Maps share link (!3d/!4d coords from URL)
@@ -306,7 +318,7 @@ async function verifyPin(autoPin) {
   const pinToVerify = autoPin || D.pin;
   try {
     const today = todayIST();
-    const res   = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${pinToVerify}&_t=${Date.now()}`);
+    const res   = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${today}&pin=${pinToVerify}&_t=${Date.now()}`);
     const data  = await res.json();
     if (data.error) {
       if (!autoPin) {
@@ -335,7 +347,22 @@ async function verifyPin(autoPin) {
     startPoll();
   } catch(e) {
     D.pin = ""; renderDots();
-    localStorage.removeItem('sk-driver-pin');
+    if (autoPin) {
+      // Auto-login failed (likely GAS cold-start or timeout) — clear saved PIN
+      // and prompt driver to enter it manually
+      localStorage.removeItem('sk-driver-pin');
+      document.getElementById("dErr").textContent = "Auto-login failed — please enter PIN manually";
+    } else {
+      attempts++;
+      if (attempts >= 5) {
+        lockoutEnd = Date.now() + 60000;
+        document.getElementById("dErr").textContent = "Too many attempts. Wait 60s.";
+      } else {
+        document.getElementById("dErr").textContent = e.name === 'AbortError'
+          ? "Connection timed out — please try again"
+          : "Incorrect PIN — Please try again";
+      }
+    }
   } finally {
     pinAuthInProgress = false;
     sLoading(false);
@@ -367,7 +394,7 @@ async function loadOrders() {
     document.getElementById("panel_"+m).innerHTML = `<div class="spinner"></div>`;
   });
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
+    const res  = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getDriverOrders&date=${date}&pin=${D.sessionPin}&_t=${Date.now()}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     renderAll(data);

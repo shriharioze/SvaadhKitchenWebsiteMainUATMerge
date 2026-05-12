@@ -1815,9 +1815,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         
         <!-- Filters for cycles -->
         <div id="billingFiltersWrap" style="margin-bottom:16px;">
-          <!-- Daily Filter -->
-          <div id="bf_Daily" class="billing-filter-group">
-            <input type="date" id="bf_daily_date" class="billing-input" onchange="loadBillingTab('Daily')">
+          <!-- Daily Filter: no date picker for Daily (shows all pending) -->
+          <div id="bf_Daily" class="billing-filter-group" style="align-items:center;gap:10px;">
+            <span style="font-size:.8rem;color:var(--muted);font-style:italic;">Showing all pending On Account orders</span>
           </div>
           <!-- Weekly Filter -->
           <div id="bf_Weekly" class="billing-filter-group" style="display:none;">
@@ -1926,6 +1926,18 @@ function showUIConfirm(message, title = "Confirm Action", icon = "⚠️") {
 // CONFIG & PRICING
 // ════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
+
+// ── FETCH WITH TIMEOUT (prevents GAS cold-start hangs) ──
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
 function $(id) { return document.getElementById(id); }
 
 // ── DARK MODE ────────────────────────────────────────────────
@@ -2088,7 +2100,7 @@ async function verifyPin() {
   document.getElementById("loginErr").textContent = "Logging you in...";
   sLoading(true, "Logging you in...");
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
+    const res  = await fetchWithTimeout(`${APPS_SCRIPT_URL}?action=getAdminData&pin=${S.pin}&_t=${Date.now()}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     attempts = 0;
@@ -2104,7 +2116,9 @@ async function verifyPin() {
       lockoutEnd = Date.now() + 60000;
       document.getElementById("loginErr").textContent = "Too many attempts. Wait 60s.";
     } else {
-      document.getElementById("loginErr").textContent = "Incorrect PIN — try again";
+      document.getElementById("loginErr").textContent = e.name === 'AbortError'
+        ? "Connection timed out — please try again"
+        : "Incorrect PIN — try again";
     }
     S.pin = ""; renderPinDots();
   } finally {
@@ -2181,7 +2195,7 @@ async function _pingGAS() {
 function initBillingFilters() {
   const ist = getIST();
   const dateStr = toISO(ist);
-  if ($('bf_daily_date')) $('bf_daily_date').value = dateStr;
+  // Daily tab no longer needs a date filter (shows all pending orders)
   if ($('bf_weekly_date')) $('bf_weekly_date').value = dateStr;
   if ($('bf_monthly_select')) $('bf_monthly_select').value = ist.getMonth();
 }
@@ -5155,8 +5169,8 @@ async function loadBillingTab(cycle) {
   const label   = document.getElementById('billingPeriodLabel');
   
   let filterValue = '';
-  if (cycle === 'Daily') filterValue = $('bf_daily_date').value;
-  else if (cycle === 'Weekly') filterValue = $('bf_weekly_date').value;
+  // Daily no longer needs a date filter — shows all pending orders
+  if (cycle === 'Weekly') filterValue = $('bf_weekly_date').value;
   else if (cycle === 'Monthly') filterValue = $('bf_monthly_select').value;
 
   content.innerHTML = `<div style="text-align:center;padding:32px;"><div class="spinner"></div><p style="font-size:.78rem;color:#888;margin-top:8px;">Loading ${cycle} billing data…</p></div>`;
@@ -5169,13 +5183,19 @@ async function loadBillingTab(cycle) {
     if (!data.success) throw new Error(data.error || 'Unknown error');
     const fmtDate = d => d ? d.split('-').reverse().join(' / ') : '';
     if (cycle === 'Daily') {
-      label.textContent = `📅 Date: ${fmtDate(data.from)}`;
+      const total = (data.flat_orders || []).reduce((s,o)=>s+o.net,0);
+      const cnt   = (data.flat_orders || []).length;
+      label.innerHTML = cnt
+        ? `📋 All pending On Account orders &nbsp;·&nbsp; <strong>${cnt}</strong> order${cnt!==1?'s':''} &nbsp;·&nbsp; Total due: <strong>₹${total.toFixed(2)}</strong>`
+        : `📋 All pending On Account orders`;
+      content.innerHTML = renderDailyFlatList(data.flat_orders || []);
     } else if (cycle === 'Weekly') {
       label.textContent = `📆 Week (Mon-Sat): ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
+      content.innerHTML = renderBillingCards(data.customers, cycle);
     } else {
       label.textContent = `🗓️ Month: ${fmtDate(data.from)} — ${fmtDate(data.to)}`;
+      content.innerHTML = renderBillingCards(data.customers, cycle);
     }
-    content.innerHTML = renderBillingCards(data.customers, cycle);
   } catch(e) {
     content.innerHTML = `<p style="color:var(--red);padding:16px;">Error: ${e.message}</p>`;
   }
@@ -5187,6 +5207,105 @@ function _parseItems(jsonStr) {
     return Object.entries(obj).filter(([,q])=>Number(q)>0)
       .map(([k,q])=>`${q}× ${colKeyToDisplayName(k)}`).join(', ') || '—';
   } catch(e) { return jsonStr || '—'; }
+}
+
+// ── DAILY FLAT LIST RENDERER ─────────────────────────────────
+function renderDailyFlatList(orders) {
+  if (!orders || !orders.length) {
+    return `<p class="billing-empty">✅ No pending On Account orders. All clear!</p>`;
+  }
+  const mealIcon = m => m==='Breakfast'?'🍳':m==='Lunch'?'🍱':'🍽️';
+  const fmtDate  = d => {
+    if (!d) return '';
+    const [y,mo,da] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(da)} ${months[parseInt(mo)-1]}`;
+  };
+
+  // Group rows by date for visual date headers
+  let lastDate = null;
+  const rows = orders.map((o,i) => {
+    const dateHeader = o.date !== lastDate
+      ? `<tr style="background:var(--bg2);"><td colspan="7" style="padding:6px 12px;font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-top:2px solid var(--border);">${fmtDate(o.date)} &nbsp;·&nbsp; ${new Date(o.date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long'})}</td></tr>`
+      : '';
+    lastDate = o.date;
+    return `${dateHeader}<tr>
+      <td style="padding:8px 12px;text-align:center;">
+        <input type="checkbox" class="daily-flat-chk" data-sid="${o.sid}" data-phone="${o.customer_phone}"
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--red);">
+      </td>
+      <td style="padding:8px 12px;white-space:nowrap;font-weight:600;">${fmtDate(o.date)}</td>
+      <td style="padding:8px 12px;">${mealIcon(o.meal)} <span style="font-size:.8rem;">${o.meal}</span></td>
+      <td style="padding:8px 12px;">
+        <div style="font-weight:600;font-size:.85rem;">${o.customer_name}</div>
+        <div style="font-size:.72rem;color:var(--muted);">📞 ${o.customer_phone} &nbsp;·&nbsp; ${o.area||''}</div>
+      </td>
+      <td style="padding:8px 12px;font-size:.76rem;color:var(--muted);max-width:180px;">${_parseItems(o.items)}</td>
+      <td style="padding:8px 12px;text-align:right;font-weight:700;color:var(--red);">₹${o.net.toFixed(2)}</td>
+      <td style="padding:8px 12px;">
+        <button onclick="markBillingPaidJS(['${o.sid}'],'${o.customer_phone}')"
+          style="padding:4px 10px;font-size:.72rem;font-weight:700;background:var(--green,#16a34a);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;">✅ Paid</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const total = orders.reduce((s,o)=>s+o.net,0);
+
+  return `
+    <!-- Sticky action bar -->
+    <div id="dailyFlatBar" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;cursor:pointer;">
+        <input type="checkbox" id="dailySelectAll" onchange="toggleDailySelectAll(this.checked)"
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--red);">
+        Select All
+      </label>
+      <span id="dailySelCount" style="font-size:.78rem;color:var(--muted);">0 selected</span>
+      <button onclick="markDailySelectedPaid()"
+        style="padding:6px 16px;font-size:.82rem;font-weight:700;background:var(--red);color:#fff;border:none;border-radius:8px;cursor:pointer;">✅ Mark Selected Paid</button>
+      <span style="margin-left:auto;font-size:.82rem;color:var(--muted);">Total outstanding: <strong style="color:var(--red);">₹${total.toFixed(2)}</strong></span>
+    </div>
+    <div class="billing-table-wrap">
+      <table class="billing-order-table" style="width:100%;">
+        <thead><tr>
+          <th style="width:32px;"></th>
+          <th>Date</th>
+          <th>Meal</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th style="text-align:right;">Amount</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="billing-total-row">
+          <td colspan="5" style="padding:10px 12px;">Total Outstanding (${orders.length} orders)</td>
+          <td style="text-align:right;padding:10px 12px;">₹${total.toFixed(2)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function toggleDailySelectAll(checked) {
+  document.querySelectorAll('.daily-flat-chk').forEach(c => c.checked = checked);
+  _updateDailySelCount();
+}
+
+function _updateDailySelCount() {
+  const cnt = document.querySelectorAll('.daily-flat-chk:checked').length;
+  const el = $('dailySelCount');
+  if (el) el.textContent = `${cnt} selected`;
+}
+
+// Wire change events on checkboxes (called from inline onchange is simpler, but we use event delegation)
+document.addEventListener('change', e => {
+  if (e.target.classList.contains('daily-flat-chk')) _updateDailySelCount();
+});
+
+async function markDailySelectedPaid() {
+  const checked = [...document.querySelectorAll('.daily-flat-chk:checked')];
+  if (!checked.length) { toast('Please tick at least one order.'); return; }
+  const sids = checked.map(el => el.dataset.sid);
+  await markBillingPaidJS(sids, null); // null phone = multi-customer batch
 }
 
 function renderBillingCards(customers, cycle) {
