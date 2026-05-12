@@ -1092,12 +1092,17 @@ function verifyLogin(phone, pin) {
   if (String(r.PIN).trim() !== String(pin).trim()) return {success: false, error: "Incorrect PIN."};
   
   let pendingAmount = 0;
-  if (r.On_Account === "Yes") {
+  const isOnAccount = String(r.On_Account || "").trim().toLowerCase() === "yes";
+  if (isOnAccount) {
     const wsOrders = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
     const orderRows = getAllRows(wsOrders);
     for (const ord of orderRows) {
-      if (_normalizePhone(ord.Phone) === pStr && String(ord.Payment_Status).trim().toLowerCase() === "on account") {
-        pendingAmount += (Number(ord.Net_Total) || 0);
+      if (_normalizePhone(ord.Phone) === pStr) {
+        const ps = String(ord.Payment_Status || "").trim().toLowerCase();
+        // Include "on account", "pending", or empty status for On Account users
+        if (ps === "on account" || ps === "onaccount" || ps === "pending" || ps === "") {
+          pendingAmount += (Number(ord.Net_Total) || 0);
+        }
       }
     }
   }
