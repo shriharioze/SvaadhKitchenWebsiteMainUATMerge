@@ -1729,7 +1729,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
         <div class="approvals-nav">
           <button class="approvals-tab active" id="tabRefunds" onclick="switchApprovalTab('refunds')">💸 Refunds</button>
           <button class="approvals-tab" id="tabPayments" onclick="switchApprovalTab('payments')">💳 UPI Payments</button>
-          <button class="approvals-tab" id="tabWallet" onclick="switchApprovalTab('wallet')">💳 Wallet Recharges</button>
+          <button class="approvals-tab" id="tabWallet" onclick="switchApprovalTab('wallet')">💳 Wallet / Bill Payments</button>
         </div>
 
         <!-- SUB-PAGE: REFUNDS -->
@@ -5143,7 +5143,7 @@ async function refreshApprovalCounts() {
     
     if (r) r.innerHTML = `💸 Refunds ${data.refunds > 0 ? `[${data.refunds}]` : ''}`;
     if (p) p.innerHTML = `💳 UPI Payments ${data.payments > 0 ? `[${data.payments}]` : ''}`;
-    if (w) w.innerHTML = `💳 Wallet Recharges ${data.wallet > 0 ? `[${data.wallet}]` : ''}`;
+    if (w) w.innerHTML = `💳 Wallet / Bill Payments ${data.wallet > 0 ? `[${data.wallet}]` : ''}`;
   } catch(e) { console.warn("Count refresh failed", e); }
 }
 
@@ -5698,7 +5698,7 @@ async function loadPendingRecharges() {
     if (data.error) throw new Error(data.error);
 
     if (!data.length) {
-      wrap.innerHTML = `<div class="empty-msg">No pending wallet recharges. ✅</div>`;
+      wrap.innerHTML = `<div class="empty-msg">No pending wallet recharges or bill payments. ✅</div>`;
       sLoading(false);
       updateBatchBar('wallet');
       return;

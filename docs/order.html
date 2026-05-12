@@ -3047,7 +3047,7 @@
     <!-- Wallet chip (left) -->
     <div id="walletChip" onclick="openWalletRecharge()"
       style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:5px 10px; font-size:0.72rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:4px; cursor:pointer; flex-shrink:0; white-space:nowrap;">
-      💼 <span id="headerWalletBalance">₹0</span>
+      <span id="walletChipIcon">💼</span> <span id="headerWalletBalance">₹0</span>
       <span style="border-left:1px solid #c8e6c9; padding-left:4px; color:#2e7d32; font-size:0.75rem;">+</span>
     </div>
 
@@ -5719,6 +5719,11 @@
       S.walletBalance = wb; S.profile.wallet_balance = wb;
       if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
       if ($("walletBalDisplay")) $("walletBalDisplay").textContent = `₹${wb}`;
+
+      const isOA = (S.profile && S.profile.onAccount === "Yes");
+      if ($("walletChipIcon")) {
+        $("walletChipIcon").textContent = isOA ? "Settle Bill" : "💼";
+      }
     }
 
     async function refreshWalletBalance() {
