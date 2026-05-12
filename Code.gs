@@ -12,7 +12,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 
-const CODE_VERSION   = 14.8; // Archive: atomic rebuild + year-folder + cross-archive analytics
+const CODE_VERSION   = 14.9; // Soft-cancel: orders are never deleted, marked with status remark for audit trail
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
@@ -2354,7 +2354,8 @@ function getCustomerOrders(phone) {
   let monthTotal = 0, monthCount = 0;
   allFiltered.forEach(r => {
     const d = fmtD(r);
-    if (d.startsWith(nowIST)) {
+    // Exclude cancelled orders from monthly spend summary
+    if (d.startsWith(nowIST) && !_isOrderCancelled(r.Payment_Status)) {
       monthTotal += Number(r.Net_Total) || 0;
       monthCount++;
     }
@@ -2446,6 +2447,11 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     console.error(`CANCELLATION FAILED: Submission ID "${rowId}" not found or phone mismatch for ${phone} (admin=${isAdminCall}).`);
     return {success: false, error: "Order record not found or you do not have permission to cancel it."};
   }
+  // ── ALREADY CANCELLED GUARD ────────────────────────────────────────
+  // Row is kept forever now. Prevent double-cancellation attempts.
+  if (_isOrderCancelled(r.Payment_Status)) {
+    return { success: false, error: "This order has already been cancelled." };
+  }
   const orderDateStr = r.Order_Date instanceof Date
     ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
     : String(r.Order_Date).trim();
@@ -2480,12 +2486,14 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
   } catch (e) { /* non-fatal */ }
 
   if (existingPendingRefund) {
-    // Recovery path: finish the unfinished delete. No new refund row.
+    // Recovery path: refund row already exists, just ensure order row is marked cancelled.
     try {
-      ws.deleteRow(r._row);
-    } catch (e) {
-      return { success: false, error: "Order deletion failed (refund already in queue): " + (e && e.message || "unknown error") };
-    }
+      const hIdxR = headerIndex(ws);
+      const statusColR = hIdxR["Payment_Status"] || hIdxR["Payment Status"];
+      if (statusColR && !_isOrderCancelled(r.Payment_Status)) {
+        ws.getRange(r._row, statusColR).setValue("Cancelled \u2013 UPI Refund Pending");
+      }
+    } catch (e) { /* non-fatal */ }
     return {
       success: true,
       message: "Cancellation completed. Your refund was already in the queue and will be processed within 1-2 days."
@@ -2703,7 +2711,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     const currentWasWallet = (pStatStr === "wallet paid");
     const currentWasSplit  = (String(r.Payment_Method || "").trim().toLowerCase() === "split");
     if (isOnAccountOrder) {
-      // On Account: no cash was collected — just delete the row.
+      // On Account: no cash was collected — mark row as cancelled.
       // Remaining rows already updated above (discount/delivery recalculation).
       // On-account balance auto-corrects since it's derived from live sheet rows.
       msg = "Order removed from your On Account balance.";
@@ -2798,29 +2806,30 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     }
   }
 
-  // ─── DELETE THE ROW ───────────────────────────────────────────────
-  // We're inside LockService so r._row hasn't been shifted by parallel calls,
-  // and the only writes done above are setValue() updates to other rows
-  // (which never change row positions). Direct deleteRow is safe.
-  ws.deleteRow(r._row);
-
-  // Also remove from customer ledger if it exists (10-day billing)
-  try {
-    const custWs = ss.getSheetByName("SK_Customers");
-    if (custWs) {
-      const custRows = getAllRows(custWs);
-      const cust = custRows.find(c => String(c.Phone).trim() === String(phone).trim());
-      if (cust && cust.Ledger_Sheet_ID) {
-        const ledger = SpreadsheetApp.openById(cust.Ledger_Sheet_ID);
-        ledger.getSheets().forEach(function(tab) {
-          const data = tab.getDataRange().getValues();
-          for (var i = data.length - 1; i >= 0; i--) {
-            if (String(data[i][0]) === String(rowId)) { tab.deleteRow(i + 1); break; }
-          }
-        });
+  // ─── SOFT-CANCEL THE ROW (mark status, never delete) ─────────────────
+  // Orders are kept forever for audit trail. The Payment_Status remark
+  // ensures the row is excluded from all prep/delivery counts via _isOrderCancelled().
+  {
+    const hIdxFinal = headerIndex(ws);
+    const statusColFinal = hIdxFinal["Payment_Status"] || hIdxFinal["Payment Status"];
+    if (statusColFinal) {
+      let cancelRemark;
+      if (finalType === "wallet" || finalType === "__split_handled__") {
+        cancelRemark = "Cancelled \u2013 Refunded to Wallet";
+      } else if (finalType === "manual_upi") {
+        cancelRemark = "Cancelled \u2013 UPI Refund Pending";
+      } else if (finalType === "__on_account_handled__") {
+        cancelRemark = "Cancelled \u2013 On Account";
+      } else {
+        // Fallback for unknown type (e.g. zero-refund edge cases)
+        cancelRemark = "Cancelled";
       }
+      ws.getRange(r._row, statusColFinal).setValue(cancelRemark);
+      console.info(`ORDER SOFT-CANCELLED: Row ${r._row} (${rowId}) marked as '${cancelRemark}'`);
+    } else {
+      console.error(`SOFT-CANCEL FAILED: Payment_Status column not found in header index.`);
     }
-  } catch(e) { /* ledger cleanup is non-fatal */ }
+  }
 
   return {success: true, message: msg};
 }
@@ -3222,7 +3231,33 @@ function markRefunded(submissionId) {
         _appendWalletTransaction(phone, name, "Order Cancellation Refund", amt, true, String(submissionId));
       }
 
+      // Mark the refund row as done
       ws.getRange(i + 1, statusIdx + 1).setValue("Refunded (" + now + ")");
+
+      // ── Update the source order row remark to reflect completed refund ──
+      // This closes the audit loop: the SK_Orders row was previously marked
+      // "Cancelled – UPI Refund Pending" (or similar); now update it.
+      try {
+        const ordersWs = ss.getSheetByName(TAB_ORDERS);
+        if (ordersWs) {
+          const ordersData = ordersWs.getDataRange().getValues();
+          const oHeaders = ordersData[0];
+          const oIdIdx = oHeaders.indexOf("Submission_ID");
+          const oStatusIdx = oHeaders.indexOf("Payment_Status");
+          if (oIdIdx !== -1 && oStatusIdx !== -1) {
+            for (var j = 1; j < ordersData.length; j++) {
+              if (String(ordersData[j][oIdIdx]) === String(submissionId)) {
+                const finalRemark = mode === "wallet"
+                  ? "Cancelled \u2013 Refunded to Wallet (" + now + ")"
+                  : "Cancelled \u2013 Refunded via UPI (" + now + ")";
+                ordersWs.getRange(j + 1, oStatusIdx + 1).setValue(finalRemark);
+                break;
+              }
+            }
+          }
+        }
+      } catch(e) { /* non-fatal — refund row already updated */ }
+
       return {success: true};
     }
   }
@@ -3267,7 +3302,7 @@ function calculatePackets(total, max) {
 function getKitchenSummary(date) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  var rows = getRecentRows(ws, 1500);
 
   var dayRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date
@@ -3430,14 +3465,14 @@ function getKitchenSummary(date) {
 function getDriverOrders(date) {
   var ss   = getSpreadsheet();
   var ws   = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  var rows = getRecentRows(ws, 1500);
   var meals = {Breakfast: [], Lunch: [], Dinner: []};
 
   // Load delivery status from SK_Deliveries tab (both EnRoute_At and Delivered_At)
   var delMap = {};
   var delWs  = ss.getSheetByName("SK_Deliveries");
   if (delWs) {
-    getAllRows(delWs).forEach(function(r) {
+    getRecentRows(delWs, 1500).forEach(function(r) {
       var sid = String(r.Submission_ID || "").trim();
       if (sid) delMap[sid] = {
         deliveredAt: String(r.Delivered_At || ""),
@@ -3503,7 +3538,7 @@ function getDriverOrders(date) {
     // Fallback: short URL — follow redirect chain
     if (o.maps.indexOf('goo.gl') > -1 || o.maps.indexOf('maps.app') > -1) {
       try {
-        var c = _resolveMapsShortUrl(o.maps);
+        var c = _resolveMapsShortUrlCached(o.maps);
         if (c) { o.lat = c.lat; o.lng = c.lng; }
       } catch(e) { /* skip this stop */ }
     }
@@ -3592,6 +3627,21 @@ function _extractCoordsGS(url) {
   m = decoded.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (m) return { lat: +m[1], lng: +m[2] };
   return null;
+}
+
+// ── SHORT URL CACHING ──
+function _resolveMapsShortUrlCached(shortUrl) {
+  var cache = CacheService.getScriptCache();
+  // Create a clean key (Base64 encoding prevents invalid chars)
+  var safeKey = "maps_" + Utilities.base64EncodeWebSafe(shortUrl).substring(0, 200);
+  var hit = cache.get(safeKey);
+  if (hit) {
+    if (hit === "none") return null;
+    try { return JSON.parse(hit); } catch(e){}
+  }
+  var c = _resolveMapsShortUrl(shortUrl);
+  cache.put(safeKey, c ? JSON.stringify(c) : "none", 21600); // cache for 6 hours
+  return c;
 }
 
 // Multi-hop redirect resolver for short Maps URLs (maps.app.goo.gl, goo.gl/maps).
@@ -5221,7 +5271,7 @@ function archiveMonth(year, month) {
     var archiveSS   = SpreadsheetApp.create(archiveName);
     var archiveFile = DriveApp.getFileById(archiveSS.getId());
 
-    // Move to: Drive > Web Based Ordering > Archive > <year>/
+    // Move to: Drive > WebBased Ordering > Archive > <year>/
     var yearFolder  = _getArchiveYearFolder(year);
     if (yearFolder) {
       try {
@@ -5401,7 +5451,7 @@ function archiveMonth(year, month) {
 
 /**
  * Returns (creating if needed) the Drive folder for a given year:
- *   My Drive > Web Based Ordering > Archive > <year>
+ *   My Drive > WebBased Ordering > Archive > <year>
  * Returns null if the parent "Web Based Ordering" folder cannot be located.
  *
  * The parent-folder ID can be set via Script Property ARCHIVE_PARENT_FOLDER_ID
@@ -5418,20 +5468,11 @@ function _getArchiveYearFolder(year) {
     }
 
     if (!archiveFolder) {
-      // Try common spelling variants since folder names can be inconsistent.
-      var NAME_VARIANTS = [
-        "WebBased Ordering",   // current production folder (confirmed)
-        "Web Based Ordering",
-        "Web-Based Ordering",
-        "Webbased Ordering"
-      ];
+      var rootFolders = DriveApp.getFoldersByName("WebBased Ordering");
       var webOrdering = null;
-      for (var i = 0; i < NAME_VARIANTS.length && !webOrdering; i++) {
-        var rootFolders = DriveApp.getFoldersByName(NAME_VARIANTS[i]);
-        if (rootFolders.hasNext()) webOrdering = rootFolders.next();
-      }
+      if (rootFolders.hasNext()) webOrdering = rootFolders.next();
       if (!webOrdering) {
-        Logger.log("_getArchiveYearFolder: parent folder not found (tried " + NAME_VARIANTS.join(", ") + "). Archive will stay in My Drive root.");
+        Logger.log("_getArchiveYearFolder: 'WebBased Ordering' folder not found. Archive will stay in My Drive root.");
         return null;
       }
       var archiveFolders = webOrdering.getFoldersByName("Archive");
@@ -5465,13 +5506,9 @@ function _listArchiveFilesInRange(dateFrom, dateTo) {
       try { archiveFolder = DriveApp.getFolderById(configuredId); } catch(_) {}
     }
     if (!archiveFolder) {
-      var NAME_VARIANTS = ["WebBased Ordering", "Web Based Ordering", "Web-Based Ordering", "Webbased Ordering"];
-      var webOrdering = null;
-      for (var k = 0; k < NAME_VARIANTS.length && !webOrdering; k++) {
-        var rootFolders = DriveApp.getFoldersByName(NAME_VARIANTS[k]);
-        if (rootFolders.hasNext()) webOrdering = rootFolders.next();
-      }
-      if (!webOrdering) return out;
+      var rootFolders = DriveApp.getFoldersByName("WebBased Ordering");
+      if (!rootFolders.hasNext()) return out;
+      var webOrdering = rootFolders.next();
       var archiveFolders = webOrdering.getFoldersByName("Archive");
       if (!archiveFolders.hasNext()) return out;
       archiveFolder = archiveFolders.next();
@@ -6333,8 +6370,10 @@ function getBillingData(cycle, filterValue) {
   };
 
   if (cycle === 'Daily') {
-    fromStr = filterValue || Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
-    toStr   = fromStr;
+    // Daily mode: show ALL pending On Account orders (no date restriction).
+    // fromStr/toStr left blank — filtering below is skipped for Daily.
+    fromStr = '';
+    toStr   = '';
   } else if (cycle === 'Monthly') {
     const mIdx = (filterValue !== undefined && filterValue !== '') ? parseInt(filterValue) : now.getMonth();
     const first = new Date(now.getFullYear(), mIdx, 1);
@@ -6361,9 +6400,11 @@ function getBillingData(cycle, filterValue) {
   }
 
   // Filter On Account orders within cycle date range
+  // For Daily: no date restriction — return ALL pending On Account orders.
   const onAccountOrders = allOrders.filter(r => {
     const status = String(r.Payment_Status || '').trim().toLowerCase();
     if (status !== 'on account') return false;
+    if (cycle === 'Daily') return true; // all dates
     const dVal = r.Order_Date;
     const ds = dVal instanceof Date ? Utilities.formatDate(dVal, 'Asia/Kolkata', 'yyyy-MM-dd') : String(dVal).trim();
     return ds >= fromStr && ds <= toStr;
@@ -6402,7 +6443,10 @@ function getBillingData(cycle, filterValue) {
       date:  ds,
       meal:  String(r.Meal_Type || ''),
       items: String(r.Items_JSON || '{}'),
-      net:   Number(r.Net_Total || 0)
+      net:   Number(r.Net_Total || 0),
+      // Include for Daily flat-list display
+      customer_name:  r.Customer_Name || cust.name || '',
+      customer_phone: phone
     });
     grouped[phone].total += Number(r.Net_Total || 0);
   });
@@ -6411,7 +6455,38 @@ function getBillingData(cycle, filterValue) {
   const customers = Object.values(grouped).sort((a,b) => {
     if (b.total !== a.total) return b.total - a.total;
     return a.name.localeCompare(b.name);
-  });  return { success: true, cycle, from: fromStr, to: toStr, customers };
+  });
+
+  // For Daily: also build a flat, date-sorted list of all orders across all customers.
+  // The frontend uses this to render the new flat-list view.
+  let flat_orders = null;
+  if (cycle === 'Daily') {
+    flat_orders = [];
+    customers.forEach(c => {
+      c.orders.forEach(o => {
+        flat_orders.push({
+          sid:            o.sid,
+          date:           o.date,
+          meal:           o.meal,
+          items:          o.items,
+          net:            o.net,
+          customer_name:  c.name,
+          customer_phone: c.phone,
+          area:           c.area,
+          billing_cycle:  c.billing_cycle
+        });
+      });
+    });
+    // Sort by date ascending, then meal order (Breakfast→Lunch→Dinner)
+    const mealOrder = { Breakfast: 0, Lunch: 1, Dinner: 2 };
+    flat_orders.sort((a, b) => {
+      const dateCmp = a.date.localeCompare(b.date);
+      if (dateCmp !== 0) return dateCmp;
+      return (mealOrder[a.meal] ?? 9) - (mealOrder[b.meal] ?? 9);
+    });
+  }
+
+  return { success: true, cycle, from: fromStr, to: toStr, customers, flat_orders };
 }
 
 function markBillingCollected(submissionIds) {
