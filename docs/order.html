@@ -7404,6 +7404,37 @@
     }
 
     function showSuccess(id) {
+      // ── GA4 E-COMMERCE TRACKING (Monetisation) ──
+      try {
+        const gaItems = [];
+        for (const date of S.selectedDates) {
+          ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
+            const mObj = S.orders[date]?.[meal];
+            if (mObj && mObj.subtotal > 0) {
+              for (const [colKey, qty] of Object.entries(mObj.items || {})) {
+                if (qty > 0) {
+                  gaItems.push({
+                    item_id: colKey,
+                    item_name: getItemName(colKey, meal, date),
+                    item_category: meal,
+                    price: getPrice(colKey, meal, date),
+                    quantity: qty
+                  });
+                }
+              }
+            }
+          });
+        }
+        if (typeof gtag === 'function') {
+          gtag('event', 'purchase', {
+            transaction_id: id || ('ORDER_' + Date.now()),
+            value: Number(S.grandTotal),
+            currency: 'INR',
+            items: gaItems
+          });
+        }
+      } catch (gaErr) { console.warn("GA4 Event Error:", gaErr); }
+
       // Navigate to the payment step (step 4) so its screen is visible.
       // On HDFC return the page starts at step 0 — successCard is inside
       // screen 4 and won't show unless that screen is active first.
