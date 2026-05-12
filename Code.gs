@@ -759,10 +759,11 @@ function jsonRes(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 // ── GOOGLE ANALYTICS 4 INTEGRATION ──────────────────────────
-const GA4_HEADERS = ["Date", "Active_Users", "Sessions", "Engaged_Sessions", "Engagement_Rate", "Screen_Page_Views", "Average_Session_Duration"];
+const GA4_HEADERS = ["Date", "Source", "Device", "Active_Users", "Sessions", "Page_Views", "Engagement_Rate", "Avg_Session_Duration", "Event_Count"];
 
 /**
  * Fetches the last 30 days of traffic metrics from GA4 and stores them in the sheet.
+ * Includes breakdown by Source and Device.
  * Requires "Google Analytics Data API" service to be enabled in Apps Script.
  */
 function syncGA4Data() {
@@ -770,14 +771,18 @@ function syncGA4Data() {
   if (!propertyId) return "Error: GA4_PROPERTY_ID not set.";
 
   const request = {
-    dimensions: [{ name: 'date' }],
+    dimensions: [
+      { name: 'date' },
+      { name: 'sessionSource' },
+      { name: 'deviceCategory' }
+    ],
     metrics: [
       { name: 'activeUsers' },
       { name: 'sessions' },
-      { name: 'engagedSessions' },
-      { name: 'engagementRate' },
       { name: 'screenPageViews' },
-      { name: 'averageSessionDuration' }
+      { name: 'engagementRate' },
+      { name: 'averageSessionDuration' },
+      { name: 'eventCount' }
     ],
     dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }]
   };
@@ -789,7 +794,7 @@ function syncGA4Data() {
     const ss = getSpreadsheet();
     const ws = getOrCreateTab(ss, TAB_GA4_METRICS, GA4_HEADERS);
     
-    // Snapshot approach: overwrite the tab with the latest 30-day window
+    // Snapshot approach: overwrite the tab with the latest window
     if (ws.getLastRow() > 1) {
       ws.getRange(2, 1, ws.getLastRow() - 1, GA4_HEADERS.length).clearContent();
     }
@@ -798,20 +803,26 @@ function syncGA4Data() {
       // Format YYYYMMDD to YYYY-MM-DD
       const rawDate = row.dimensionValues[0].value;
       const formattedDate = rawDate.substring(0,4) + "-" + rawDate.substring(4,6) + "-" + rawDate.substring(6,8);
+      
       return [
         formattedDate,
+        row.dimensionValues[1].value, // Source
+        row.dimensionValues[2].value, // Device
         ...row.metricValues.map(mv => mv.value)
       ];
     });
     
-    // Sort by date ascending
-    rows.sort((a, b) => a[0].localeCompare(b[0]));
+    // Sort by date descending, then source
+    rows.sort((a, b) => {
+      if (a[0] !== b[0]) return b[0].localeCompare(a[0]);
+      return a[1].localeCompare(b[1]);
+    });
 
     if (rows.length > 0) {
       ws.getRange(2, 1, rows.length, GA4_HEADERS.length).setValues(rows);
     }
     
-    return "Successfully synced " + rows.length + " days of GA4 data.";
+    return "Successfully synced " + rows.length + " data points (Date/Source/Device combinations).";
   } catch (e) {
     console.error("GA4 Sync Error:", e);
     return "Error: " + e.message;
