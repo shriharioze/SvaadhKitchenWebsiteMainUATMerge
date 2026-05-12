@@ -5548,7 +5548,8 @@
           promoCount: pc,
           feeExempt: (profileData.feeExempt === true || String(profileData.feeExempt) === "true"),
           onAccount: profileData.onAccount || "No",
-          billingCycle: profileData.billingCycle || "Daily"
+          billingCycle: profileData.billingCycle || "Daily",
+          pending_amount: Number(profileData.pending_amount) || 0
         };
         S.walletBalance = wb;
         S.walletMode = true; // Everyone is on wallet/prepaid mode now
