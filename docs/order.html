@@ -3048,7 +3048,7 @@
     <div id="walletChip" onclick="openWalletRecharge()"
       style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:30px; padding:5px 10px; font-size:0.72rem; font-weight:700; color:#1a6640; display:flex; align-items:center; gap:4px; cursor:pointer; flex-shrink:0; white-space:nowrap;">
       <span id="walletChipIcon">💼</span> <span id="headerWalletBalance">₹0</span>
-      <span style="border-left:1px solid #c8e6c9; padding-left:4px; color:#2e7d32; font-size:0.75rem;">+</span>
+      <span id="walletChipPlus" style="border-left:1px solid #c8e6c9; padding-left:4px; color:#2e7d32; font-size:0.75rem;">+</span>
     </div>
 
     <!-- Action buttons (right) -->
@@ -5718,12 +5718,31 @@
 
     function updateWalletBalanceUI(wb) {
       S.walletBalance = wb; S.profile.wallet_balance = wb;
-      if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
-      if ($("walletBalDisplay")) $("walletBalDisplay").textContent = `₹${wb}`;
-
       const isOA = (S.profile && S.profile.onAccount === "Yes");
-      if ($("walletChipIcon")) {
-        $("walletChipIcon").textContent = isOA ? "Settle Bill" : "💼";
+
+      if (isOA) {
+        // For On Account users: show their net pending due on the chip
+        const pending = Number(S.profile.pending_amount) || 0;
+        const netDue = Math.max(0, pending - wb);
+        const chip = $("walletChip");
+        if (chip) {
+          chip.style.background = netDue > 0 ? "#fff5f5" : "#f0faf4";
+          chip.style.borderColor = netDue > 0 ? "#f5c6cb" : "#b7e4c7";
+          chip.style.color       = netDue > 0 ? "#b71c1c" : "#1a6640";
+        }
+        if ($("walletChipIcon")) $("walletChipIcon").textContent = "Settle Bill";
+        if ($("headerWalletBalance")) $("headerWalletBalance").textContent = netDue > 0 ? `₹${netDue} due` : "✅ Paid";
+        if ($("walletChipPlus")) $("walletChipPlus").style.display = "none";
+      } else {
+        // Regular users: show wallet balance
+        if ($("walletChip")) {
+          $("walletChip").style.background = "#f0faf4";
+          $("walletChip").style.borderColor = "#b7e4c7";
+          $("walletChip").style.color       = "#1a6640";
+        }
+        if ($("walletChipIcon")) $("walletChipIcon").textContent = "💼";
+        if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
+        if ($("walletChipPlus")) $("walletChipPlus").style.display = "";
       }
     }
 
