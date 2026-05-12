@@ -11,6 +11,7 @@ const ADMIN_PIN      = SP.getProperty("ADMIN_PIN") || "7532";
 const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
+const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
 
 const CODE_VERSION   = 14.9; // Soft-cancel: orders are never deleted, marked with status remark for audit trail
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
@@ -62,6 +63,7 @@ const TAB_AREAS      = "SK_Areas";
 const TAB_WALLET     = "SK_Wallet"; // Holds prepaid balances
 const TAB_REFUNDS    = "SK_Refunds";      // Manual refund requests
 const TAB_WEBHOOK_LOG = "SK_Webhook_Log"; // HDFC webhook log-first buffer
+const TAB_GA4_METRICS = "SK_Analytics_Data"; // Google Analytics Storage
 
 // Canonical SK_Wallet column schema — NEVER reorder these
 const WALLET_HEADERS = ["Phone", "Customer_Name", "Txn_Type", "Amount", "Verified", "Reference_ID", "Timestamp"];
@@ -428,6 +430,15 @@ function doGet(e) {
         payments: getPendingUPIPayments().length
       });
     }
+
+    if (action === "syncGA4Data") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes({success: true, message: syncGA4Data()});
+    }
+    if (action === "setupAnalyticsTrigger") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes({success: true, message: setupAnalyticsTrigger()});
+    }
     
     // Keep-alive ping — just wakes GAS, no sheet reads
     if (action === "ping") return jsonRes({ok: true, t: new Date().toISOString()});
@@ -746,6 +757,85 @@ function jsonRes(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+// ── GOOGLE ANALYTICS 4 INTEGRATION ──────────────────────────
+const GA4_HEADERS = ["Date", "Active_Users", "Sessions", "Engaged_Sessions", "Engagement_Rate", "Screen_Page_Views", "Average_Session_Duration"];
+
+/**
+ * Fetches the last 30 days of traffic metrics from GA4 and stores them in the sheet.
+ * Requires "Google Analytics Data API" service to be enabled in Apps Script.
+ */
+function syncGA4Data() {
+  const propertyId = GA4_PROPERTY_ID;
+  if (!propertyId) return "Error: GA4_PROPERTY_ID not set.";
+
+  const request = {
+    dimensions: [{ name: 'date' }],
+    metrics: [
+      { name: 'activeUsers' },
+      { name: 'sessions' },
+      { name: 'engagedSessions' },
+      { name: 'engagementRate' },
+      { name: 'screenPageViews' },
+      { name: 'averageSessionDuration' }
+    ],
+    dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }]
+  };
+
+  try {
+    const response = AnalyticsData.Properties.runReport(request, 'properties/' + propertyId);
+    if (!response.rows || response.rows.length === 0) return "No data found in GA4.";
+
+    const ss = getSpreadsheet();
+    const ws = getOrCreateTab(ss, TAB_GA4_METRICS, GA4_HEADERS);
+    
+    // Snapshot approach: overwrite the tab with the latest 30-day window
+    if (ws.getLastRow() > 1) {
+      ws.getRange(2, 1, ws.getLastRow() - 1, GA4_HEADERS.length).clearContent();
+    }
+
+    const rows = response.rows.map(row => {
+      // Format YYYYMMDD to YYYY-MM-DD
+      const rawDate = row.dimensionValues[0].value;
+      const formattedDate = rawDate.substring(0,4) + "-" + rawDate.substring(4,6) + "-" + rawDate.substring(6,8);
+      return [
+        formattedDate,
+        ...row.metricValues.map(mv => mv.value)
+      ];
+    });
+    
+    // Sort by date ascending
+    rows.sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (rows.length > 0) {
+      ws.getRange(2, 1, rows.length, GA4_HEADERS.length).setValues(rows);
+    }
+    
+    return "Successfully synced " + rows.length + " days of GA4 data.";
+  } catch (e) {
+    console.error("GA4 Sync Error:", e);
+    return "Error: " + e.message;
+  }
+}
+
+/**
+ * Setup a daily trigger to sync GA4 data automatically at 1 AM.
+ */
+function setupAnalyticsTrigger() {
+  // Remove existing triggers for this function to avoid duplicates
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(t => {
+    if (t.getHandlerFunction() === 'syncGA4Data') ScriptApp.deleteTrigger(t);
+  });
+  
+  // Create new daily trigger
+  ScriptApp.newTrigger('syncGA4Data')
+    .timeBased()
+    .everyDays(1)
+    .atHour(1)
+    .create();
+    
+  return "Daily GA4 sync trigger set for 1:00 AM.";
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
