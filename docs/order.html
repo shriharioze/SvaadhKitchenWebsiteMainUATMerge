@@ -6935,6 +6935,18 @@
     function toggleExtraBundle(id) { const el = $(id), icon = $(`icon_${id}`); if (el) el.classList.toggle('open'); if (icon) icon.classList.toggle('open'); }
 
     function openWalletRecharge() {
+      const isOA = (S.profile && S.profile.onAccount === "Yes");
+      
+      const titleEl = document.querySelector("#walletRechargeModal .bm-title");
+      if (titleEl) titleEl.textContent = isOA ? "Pay Bill" : "Add Funds to Wallet";
+      
+      const descEl = document.querySelector("#walletRechargeModal p");
+      if (descEl) {
+        descEl.textContent = isOA 
+          ? "Admin will verify your payment and apply it against your pending orders." 
+          : "Admin will verify your payment and credit it to your account within 1-2 hours.";
+      }
+
       $('walletRechargeAmt').value = '';
       $('walletQrWrap').style.display = 'none';
       $('walletRechargeModal').style.display = 'flex';
@@ -6965,7 +6977,7 @@
         }
 
         const TYPE_LABEL = {
-          "recharge":                   { icon: "⬆️", label: "Wallet Recharge",        color: "#1b5e20" },
+          "recharge":                   { icon: "⬆️", label: (S.profile && S.profile.onAccount === "Yes") ? "Bill Payment" : "Wallet Recharge", color: "#1b5e20" },
           "order deduction":            { icon: "🍱", label: "Order Payment",           color: "#b71c1c" },
           "order deduction (wallet":    { icon: "🍱", label: "Order Payment",           color: "#b71c1c" },
           "order cancellation refund":  { icon: "↩️", label: "Refund",                 color: "#1b5e20" },
