@@ -1101,7 +1101,13 @@ function verifyLogin(phone, pin) {
         const ps = String(ord.Payment_Status || "").trim().toLowerCase();
         // Include "on account", "pending", or empty status for On Account users
         if (ps === "on account" || ps === "onaccount" || ps === "pending" || ps === "") {
-          pendingAmount += (Number(ord.Net_Total) || 0);
+          // Robust parsing of Net_Total to handle currency symbols/commas
+          let val = ord.Net_Total;
+          if (typeof val !== "number") {
+            val = String(val || "").replace(/[^\d.-]/g, '');
+            val = Number(val);
+          }
+          pendingAmount += (val || 0);
         }
       }
     }
@@ -1153,11 +1159,17 @@ function _autoSettlePendingOrders(phone) {
   const hIdx = headerIndex(wsOrders);
 
   // Rule 2: Only target "on account" orders (ignore normal Pending/UPI)
-  const pendingOrders = rows.filter(r => 
-    _normalizePhone(r.Phone) === pStr &&
-    String(r.Payment_Status).trim().toLowerCase() === "on account" &&
-    (Number(r.Net_Total) > 0)
-  );
+  const pendingOrders = rows.filter(r => {
+    if (_normalizePhone(r.Phone) !== pStr) return false;
+    if (String(r.Payment_Status).trim().toLowerCase() !== "on account") return false;
+    
+    let amt = r.Net_Total;
+    if (typeof amt !== "number") {
+      amt = String(amt || "").replace(/[^\d.-]/g, '');
+      amt = Number(amt);
+    }
+    return (amt > 0);
+  });
 
   if (pendingOrders.length === 0) return { settled: 0, msg: "" };
 
@@ -1168,12 +1180,24 @@ function _autoSettlePendingOrders(phone) {
 
   let totalSettled = 0;
   let ordersSettledCount = 0;
-  let originalPendingAmount = pendingOrders.reduce((sum, o) => sum + (Number(o.Net_Total) || 0), 0);
+  let originalPendingAmount = pendingOrders.reduce((sum, o) => {
+    let amt = o.Net_Total;
+    if (typeof amt !== "number") {
+      amt = String(amt || "").replace(/[^\d.-]/g, '');
+      amt = Number(amt);
+    }
+    return sum + (amt || 0);
+  }, 0);
   
   let currentWallet = walletBalance;
 
   for (let order of pendingOrders) {
-    const amount = Number(order.Net_Total) || 0;
+    let amount = order.Net_Total;
+    if (typeof amount !== "number") {
+      amount = String(amount || "").replace(/[^\d.-]/g, '');
+      amount = Number(amount);
+    }
+    amount = amount || 0;
     if (currentWallet >= amount) {
       wsOrders.getRange(order._row, hIdx["Payment_Status"]).setValue("Paid");
       _appendWalletTransaction(phone, order.Customer_Name || "Customer", "Auto-deducted for On Account order " + (order.Submission_ID || order.Order_Date), amount, true, "AUTO-" + Date.now() + "-" + Math.floor(Math.random()*1000));
@@ -1229,7 +1253,12 @@ function _calculateWalletBalance(phone, preloadedRows) {
     const rVer = String(w.Verified || "").trim().toUpperCase();
     if (rVer !== "TRUE" && rVer !== "YES" && rVer !== "VERIFIED") return;
 
-    const rAmt  = Number(w.Amount) || 0;
+    let rAmt = w.Amount;
+    if (typeof rAmt !== "number") {
+      rAmt = String(rAmt || "").replace(/[^\d.-]/g, '');
+      rAmt = Number(rAmt);
+    }
+    rAmt = rAmt || 0;
     // Also check legacy columns where Txn_Type may have been stored in a "Balance" column
     const rType = String(w.Txn_Type || w.Balance || w.Txn_Type || "").trim().toLowerCase();
 
