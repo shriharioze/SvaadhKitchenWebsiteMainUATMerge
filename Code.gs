@@ -4282,8 +4282,12 @@ function getUnpaidCustomers(p) {
     map[key].orderCount += 1;
   });
 
+  // Load wallet rows ONCE — avoids N API calls inside the map loop
+  const walletWsUC = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  const walletRowsUC = getAllRows(walletWsUC);
+
   const customers = Object.values(map).map(c => {
-    const wb = _calculateWalletBalance(c.phone);
+    const wb = _calculateWalletBalance(c.phone, walletRowsUC);
     const net = Math.round(c.total - wb);
     return { ...c, total: net, walletBalance: Math.round(wb) };
   });
@@ -4489,9 +4493,13 @@ function getCustomerList() {
     };
   });
 
+  // Load wallet rows ONCE — avoids N API calls inside the map loop
+  var walletWs = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
+  var walletRows = getAllRows(walletWs);
+
   var customers = Object.values(map)
     .map(function(c){
-      const wb = _calculateWalletBalance(c.phone);
+      const wb = _calculateWalletBalance(c.phone, walletRows);
       const net = Math.round(c.pendingAmt - wb);
       return Object.assign({}, c, {
         totalSpent: Math.round(c.totalSpent),
