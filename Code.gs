@@ -3526,23 +3526,7 @@ function getDriverOrders(date) {
     });
   });
 
-  // ── Resolve Maps URLs server-side (handles short links + extracts pin coords) ─
-  // For every order with a Maps_Link, try to attach lat/lng so route optimisation
-  // doesn't fall back to inaccurate camera-center coords on the client.
-  var allOrders = [].concat(meals.Breakfast, meals.Lunch, meals.Dinner);
-  allOrders.forEach(function(o) {
-    if (!o.maps) return;
-    // First try direct extraction — works for full-form share URLs
-    var direct = _extractCoordsGS(o.maps);
-    if (direct) { o.lat = direct.lat; o.lng = direct.lng; return; }
-    // Fallback: short URL — follow redirect chain
-    if (o.maps.indexOf('goo.gl') > -1 || o.maps.indexOf('maps.app') > -1) {
-      try {
-        var c = _resolveMapsShortUrlCached(o.maps);
-        if (c) { o.lat = c.lat; o.lng = c.lng; }
-      } catch(e) { /* skip this stop */ }
-    }
-  });
+
 
   return {date: date, meals: meals};
 }
@@ -3607,83 +3591,7 @@ function createDeliverySheet(date, meal) {
 // Shared coord extractor for Apps Script (mirrors client-side regex)
 // Priority: !3d/!4d (actual pinned location) > place/@ (share URL center) >
 // ?q= / ?destination= / ?ll= > @ (camera center — last resort, can be far off)
-function _extractCoordsGS(url) {
-  if (!url) return null;
-  var decoded;
-  try { decoded = decodeURIComponent(url); } catch(e) { decoded = url; }
-  // 1. !3dLAT!4dLNG — actual pinned location (most accurate)
-  var m = decoded.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-  if (m) return { lat: +m[1], lng: +m[2] };
-  // 2. /place/Name/@LAT,LNG — share-URL center (usually correct)
-  m = decoded.match(/\/place\/[^\/]+\/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: +m[1], lng: +m[2] };
-  // 3. ?q= / ?query= / ?destination= / ?daddr=
-  m = decoded.match(/[?&](?:q|query|destination|daddr|saddr)=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: +m[1], lng: +m[2] };
-  // 4. ?ll=
-  m = decoded.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: +m[1], lng: +m[2] };
-  // 5. @LAT,LNG — camera center (last resort, may be slightly off)
-  m = decoded.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (m) return { lat: +m[1], lng: +m[2] };
-  return null;
-}
 
-// ── SHORT URL CACHING ──
-function _resolveMapsShortUrlCached(shortUrl) {
-  var cache = CacheService.getScriptCache();
-  // Create a clean key (Base64 encoding prevents invalid chars)
-  var safeKey = "maps_" + Utilities.base64EncodeWebSafe(shortUrl).substring(0, 200);
-  var hit = cache.get(safeKey);
-  if (hit) {
-    if (hit === "none") return null;
-    try { return JSON.parse(hit); } catch(e){}
-  }
-  var c = _resolveMapsShortUrl(shortUrl);
-  cache.put(safeKey, c ? JSON.stringify(c) : "none", 21600); // cache for 6 hours
-  return c;
-}
-
-// Multi-hop redirect resolver for short Maps URLs (maps.app.goo.gl, goo.gl/maps).
-// Follows up to 5 redirects manually because Apps Script does not expose final URLs
-// when `followRedirects: true` is used. After redirects, also tries to extract
-// coords from the final HTML body (og:url meta tag) as a fallback.
-function _resolveMapsShortUrl(shortUrl) {
-  var url = shortUrl;
-  var hops = 0;
-  while (hops < 5) {
-    try {
-      var resp = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true });
-      var code = resp.getResponseCode();
-      if (code >= 300 && code < 400) {
-        var hdrs = resp.getHeaders();
-        var loc  = hdrs['Location'] || hdrs['location'] || '';
-        if (!loc) break;
-        url = loc;
-        hops++;
-        // Try extracting after every hop — some redirect chains drop coords late
-        var cMid = _extractCoordsGS(url);
-        if (cMid) return cMid;
-        continue;
-      }
-      // Final response — try body for canonical URL
-      if (code >= 200 && code < 300) {
-        var body = resp.getContentText() || '';
-        var ogMatch = body.match(/<meta[^>]*property=["']og:url["'][^>]*content=["']([^"']+)["']/i)
-                  || body.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
-        if (ogMatch) {
-          var cOg = _extractCoordsGS(ogMatch[1]);
-          if (cOg) return cOg;
-        }
-        // Some maps responses inline coords as ;[null,null,LAT,LNG]
-        var inline = body.match(/;\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
-        if (inline) return { lat: +inline[1], lng: +inline[2] };
-      }
-      break;
-    } catch(e) { break; }
-  }
-  return _extractCoordsGS(url);
-}
 
 // ── ORDER SUMMARY ────────────────────────────────────────────
 function getOrderSummary(date) {

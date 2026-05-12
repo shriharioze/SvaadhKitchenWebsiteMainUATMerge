@@ -410,8 +410,8 @@ async function loadOrders() {
   }
 }
 
-// ── AUTO-POLL (delivery status sync every 30s) ────────────────────────────────
-function startPoll()  { stopPoll(); _pollTimer = setInterval(silentPoll, 30000); }
+// ── AUTO-POLL (delivery status sync every 5m) ────────────────────────────────
+function startPoll()  { stopPoll(); _pollTimer = setInterval(silentPoll, 300000); }
 function stopPoll()   { if (_pollTimer) clearInterval(_pollTimer); }
 
 async function silentPoll() {
