@@ -1117,6 +1117,54 @@ function verifyLogin(phone, pin) {
   };
 }
 
+// ── AUTO-SETTLE PENDING ORDERS ──────────────────────────────
+function _autoSettlePendingOrders(phone) {
+  const ss = getSpreadsheet();
+  const wsOrders = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(wsOrders);
+  const hIdx = headerIndex(wsOrders);
+
+  const pStr = _normalizePhone(phone);
+  const pendingOrders = rows.filter(r => 
+    _normalizePhone(r.Phone) === pStr &&
+    (String(r.Payment_Status).trim().toLowerCase() === "pending" || 
+     String(r.Payment_Status).trim().toLowerCase() === "on account" || 
+     !String(r.Payment_Status).trim()) &&
+    (Number(r.Net_Total) > 0)
+  );
+
+  if (pendingOrders.length === 0) return { settled: 0, msg: "" };
+
+  // Sort by date (oldest first)
+  pendingOrders.sort((a, b) => String(a.Order_Date).localeCompare(String(b.Order_Date)));
+
+  let walletBalance = _calculateWalletBalance(phone);
+  let totalSettled = 0;
+  let ordersSettledCount = 0;
+
+  for (let order of pendingOrders) {
+    const amount = Number(order.Net_Total) || 0;
+    if (walletBalance >= amount) {
+      wsOrders.getRange(order._row, hIdx["Payment_Status"]).setValue("Paid");
+      _appendWalletTransaction(phone, order.Customer_Name || "Customer", "Auto-deducted for pending order " + (order.Submission_ID || order.Order_Date), amount, true, "AUTO-" + Date.now() + "-" + Math.floor(Math.random()*1000));
+      walletBalance -= amount;
+      totalSettled += amount;
+      ordersSettledCount++;
+    } else {
+      break;
+    }
+  }
+
+  if (ordersSettledCount > 0) {
+    return { 
+      settled: totalSettled, 
+      msg: `Wallet recharge automatically used to clear ${ordersSettledCount} pending order(s) (₹${totalSettled}). New Wallet Balance is: ₹${walletBalance}` 
+    };
+  }
+
+  return { settled: 0, msg: "" };
+}
+
 // ── WALLET HELPER ──────────────────────────────────────────
 function _calculateWalletBalance(phone, preloadedRows) {
   if (!phone) return 0;
@@ -4835,8 +4883,15 @@ function adminCreditWallet(body) {
   var name     = profile ? (String(profile.Customer_Name||"").trim() || "Customer") : "Customer";
 
   _appendWalletTransaction(phone, name, "Admin Credit", amount, true, "ADMIN-" + Date.now());
+  const settleRes = _autoSettlePendingOrders(phone);
   var newBalance = _calculateWalletBalance(phone);
-  return {success:true, newBalance: Math.round(newBalance)};
+  
+  let msg = `₹${amount} credited to ${phone}. New balance: ₹${Math.round(newBalance)}`;
+  if (settleRes.msg) {
+    msg = settleRes.msg;
+  }
+  
+  return {success:true, newBalance: Math.round(newBalance), msg: msg};
 }
 
 // ── INVENTORY ─────────────────────────────────────────────────────────────────
@@ -5884,7 +5939,8 @@ function approveWalletRecharge(body) {
     if (rPhone === phone && rTs === ts) {
       if (rVer === "TRUE") return {success:true, msg:"Already verified"};
       ws.getRange(i+1, vCol).setValue("TRUE");
-      return {success:true};
+      const settleRes = _autoSettlePendingOrders(phone);
+      return {success:true, msg: settleRes.msg || "Wallet Activated ✅"};
     }
   }
   

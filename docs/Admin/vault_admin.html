@@ -4570,7 +4570,7 @@ async function adminAddWalletCredit() {
     const res  = await fetch(APPS_SCRIPT_URL, { method:"POST", body: JSON.stringify({ _action:"adminCreditWallet", phone, amount, pin: S.sessionPin }) });
     const data = await res.json();
     if (data.success) {
-      status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ ₹${amount} credited to ${phone}. New balance: ₹${data.newBalance}</span>`;
+      status.innerHTML = `<span style="color:#16a34a;font-weight:700;">✅ ${data.msg || `₹${amount} credited to ${phone}. New balance: ₹${data.newBalance}`}</span>`;
       document.getElementById("wcPhone").value  = "";
       document.getElementById("wcAmount").value = "";
     } else {
@@ -5828,7 +5828,8 @@ async function activateWalletRecharge(phone, timestamp, amt, name) {
       body: JSON.stringify({ _action: "approveWalletRecharge", pin: S.sessionPin, phone, timestamp }) });
     const data = await res.json();
     if (data.success) {
-      toast("Wallet Activated ✅");
+      toast(data.msg || "Wallet Activated ✅");
+      if (data.msg) await showUIConfirm(data.msg, "Wallet Activated", "💳", { confirmLabel: "OK", hideCancel: true });
       await loadPendingRecharges();
       refreshApprovalCounts();
     } else throw new Error(data.error);
