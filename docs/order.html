@@ -4438,7 +4438,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.13.5";
+    const APP_VERSION = "v26.05.13.6";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5013,26 +5013,17 @@
     }
 
     function renderStreakBanner(...ids) {
-      let sc = S.loyaltyInfo?.count || 0;
-      let surcharge = S.loyaltyInfo?.surcharge || 0;
-      let streakStart = S.loyaltyInfo?.start;
-      let streakEnd = S.loyaltyInfo?.end;
-
-      // Projection: If any day in the current cart completes the streak, show 6/6
-      let anyRewardInCart = false;
-      let tempSc = S.loyaltyInfo?.count || 0;
-      for (const d of (S.selectedDates || [])) {
+      // Smart Projection:
+      const cartDatesWithFood = (S.selectedDates || []).filter(d => {
         const dayOrders = S.orders[d] || {};
-        let hasFood = ["Breakfast","Lunch","Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
-        if (!hasFood) continue;
-        
-        if (tempSc === 5) anyRewardInCart = true;
-        tempSc = (tempSc === 5) ? 0 : tempSc + 1;
-        
-        if (!streakStart) streakStart = d;
-        streakEnd = d; // update end date as we progress through cart
-      }
-      if (anyRewardInCart) sc = 6;
+        return ["Breakfast", "Lunch", "Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
+      });
+
+      const projection = calculateLoyaltyStreak(S.pastOrders, cartDatesWithFood);
+      let sc = projection.count;
+      let surcharge = projection.surcharge;
+      let streakStart = projection.start;
+      let streakEnd = projection.end;
 
       const periodStr = (streakStart && streakEnd) ? `${formatDate(streakStart)} – ${formatDate(streakEnd)}` : "";
       const nextDayStr = streakEnd ? formatDate(getNextStreakDay(streakEnd)) : "soon";
@@ -6523,26 +6514,16 @@
       {
         const streakBadge = $("streakProgressBadge");
         if (streakBadge) {
-          let sc = S.loyaltyInfo?.count || 0;
-          let streakStart = S.loyaltyInfo?.start;
-          let streakEnd = S.loyaltyInfo?.end;
-          let anyRewardInCart = false;
-          let tempSc = sc;
-
-          // Figure out the max streak reached after including this cart
-          for (const d of S.selectedDates) {
+          const cartDatesWithFood = S.selectedDates.filter(d => {
             const dayOrders = S.orders[d] || {};
-            let hasFood = ["Breakfast","Lunch","Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
-            if (!hasFood) continue;
-            
-            if (tempSc === 5) anyRewardInCart = true;
-            tempSc = (tempSc === 5) ? 0 : tempSc + 1;
-            if (tempSc > sc) sc = tempSc;
+            return ["Breakfast", "Lunch", "Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
+          });
 
-            if (!streakStart) streakStart = d;
-            streakEnd = d;
-          }
-          if (anyRewardInCart) sc = 6;
+          const projection = calculateLoyaltyStreak(S.pastOrders, cartDatesWithFood);
+          let sc = projection.count;
+          let streakStart = projection.start;
+          let streakEnd = projection.end;
+          let surcharge = projection.surcharge;
 
           const periodStr = (streakStart && streakEnd) ? `${formatDate(streakStart)} – ${formatDate(streakEnd)}` : "";
 
@@ -8164,7 +8145,7 @@
      * Calculates the current consecutive ordering streak and total past surcharges.
      * Skips Sundays.
      */
-    function calculateLoyaltyStreak(pastOrders) {
+    function calculateLoyaltyStreak(pastOrders, cartDates = []) {
       const dailyTotals = {};
       const rewardDays = new Set();
       const allOrders = [...(S.existingOrders || []), ...(pastOrders || [])];
@@ -8180,6 +8161,12 @@
         dailyTotals[dStr] += Number(r.inflation_surcharge) || 0;
 
         if (r.loyalty_discount === true) rewardDays.add(dStr);
+        if (dStr > latestOrderDate) latestOrderDate = dStr;
+      });
+
+      // Merge cart dates for projection
+      cartDates.forEach(dStr => {
+        if (dailyTotals[dStr] === undefined) dailyTotals[dStr] = 0;
         if (dStr > latestOrderDate) latestOrderDate = dStr;
       });
 
