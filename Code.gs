@@ -2716,6 +2716,8 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
   // GRACEFUL REFUND HANDLING with eligibility recalculation (Cases 1/2/3)
   const pStatStr = String(r.Payment_Status).toLowerCase();
   const isOnAccountOrder = pStatStr === "on account";
+  let finalType = refundType; // Declare here so it is accessible at the end of the function for the soft-cancel remark.
+
   if (pStatStr === "paid" || pStatStr === "wallet paid" || isOnAccountOrder) {
     const custName = r.Customer_Name || "Customer";
     const ordersWs2 = ws; // same sheet
@@ -2917,7 +2919,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
       return typeMatch && statusMatch;
     });
 
-    let finalType = refundType;
+    finalType = refundType;
     let msgSuffix = "";
 
     // Auto-detect wallet refund if current was wallet paid, overriding passed type
