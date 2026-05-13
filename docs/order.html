@@ -6457,20 +6457,44 @@
       // ── Streak progress badge ──────────────────────────────────────────────
       {
         const streakBadge = $("streakProgressBadge");
-        const sc = S.loyaltyInfo?.count || 0; // 0–5 completed days
         if (streakBadge) {
+          let sc = S.loyaltyInfo?.count || 0;
+          let anyRewardInCart = false;
+          let tempSc = sc;
+
+          // Figure out the max streak reached after including this cart
+          for (const d of S.selectedDates) {
+            const dayOrders = S.orders[d] || {};
+            let hasFood = ["Breakfast","Lunch","Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
+            if (!hasFood) continue;
+            
+            if (tempSc === 5) anyRewardInCart = true;
+            tempSc = (tempSc === 5) ? 0 : tempSc + 1;
+            if (tempSc > sc) sc = tempSc;
+          }
+          if (anyRewardInCart) sc = 6;
+
           if (sc === 0) {
             streakBadge.style.display = "none";
           } else if (sc >= 6) {
-            // Will be shown as 6th day reward in billing — hide generic badge
-            streakBadge.style.display = "none";
+            // CELEBRATION STATE: Streak completed in this cart!
+            streakBadge.innerHTML = `
+              <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #10b981;border-radius:16px;
+                          padding:14px 16px;box-shadow:0 4px 12px rgba(16,185,129,0.15);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:1.3rem;">🎉</span>
+                    <span style="font-size:0.9rem;font-weight:800;color:#065f46;">Streak Complete!</span>
+                  </div>
+                  <div style="background:#10b981;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:800;color:white;">6/6</div>
+                </div>
+                <div style="font-size:0.8rem;color:#047857;line-height:1.4;font-weight:600;">
+                  Awesome! Your 6-day streak reward is applied to this bill. All market surcharges are being refunded! 🔥
+                </div>
+              </div>`;
+            streakBadge.style.display = "block";
           } else {
             const remaining = 6 - sc;
-            const dots = Array.from({length: 6}, (_, i) =>
-              `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;
-                background:${i < sc ? '#059669' : '#d1d5db'};"></span>`
-            ).join("");
-            // Progress bar segments (6 segments, filled = sc)
             const segments = Array.from({length: 6}, (_, i) =>
               `<div style="flex:1;height:6px;border-radius:3px;margin:0 2px;
                            background:${i < sc ? '#2e7d32' : '#e5e7eb'};
