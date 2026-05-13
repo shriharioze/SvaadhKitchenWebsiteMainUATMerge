@@ -8191,6 +8191,11 @@
       return { count, surcharge, start: streakStart, end: streakEnd };
     }
 
+    function refreshStreakUI() {
+      if (S.step === 2) renderStreakBanner("streakBannerDates");
+      if (S.step === 3) renderStreakBanner("streakBannerMeals");
+    }
+
     async function loadExistingOrders(phone) {
       const upcomingWrap = $("manageOrdersList");
       const cancelledWrap = $("cancelledOrdersList");
@@ -8206,6 +8211,7 @@
         S.existingOrders = data.orders || [];
         S.pastOrders = data.past_orders || [];
         S.loyaltyInfo = calculateLoyaltyStreak(S.pastOrders);
+        refreshStreakUI(); // Live refresh once data arrives
 
         // Render Wallet Dash wrap
         const wb = Number(data.wallet_balance) || 0;
