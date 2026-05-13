@@ -4438,7 +4438,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.13.6";
+    const APP_VERSION = "v26.05.13.7";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -8149,8 +8149,7 @@
       const dailyTotals = {};
       const rewardDays = new Set();
       const allOrders = [...(S.existingOrders || []), ...(pastOrders || [])];
-      
-      let latestOrderDate = "";
+      const allDates = new Set();
 
       allOrders.forEach(r => {
         const stat = String(r.payment_status || "").toLowerCase();
@@ -8161,58 +8160,60 @@
         dailyTotals[dStr] += Number(r.inflation_surcharge) || 0;
 
         if (r.loyalty_discount === true) rewardDays.add(dStr);
-        if (dStr > latestOrderDate) latestOrderDate = dStr;
+        allDates.add(dStr);
       });
 
-      // Merge cart dates for projection
       cartDates.forEach(dStr => {
         if (dailyTotals[dStr] === undefined) dailyTotals[dStr] = 0;
-        if (dStr > latestOrderDate) latestOrderDate = dStr;
+        allDates.add(dStr);
       });
 
-      const todayIsoStr = todayISO();
-      // Start from the LATEST of today or the latest existing order
-      let startStr = (latestOrderDate > todayIsoStr) ? latestOrderDate : todayIsoStr;
-      
-      // Create date object in local time to avoid timezone shifts
-      let d = new Date(startStr + "T12:00:00"); 
+      if (allDates.size === 0) return { count: 0, surcharge: 0, start: null, end: null };
 
-      // Bridge logic: if starting from today and today is empty, allow starting from yesterday
-      if (startStr === todayIsoStr && dailyTotals[todayIsoStr] === undefined) {
-        d.setDate(d.getDate() - 1);
-      }
+      // Find all possible streaks
+      const sortedDates = Array.from(allDates).sort();
+      const streaks = [];
 
-      let count = 0;
-      let surcharge = 0;
-      let safety = 0;
-      let streakStart = null;
-      let streakEnd = null;
+      // We need to check every date as a potential streak END point
+      sortedDates.forEach(endDate => {
+        let d = new Date(endDate + "T12:00:00");
+        let count = 0;
+        let surcharge = 0;
+        let streakStart = null;
+        let streakEnd = endDate;
+        let safety = 0;
 
-      while (safety < 60) {
-        safety++;
-        if (d.getDay() === 0) { // Skip Sunday
-          d.setDate(d.getDate() - 1);
-          continue;
+        while (safety < 60) {
+          safety++;
+          if (d.getDay() === 0) { // Skip Sunday
+            d.setDate(d.getDate() - 1);
+            continue;
+          }
+          let iso = d.toISOString().split('T')[0];
+          if (dailyTotals[iso] !== undefined) {
+            if (rewardDays.has(iso) && iso !== endDate) break; // Break if we hit a previous reward (unless it's the end itself)
+            count++;
+            surcharge += dailyTotals[iso];
+            streakStart = iso;
+            d.setDate(d.getDate() - 1);
+          } else {
+            break;
+          }
         }
-        
-        let y = d.getFullYear();
-        let m = String(d.getMonth() + 1).padStart(2, '0');
-        let day = String(d.getDate()).padStart(2, '0');
-        const iso = `${y}-${m}-${day}`;
-
-        if (dailyTotals[iso] !== undefined) {
-          if (rewardDays.has(iso)) break; 
-          count++;
-          surcharge += dailyTotals[iso];
-          if (!streakEnd) streakEnd = iso;
-          streakStart = iso;
-        } else {
-          // Break on the first gap found backwards from the starting point
-          break;
+        if (count > 0) {
+          streaks.push({ count, surcharge, start: streakStart, end: streakEnd });
         }
-        d.setDate(d.getDate() - 1);
-      }
-      return { count, surcharge, start: streakStart, end: streakEnd };
+      });
+
+      if (streaks.length === 0) return { count: 0, surcharge: 0, start: null, end: null };
+
+      // Winner: Longest streak, then earliest start
+      streaks.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.start.localeCompare(b.start);
+      });
+
+      return streaks[0];
     }
 
     function refreshStreakUI() {
