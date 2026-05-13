@@ -4413,7 +4413,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.13.2";
+    const APP_VERSION = "v26.05.13.3";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4979,6 +4979,8 @@
     function renderStreakBanner(...ids) {
       let sc = S.loyaltyInfo?.count || 0;
       let surcharge = S.loyaltyInfo?.surcharge || 0;
+      let streakStart = S.loyaltyInfo?.start;
+      let streakEnd = S.loyaltyInfo?.end;
 
       // Projection: If any day in the current cart completes the streak, show 6/6
       let anyRewardInCart = false;
@@ -4987,10 +4989,16 @@
         const dayOrders = S.orders[d] || {};
         let hasFood = ["Breakfast","Lunch","Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
         if (!hasFood) continue;
+        
         if (tempSc === 5) anyRewardInCart = true;
         tempSc = (tempSc === 5) ? 0 : tempSc + 1;
+        
+        if (!streakStart) streakStart = d;
+        streakEnd = d; // update end date as we progress through cart
       }
       if (anyRewardInCart) sc = 6;
+
+      const periodStr = (streakStart && streakEnd) ? `${formatDate(streakStart)} – ${formatDate(streakEnd)}` : "";
 
       let html = "";
       if (sc === 0) {
@@ -5025,25 +5033,27 @@
                         padding:3px 10px;font-size:0.78rem;font-weight:800;color:#92400e;">${sc}/6</div>
           </div>
           <div style="display:flex;margin-bottom:9px;">${segments}</div>
+          <div style="font-size:0.75rem;color:#9a3412;margin-bottom:6px;font-weight:700;opacity:0.8;">📅 Period: ${periodStr}</div>
           <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">
             <strong>${remaining} more day${remaining>1?'s':''}</strong> to unlock your reward —
             <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(sc*8)}</strong> surcharge refund coming your way!
-            Keep ordering to claim it 💪
           </div>
         </div>`;
       } else if (sc === 5) {
         // ONE DAY AWAY — high energy!
         html = `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;
                              border-radius:14px;padding:13px 14px;animation:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <span style="font-size:1.6rem;">🔥🔥🔥🔥🔥</span>
+            <div style="background:#f59e0b;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:800;color:white;">5/6</div>
           </div>
           <div style="font-size:0.9rem;font-weight:800;color:#92400e;margin-bottom:5px;">
             ONE more day — your reward is right there! 🏆
           </div>
+          <div style="font-size:0.75rem;color:#92400e;margin-bottom:8px;font-weight:700;opacity:0.9;">📅 Period: ${periodStr}</div>
           <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">
             You've ordered <strong>5 days in a row!</strong> Order today to complete your 6-day streak and get
-            <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(5*9)}</strong> back as a loyalty discount. Don't break the chain!
+            <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(5*9)}</strong> back. Don't break the chain!
           </div>
         </div>`;
       } else {
@@ -5057,6 +5067,7 @@
             </div>
             <div style="background:#10b981;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:800;color:white;">6/6</div>
           </div>
+          <div style="font-size:0.75rem;color:#047857;margin-bottom:6px;font-weight:700;opacity:0.9;">📅 Period: ${periodStr}</div>
           <div style="font-size:0.82rem;color:#047857;line-height:1.4;font-weight:600;">
             Awesome! Your 6-day streak reward is applied to this order. All your market surcharges (₹${surcharge}) are being refunded! 🔥
           </div>
@@ -6476,6 +6487,8 @@
         const streakBadge = $("streakProgressBadge");
         if (streakBadge) {
           let sc = S.loyaltyInfo?.count || 0;
+          let streakStart = S.loyaltyInfo?.start;
+          let streakEnd = S.loyaltyInfo?.end;
           let anyRewardInCart = false;
           let tempSc = sc;
 
@@ -6488,8 +6501,13 @@
             if (tempSc === 5) anyRewardInCart = true;
             tempSc = (tempSc === 5) ? 0 : tempSc + 1;
             if (tempSc > sc) sc = tempSc;
+
+            if (!streakStart) streakStart = d;
+            streakEnd = d;
           }
           if (anyRewardInCart) sc = 6;
+
+          const periodStr = (streakStart && streakEnd) ? `${formatDate(streakStart)} – ${formatDate(streakEnd)}` : "";
 
           if (sc === 0) {
             streakBadge.style.display = "none";
@@ -6505,6 +6523,7 @@
                   </div>
                   <div style="background:#10b981;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:800;color:white;">6/6</div>
                 </div>
+                <div style="font-size:0.72rem;color:#047857;margin-bottom:6px;font-weight:700;opacity:0.8;">📅 Period: ${periodStr}</div>
                 <div style="font-size:0.8rem;color:#047857;line-height:1.4;font-weight:600;">
                   Awesome! Your 6-day streak reward is applied to this bill. All market surcharges are being refunded! 🔥
                 </div>
@@ -6531,10 +6550,11 @@
                     <span style="font-size:0.62rem;color:#9a3412;display:block;line-height:1;margin-top:1px;">days</span>
                   </div>
                 </div>
-                <div style="font-size:0.78rem;color:#6b7280;margin-bottom:8px;">
+                <div style="display:flex;margin-bottom:8px;">${segments}</div>
+                <div style="font-size:0.72rem;color:#9a3412;margin-bottom:6px;font-weight:700;opacity:0.8;">📅 Period: ${periodStr}</div>
+                <div style="font-size:0.78rem;color:#6b7280;margin-bottom:4px;">
                   ${remaining} more consecutive day${remaining > 1 ? 's' : ''} to unlock your surcharge refund!
                 </div>
-                <div style="display:flex;margin-bottom:10px;">${segments}</div>
                 <div style="font-size:0.75rem;color:#059669;font-weight:600;">
                   🎁 Reward: Full surcharge refund on day 6
                 </div>
@@ -8141,6 +8161,8 @@
       let count = 0;
       let surcharge = 0;
       let safety = 0;
+      let streakStart = null;
+      let streakEnd = null;
 
       while (safety < 60) {
         safety++;
@@ -8158,13 +8180,15 @@
           if (rewardDays.has(iso)) break; 
           count++;
           surcharge += dailyTotals[iso];
+          if (!streakEnd) streakEnd = iso;
+          streakStart = iso;
         } else {
           // Break on the first gap found backwards from the starting point
           break;
         }
         d.setDate(d.getDate() - 1);
       }
-      return { count, surcharge };
+      return { count, surcharge, start: streakStart, end: streakEnd };
     }
 
     async function loadExistingOrders(phone) {
