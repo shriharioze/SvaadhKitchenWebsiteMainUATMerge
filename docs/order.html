@@ -3559,6 +3559,7 @@
     <div class="screen" id="screen3">
       <div class="card" style="padding-bottom:12px;">
         <h2 data-i18n="step4_title">🍱 Choose Your Meals</h2>
+        <div id="streakBannerMeals" style="margin-top:10px;"></div>
         <div class="info-box-gold" style="margin-top:4px;" data-i18n-html="step3_tip">
           🚚 <strong>Free delivery</strong> if meal total ≥ ₹100 &nbsp;·&nbsp; <strong>5% off</strong> ≥ ₹300/day &nbsp;·&nbsp; <strong>7.5% off</strong> ≥ ₹450/day
         </div>
@@ -4976,8 +4977,20 @@
     // ═══════════════════════════════════════════════════════════
     // ── Streak motivator banner ───────────────────────────────────────────────
     function renderStreakBanner(...ids) {
-      const sc = S.loyaltyInfo?.count || 0;
-      const surcharge = S.loyaltyInfo?.surcharge || 0;
+      let sc = S.loyaltyInfo?.count || 0;
+      let surcharge = S.loyaltyInfo?.surcharge || 0;
+
+      // Projection: If any day in the current cart completes the streak, show 6/6
+      let anyRewardInCart = false;
+      let tempSc = S.loyaltyInfo?.count || 0;
+      for (const d of (S.selectedDates || [])) {
+        const dayOrders = S.orders[d] || {};
+        let hasFood = ["Breakfast","Lunch","Dinner"].some(m => (dayOrders[m]?.subtotal || 0) > 0);
+        if (!hasFood) continue;
+        if (tempSc === 5) anyRewardInCart = true;
+        tempSc = (tempSc === 5) ? 0 : tempSc + 1;
+      }
+      if (anyRewardInCart) sc = 6;
 
       let html = "";
       if (sc === 0) {
@@ -5034,15 +5047,18 @@
           </div>
         </div>`;
       } else {
-        // sc >= 6: streak complete — celebration (rare on date/meal screens, usually on bill)
-        html = `<div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #34d399;
+        // sc >= 6: celebration!
+        html = `<div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #10b981;
                              border-radius:14px;padding:13px 14px;">
-          <div style="font-size:0.9rem;font-weight:800;color:#065f46;margin-bottom:4px;">
-            🎉 6-Day Streak Complete! Your reward is applied to this bill!
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:1.4rem;">🎉</span>
+              <span style="font-size:0.95rem;font-weight:800;color:#065f46;">Streak Complete!</span>
+            </div>
+            <div style="background:#10b981;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:800;color:white;">6/6</div>
           </div>
-          <div style="font-size:0.76rem;color:#047857;line-height:1.4;">
-            All your market surcharges (₹${surcharge}) are being refunded.
-            Keep ordering to start your next streak! 🔥
+          <div style="font-size:0.82rem;color:#047857;line-height:1.4;font-weight:600;">
+            Awesome! Your 6-day streak reward is applied to this order. All your market surcharges (₹${surcharge}) are being refunded! 🔥
           </div>
         </div>`;
       }
@@ -5086,6 +5102,7 @@
 
       // Streak motivator — shown on date-selection and meal-selection screens
       if (s === 2) renderStreakBanner("streakBannerDates");
+      if (s === 3) renderStreakBanner("streakBannerMeals");
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
       // (fetched async on page load) are always applied — avoids stale default cutoff
