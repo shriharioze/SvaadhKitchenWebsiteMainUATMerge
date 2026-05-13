@@ -8067,47 +8067,58 @@
      * Skips Sundays.
      */
     function calculateLoyaltyStreak(pastOrders) {
-      if (!pastOrders || pastOrders.length === 0) return { count: 0, surcharge: 0 };
-
       const dailyTotals = {};
       const rewardDays = new Set();
       const allOrders = [...(S.existingOrders || []), ...(pastOrders || [])];
+      
+      let latestOrderDate = "";
 
       allOrders.forEach(r => {
         const stat = String(r.payment_status || "").toLowerCase();
         if (stat.includes("cancelled") || stat.includes("deleted")) return;
 
-        const d = r.date;
-        if (!dailyTotals[d]) dailyTotals[d] = 0;
-        dailyTotals[d] += Number(r.inflation_surcharge) || 0;
+        const dStr = r.date; // YYYY-MM-DD
+        if (!dailyTotals[dStr]) dailyTotals[dStr] = 0;
+        dailyTotals[dStr] += Number(r.inflation_surcharge) || 0;
 
-        // Track days where 6th-day loyalty reward was applied
-        if (r.loyalty_discount === true) rewardDays.add(d);
+        if (r.loyalty_discount === true) rewardDays.add(dStr);
+        if (dStr > latestOrderDate) latestOrderDate = dStr;
       });
+
+      const todayIsoStr = todayISO();
+      // Start from the LATEST of today or the latest existing order
+      let startStr = (latestOrderDate > todayIsoStr) ? latestOrderDate : todayIsoStr;
+      
+      // Create date object in local time to avoid timezone shifts
+      let d = new Date(startStr + "T12:00:00"); 
+
+      // Bridge logic: if starting from today and today is empty, allow starting from yesterday
+      if (startStr === todayIsoStr && dailyTotals[todayIsoStr] === undefined) {
+        d.setDate(d.getDate() - 1);
+      }
 
       let count = 0;
       let surcharge = 0;
-      let d = new Date();
-      // If customer hasn't ordered today yet, start counting from yesterday
-      // (don't break the streak just because today's order isn't placed yet)
-      const todayIso = d.toISOString().split('T')[0];
-      if (dailyTotals[todayIso] === undefined) {
-        d.setDate(d.getDate() - 1);
-      }
       let safety = 0;
 
-      while (safety < 30) {
+      while (safety < 60) {
         safety++;
         if (d.getDay() === 0) { // Skip Sunday
           d.setDate(d.getDate() - 1);
           continue;
         }
-        const iso = d.toISOString().split('T')[0];
+        
+        let y = d.getFullYear();
+        let m = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        const iso = `${y}-${m}-${day}`;
+
         if (dailyTotals[iso] !== undefined) {
-          if (rewardDays.has(iso)) break; // This day was a reward day — new cycle starts after it
+          if (rewardDays.has(iso)) break; 
           count++;
           surcharge += dailyTotals[iso];
         } else {
+          // Break on the first gap found backwards from the starting point
           break;
         }
         d.setDate(d.getDate() - 1);
