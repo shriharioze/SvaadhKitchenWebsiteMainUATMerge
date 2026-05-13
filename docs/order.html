@@ -8306,7 +8306,7 @@
             const isPendingRefund = stat.toLowerCase().includes("pending") || stat.toLowerCase().includes("verify");
             const cancelMsg = isPendingRefund
               ? "Refund will be credited back, once Admin verifies the payment (Upto 3 working days)."
-              : "Cancelled, Refunded Processed ✅";
+              : "Refund processed successfully ✅";
 
             const cancelledHtml = isCancelled ? `
           <div style="margin-top:10px;background:#fff3e0;border:1px solid #ffe0b2;padding:10px 14px;border-radius:12px;font-size:0.75rem;color:#e65100;line-height:1.5;">
