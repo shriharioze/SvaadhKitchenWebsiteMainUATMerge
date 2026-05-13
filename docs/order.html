@@ -4413,7 +4413,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.13.3";
+    const APP_VERSION = "v26.05.13.4";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4976,6 +4976,17 @@
     // NAVIGATION
     // ═══════════════════════════════════════════════════════════
     // ── Streak motivator banner ───────────────────────────────────────────────
+    function getNextStreakDay(iso) {
+      if (!iso) return "";
+      let d = new Date(iso + "T12:00:00");
+      d.setDate(d.getDate() + 1);
+      if (d.getDay() === 0) d.setDate(d.getDate() + 1); // skip Sunday
+      let y = d.getFullYear();
+      let m = String(d.getMonth() + 1).padStart(2, '0');
+      let day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
     function renderStreakBanner(...ids) {
       let sc = S.loyaltyInfo?.count || 0;
       let surcharge = S.loyaltyInfo?.surcharge || 0;
@@ -4999,6 +5010,7 @@
       if (anyRewardInCart) sc = 6;
 
       const periodStr = (streakStart && streakEnd) ? `${formatDate(streakStart)} – ${formatDate(streakEnd)}` : "";
+      const nextDayStr = streakEnd ? formatDate(getNextStreakDay(streakEnd)) : "soon";
 
       let html = "";
       if (sc === 0) {
@@ -5052,7 +5064,7 @@
           </div>
           <div style="font-size:0.75rem;color:#92400e;margin-bottom:8px;font-weight:700;opacity:0.9;">📅 Period: ${periodStr}</div>
           <div style="font-size:0.78rem;color:#78350f;line-height:1.5;">
-            You've ordered <strong>5 days in a row!</strong> Order today to complete your 6-day streak and get
+            You've ordered <strong>5 days in a row!</strong> Order for <strong>${nextDayStr}</strong> to complete your 6-day streak and get
             <strong>₹${surcharge > 0 ? surcharge : '~' + Math.round(5*9)}</strong> back. Don't break the chain!
           </div>
         </div>`;
