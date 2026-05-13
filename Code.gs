@@ -4775,7 +4775,15 @@ function markOrdersStatus(body) {
       } else if (pref === "manual_upi" && amt > 0 && !alreadyExists) {
         refWs.appendRow([r.Submission_ID, phone, custName, amt, r.Meal_Type, date, "Pending", now, "Verified Soft Cancellation", "upi"]);
       }
-      ws.deleteRow(r._row); // Final delete after verification
+      let finalCancelStatus = "Cancelled";
+      if (isSplitOrder) {
+        finalCancelStatus = "Cancelled \u2013 Refunded to Wallet";
+      } else if (pref === "wallet") {
+        finalCancelStatus = "Cancelled \u2013 Refunded to Wallet";
+      } else if (pref === "manual_upi") {
+        finalCancelStatus = "Cancelled \u2013 UPI Refund Pending";
+      }
+      ws.getRange(r._row, hIdx["Payment_Status"]).setValue(finalCancelStatus);
     } else {
       // ── Standard Payment Approval or Rejection
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue(status);

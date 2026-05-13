@@ -8464,10 +8464,16 @@
 
       sLoading(true, "Processing cancellation...");
       try {
-        const results = await Promise.all(allIds.map(rid =>
-          fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify({ _action: "deleteOrder", phone: S.phone, rowId: rid, refundType: refundType }) })
-            .then(r => r.json())
-        ));
+        // Cancel sequentially — backend uses a script lock that blocks parallel calls.
+        // Running in parallel caused the 2nd order to hit "System busy" and fail silently.
+        const results = [];
+        for (const rid of allIds) {
+          const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ _action: "deleteOrder", phone: S.phone, rowId: rid, refundType: refundType })
+          }).then(r => r.json());
+          results.push(res);
+        }
 
         sLoading(false);
         const success = results.every(res => res.success);
