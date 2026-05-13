@@ -8207,7 +8207,8 @@
         const processGroup = (orderArray) => {
           const groups = {};
           orderArray.forEach(o => {
-            const key = `${o.date}_${o.meal}`;
+            const isCanc = String(o.payment_status || "").toLowerCase().includes("cancelled") ? "canc" : "act";
+            const key = `${o.date}_${o.meal}_${isCanc}`;
             if (!groups[key]) {
               groups[key] = { ...o, rowIds: [o.rowId], summaryParts: [o.summary || "(items)"], totalSum: Number(o.total) || 0 };
             } else {
