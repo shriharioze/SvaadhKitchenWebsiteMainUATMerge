@@ -7306,14 +7306,16 @@
 
       // ── Duplicate-order guard ────────────────────────────────
       // If S.existingOrders is available (pre-fetched on step 4 entry),
-      // check whether any cart date+meal is an exact repeat of a placed order.
+      // check whether any cart date+meal is an exact repeat of an active order.
       if (Array.isArray(S.existingOrders) && S.existingOrders.length) {
         const dupLines = [];
         for (const dateOrder of orders) {
           for (const meal of dateOrder.meals) {
-            const existing = (S.existingOrders || []).find(
-              o => o.date === dateOrder.date && o.meal === meal.type && o.items_raw
-            );
+            const existing = (S.existingOrders || []).find(o => {
+              if (o.date !== dateOrder.date || o.meal !== meal.type || !o.items_raw) return false;
+              const stat = String(o.payment_status || "").toLowerCase();
+              return !stat.includes("cancelled") && !stat.includes("deleted");
+            });
             if (!existing) continue;
             const cartSig = _dupSig(meal.items, meal.type, dateOrder.date);
             const existSig = _dupSigFromRaw(existing.items_raw);
