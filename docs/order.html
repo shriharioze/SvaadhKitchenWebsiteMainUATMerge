@@ -4438,7 +4438,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-wwECc_mSh949babtRt8OAvFbnJJzH5X9JS_PsN-f-IMHeYkQMj54fwXRs6PevK0W/exec"; // PRODUCTION
-    const APP_VERSION = "v26.05.13.7";
+    const APP_VERSION = "v26.05.13.8";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6834,7 +6834,7 @@
             const netTotal = creditTotal + chargeTotal;
             const bundleLabel = creditItems.length > 0
               ? `🏷️ Credits & Charges (${mealExtras.length} items)`
-              : `🚚 Charges (${mealExtras.length} items)`;
+              : `Charges (${mealExtras.length} items)`;
             html += `<div class="extra-charges-bundle" onclick="toggleExtraBundle('${exId}')">
           <div class="bill-line" style="margin:0;padding:0;border:none;background:none;">
             <span style="display:flex;align-items:center;font-size:0.82rem;color:${netTotal < 0 ? '#27ae60' : '#7f8c8d'};">${bundleLabel} <span id="icon_${exId}" class="extra-toggle-icon open">▶</span></span>
