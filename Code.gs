@@ -507,6 +507,12 @@ function doPost(e) {
     if (action === "previewCancellation") return jsonRes(_deleteOrderInternal(body.phone, body.rowId, body.refundType || "wallet", { dryRun: true }));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
     if (action === "verifyOrderPlaced") return jsonRes(verifyOrderPlaced(body));
+    if (action === "updateProfile") {
+      const profile = body.profile;
+      if (!profile || !profile.phone) return jsonRes({error: "Phone required"});
+      _upsertCustomer(getSpreadsheet(), profile);
+      return jsonRes({success: true});
+    }
 
     // Admin-only read: returns all customer profiles + wallet balances
     if (action === "getCustomerList") {
