@@ -1715,15 +1715,36 @@
 
     // ── INITIAL STATE ON LOAD ──
     (function () {
-      const savedDate = sessionStorage.getItem('sk_kitchen_date');
-      if (savedDate) document.getElementById("datePicker").value = savedDate;
-      else document.getElementById("datePicker").value = todayIST();
+      // ALWAYS default to today's IST date on a fresh page open.
+      // We only restore a saved date if it's still today — otherwise the
+      // kitchen view would silently keep showing yesterday's data when the
+      // staff opens the tab in the morning (or after the auto-bump at
+      // 21:00 IST). Manual date changes are still honoured for the rest
+      // of the current calendar day.
+      const today        = todayIST();
+      const savedDate    = sessionStorage.getItem('sk_kitchen_date');
+      const savedAnchor  = sessionStorage.getItem('sk_kitchen_date_anchor');
+      if (savedDate && savedAnchor === today) {
+        document.getElementById("datePicker").value = savedDate;
+      } else {
+        document.getElementById("datePicker").value = today;
+        sessionStorage.setItem('sk_kitchen_date', today);
+        sessionStorage.setItem('sk_kitchen_date_anchor', today);
+      }
 
       const savedTab = sessionStorage.getItem('sk_kitchen_tab');
       if (savedTab) _currentTab = savedTab;
 
       const savedMeal = sessionStorage.getItem('sk_kitchen_meal');
       if (savedMeal) _manualMeal = savedMeal;
+
+      // Persist any manual date-picker change with a today-anchor so the
+      // next page load can decide whether it's still relevant.
+      const dpEl = document.getElementById("datePicker");
+      if (dpEl) dpEl.addEventListener("change", () => {
+        sessionStorage.setItem('sk_kitchen_date', dpEl.value);
+        sessionStorage.setItem('sk_kitchen_date_anchor', todayIST());
+      });
 
       // Auto-Login
       const savedPin = localStorage.getItem('sk-kitchen-pin');
@@ -1747,6 +1768,20 @@
       }
 
       function doRefresh() {
+        // If the calendar day has rolled over while the tab was idle,
+        // snap the date picker forward to the new today and refresh
+        // its anchor — only if the staff hasn't manually picked a
+        // different date during the current session.
+        try {
+          const dp     = document.getElementById("datePicker");
+          const today  = todayIST();
+          const anchor = sessionStorage.getItem('sk_kitchen_date_anchor');
+          if (dp && anchor && anchor !== today && dp.value !== today) {
+            dp.value = today;
+            sessionStorage.setItem('sk_kitchen_date',        today);
+            sessionStorage.setItem('sk_kitchen_date_anchor', today);
+          }
+        } catch (_) {}
         loadKitchen();
       }
 

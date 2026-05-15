@@ -1499,7 +1499,15 @@ function getOrderHistory(p) {
 
   var ss   = getSpreadsheet();
   var ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  var rows = getAllRows(ws);
+  // Archive-aware read so the History tab can show data from archived
+  // quarters too. Falls back to live-only on any archive-read error.
+  var rows;
+  try {
+    rows = getOrdersInRangeWithArchive(dateFrom, dateTo) || [];
+  } catch (e) {
+    console.warn("getOrderHistory: archive lookup failed, falling back to live: " + e.message);
+    rows = getAllRows(ws);
+  }
 
   var fmtDate = function(v) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();

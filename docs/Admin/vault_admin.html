@@ -3472,7 +3472,14 @@ async function loadOrderSummary(manual=false) {
     if (data.error) { el.innerHTML = `<p style="color:var(--red);text-align:center;padding:30px;">${data.error}</p>`; return; }
     el.innerHTML = renderOrderSummary(data);
     const srchWrap = document.getElementById("orderSearchWrap");
-    if (srchWrap) { srchWrap.style.display = "block"; const si = document.getElementById("orderSearchInput"); if (si) si.value = ""; }
+    if (srchWrap) {
+      srchWrap.style.display = "block";
+      // PRESERVE the admin's typed search across reloads/auto-refreshes —
+      // the filter is re-applied via _filterOrderRows() on every render,
+      // so any text already in the box continues to filter the new data.
+      const si = document.getElementById("orderSearchInput");
+      if (si && si.value) { try { _filterOrderRows(); } catch (_) {} }
+    }
 
     const today = new Date(new Date().getTime()+5.5*3600000).toISOString().slice(0,10);
     if (date === today) startOrdersAutoRefresh();
@@ -4585,7 +4592,10 @@ async function loadCustomers() {
   const el = document.getElementById("custGridWrap");
   el.innerHTML = `<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
   document.getElementById("custDetailWrap").innerHTML = "";
-  document.getElementById("custSearch").value = "";
+  // PRESERVE the admin's typed search text — wiping it on every reload was
+  // making the box flicker empty during auto-refreshes. The filter is
+  // re-applied via _dbCustSearch() once data lands, so anything the admin
+  // typed before the refresh continues to filter the new data.
   _custPayFilter = "all";
   _custSortKey   = "recent";
   ["cpf-all","cpf-pending","cpf-paid"].forEach(id=>document.getElementById(id)?.classList.remove("sel"));

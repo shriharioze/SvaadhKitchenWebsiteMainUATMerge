@@ -471,7 +471,20 @@ function getCustomerHistory(phone) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
-  var rows = getAllRows(ws).filter(function(r){return String(r.Phone||"").trim()===phone;});
+  // Pull live + archived orders for this customer so the timeline shows
+  // their full history. Archive helper takes a date range — we use a
+  // wide window (2020 through today + 1y) so every archive month is in scope.
+  var todayPlusOneYear = new Date();
+  todayPlusOneYear.setFullYear(todayPlusOneYear.getFullYear() + 1);
+  var rangeTo = Utilities.formatDate(todayPlusOneYear, "Asia/Kolkata", "yyyy-MM-dd");
+  var allRows;
+  try {
+    allRows = getOrdersInRangeWithArchive("2020-01-01", rangeTo) || [];
+  } catch (e) {
+    console.warn("getCustomerHistory: archive lookup failed, falling back to live: " + e.message);
+    allRows = getAllRows(ws);
+  }
+  var rows = allRows.filter(function(r){return String(r.Phone||"").trim()===phone;});
 
   var orders = rows.map(function(r) {
     return {

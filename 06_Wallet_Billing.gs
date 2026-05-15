@@ -214,7 +214,17 @@ function getUnpaidCustomers(p) {
 
   const ss   = getSpreadsheet();
   const ws   = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
-  const rows = getAllRows(ws);
+
+  // Pull both LIVE and ARCHIVED rows for the requested range so the
+  // admin sees pending payments from archived quarters too. Falls back
+  // to live-only if the archive helper isn't available or errors.
+  let rows;
+  try {
+    rows = getOrdersInRangeWithArchive(dateFrom, dateTo) || [];
+  } catch (e) {
+    console.warn("getUnpaidCustomers: archive lookup failed, falling back to live: " + e.message);
+    rows = getAllRows(ws);
+  }
 
   // Collect all unpaid orders in the range
   const relevant = rows.filter(r =>
@@ -679,7 +689,47 @@ function getBillingData(cycle, filterValue) {
   const ss = getSpreadsheet();
   const ordersWs  = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const custWs    = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
-  const allOrders = getAllRows(ordersWs);
+  // For Monthly/Weekly cycles, the requested range may span archived
+  // quarters (e.g. admin checks last quarter's OnAccount pendings).
+  // Use the archive-aware reader so archive rows surface alongside live.
+  // For Daily mode we keep the live-only path (no date range to scope by).
+  let allOrders;
+  if (cycle === "Monthly" || cycle === "Weekly") {
+    try {
+      const ist = getISTDate();
+      let rangeFrom = "", rangeTo = "";
+      if (cycle === "Monthly") {
+        const mIdx = (filterValue !== undefined && filterValue !== "")
+                       ? parseInt(filterValue) : ist.getMonth();
+        const first = new Date(ist.getFullYear(), mIdx, 1);
+        const last  = new Date(ist.getFullYear(), mIdx + 1, 0);
+        rangeFrom = Utilities.formatDate(first, "Asia/Kolkata", "yyyy-MM-dd");
+        rangeTo   = Utilities.formatDate(last,  "Asia/Kolkata", "yyyy-MM-dd");
+      } else {
+        // Weekly — Mon to Sat around the supplied base date
+        const _parseYMD = (s) => {
+          if (!s) return null;
+          const p = String(s).split("-");
+          return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+        };
+        const baseDate = _parseYMD(filterValue) || ist;
+        const day = baseDate.getDay();
+        const diff = (day === 0 ? -6 : 1 - day);
+        const mon = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + diff);
+        const sat = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 5);
+        rangeFrom = Utilities.formatDate(mon, "Asia/Kolkata", "yyyy-MM-dd");
+        rangeTo   = Utilities.formatDate(sat, "Asia/Kolkata", "yyyy-MM-dd");
+      }
+      allOrders = getOrdersInRangeWithArchive(rangeFrom, rangeTo) || [];
+    } catch (e) {
+      console.warn("getBillingData: archive lookup failed, falling back to live: " + e.message);
+      allOrders = getAllRows(ordersWs);
+    }
+  } else {
+    // Daily — pending On Account from live sheet (no date range; archives
+    // would be older than the typical Daily window anyway).
+    allOrders = getAllRows(ordersWs);
+  }
   const allCusts  = getAllRows(custWs);
 
   // Build customer map: phone → { billing_cycle, address, name }

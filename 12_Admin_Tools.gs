@@ -271,14 +271,37 @@ function getUnpaidOrdersData(p) {
   return {success:true, orders};
 }
 
+/**
+ * Reconcile a bank-statement export against unpaid SK_Orders.
+ *
+ * Matching rule (tightened per user spec): a transaction matches an order
+ * ONLY when ALL THREE of (Date, Customer Name, Amount) line up exactly.
+ *
+ *   * Date         — transaction date == order date  (YYYY-MM-DD compare)
+ *   * Name         — every significant token of the customer's name
+ *                    appears in the transaction narration (case/space
+ *                    insensitive). Significant = length > 2 chars.
+ *   * Amount       — Math.round equality. Two flavours accepted:
+ *                      (a) single order's Net_Total
+ *                      (b) sum of all that-customer's orders on that date
+ *                          (covers B+L+D paid as a single bank credit)
+ *
+ * On a perfect match: orders are auto-marked Paid in the same call (so the
+ * admin doesn't have to re-confirm them). Anything not perfectly matching
+ * is returned with status "Pending Manual Review" so the admin can decide.
+ *
+ * No partial / fuzzy / "name-only" matches — those caused false positives
+ * in earlier UAT testing.
+ */
 function reconcileTransactions(body) {
   const transactions = body.transactions; // [{date, description, amount}]
-  const dateFrom = body.dateFrom;
-  const dateTo = body.dateTo;
+  const dateFrom     = body.dateFrom;
+  const dateTo       = body.dateTo;
+  const autoMark     = body.autoMark !== false;  // default true; UI can pass false to preview only
 
   const unpaid = getUnpaidOrdersData({dateFrom, dateTo}).orders;
 
-  // Group unpaid orders by customer
+  // Group unpaid by phone for fast name-lookup
   const groupedByPhone = {};
   unpaid.forEach(o => {
     const key = String(o.phone || "").trim();
@@ -287,92 +310,89 @@ function reconcileTransactions(body) {
     groupedByPhone[key].orders.push(o);
   });
 
+  const sidsToMarkPaid = [];
+
   const results = transactions.map(tx => {
     const txAmount = Math.round(Number(tx.amount) || 0);
-    const txDesc = String(tx.description || "").toLowerCase();
+    const txDesc   = String(tx.description || "").toLowerCase();
+    const txDate   = String(tx.date || "").trim();   // YYYY-MM-DD expected
 
-    let bestMatch = { status: "No Match", reason: "No matching name found", matchedOrders: [] };
+    let bestMatch = {
+      status: "Pending Manual Review",
+      reason: "No exact Date + Name + Amount match found",
+      matchedOrders: []
+    };
 
+    // Walk every customer; STOP on first perfect (date + name + amount) hit.
     for (const phone in groupedByPhone) {
       const data = groupedByPhone[phone];
       const nameParts = data.name.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(x => x.length > 2);
       const cleanDesc = txDesc.replace(/[^a-z]/g, "");
-
-      // Smart matching: Check if all significant parts of the customer name exist in the narration string
       const nameMatch = nameParts.length > 0 && nameParts.every(part => cleanDesc.includes(part));
+      if (!nameMatch) continue;
 
-      if (nameMatch) {
-        const orders = data.orders;
-        const totalPending = Math.round(orders.reduce((s, o) => s + o.total, 0));
+      // From here: this customer's name is in the narration. Now require
+      // the order to be on the SAME DATE as the transaction.
+      const sameDayOrders = data.orders.filter(o => o.date === txDate);
+      if (sameDayOrders.length === 0) continue;
 
-        if (totalPending === txAmount) {
-          bestMatch = {
-            status: "Match",
-            matchType: "Full Pending",
-            phone: phone,
-            name: data.name,
-            matchedOrders: orders,
-            total: totalPending
-          };
-          break;
-        }
-
-        // Try single order match
-        const singleMatch = orders.find(o => Math.round(o.total) === txAmount);
-        if (singleMatch) {
-          bestMatch = {
-            status: "Match",
-            matchType: "Single Order",
-            phone: phone,
-            name: data.name,
-            matchedOrders: [singleMatch],
-            total: singleMatch.total
-          };
-          break;
-        }
-
-        // Try grouped by date match (e.g. B+L+D for same day)
-        const byDate = {};
-        orders.forEach(o => {
-          if (!byDate[o.date]) byDate[o.date] = 0;
-          byDate[o.date] += o.total;
-        });
-
-        let dateMatched = false;
-        for (const date in byDate) {
-          if (Math.round(byDate[date]) === txAmount) {
-            bestMatch = {
-              status: "Match",
-              matchType: "Daily Total",
-              phone: phone,
-              name: data.name,
-              matchedOrders: orders.filter(o => o.date === date),
-              total: Math.round(byDate[date])
-            };
-            dateMatched = true;
-            break;
-          }
-        }
-        if (dateMatched) break;
-
-        // If name matches but amount doesn't
+      // (a) Single-order amount match on same date
+      const singleMatch = sameDayOrders.find(o => Math.round(o.total) === txAmount);
+      if (singleMatch) {
         bestMatch = {
-          status: "Partial",
-          reason: "Name matches, amount mismatch (Tx: " + txAmount + ", Pending: " + totalPending + ")",
+          status: "Match",
+          matchType: "Date + Name + Amount (single order)",
           phone: phone,
           name: data.name,
-          matchedOrders: []
+          date: txDate,
+          matchedOrders: [singleMatch],
+          total: singleMatch.total
         };
+        sidsToMarkPaid.push(singleMatch.id);
+        break;
       }
+
+      // (b) Sum of customer's orders on the SAME DATE matches tx amount
+      const dailySum = Math.round(sameDayOrders.reduce((s, o) => s + o.total, 0));
+      if (dailySum === txAmount) {
+        bestMatch = {
+          status: "Match",
+          matchType: "Date + Name + Amount (B+L+D daily sum)",
+          phone: phone,
+          name: data.name,
+          date: txDate,
+          matchedOrders: sameDayOrders,
+          total: dailySum
+        };
+        sameDayOrders.forEach(o => sidsToMarkPaid.push(o.id));
+        break;
+      }
+      // Name+date matched but amounts don't — keep scanning other customers
+      // before falling through to "Pending Manual Review" (this lets a
+      // different customer with the same date+amount still match).
     }
 
-    return {
-      transaction: tx,
-      ...bestMatch
-    };
+    return Object.assign({ transaction: tx }, bestMatch);
   });
 
-  return {success:true, results};
+  // Auto-mark all perfectly-matched orders Paid in one shot.
+  let markedCount = 0;
+  if (autoMark && sidsToMarkPaid.length) {
+    try {
+      const r = markOrdersPaidBulk({ submissionIds: [...new Set(sidsToMarkPaid)] });
+      markedCount = (r && r.updated) || 0;
+    } catch (e) {
+      console.warn("reconcileTransactions: auto-mark failed:", e.message);
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    matched_count: results.filter(r => r.status === "Match").length,
+    pending_count: results.filter(r => r.status === "Pending Manual Review").length,
+    auto_marked:   markedCount
+  };
 }
 
 function markOrdersPaidBulk(body) {
