@@ -1,0 +1,47 @@
+# Files NOT pushed to Apps Script.
+# Apps Script only accepts .gs, .html, and appsscript.json — everything else
+# would error out anyway, but listing here keeps `clasp push` output clean.
+
+# Git
+.git/**
+.gitignore
+.gitattributes
+
+# IDE / OS
+.vscode/**
+.idea/**
+.DS_Store
+Thumbs.db
+
+# Frontend (served by GitHub Pages, not Apps Script)
+docs/**
+
+# Helper scripts used to mechanically rebuild .gs modules from UAT
+_extract_uat_fns.py
+_build_hdfc_gateway.py
+_build_hdfc_reconciler.py
+
+# Anything else Python / Node / scratch
+*.py
+*.pyc
+__pycache__/**
+node_modules/**
+*.log
+*.tmp
+debug_content.txt
+
+# Old patch scratchpads — would otherwise be picked up as .js source
+scratch/**
+fix_kitchen.py
+Backend/**
+Scripts/**
+SETUP_GUIDE.md
+CNAME
+*.jpeg
+*.jpg
+*.png
+
+# Plans / docs
+*.md
+*.txt
+README*
