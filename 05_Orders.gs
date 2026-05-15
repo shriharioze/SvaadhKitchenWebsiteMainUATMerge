@@ -456,17 +456,37 @@ function _submitOrderInternal(body) {
         smallOrderFee = 10;
       }
 
-      // Calculation of credits for previously paid fees on the same day (Retroactive waiver)
+      // Calculation of credits for previously paid fees on the same day (Retroactive waiver).
+      //
+      // BUG-FIX (UAT v14.8 — SK-20260513-5042 / 7492 / 9482 forensics):
+      // Previously we summed prior delivery_charged + small_fee_charged every time
+      // isDayFree triggered, so the SAME ₹X in prior fees got refunded multiple
+      // times (once per subsequent meal of the day). Net effect: customer received
+      // many copies of the same refund.
+      //
+      // Fix: also sum the prior Meal_Credit already given, and subtract from the
+      // available pool so each rupee of prior fee gets refunded EXACTLY ONCE
+      // across the day.
+      //
+      //   available_credit = prior_delivery + prior_small_fee − prior_meal_credit_already_given
+      //
+      // getDayTotalsForDates surfaces this as meal_credit_applied per existing row.
+      // Existing rows without this column read as 0, preserving backward compat.
       let dateDeliveryCredit = 0;
       let dateSmallFeeCredit = 0;
+      let dateMealCreditAlreadyGiven = 0;
       if (isDayFree) {
         Object.keys(existingDateInfo).forEach(mType => {
-          dateDeliveryCredit += (Number(existingDateInfo[mType].delivery_charged) || 0);
-          dateSmallFeeCredit += (Number(existingDateInfo[mType].small_fee_charged) || 0);
+          dateDeliveryCredit         += (Number(existingDateInfo[mType].delivery_charged)    || 0);
+          dateSmallFeeCredit         += (Number(existingDateInfo[mType].small_fee_charged)   || 0);
+          dateMealCreditAlreadyGiven += (Number(existingDateInfo[mType].meal_credit_applied) || 0);
         });
       }
-      const totalDateCredit = dateDeliveryCredit + dateSmallFeeCredit;
-      const mealCredit = submissionDayFoodTotal > 0 ? Math.round(totalDateCredit * (sub / submissionDayFoodTotal)) : 0;
+      const totalPriorFees      = dateDeliveryCredit + dateSmallFeeCredit;
+      const availableDateCredit = Math.max(0, totalPriorFees - dateMealCreditAlreadyGiven);
+      const mealCredit = submissionDayFoodTotal > 0
+        ? Math.round(availableDateCredit * (sub / submissionDayFoodTotal))
+        : 0;
 
       const discAmt = getDisc(sub);
       // On the 6th day, the surcharge IS charged (consistency), and the loyalty discount
@@ -550,6 +570,13 @@ function _submitOrderInternal(body) {
         ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Loyalty_Discount");
         hIdx["Loyalty_Discount"] = ordersWs.getLastColumn();
       }
+      // Auto-heal Meal_Credit column (added v14.8 to fix double-refund bug).
+      // Tracks retroactive delivery/small-fee refunds so each rupee of prior
+      // fee gets credited back EXACTLY ONCE across the day's meals.
+      if (!hIdx["Meal_Credit"]) {
+        ordersWs.getRange(1, ordersWs.getLastColumn() + 1).setValue("Meal_Credit");
+        hIdx["Meal_Credit"] = ordersWs.getLastColumn();
+      }
       set("Items_JSON",          JSON.stringify(itemsObj));
       set("Special_Notes_Kitchen",  nKitchen);
       set("Special_Notes_Delivery", nDelivery);
@@ -559,6 +586,7 @@ function _submitOrderInternal(body) {
       set("Loyalty_Discount",    is6thDay ? "Yes" : "No");
       set("Delivery_Charge",     delCharge);
       set("Discount_Amount",     discAmt);
+      set("Meal_Credit",         mealCredit);
       if (hIdx["Review_Discount"]) {
         set("Review_Discount",   meal._reviewDiscount || 0);
       }
