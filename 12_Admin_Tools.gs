@@ -274,24 +274,29 @@ function getUnpaidOrdersData(p) {
 /**
  * Reconcile a bank-statement export against unpaid SK_Orders.
  *
- * Matching rule (tightened per user spec): a transaction matches an order
- * ONLY when ALL THREE of (Date, Customer Name, Amount) line up exactly.
+ * Matching is two-tiered. A transaction matches ONLY when there is a single
+ * unambiguous mapping from tx to one or more orders of the SAME customer.
  *
- *   * Date         — transaction date == order date  (YYYY-MM-DD compare)
- *   * Name         — every significant token of the customer's name
- *                    appears in the transaction narration (case/space
- *                    insensitive). Significant = length > 2 chars.
- *   * Amount       — Math.round equality. Two flavours accepted:
- *                      (a) single order's Net_Total
- *                      (b) sum of all that-customer's orders on that date
- *                          (covers B+L+D paid as a single bank credit)
+ * Customer-Name gate: every significant token (length > 2) of the
+ * customer's name must appear in the transaction narration (case/space
+ * insensitive). Anything failing this gate is skipped immediately.
  *
- * On a perfect match: orders are auto-marked Paid in the same call (so the
- * admin doesn't have to re-confirm them). Anything not perfectly matching
- * is returned with status "Pending Manual Review" so the admin can decide.
+ * Tier-1 — strict same-date match (transaction date == order date):
+ *   * (1a) single order's Net_Total == tx amount, OR
+ *   * (1b) sum of THAT day's B+L+D for the customer == tx amount.
  *
- * No partial / fuzzy / "name-only" matches — those caused false positives
- * in earlier UAT testing.
+ * Tier-2 — contiguous date-sorted range (no tx-date constraint):
+ *   Customer's unpaid orders are sorted by date; we look for any
+ *   contiguous subrange whose Net_Total sum == tx amount. This covers
+ *   the realistic case where a customer transfers (e.g.) Rs.500 to
+ *   clear their last three days' B+L+D in one go. Tier-2 only fires if
+ *   Tier-1 didn't already find a hit, AND only when EXACTLY ONE
+ *   contiguous range matches — multiple matches => ambiguous => manual.
+ *
+ * On a clean tier-1 or tier-2 hit, those orders are auto-marked Paid in
+ * the same call. Everything else returns "Pending Manual Review" so the
+ * admin handles it by hand. No fuzzy / partial / name-only matching —
+ * those produced false positives in earlier UAT testing.
  */
 function reconcileTransactions(body) {
   const transactions = body.transactions; // [{date, description, amount}]
@@ -319,11 +324,16 @@ function reconcileTransactions(body) {
 
     let bestMatch = {
       status: "Pending Manual Review",
-      reason: "No exact Date + Name + Amount match found",
+      reason: "No exact Name + Amount match found",
       matchedOrders: []
     };
 
-    // Walk every customer; STOP on first perfect (date + name + amount) hit.
+    // Walk every customer; STOP on first perfect hit. Tier priority:
+    //   Tier-1: tx_date == order_date  (single order OR same-day B+L+D sum)
+    //   Tier-2: any contiguous date-sorted range of THIS customer's
+    //           unpaid orders summing to tx amount (no tx_date constraint;
+    //           covers the "customer paid for last 3 days in one transfer"
+    //           pattern). Must be exactly ONE such range or it's ambiguous.
     for (const phone in groupedByPhone) {
       const data = groupedByPhone[phone];
       const nameParts = data.name.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(x => x.length > 2);
@@ -331,45 +341,105 @@ function reconcileTransactions(body) {
       const nameMatch = nameParts.length > 0 && nameParts.every(part => cleanDesc.includes(part));
       if (!nameMatch) continue;
 
-      // From here: this customer's name is in the narration. Now require
-      // the order to be on the SAME DATE as the transaction.
+      // ─── Tier 1: same-day strict match ─────────────────────────────────
       const sameDayOrders = data.orders.filter(o => o.date === txDate);
-      if (sameDayOrders.length === 0) continue;
+      if (sameDayOrders.length > 0) {
+        // (1a) Single-order amount match on same date
+        const singleMatch = sameDayOrders.find(o => Math.round(o.total) === txAmount);
+        if (singleMatch) {
+          bestMatch = {
+            status: "Match",
+            matchType: "Date + Name + Amount (single order)",
+            phone: phone,
+            name: data.name,
+            date: txDate,
+            matchedOrders: [singleMatch],
+            total: singleMatch.total
+          };
+          sidsToMarkPaid.push(singleMatch.id);
+          break;
+        }
+        // (1b) Sum of customer's orders on the SAME DATE matches tx amount
+        const dailySum = Math.round(sameDayOrders.reduce((s, o) => s + o.total, 0));
+        if (dailySum === txAmount) {
+          bestMatch = {
+            status: "Match",
+            matchType: "Date + Name + Amount (B+L+D daily sum)",
+            phone: phone,
+            name: data.name,
+            date: txDate,
+            matchedOrders: sameDayOrders,
+            total: dailySum
+          };
+          sameDayOrders.forEach(o => sidsToMarkPaid.push(o.id));
+          break;
+        }
+      }
 
-      // (a) Single-order amount match on same date
-      const singleMatch = sameDayOrders.find(o => Math.round(o.total) === txAmount);
-      if (singleMatch) {
+      // ─── Tier 2: contiguous date-sorted range sum ──────────────────────
+      // Covers the case: customer paid Rs.500 for unpaid orders across
+      // May 12-14 (different meals across different days). Tx date may
+      // be any date, often a few days after the last order.
+      const sorted = data.orders
+        .slice()
+        .sort((a, b) =>
+          String(a.date || "").localeCompare(String(b.date || "")) ||
+          String(a.id || "").localeCompare(String(b.id || ""))
+        );
+      const ranges = [];
+      for (let i = 0; i < sorted.length; i++) {
+        let sum = 0;
+        for (let j = i; j < sorted.length; j++) {
+          sum += Math.round(sorted[j].total);
+          if (sum === txAmount) {
+            ranges.push(sorted.slice(i, j + 1));
+            break;            // exact hit — no point extending further from i
+          }
+          if (sum > txAmount) break;   // overshot — try a different start
+        }
+        // Safety cap: a single customer with hundreds of unpaid orders is
+        // unrealistic, but bound the work so a pathological case can't hang.
+        if (ranges.length > 5) break;
+      }
+
+      if (ranges.length === 1) {
+        const range = ranges[0];
+        const dates = Array.from(new Set(range.map(o => o.date)));
+        const matchType = range.length === 1
+          ? "Name + Amount (single order — different tx date)"
+          : (dates.length === 1
+              ? "Name + Amount (same-date B+L+D)"
+              : "Name + Amount (multi-date contiguous, " + dates.length + " dates)");
         bestMatch = {
           status: "Match",
-          matchType: "Date + Name + Amount (single order)",
+          matchType: matchType,
           phone: phone,
           name: data.name,
-          date: txDate,
-          matchedOrders: [singleMatch],
-          total: singleMatch.total
+          dateRange: dates.length > 1 ? (dates[0] + " to " + dates[dates.length - 1]) : dates[0],
+          matchedOrders: range,
+          total: Math.round(range.reduce((s, o) => s + o.total, 0))
         };
-        sidsToMarkPaid.push(singleMatch.id);
+        range.forEach(o => sidsToMarkPaid.push(o.id));
         break;
       }
 
-      // (b) Sum of customer's orders on the SAME DATE matches tx amount
-      const dailySum = Math.round(sameDayOrders.reduce((s, o) => s + o.total, 0));
-      if (dailySum === txAmount) {
+      if (ranges.length > 1) {
+        // Ambiguous — multiple contiguous subranges hit the same total.
+        // Don't auto-mark; expose candidates so the admin can pick one.
         bestMatch = {
-          status: "Match",
-          matchType: "Date + Name + Amount (B+L+D daily sum)",
+          status: "Pending Manual Review",
+          reason: "Multiple possible matches (" + ranges.length + " candidate ranges) — pick the right one manually",
           phone: phone,
           name: data.name,
-          date: txDate,
-          matchedOrders: sameDayOrders,
-          total: dailySum
+          candidates: ranges.map(r => ({
+            orders: r,
+            dates:  Array.from(new Set(r.map(o => o.date))),
+            total:  Math.round(r.reduce((s, o) => s + o.total, 0))
+          }))
         };
-        sameDayOrders.forEach(o => sidsToMarkPaid.push(o.id));
         break;
       }
-      // Name+date matched but amounts don't — keep scanning other customers
-      // before falling through to "Pending Manual Review" (this lets a
-      // different customer with the same date+amount still match).
+      // No range matched for this customer — keep scanning others.
     }
 
     return Object.assign({ transaction: tx }, bestMatch);
