@@ -194,3 +194,45 @@ function seedTestData() {
     return "Error: " + err.message;
   }
 }
+
+// ============================================================
+// voidOrderRow — soft-cancel an SK_Orders row
+// ============================================================
+// Stamps Payment_Status with a void marker plus reason+timestamp
+// so the order is excluded from reports without being deleted.
+// Used to clean up the SK-20260514-2601 false-Paid row during the
+// HDFC UAT remediation (see CODE_VERSION 14.7 notes).
+// ============================================================
+
+// ── ADMIN: VOID AN SK_ORDERS ROW ─────────────────────────────────────────────
+// Marks an order as void (e.g. duplicate, or marked Paid in error when
+// HDFC actually says AUTHORIZATION_FAILED). Doesn't delete — keeps the row
+// for audit. Sets Payment_Status to "Voided" and appends the reason to
+// Special_Notes_Kitchen for visibility.
+function voidOrderRow(submissionId, reason) {
+  if (!submissionId) return { success: false, error: "submissionId required" };
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const data = ws.getDataRange().getValues();
+  const headers = data[0] || [];
+  const sidCol     = headers.indexOf("Submission_ID");
+  const psCol      = headers.indexOf("Payment_Status");
+  const notesCol   = headers.indexOf("Special_Notes_Kitchen");
+  if (sidCol === -1) return { success: false, error: "Submission_ID column missing" };
+
+  for (let r = 1; r < data.length; r++) {
+    if (String(data[r][sidCol] || "").trim() === String(submissionId).trim()) {
+      const stamp  = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm");
+      const note   = "[VOIDED " + stamp + "] " + (reason || "Admin void");
+      const existingNote = String(data[r][notesCol] || "").trim();
+      const newNote = existingNote ? existingNote + " | " + note : note;
+
+      if (psCol !== -1)    ws.getRange(r + 1, psCol + 1).setValue("Voided");
+      if (notesCol !== -1) ws.getRange(r + 1, notesCol + 1).setValue(newNote);
+      SpreadsheetApp.flush();
+      console.log("voidOrderRow: " + submissionId + " voided. Reason: " + reason);
+      return { success: true, submissionId: submissionId, reason: reason };
+    }
+  }
+  return { success: false, error: "Submission_ID not found: " + submissionId };
+}
