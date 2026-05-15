@@ -4391,8 +4391,9 @@
     <div class="bill-modal-sheet" style="max-width:400px;">
       <div class="bm-handle"><span></span></div>
       <h2 class="bm-title" style="margin-bottom:6px;">Add Funds to Wallet</h2>
-      <p style="font-size:0.8rem;color:#777;text-align:center;margin-bottom:16px;">Admin will verify your payment and
-        credit it to your account within 1-2 hours.</p>
+      <p style="font-size:0.8rem;color:#777;text-align:center;margin-bottom:16px;">
+        Pay securely via HDFC Gateway. Your wallet will be credited automatically once payment is confirmed.
+      </p>
 
       <div id="walletPendingAmountWrap" style="display:none; text-align:center; margin-bottom:16px; padding:12px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px;">
         <div style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">Net Pending Due</div>
@@ -4407,38 +4408,18 @@
       </div>
 
       <div style="margin-bottom:16px;">
-        <input type="number" id="walletRechargeAmt" class="custom-input" placeholder="Or enter custom amount (Min. 100)"
-          oninput="updateWalletQr()" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+        <input type="number" id="walletRechargeAmt" class="custom-input"
+          placeholder="Or enter custom amount (₹100 – ₹50,000)" min="100" max="50000"
+          style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
       </div>
 
-      <div id="walletQrWrap" class="bm-qr-wrap" style="display:none;border-color:#c8e6c9;background:#e8f5e9;">
-        <div style="font-size:0.8rem;text-align:center;margin-bottom:8px;color:#2e7d32;font-weight:600;">Scan QR or Tap
-        </div>
-        <img id="walletQrImg" class="bm-qr" src="" alt="QR">
-        <div style="margin: 12px 0 8px;">
-          <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID" style="cursor:pointer; font-weight:800; color:#1a3c8f; font-size: 0.95rem; letter-spacing: 0.5px; text-align: center;">
-            UPI ID: 9819969682@hdfc
-          </div>
-          <div style="font-size:0.75rem; color:#7f8c8d; margin-top:2px; text-align: center;">(tap to copy)</div>
-        </div>
-
-        <!-- Backup UPI — clearly marked as secondary so it isn't used first -->
-        <div style="margin: 6px 0 12px; padding:8px 10px; background:#f9fafb; border:1px dashed #cbd5e1; border-radius:10px; text-align:center;">
-          <div style="font-size:0.68rem; color:#64748b; margin-bottom:4px; font-weight:600; letter-spacing:0.2px; text-transform:uppercase;">Alternate UPI ID (Backup)</div>
-          <div class="upi-id" onclick="copyBackupUPI()" title="Click to copy backup UPI ID"
-            style="cursor:pointer; font-weight:600; color:#475569; font-size:0.82rem; letter-spacing:0.3px; display:inline-block; background:#fff; padding:4px 12px; border-radius:16px; border:1px solid #e2e8f0;">
-            shriharioze07-1@okhdfcbank
-          </div>
-          <div style="font-size:0.66rem; color:#94a3b8; margin-top:4px; line-height:1.3;">
-            Use only if the primary UPI ID above doesn't work
-          </div>
-        </div>
-        <a id="walletUpiLink" href="#" class="btn btn-primary"
-          style="margin-top:12px;background:#2e7d32;border-color:#1b5e20;">👆 Open GPay / PhonePe</a>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:0.78rem;color:#0c4a6e;line-height:1.5;">
+        🔒 Payment secured by HDFC SmartGateway — supports UPI, Cards, Net Banking &amp; Wallets.
       </div>
 
-      <button class="btn btn-primary" id="btnSubmitWallet" style="margin-top:16px;" onclick="submitWalletRecharge()">✅ I
-        have completed the payment</button>
+      <button class="btn btn-primary" id="btnSubmitWallet" style="margin-top:8px;" onclick="submitWalletRecharge()">
+        🔒 Pay &amp; Recharge Wallet
+      </button>
       <button class="bm-later" onclick="closeWalletRecharge()">Cancel</button>
     </div>
   </div><!-- Replaced by shared modals-svaadh.js sConfirm and sAlert logic -->
@@ -7214,10 +7195,7 @@
         $('walletRechargeAmt').placeholder = "Or enter custom amount (Min. 100)";
       }
 
-      $('walletQrWrap').style.display = 'none';
-      if (isOA && $('walletRechargeAmt').value) {
-        updateWalletQr(); // Auto-show QR if we pre-filled the net due
-      }
+      // walletQrWrap / updateWalletQr are no-ops post-merge — QR removed.
       $('walletRechargeModal').style.display = 'flex';
     }
     function closeWalletRecharge() {
@@ -7292,29 +7270,9 @@
     }
     function setWalletRecharge(amt) {
       $('walletRechargeAmt').value = amt;
-      updateWalletQr();
     }
-    function updateWalletQr() {
-      const amt = parseInt($('walletRechargeAmt').value, 10);
-      if (isNaN(amt) || amt < 100) {
-        $('walletQrWrap').style.display = 'none';
-        return;
-      }
-      const name = (S.profile?.name || 'Customer').trim();
-      const phone = (S.phone || '').trim();
-      const note = `SvaadhW ${phone.slice(-4)}`;
-      // Removed tr, mode=02 and pn to treat as P2P and avoid GPay validation rejections
-      const upiData = `upi://pay?pa=${UPI_VPA}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
-
-      const qrImg = $('walletQrImg');
-      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiData)}`;
-      qrImg.onclick = () => { $('walletUpiLink').click(); };
-      qrImg.style.cursor = 'pointer';
-      qrImg.title = 'Tap to pay via any UPI app';
-      
-      $('walletUpiLink').href = upiData;
-      $('walletQrWrap').style.display = 'block';
-    }
+    // updateWalletQr — kept as a no-op so legacy onclick handlers don't throw.
+    function updateWalletQr() { /* QR removed; HDFC popup handles recharge */ }
 
     async function submitWalletRecharge() {
       const amt = parseInt($('walletRechargeAmt').value, 10);
