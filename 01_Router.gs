@@ -489,6 +489,17 @@ function doPost(e) {
       if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
       return jsonRes(hdfc_verifyReturnPayload(body));
     }
+    if (action === "hdfc_checkPaymentStatus") {
+      // Polling endpoint — order.html calls this every 2s while the customer
+      // is paying in the popup. Returns {status, confirmed, amount} so the
+      // opener tab can complete the order the moment HDFC confirms CHARGED,
+      // even if the popup is still stuck on script.google.com cross-origin.
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      const oid = String(body.order_id || "").trim();
+      if (!oid) return jsonRes({error:"Missing order_id"});
+      const sc = hdfc_getOrderStatus(oid);
+      return jsonRes({ status: sc.status, confirmed: sc.confirmed, amount: sc.amount || 0 });
+    }
     // ─────────────────────────────────────────────────────────
 
     // Regular order submission

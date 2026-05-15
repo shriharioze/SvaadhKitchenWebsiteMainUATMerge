@@ -3,6 +3,71 @@
 
 <head>
   <meta charset="UTF-8">
+  <!-- ═══════════════════════════════════════════════════════════════════
+       POPUP INTERCEPT — must run BEFORE the main app boots.
+       If we landed here as the HDFC return-URL popup (a small popup
+       window the opener tab launched for payment), we don't want to
+       render the order page. Instead: relay the return params to the
+       opener via localStorage (storage event fires across tabs of the
+       same origin), then auto-close.
+       Detection: opener tab writes svaadh_hdfc_popup_active to
+       localStorage BEFORE opening the popup. We read it here.
+       This survives cross-origin navigations unlike window.opener.
+  ════════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function() {
+      try {
+        var raw = localStorage.getItem("svaadh_hdfc_popup_active");
+        if (!raw) return;
+        var m = JSON.parse(raw);
+        if (!m || !m.kind) return;
+        // Stale guard — 30 min
+        if (Date.now() - (m.ts || 0) > 30 * 60 * 1000) {
+          localStorage.removeItem("svaadh_hdfc_popup_active");
+          return;
+        }
+        var sp = new URLSearchParams(window.location.search || "");
+        var status = sp.get("hdfc_status") || sp.get("status") || "";
+        if (!status) return;   // not a return navigation
+        var orderId = sp.get("hdfc_order_id") || sp.get("order_id") || "";
+        try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+        var type = (m.kind === "recharge") ? "hdfc_recharge" : "hdfc_payment";
+        try {
+          localStorage.setItem("svaadh_hdfc_popup_result", JSON.stringify({
+            type: type, orderId: orderId, status: status, ts: Date.now()
+          }));
+        } catch(_) {}
+        document.addEventListener("DOMContentLoaded", function() {
+          try {
+            document.title = "Payment Received";
+            document.body.innerHTML =
+              '<div style="font-family:system-ui,-apple-system,Arial,sans-serif;' +
+              'min-height:100vh;display:flex;flex-direction:column;align-items:center;' +
+              'justify-content:center;padding:40px 20px;text-align:center;background:#fef9f6;">' +
+              '<div style="font-size:3rem;color:#16a34a;margin-bottom:16px;">✓</div>' +
+              '<div style="font-size:1.4rem;font-weight:800;color:#222;margin-bottom:8px;">' +
+              'Payment Received</div>' +
+              '<div style="font-size:1rem;color:#666;margin-bottom:24px;">' +
+              'You can safely close this window.<br>Your order is being confirmed in the original tab.</div>' +
+              '<button onclick="window.close()" style="padding:12px 28px;background:#c0392b;color:#fff;' +
+              'border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">' +
+              'Close Window</button></div>';
+          } catch(_) {}
+        });
+        var n = 0;
+        var doClose = function() {
+          n++;
+          try { window.close(); } catch(_) {}
+          if (n < 8) setTimeout(doClose, 250);
+        };
+        doClose();
+        window.stop && window.stop();
+        throw new Error("HDFC popup intercepted — closing");
+      } catch(e) {
+        if (String(e.message || "").indexOf("HDFC popup") === 0) throw e;
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Svaadh Kitchen">
@@ -3821,67 +3886,32 @@
             <div style="flex-shrink:0;background:#6c3cf7;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
           </div>
 
-          <!-- Step 2: UPI -->
+          <!-- Step 2: HDFC Gateway (replaces manual UPI) -->
           <div style="padding:14px;background:#f8faff;border-radius:14px;border:1px solid #dbeafe;margin-bottom:14px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
               <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;">2</div>
               <div>
-                <div style="font-size:0.82rem;font-weight:700;color:#1e3a8a;">Pay via UPI</div>
-                <div style="font-size:0.75rem;color:#3b82f6;">Scan QR · tap button · or use UPI ID</div>
+                <div style="font-size:0.82rem;font-weight:700;color:#1e3a8a;">Pay via HDFC Gateway</div>
+                <div style="font-size:0.75rem;color:#3b82f6;">UPI · Cards · Net Banking · Wallets</div>
               </div>
               <div style="margin-left:auto;font-size:1.5rem;font-weight:900;color:#15803d;letter-spacing:-0.5px;">₹<span id="splitUpiAmtDisplay">0</span></div>
             </div>
 
-            <p class="text-sm" style="font-size:0.75rem;color:#64748b;text-align:center;margin-bottom:6px;">Scan QR or tap button to pay ₹<span id="splitUpiQrAmt">0</span></p>
-            <div id="splitQrcode" style="margin:0 auto 12px;border:4px solid #fff;box-shadow:0 4px 14px rgba(37,99,235,0.13);width:fit-content;border-radius:12px;"></div>
-
-            <div style="text-align:center;margin-bottom:12px;">
-              <div class="upi-id" onclick="copyUPI()" title="Click to copy UPI ID"
-                style="cursor:pointer;font-weight:700;color:#1e3a8a;font-size:0.88rem;letter-spacing:0.3px;display:inline-block;background:#dbeafe;padding:6px 16px;border-radius:20px;">
-                9819969682@hdfc
-              </div>
-              <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">tap to copy</div>
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.78rem;color:#0c4a6e;line-height:1.5;">
+              🔒 A secure HDFC payment window will open in a popup. Your wallet portion (₹<span id="splitWalletGatewayHint">0</span>) is deducted automatically on success.
             </div>
 
-            <!-- Backup UPI — shown smaller and dimmer so it's clearly secondary -->
-            <div style="text-align:center;margin-bottom:12px;padding:8px 10px;background:#f9fafb;border:1px dashed #cbd5e1;border-radius:10px;">
-              <div style="font-size:0.68rem;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.2px;text-transform:uppercase;">Alternate UPI ID (Backup)</div>
-              <div class="upi-id" onclick="copyBackupUPI()" title="Click to copy backup UPI ID"
-                style="cursor:pointer;font-weight:600;color:#475569;font-size:0.82rem;letter-spacing:0.3px;display:inline-block;background:#fff;padding:4px 12px;border-radius:16px;border:1px solid #e2e8f0;">
-                shriharioze07-1@okhdfcbank
-              </div>
-              <div style="font-size:0.66rem;color:#94a3b8;margin-top:4px;line-height:1.3;">
-                Use only if the primary UPI ID above doesn't work
-              </div>
-            </div>
-
-            <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:12px;padding:12px 14px;text-align:center;">
-              <div style="font-size:0.8rem;font-weight:700;color:#1e3a8a;margin-bottom:4px;">📋 How to Pay via UPI</div>
-              <div style="font-size:0.75rem;color:#1e40af;line-height:1.6;">
-                1. Tap the UPI ID above to <strong>copy</strong> it<br>
-                2. Open GPay / PhonePe / Paytm / any UPI app<br>
-                3. Paste the UPI ID and pay ₹<span id="splitUpiDeepLinkAmt">0</span><br>
-                4. Complete payment, then confirm below
-              </div>
-              <div style="margin-top:8px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:6px 10px;font-size:0.72rem;color:#991b1b;line-height:1.5;">
-                ⚠️ <strong>Pay using the UPI ID only</strong> — do not pay directly to the phone number, as it may not be linked to the same account.
-              </div>
-              <div class="mr-note" style="font-size:0.72rem;color:#1d4ed8;margin-top:6px;">फक्त वरील UPI ID वापरून पेमेंट करा — मोबाइल नंबरवर थेट पेमेंट करू नका</div>
-            </div>
+            <button id="splitHdfcPayBtn" type="button" onclick="hdfc_initiatePayment()" class="btn btn-primary"
+              style="font-size:0.95rem;font-weight:700;padding:13px;height:auto;letter-spacing:0.2px;background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:12px;width:100%;">
+              🔒 Pay ₹<span id="splitUpiDeepLinkAmt">0</span> via HDFC Gateway
+            </button>
           </div>
 
-          <!-- Confirm checkbox -->
-          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
-            <input type="checkbox" id="splitConfirmCheck" style="margin-top:2px;width:auto;accent-color:#16a34a;flex-shrink:0;"
-              onchange="checkPaymentConfirmation()">
-            <span style="font-size:0.81rem;color:#14532d;line-height:1.5;font-weight:600;">I confirm ₹<span id="splitWalletConfirmAmt">0</span> Wallet used + paid ₹<span id="splitUpiConfirmAmt">0</span> via UPI</span>
-          </label>
-
-          <p class="mr-note" style="margin-top:8px;text-align:center;">वॉलेटमधून ₹<span id="splitWalletMr">0</span> वजा होईल, बाकी ₹<span id="splitUpiMr">0</span> UPI द्वारे भरा</p>
+          <p class="mr-note" style="margin-top:8px;text-align:center;">वॉलेटमधून ₹<span id="splitWalletMr">0</span> वजा होईल, बाकी ₹<span id="splitUpiMr">0</span> HDFC गेटवे द्वारे भरा</p>
 
           <div style="text-align:center;margin-top:10px;">
-            <a href="javascript:togglePaymentMode('UPI')"
-              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay full ₹<span id="splitFullUpiLink">0</span> via UPI instead</a>
+            <a href="javascript:togglePaymentMode('Gateway')"
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay full ₹<span id="splitFullUpiLink">0</span> via HDFC Gateway instead</a>
           </div>
         </div>
 
@@ -5204,11 +5234,11 @@
         isChecked = true;
       } else if (S.paymentChoice === "Free") {
         isChecked = $("freeOrderConfirmCheck")?.checked;
-      } else if (S.paymentChoice === "Gateway") {
-        // HDFC gateway path — no upfront confirmation checkbox; the customer
-        // confirms by clicking "Pay via HDFC" on the gateway card itself,
-        // which kicks off hdfc_initiatePayment(). The Place Order button is
-        // hidden / unused for this path (see goNext branch below).
+      } else if (S.paymentChoice === "Gateway" || S.paymentChoice === "Split") {
+        // Gateway and Split — no upfront confirmation checkbox. Customer
+        // clicks "Pay via HDFC" on the card itself, which kicks off
+        // hdfc_initiatePayment(). The Place Order button at the bottom
+        // routes to the same function.
         isChecked = true;
       } else {
         isChecked = $("paidConfirm")?.checked;
@@ -5387,10 +5417,13 @@
         return;
       }
       if (S.step === 4) {
-        // Route HDFC gateway through its own initiator; the gateway page
-        // is responsible for the redirect and the verified-order submission
-        // on return. Other paths (Wallet, OnAccount, Free) submit directly.
-        if (S.paymentChoice === "Gateway") { await hdfc_initiatePayment(); return; }
+        // Gateway and Split both go through HDFC initiator (Split sends a
+        // wallet_hint so the backend deducts only the gateway portion).
+        // Wallet, OnAccount, Free submit directly via placeOrder.
+        if (S.paymentChoice === "Gateway" || S.paymentChoice === "Split") {
+          await hdfc_initiatePayment();
+          return;
+        }
         await placeOrder(); return;
       }
       S.step++; updateNav(); window.scrollTo(0, 0);
@@ -7047,20 +7080,50 @@
         $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
         $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
         $("onAccountCycleDisplay2").textContent = S.profile.billingCycle || "Daily";
+      } else if (S.forceGatewayOverride && grandTotal > 0) {
+        // Customer explicitly chose to bypass wallet and pay via HDFC Gateway.
+        S.paymentChoice = "Gateway";
+        if ($("hdfcGatewayCard")) {
+          $("hdfcGatewayCard").style.display = "block";
+          if ($("hdfcGatewayAmount")) $("hdfcGatewayAmount").textContent = "₹" + grandTotal;
+          if ($("hdfcPayBtnAmt"))     $("hdfcPayBtnAmt").textContent     = grandTotal;
+        }
       } else if (wb >= grandTotal && grandTotal > 0) {
-        // Wallet covers the full bill → Wallet path.
+        // Wallet covers the full bill → Wallet path (with option to switch
+        // to HDFC Gateway if the customer prefers to preserve wallet credit).
         S.paymentChoice = "Wallet";
         $("walletConfirmCard").style.display = "block";
         $("walletDeductAmount").textContent = `₹${grandTotal}`;
         $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb}`;
         $("walletConfirmLabelAmt").textContent = grandTotal;
-        // Hide the legacy "Pay via UPI QR Instead" alt link — UPI is gone.
-        const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
-        if (upiLink) upiLink.style.display = "none";
+        // Update the alt link (previously "Pay via UPI") to switch to Gateway.
+        const altLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
+        if (altLink) {
+          altLink.style.display = "";
+          altLink.textContent = `Pay ₹${grandTotal} via HDFC Gateway instead`;
+        }
+      } else if (wb > 0 && grandTotal > 0 && wb < grandTotal) {
+        // Partial wallet → Split (wallet + HDFC for the remainder),
+        // with a link to pay the full amount via HDFC if customer wants
+        // to preserve wallet credit.
+        const upiDue = grandTotal - wb;
+        S.paymentChoice = "Split";
+        S.walletCredit  = wb;
+        $("splitPayCard").style.display = "block";
+        $("splitTotalDisplay").textContent     = `₹${grandTotal}`;
+        $("splitWalletPart").textContent       = wb;
+        $("splitUpiPart").textContent          = upiDue;
+        $("splitWalletBalDisplay").textContent = wb;
+        $("splitWalletConfirmAmt").textContent = wb;
+        $("splitUpiConfirmAmt").textContent    = upiDue;
+        $("splitUpiMr").textContent            = upiDue;
+        $("splitWalletMr").textContent         = wb;
+        $("splitFullUpiLink").textContent      = grandTotal;
+        if ($("splitUpiAmtDisplay"))      $("splitUpiAmtDisplay").textContent      = upiDue;
+        if ($("splitUpiDeepLinkAmt"))     $("splitUpiDeepLinkAmt").textContent     = upiDue;
+        if ($("splitWalletGatewayHint"))  $("splitWalletGatewayHint").textContent  = wb;
       } else {
-        // Everything else (no wallet OR partial wallet) → HDFC Gateway for full amount.
-        // Partial wallet is intentionally NOT split: customer pays full via gateway,
-        // wallet credit can be used on the next order.
+        // No wallet → straight HDFC Gateway path.
         S.paymentChoice = "Gateway";
         if ($("hdfcGatewayCard")) {
           $("hdfcGatewayCard").style.display = "block";
@@ -7074,14 +7137,19 @@
     }
 
     function togglePaymentMode(mode) {
-      // POST-MERGE: only Wallet, Gateway, OnAccount, Free are valid choices.
-      // Legacy "UPI" and "Split" requests are mapped to the gateway path so
-      // any stale deep-link or onclick still works without breaking the page.
+      // Valid modes post-merge: Wallet, Split, Gateway, OnAccount, Free.
+      // Legacy "UPI" maps to Gateway so any stale onclick still works.
       S.tempUpiMode  = false;
       S.walletCredit = 0;
       if (mode === "Wallet")          S.paymentChoice = "Wallet";
+      else if (mode === "Split")      S.paymentChoice = "Split";
       else if (mode === "OnAccount")  S.paymentChoice = "OnAccount";
-      else                            S.paymentChoice = "Gateway";   // covers UPI, Split, anything else
+      else if (mode === "Free")       S.paymentChoice = "Free";
+      else                            S.paymentChoice = "Gateway";   // covers UPI, Gateway, anything else
+      // For Gateway explicitly chosen, force-bypass any wallet shortcut
+      // so the user can pay full via HDFC even when wallet >= total.
+      if (mode === "Gateway") S.forceGatewayOverride = true;
+      else delete S.forceGatewayOverride;
       buildBillScreen();
     }
     function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
@@ -7265,14 +7333,44 @@
     }
 
     /**
-     * HDFC-backed wallet recharge — creates a top-up session and redirects
-     * the browser to the HDFC HyperCheckout. On return, the URL params land
-     * us in hdfc_handleReturnParams, which routes 'W'-marked order ids here
-     * to hdfc_handleRechargeReturn for finalisation.
+     * HDFC-backed wallet recharge — opens HDFC HyperCheckout in a popup
+     * window so the customer keeps the wallet modal context. On payment
+     * success the opener tab credits the wallet without page navigation.
      */
     async function payWalletRechargeViaHDFC(amt) {
+      // Open popup INSIDE user gesture (button click) so blockers don't fire.
+      const popup = window.open("about:blank", "hdfc_recharge",
+        "width=520,height=720,menubar=no,toolbar=no,location=yes");
+      const popupBlocked = !popup || popup.closed || typeof popup.closed === "undefined";
+
+      try {
+        localStorage.setItem("svaadh_hdfc_popup_active",
+          JSON.stringify({ kind: "recharge", ts: Date.now() }));
+      } catch(_) {}
+
+      if (popup && !popupBlocked) {
+        try {
+          popup.document.write(
+            '<!DOCTYPE html><html><head><title>Connecting to HDFC…</title>' +
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<style>html,body{margin:0;height:100%;font-family:system-ui,Arial,sans-serif;' +
+            'display:flex;align-items:center;justify-content:center;background:#fef9f6;}' +
+            '.box{text-align:center;padding:30px;}' +
+            '.spin{width:48px;height:48px;border:5px solid #f5cba7;border-top-color:#c0392b;' +
+            'border-radius:50%;animation:s 1s linear infinite;margin:0 auto 18px;}' +
+            '@keyframes s{to{transform:rotate(360deg);}}' +
+            '.t{font-weight:800;color:#c0392b;font-size:1.1rem;margin-bottom:6px;}' +
+            '.s{color:#666;font-size:0.88rem;}' +
+            '</style></head><body><div class="box"><div class="spin"></div>' +
+            '<div class="t">Connecting to HDFC…</div>' +
+            '<div class="s">Please wait, secure session is being created.</div>' +
+            '</div></body></html>'
+          );
+        } catch(_) {}
+      }
+
       const btn = $('btnSubmitWallet');
-      sBtnLoading(btn, true, "Connecting to HDFC");
+      sBtnLoading(btn, true, "Connecting to gateway");
       try {
         const res = await apiPost({
           _action: "hdfc_createWalletRechargeSession",
@@ -7281,18 +7379,35 @@
           amount:  amt
         });
         const data = await res.json();
+        sBtnLoading(btn, false);
         if (!data.success || !data.payment_url) {
+          try { popup && popup.close(); } catch(_) {}
+          try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
           throw new Error(data.error || "Could not start payment.");
         }
-        // Persist the recharge order_id as a fallback signal for return-flow
-        // (URL param is the primary path; localStorage is the safety net).
         try {
           localStorage.setItem("svaadh_hdfc_pending_recharge",    data.order_id);
           localStorage.setItem("svaadh_hdfc_pending_recharge_ts", String(Date.now()));
         } catch(_) {}
-        window.location.href = data.payment_url;
+
+        if (popupBlocked) {
+          try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+          window.location.href = data.payment_url;
+          return;
+        }
+        try {
+          popup.location.href = data.payment_url;
+        } catch (e) {
+          try { popup.close(); } catch(_) {}
+          window.location.href = data.payment_url;
+          return;
+        }
+        // Hide the recharge modal — the waiting overlay takes the stage.
+        try { closeWalletRecharge(); } catch(_) {}
+        _hdfcShowWaitingOverlayForRecharge(data.order_id, popup);
       } catch (err) {
         sBtnLoading(btn, false);
+        try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
         await sAlert("Could not start gateway payment.\n\n" + err.message, "Gateway Error", "❌");
       }
     }
@@ -8981,24 +9096,356 @@
       }
     }
 
+    // ── POPUP HELPERS ────────────────────────────────────────────────────
+    // Same-origin localStorage marker tells us whether the current tab is
+    // the customer's primary tab or the HDFC return popup. Used by both the
+    // order-payment and the wallet-recharge flows.
+    function _hdfcIsPopup(kind) {
+      try {
+        const m = JSON.parse(localStorage.getItem("svaadh_hdfc_popup_active") || "null");
+        if (!m || !m.kind) return false;
+        if (Date.now() - (m.ts || 0) > 30 * 60 * 1000) {
+          localStorage.removeItem("svaadh_hdfc_popup_active");
+          return false;
+        }
+        if (kind && m.kind !== kind) return false;
+        return true;
+      } catch(_) { return false; }
+    }
+
+    function _hdfcRelayAndClose(type, orderId, status) {
+      try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+      try {
+        localStorage.setItem("svaadh_hdfc_popup_result", JSON.stringify({
+          type: type, orderId: orderId, status: status, ts: Date.now()
+        }));
+      } catch(_) {}
+      try { window.history.replaceState({}, "", window.location.pathname); } catch(_) {}
+      try {
+        document.body.innerHTML =
+          '<div style="font-family:system-ui,-apple-system,Arial,sans-serif;' +
+          'min-height:100vh;display:flex;flex-direction:column;align-items:center;' +
+          'justify-content:center;padding:40px 20px;text-align:center;background:#fef9f6;">' +
+          '<div style="font-size:3rem;color:#16a34a;margin-bottom:16px;">✓</div>' +
+          '<div style="font-size:1.4rem;font-weight:800;color:#222;margin-bottom:8px;">Payment Received</div>' +
+          '<div style="font-size:1rem;color:#666;margin-bottom:24px;">You can safely close this window.<br>Your order is being confirmed in the original tab.</div>' +
+          '<button onclick="window.close()" style="padding:12px 28px;background:#c0392b;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;">Close Window</button></div>';
+      } catch(_) {}
+      var n = 0;
+      var doClose = function() {
+        n++;
+        try { window.close(); } catch(_) {}
+        if (n < 8) setTimeout(doClose, 250);
+      };
+      doClose();
+    }
+
+    // One global storage-event listener; replaced on each new payment.
+    function _hdfcInstallPopupResultListener(orderId, expectedType, onResult) {
+      if (window._hdfcPopupResultHandler) {
+        window.removeEventListener("storage", window._hdfcPopupResultHandler);
+        window._hdfcPopupResultHandler = null;
+      }
+      const handler = (e) => {
+        if (e.key !== "svaadh_hdfc_popup_result" || !e.newValue) return;
+        let data; try { data = JSON.parse(e.newValue); } catch(_) { return; }
+        if (!data || data.type !== expectedType) return;
+        if (data.orderId && data.orderId !== orderId) return;
+        try { localStorage.removeItem("svaadh_hdfc_popup_result"); } catch(_) {}
+        window.removeEventListener("storage", handler);
+        window._hdfcPopupResultHandler = null;
+        onResult(data);
+      };
+      window.addEventListener("storage", handler);
+      window._hdfcPopupResultHandler = handler;
+    }
+
     /**
-     * Initiates an HDFC gateway payment.
-     * 1. Builds a temp order_id
-     * 2. Calls backend hdfc_createSession
-     * 3. Redirects customer to HDFC payment page
+     * Waiting overlay shown on the OPENER tab while the customer pays in
+     * the popup. Triple-trigger detection: storage event from popup,
+     * popup.closed poll, AND backend hdfc_checkPaymentStatus poll every 2s
+     * (the last one works even when the popup is stuck on the cross-origin
+     * Apps Script domain).
+     */
+    function _hdfcShowWaitingOverlay(orderId, popup) {
+      const ov = document.createElement("div");
+      ov.id = "hdfc-waiting-overlay";
+      ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial,sans-serif;";
+      ov.innerHTML = `
+        <div style="background:#fff;border-radius:18px;padding:36px 32px;text-align:center;max-width:380px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="animation:sk-spin 1s linear infinite;display:inline-block;margin-bottom:14px;">
+            <circle cx="24" cy="24" r="20" stroke="#eee" stroke-width="5"/>
+            <path d="M44 24a20 20 0 0 0-20-20" stroke="#c0392b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+          <div id="hdfcWaitTitle" style="font-size:1.1rem;font-weight:700;color:#222;margin-bottom:8px;">Complete Payment</div>
+          <div id="hdfcWaitBody" style="font-size:0.88rem;color:#666;line-height:1.5;margin-bottom:20px;">Pay securely on the HDFC tab.<br>We'll automatically verify your payment when you're done.</div>
+          <button id="hdfcCancelWaiting" style="padding:10px 24px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;color:#666;cursor:pointer;">Cancel</button>
+        </div>
+        <style>@keyframes sk-spin { to { transform: rotate(360deg); } }</style>`;
+      document.body.appendChild(ov);
+
+      let cancelled = false;
+      const cancelBtn = document.getElementById("hdfcCancelWaiting");
+      if (cancelBtn) cancelBtn.onclick = () => {
+        cancelled = true;
+        try { popup.close(); } catch(_) {}
+        ov.remove();
+      };
+
+      let verifyStarted = false;
+      const runVerify = async (statusFromPopup) => {
+        if (verifyStarted) return;
+        verifyStarted = true;
+        try { clearInterval(timer); } catch(_) {}
+        try {
+          const t = document.getElementById("hdfcWaitTitle");
+          const b = document.getElementById("hdfcWaitBody");
+          const c = document.getElementById("hdfcCancelWaiting");
+          if (t) t.textContent = "Verifying Payment";
+          if (b) b.innerHTML   = "Confirming with HDFC…<br>Please wait.";
+          if (c) c.style.display = "none";
+        } catch(_) {}
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              _action: "hdfc_verifyReturn",
+              order_id: orderId,
+              status: statusFromPopup || "CHARGED",
+              signature: ""
+            })
+          });
+          const data = await res.json();
+          try {
+            const t = document.getElementById("hdfcWaitTitle");
+            const b = document.getElementById("hdfcWaitBody");
+            if (t) t.textContent = "Placing Your Order";
+            if (b) b.innerHTML   = "Just a moment…";
+          } catch(_) {}
+          if (data.error) {
+            try { ov.remove(); } catch(_) {}
+            await sAlert(
+              "Could not verify payment.\n\nIf money was deducted, WhatsApp us at +91 93222 46765 with order ID: " + orderId + "\n\nError: " + data.error,
+              "Verification Issue", "⚠️"
+            );
+            return;
+          }
+          if (data.paid) {
+            let pendingData = null;
+            try {
+              const r = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ _action: "hdfc_getPendingOrder", order_id: orderId })
+              });
+              pendingData = await r.json();
+            } catch(_) {}
+            if (pendingData && pendingData.success) {
+              S.phone         = pendingData.phone         || S.phone || "";
+              S.orders        = pendingData.orders        || S.orders || {};
+              S.selectedDates = pendingData.selectedDates || S.selectedDates || [];
+              S.profile       = pendingData.profile       || S.profile || {};
+              S.mealAddrs     = pendingData.mealAddrs     || S.mealAddrs || {};
+              S.isFirstTime   = pendingData.isFirstTime   || false;
+              S.grandTotal    = pendingData.amount        || S.grandTotal || 0;
+            }
+            S.hdfcPaymentVerified = true;
+            S.hdfcGatewayOrderId  = orderId;
+            try {
+              localStorage.removeItem("svaadh_hdfc_pending_order");
+              localStorage.removeItem("svaadh_hdfc_pending_ts");
+            } catch(_) {}
+            try { ov.remove(); } catch(_) {}
+            await hdfc_submitVerifiedOrder(orderId, "CHARGED");
+          } else {
+            try { ov.remove(); } catch(_) {}
+            await sAlert(
+              "Payment was not completed. If money was deducted, WhatsApp us at +91 93222 46765 with order ID: " + orderId,
+              "Payment Not Confirmed", "⚠️"
+            );
+          }
+        } catch (e) {
+          ov.remove();
+          await sAlert("Verification error: " + e.message, "Error", "❌");
+        }
+      };
+
+      _hdfcInstallPopupResultListener(orderId, "hdfc_payment", async (data) => {
+        try { popup.close(); } catch(_) {}
+        await runVerify(data.status || "CHARGED");
+      });
+
+      let pollTicks = 0;
+      const timer = setInterval(async () => {
+        if (cancelled || verifyStarted) { clearInterval(timer); return; }
+        pollTicks++;
+        let closed = true; try { closed = popup.closed; } catch(_) { closed = true; }
+        if (closed) { await runVerify("CHARGED"); return; }
+        if (pollTicks % 2 === 0) {
+          try {
+            const r = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              body: JSON.stringify({ _action: "hdfc_checkPaymentStatus", order_id: orderId })
+            });
+            const d = await r.json();
+            if (d && d.confirmed) {
+              try { popup.close(); } catch(_) {}
+              await runVerify(d.status || "CHARGED");
+              return;
+            }
+          } catch(_) {}
+        }
+      }, 1000);
+    }
+
+    /** Wallet-recharge variant of the waiting overlay. */
+    function _hdfcShowWaitingOverlayForRecharge(orderId, popup) {
+      const ov = document.createElement("div");
+      ov.id = "hdfc-waiting-overlay";
+      ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Arial,sans-serif;";
+      ov.innerHTML = `
+        <div style="background:#fff;border-radius:18px;padding:36px 32px;text-align:center;max-width:380px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="animation:sk-spin 1s linear infinite;display:inline-block;margin-bottom:14px;">
+            <circle cx="24" cy="24" r="20" stroke="#eee" stroke-width="5"/>
+            <path d="M44 24a20 20 0 0 0-20-20" stroke="#c0392b" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+          <div id="rwTitle" style="font-size:1.1rem;font-weight:700;color:#222;margin-bottom:8px;">Complete Payment</div>
+          <div id="rwBody" style="font-size:0.88rem;color:#666;line-height:1.5;margin-bottom:20px;">Pay securely on the HDFC tab.<br>We'll credit your wallet automatically.</div>
+          <button id="rwCancel" style="padding:10px 24px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;color:#666;cursor:pointer;">Cancel</button>
+        </div>
+        <style>@keyframes sk-spin { to { transform: rotate(360deg); } }</style>`;
+      document.body.appendChild(ov);
+
+      let cancelled = false;
+      document.getElementById("rwCancel").onclick = () => {
+        cancelled = true;
+        try { popup.close(); } catch(_) {}
+        ov.remove();
+      };
+
+      let verifyStarted = false;
+      const runFinalize = async () => {
+        if (verifyStarted) return;
+        verifyStarted = true;
+        try { clearInterval(timer); } catch(_) {}
+        document.getElementById("rwTitle").textContent = "Crediting Wallet";
+        document.getElementById("rwBody").innerHTML = "Confirming with HDFC…<br>Please wait.";
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ _action: "hdfc_finalizeWalletRecharge", order_id: orderId })
+          });
+          const data = await res.json();
+          ov.remove();
+          try {
+            localStorage.removeItem("svaadh_hdfc_pending_recharge");
+            localStorage.removeItem("svaadh_hdfc_pending_recharge_ts");
+          } catch(_) {}
+          if (data.success) {
+            const credited = Number(data.amount_credited || 0);
+            if (credited > 0) {
+              S.walletBalance = (Number(S.walletBalance) || 0) + credited;
+              try { updateWalletBalanceUI(S.walletBalance); } catch(_) {}
+            }
+            try { refreshWalletBalance && refreshWalletBalance(); } catch(_) {}
+            try { syncWalletValue && syncWalletValue(true); } catch(_) {}
+            if (!data.already_credited) {
+              await sAlert("Your wallet has been credited with ₹" + credited + ".", "Wallet Recharged ✅", "💰");
+            }
+          } else {
+            await sAlert(
+              "Recharge could not be confirmed.\n\n" + (data.error || "") + "\n\nIf money was deducted, WhatsApp us at +91 93222 46765 with order ID: " + orderId,
+              "Recharge Pending", "⚠️"
+            );
+          }
+        } catch (e) {
+          ov.remove();
+          await sAlert("Verification error: " + e.message, "Error", "❌");
+        }
+      };
+
+      _hdfcInstallPopupResultListener(orderId, "hdfc_recharge", async () => {
+        try { popup.close(); } catch(_) {}
+        await runFinalize();
+      });
+
+      let pollTicks = 0;
+      const timer = setInterval(async () => {
+        if (cancelled || verifyStarted) { clearInterval(timer); return; }
+        pollTicks++;
+        let closed = true; try { closed = popup.closed; } catch(_) { closed = true; }
+        if (closed) { await runFinalize(); return; }
+        if (pollTicks % 2 === 0) {
+          try {
+            const r = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              body: JSON.stringify({ _action: "hdfc_checkPaymentStatus", order_id: orderId })
+            });
+            const d = await r.json();
+            if (d && d.confirmed) { try { popup.close(); } catch(_) {} await runFinalize(); return; }
+          } catch(_) {}
+        }
+      }, 1000);
+    }
+
+    /**
+     * Initiates an HDFC gateway payment in a popup window so the customer
+     * stays on order.html. We pre-open about:blank inside the user-gesture
+     * window so popup blockers don't fire; then we navigate that popup to
+     * the actual payment URL once the session is ready.
      */
     async function hdfc_initiatePayment() {
       if (!S.gatewayEnabled) {
-        await sAlert("Payment gateway is not available right now. Please use UPI.", "Gateway Unavailable", "⚠️");
+        await sAlert("Payment gateway is not available right now. Please try again in a moment.", "Gateway Unavailable", "⚠️");
         return;
       }
 
-      const btn = $("hdfcPayBtn");
-      if (btn) { btn.disabled = true; btn.textContent = "⏳ Creating secure session…"; }
+      // ── POPUP MUST OPEN INSIDE USER-ACTIVATION WINDOW ─────────────────
+      // Browsers block window.open() after async work loses user activation.
+      // Open the popup IMMEDIATELY here with about:blank, then navigate it
+      // to the actual payment URL once the session is ready below.
+      const popup = window.open("about:blank", "hdfc_payment",
+        "width=520,height=720,menubar=no,toolbar=no,location=yes");
+      const popupBlocked = !popup || popup.closed || typeof popup.closed === "undefined";
 
-      // Generate a unique gateway order ID for this session.
-      // Rules (HDFC security audit): alphanumeric only, ≤21 chars, non-sequential.
-      // Format: SK + YYMMDD (6) + G + 9 random alphanumeric chars = 18 chars total.
+      // Set the marker BEFORE the popup navigates anywhere so that even if
+      // the popup races ahead and lands on order.html first, the top-of-page
+      // script can identify it as a popup and relay back to us.
+      try {
+        localStorage.setItem("svaadh_hdfc_popup_active",
+          JSON.stringify({ kind: "payment", ts: Date.now() }));
+      } catch(_) {}
+
+      const payBtns = ["hdfcPayBtn", "splitHdfcPayBtn"].map(id => $(id)).filter(b => b);
+      const origBtnHtml = {};
+      payBtns.forEach(b => {
+        origBtnHtml[b.id] = b.innerHTML;
+        b.disabled  = true;
+        b.innerHTML = "⏳ Creating secure session…";
+      });
+
+      // Loading state inside the popup.
+      if (popup && !popupBlocked) {
+        try {
+          popup.document.write(
+            '<!DOCTYPE html><html><head><title>Connecting to HDFC…</title>' +
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<style>html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Arial,sans-serif;' +
+            'display:flex;align-items:center;justify-content:center;background:#fef9f6;}' +
+            '.box{text-align:center;padding:30px;}' +
+            '.spin{width:48px;height:48px;border:5px solid #f5cba7;border-top-color:#c0392b;' +
+            'border-radius:50%;animation:s 1s linear infinite;margin:0 auto 18px;}' +
+            '@keyframes s{to{transform:rotate(360deg);}}' +
+            '.t{font-weight:800;color:#c0392b;font-size:1.1rem;margin-bottom:6px;}' +
+            '.s{color:#666;font-size:0.88rem;}' +
+            '</style></head><body><div class="box"><div class="spin"></div>' +
+            '<div class="t">Connecting to HDFC…</div>' +
+            '<div class="s">Please wait, secure session is being created.</div>' +
+            '</div></body></html>'
+          );
+        } catch(_) {}
+      }
+
+      // Build the temp gateway order id — alphanumeric only, ≤21 chars.
       const now      = new Date();
       const datePart = now.getFullYear().toString().slice(-2)
                      + String(now.getMonth() + 1).padStart(2, "0")
@@ -9006,56 +9453,75 @@
       const rand     = Math.random().toString(36).substr(2, 9).toUpperCase();
       const tempId   = `SK${datePart}G${rand}`;
 
-      // Save full order state to GAS backend before redirecting to HDFC.
-      // sessionStorage/localStorage are unreliable across cross-origin redirects.
-      // Backend stores it keyed by tempId, retrieved on return.
       S.hdfcPendingOrderId = tempId;
+      try {
+        localStorage.setItem("svaadh_hdfc_pending_order", tempId);
+        localStorage.setItem("svaadh_hdfc_pending_ts", String(Date.now()));
+      } catch(_) {}
+
+      const isSplit    = (S.paymentChoice === "Split");
+      const walletHint = isSplit ? Number(S.walletCredit || 0) : 0;
+
       try {
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
           body: JSON.stringify({
-            _action:       "hdfc_savePendingOrder",
-            order_id:      tempId,
-            phone:         S.phone         || "",
-            amount:        S.grandTotal    || 0,
-            orders:        S.orders        || {},
-            selectedDates: S.selectedDates || [],
-            profile:       S.profile       || {},
-            mealAddrs:     S.mealAddrs     || {},
-            isFirstTime:   S.isFirstTime   || false
+            _action:        "hdfc_savePendingOrder",
+            order_id:       tempId,
+            phone:          S.phone         || "",
+            amount:         S.grandTotal    || 0,
+            orders:         S.orders        || {},
+            selectedDates:  S.selectedDates || [],
+            profile:        S.profile       || {},
+            mealAddrs:      S.mealAddrs     || {},
+            isFirstTime:    S.isFirstTime   || false,
+            payment_choice: String(S.paymentChoice || "Gateway"),
+            wallet_hint:    walletHint
           })
         });
-      } catch (_) { /* non-fatal — proceed with redirect even if save fails */ }
+      } catch(_) {}
 
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
           body: JSON.stringify({
-            _action:     "hdfc_createSession",
-            phone:       S.phone,
-            name:        S.profile.name || "Customer",
-            amount:      S.grandTotal,
-            order_id:    tempId,
-            description: `Svaadh Kitchen Order — ${S.phone}`
+            _action:        "hdfc_createSession",
+            phone:          S.phone,
+            name:           S.profile.name || "Customer",
+            amount:         S.grandTotal,
+            order_id:       tempId,
+            description:    `Svaadh Kitchen Order — ${S.phone}`,
+            payment_choice: String(S.paymentChoice || "Gateway"),
+            wallet_hint:    walletHint
           })
         });
         const data = await res.json();
 
         if (data.success && data.payment_url) {
-          // Redirect customer to HDFC HyperCheckout
-          window.location.href = data.payment_url;
+          if (popupBlocked) {
+            try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+            console.warn("Popup blocked — falling back to same-tab redirect.");
+            window.location.href = data.payment_url;
+            return;
+          }
+          try {
+            popup.location.href = data.payment_url;
+          } catch (e) {
+            try { popup.close(); } catch(_) {}
+            window.location.href = data.payment_url;
+            return;
+          }
+          _hdfcShowWaitingOverlay(tempId, popup);
+          // Restore the buttons so user can retry if needed
+          payBtns.forEach(b => { b.disabled = false; b.innerHTML = origBtnHtml[b.id] || b.innerHTML; });
         } else {
+          try { popup && popup.close(); } catch(_) {}
           throw new Error(data.error || "Could not create payment session.");
         }
       } catch (err) {
-        if (btn) {
-          btn.disabled    = false;
-          btn.innerHTML   = "🔒 Pay ₹<span id='hdfcPayBtnAmt'>" + (S.grandTotal || 0) + "</span> via HDFC Gateway";
-        }
-        await sAlert(
-          "Could not reach payment gateway. Please try UPI payment instead.\n\nError: " + err.message,
-          "Gateway Error", "❌"
-        );
+        payBtns.forEach(b => { b.disabled = false; b.innerHTML = origBtnHtml[b.id] || b.innerHTML; });
+        try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+        await sAlert("Could not reach payment gateway.\n\nError: " + err.message, "Gateway Error", "❌");
       }
     }
 
@@ -9067,19 +9533,32 @@
      */
     async function hdfc_handleReturnParams() {
       const params    = new URLSearchParams(window.location.search);
-      const orderId   = params.get("hdfc_order_id")  || params.get("order_id");
+      let   orderId   = params.get("hdfc_order_id")  || params.get("order_id");
       const status    = params.get("hdfc_status")    || params.get("status");
       const signature = params.get("hdfc_sig")       || params.get("signature");
 
+      // HDFC sometimes returns status without order_id. Recover from localStorage.
+      if (!orderId && status) {
+        try { orderId = localStorage.getItem("svaadh_hdfc_pending_order") || ""; } catch(_) {}
+      }
+
       if (!orderId || !status) return;   // Not a gateway return, normal page load
+
+      // ── Popup-mode short-circuit ─────────────────────────────────────
+      // The top-of-page script already handles the most common popup case,
+      // but if it didn't fire (e.g. fragment-routed nav), this is a safety
+      // net: relay the result to the opener and close — do NOT run verify
+      // in the popup, the opener tab is doing it.
+      if (_hdfcIsPopup()) {
+        const isRecharge = /^SK\d{6}W/.test(orderId);
+        _hdfcRelayAndClose(isRecharge ? "hdfc_recharge" : "hdfc_payment", orderId, status);
+        return;
+      }
 
       // Clean up URL immediately so user doesn't see ugly params
       window.history.replaceState({}, "", window.location.pathname);
 
       // ── Wallet recharge return (order_id format: SK<YYMMDD>W...) ───────
-      // The wallet-recharge session uses a 'W' marker after the date prefix
-      // to distinguish it from order payments ('G' marker). Route those to
-      // the dedicated finalizer instead of order verification.
       if (/^SK\d{6}W/.test(orderId)) {
         return hdfc_handleRechargeReturn(orderId, status);
       }
