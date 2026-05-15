@@ -17,21 +17,40 @@
   <script>
     (function() {
       try {
-        var raw = localStorage.getItem("svaadh_hdfc_popup_active");
-        if (!raw) return;
-        var m = JSON.parse(raw);
-        if (!m || !m.kind) return;
-        // Stale guard — 30 min
-        if (Date.now() - (m.ts || 0) > 30 * 60 * 1000) {
-          localStorage.removeItem("svaadh_hdfc_popup_active");
-          return;
-        }
+        // Detect popup mode via TWO mechanisms (either is sufficient):
+        //   1. URL param _popup=1  — survives cross-origin (opener on
+        //      www.svaadhkitchen.in custom domain, popup on github.io).
+        //      The backend appends _popup=1 to the HDFC return_url so
+        //      HDFC's redirect chain preserves it. Works regardless of
+        //      whether localStorage is shared between opener and popup.
+        //   2. localStorage marker  — set by opener before window.open.
+        //      Works when opener and popup share the same origin.
         var sp = new URLSearchParams(window.location.search || "");
         var status = sp.get("hdfc_status") || sp.get("status") || "";
         if (!status) return;   // not a return navigation
         var orderId = sp.get("hdfc_order_id") || sp.get("order_id") || "";
-        try { localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
-        var type = (m.kind === "recharge") ? "hdfc_recharge" : "hdfc_payment";
+
+        var fromUrl = (sp.get("_popup") === "1");
+        var m = null;
+        try {
+          var raw = localStorage.getItem("svaadh_hdfc_popup_active");
+          if (raw) {
+            m = JSON.parse(raw);
+            // Stale guard — 30 min
+            if (m && Date.now() - (m.ts || 0) > 30 * 60 * 1000) {
+              localStorage.removeItem("svaadh_hdfc_popup_active");
+              m = null;
+            }
+          }
+        } catch(_) {}
+
+        if (!fromUrl && (!m || !m.kind)) return;   // not a popup, normal page load
+
+        try { if (m) localStorage.removeItem("svaadh_hdfc_popup_active"); } catch(_) {}
+        // Determine type — prefer localStorage marker, else infer from order_id
+        // (W prefix is a wallet recharge; G prefix is an order payment).
+        var kind = (m && m.kind) || (/^SK\d{6}W/.test(orderId) ? "recharge" : "payment");
+        var type = (kind === "recharge") ? "hdfc_recharge" : "hdfc_payment";
         try {
           localStorage.setItem("svaadh_hdfc_popup_result", JSON.stringify({
             type: type, orderId: orderId, status: status, ts: Date.now()
@@ -9555,11 +9574,11 @@
       if (!orderId || !status) return;   // Not a gateway return, normal page load
 
       // ── Popup-mode short-circuit ─────────────────────────────────────
-      // The top-of-page script already handles the most common popup case,
-      // but if it didn't fire (e.g. fragment-routed nav), this is a safety
-      // net: relay the result to the opener and close — do NOT run verify
-      // in the popup, the opener tab is doing it.
-      if (_hdfcIsPopup()) {
+      // Detect popup via URL param OR localStorage marker — URL param works
+      // even when opener and popup are on different origins (e.g. opener on
+      // www.svaadhkitchen.in, popup landing on github.io after HDFC).
+      const _fromUrlPopup = (params.get("_popup") === "1");
+      if (_fromUrlPopup || _hdfcIsPopup()) {
         const isRecharge = /^SK\d{6}W/.test(orderId);
         _hdfcRelayAndClose(isRecharge ? "hdfc_recharge" : "hdfc_payment", orderId, status);
         return;

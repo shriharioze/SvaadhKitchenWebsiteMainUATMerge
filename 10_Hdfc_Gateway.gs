@@ -529,7 +529,12 @@ function hdfc_createSession(body) {
     customer_email:         phone + "@svaadh.noemail",
     payment_page_client_id: HDFC_MERCHANT_ID,
     action:                 "paymentPage",
-    return_url:             HDFC_RETURN_URL,
+    // Append _popup=1 so the popup window (which lives on a different
+    // origin than the opener tab when the customer's site is on a custom
+    // domain) can identify itself via URL params rather than localStorage.
+    // localStorage is per-origin and unusable when opener and popup are
+    // on different origins; URL params survive HDFC's redirect chain.
+    return_url:             HDFC_RETURN_URL + (HDFC_RETURN_URL.indexOf("?") === -1 ? "?_popup=1" : "&_popup=1"),
     description:            description,
     first_name:             name.split(" ")[0] || name,
     last_name:              name.split(" ").slice(1).join(" ") || "",
@@ -1279,7 +1284,12 @@ function hdfc_createWalletRechargeSession(body) {
     customer_email:         phone + "@svaadh.noemail",
     payment_page_client_id: HDFC_MERCHANT_ID,
     action:                 "paymentPage",
-    return_url:             HDFC_RETURN_URL,
+    // Append _popup=1 so the popup window (which lives on a different
+    // origin than the opener tab when the customer's site is on a custom
+    // domain) can identify itself via URL params rather than localStorage.
+    // localStorage is per-origin and unusable when opener and popup are
+    // on different origins; URL params survive HDFC's redirect chain.
+    return_url:             HDFC_RETURN_URL + (HDFC_RETURN_URL.indexOf("?") === -1 ? "?_popup=1" : "&_popup=1"),
     description:            "Svaadh Kitchen — Wallet Recharge ₹" + amount,
     first_name:             name.split(" ")[0] || name,
     last_name:              name.split(" ").slice(1).join(" ") || "",
