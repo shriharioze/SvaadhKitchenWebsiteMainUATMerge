@@ -818,11 +818,19 @@ function getDayTotalsForDates(phone, datesParam, preloadedRows) {
       ? Utilities.formatDate(r.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
       : String(r.Order_Date).trim();
     const meal = String(r.Meal_Type).trim();
-    if (!result[rDate][meal]) result[rDate][meal] = { subtotal: 0, delivery_charged: 0, discount_applied: 0, small_fee_charged: 0, count: 0 };
-    result[rDate][meal].subtotal       += Number(r.Food_Subtotal    || 0);
-    result[rDate][meal].delivery_charged += Number(r.Delivery_Charge || 0);
-    result[rDate][meal].discount_applied += Number(r.Discount_Amount || 0);
-    result[rDate][meal].small_fee_charged += Number(r.Small_Order_Fee || 0);
+    if (!result[rDate][meal]) result[rDate][meal] = {
+      subtotal:            0,
+      delivery_charged:    0,
+      discount_applied:    0,
+      small_fee_charged:   0,
+      meal_credit_applied: 0,   // v14.8 — tracks retroactive refunds already given
+      count:               0
+    };
+    result[rDate][meal].subtotal            += Number(r.Food_Subtotal    || 0);
+    result[rDate][meal].delivery_charged    += Number(r.Delivery_Charge  || 0);
+    result[rDate][meal].discount_applied    += Number(r.Discount_Amount  || 0);
+    result[rDate][meal].small_fee_charged   += Number(r.Small_Order_Fee  || 0);
+    result[rDate][meal].meal_credit_applied += Number(r.Meal_Credit      || 0);
     result[rDate][meal].count++;
   });
 
