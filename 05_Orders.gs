@@ -1,7 +1,7 @@
 // ============================================================
 // 05_Orders.gs
 // Order submission flow, loyalty streak, day totals, delete/cancel,
-  manual order admin, missed-order safety net, retroactive credit logic.
+// manual order admin, missed-order safety net, retroactive credit logic.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

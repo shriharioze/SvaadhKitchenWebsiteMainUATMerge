@@ -1,7 +1,7 @@
 // ============================================================
 // 08_Analytics_Inventory.gs
 // Business analytics, churn report, GA4 sync, inventory entries,
-  expense tracking.
+// expense tracking.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

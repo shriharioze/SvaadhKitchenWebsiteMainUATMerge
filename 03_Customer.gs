@@ -1,7 +1,7 @@
 // ============================================================
 // 03_Customer.gs
 // Customer registration, profile, order history, customer list,
-  reviews/ratings, standard-order shortcuts.
+// reviews/ratings, standard-order shortcuts.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

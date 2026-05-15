@@ -1,7 +1,7 @@
 // ============================================================
 // 04_Menu_Admin.gs
 // Daily menu, breakfast/sabji masters, free areas, admin dashboard data,
-  stock-limit helpers.
+// stock-limit helpers.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

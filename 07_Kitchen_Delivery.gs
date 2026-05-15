@@ -1,7 +1,7 @@
 // ============================================================
 // 07_Kitchen_Delivery.gs
 // Kitchen production summary, driver delivery rows, label PDFs,
-  packaging expenses, en-route/delivered state.
+// packaging expenses, en-route/delivered state.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

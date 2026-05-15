@@ -1,7 +1,7 @@
 // ============================================================
 // 09_Archive.gs
 // Quarterly/monthly archive, year-folder organisation,
-  cross-archive analytics lookup.
+// cross-archive analytics lookup.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

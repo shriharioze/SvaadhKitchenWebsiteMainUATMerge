@@ -1,7 +1,7 @@
 // ============================================================
 // 02_Utils.gs
 // Shared helpers: sheet I/O, caching, time/ID generators, phone
-  normalisation, PIN matching, schema init.
+// normalisation, PIN matching, schema init.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at

@@ -1,7 +1,7 @@
 // ============================================================
 // 06_Wallet_Billing.gs
 // Wallet ledger, manual UPI recharges (admin-verified), on-account
-  billing, refunds, payment status management.
+// billing, refunds, payment status management.
 // ============================================================
 // This file is part of a modular split of the original Code.gs.
 // Apps Script merges all .gs files into one global scope at
