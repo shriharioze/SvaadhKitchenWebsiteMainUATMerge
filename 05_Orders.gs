@@ -164,11 +164,45 @@ function _verifyAndAlertMissedOrders(ss, submissionIds) {
 }
 // ── SUBMIT ORDER ─────────────────────────────────────────────
 function submitOrder(body) {
-  // Serialize submitOrder calls to prevent stock-race + wallet-race between concurrent customers
+  // Serialize submitOrder calls to prevent stock-race + wallet-race between concurrent customers.
+  // ALSO: enforce Gateway_Order_ID idempotency before any writes happen — if a row
+  // already exists in SK_Orders for this HDFC order, return the existing Submission_IDs
+  // without writing again. This is the fix for the duplicate-order bug found in UAT
+  // (SK-20260513-6512 / SK-20260513-6666 — same Gateway_Order_ID, 1 second apart, both
+  // rows landed because submitOrder had no gateway-level dedup).
   const lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); }
+  try { lock.waitLock(20000); }
   catch(e) { return { error: "Server busy — please retry in a few seconds." }; }
   try {
+    const gatewayOrderIdGuard = String(body.gateway_order_id || "").trim();
+    if (gatewayOrderIdGuard) {
+      const ss       = getSpreadsheet();
+      const ordersWs = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+      const data     = ordersWs.getDataRange().getValues();
+      const headers  = data[0] || [];
+      const gCol     = headers.indexOf("Gateway_Order_ID");
+      const sidCol   = headers.indexOf("Submission_ID");
+      if (gCol !== -1 && sidCol !== -1) {
+        const existingSids = [];
+        for (let r = 1; r < data.length; r++) {
+          if (String(data[r][gCol] || "").trim() === gatewayOrderIdGuard) {
+            existingSids.push(String(data[r][sidCol] || "").trim());
+          }
+        }
+        if (existingSids.length > 0) {
+          console.log("submitOrder: idempotent skip — Gateway_Order_ID "
+            + gatewayOrderIdGuard + " already has " + existingSids.length
+            + " row(s): " + existingSids.join(", "));
+          return {
+            success: true,
+            idempotent: true,
+            submissionIds: existingSids,
+            submissionId:  existingSids[0],
+            message: "Order already recorded for this gateway transaction."
+          };
+        }
+      }
+    }
     return _submitOrderInternal(body);
   } finally {
     try { lock.releaseLock(); } catch(e) {}
@@ -627,6 +661,10 @@ function _submitOrderInternal(body) {
       set("Payment_Method",      payMethod);
       set("Payment_Status",      pStat);
       if (walletCreditUsed > 0) set("Wallet_Credit", walletCreditUsed);
+      // Stamp the HDFC gateway order id so the idempotency check in
+      // submitOrder() can detect duplicate writes for the same charge.
+      const _gOrderId = String(body.gateway_order_id || "").trim();
+      if (_gOrderId) set("Gateway_Order_ID", _gOrderId);
       set("Payment_Freq",        payFreq);
       set("First_Time",          firstTime);
       set("Source",              "WebApp");
