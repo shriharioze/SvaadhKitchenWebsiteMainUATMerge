@@ -4475,7 +4475,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.15.01";
+    const APP_VERSION = "v2026.05.15.02";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7157,15 +7157,15 @@
 
     function openWalletRecharge() {
       const isOA = (S.profile && S.profile.onAccount === "Yes");
-      
+
       const titleEl = document.querySelector("#walletRechargeModal .bm-title");
       if (titleEl) titleEl.textContent = isOA ? "Pay Bill" : "Add Funds to Wallet";
-      
+
       const descEl = document.querySelector("#walletRechargeModal p");
       if (descEl) {
-        descEl.textContent = isOA 
-          ? "Admin will verify your payment and apply it against your pending orders." 
-          : "Admin will verify your payment and credit it to your account within 1-2 hours.";
+        descEl.textContent = isOA
+          ? "Pay securely via HDFC Gateway. The payment will be applied to your pending orders automatically."
+          : "Pay securely via HDFC Gateway. Your wallet will be credited automatically once payment is confirmed.";
       }
 
       if (isOA) {
@@ -7274,47 +7274,23 @@
     // updateWalletQr — kept as a no-op so legacy onclick handlers don't throw.
     function updateWalletQr() { /* QR removed; HDFC popup handles recharge */ }
 
-    async function submitWalletRecharge() {
-      const amt = parseInt($('walletRechargeAmt').value, 10);
-      if (isNaN(amt) || amt < 100) { toast("Minimum recharge amount is ₹100."); return; }
-
-      // HDFC gateway path — when PAYMENT_GATEWAY_ENABLED on backend, creates
-      // a top-up session and redirects. The return-flow finalizer credits
-      // exactly the HDFC-charged amount (Status API authoritative).
-      if (S.gatewayEnabled) {
-        return payWalletRechargeViaHDFC(amt);
-      }
-
-      // Legacy fallback — manual UPI flow with admin approval.
-      const btn = $('btnSubmitWallet');
-      sBtnLoading(btn, true, "Submitting");
-
-      try {
-        const res = await apiPost({
-            _action: "submitWalletRecharge",
-            phone: S.phone,
-            name: S.profile?.name || "Customer",
-            amount: amt
-          });
-        const data = await res.json();
-        sBtnLoading(btn, false);
-        if (!data.success) throw new Error(data.error || "Failed");
-
-        await sAlert(t('toast_recharge_submitted'), "Recharge Submitted", "✅");
-        closeWalletRecharge();
-        syncWalletValue(true); // Refresh UI balance after recharge request (force bypass debounce)
-      } catch (err) {
-        sBtnLoading(btn, false);
-        await sAlert("Error: " + err.message, "Submission Failed", "❌");
-      }
-    }
+    /** Legacy alias — kept so the modal's onclick="submitWalletRecharge()" works. */
+    async function submitWalletRecharge() { return payWalletRechargeViaHDFC(); }
 
     /**
-     * HDFC-backed wallet recharge — opens HDFC HyperCheckout in a popup
-     * window so the customer keeps the wallet modal context. On payment
-     * success the opener tab credits the wallet without page navigation.
+     * Pay wallet recharge via HDFC SmartGateway — ported verbatim from UAT.
+     * Server-side bounds (₹100–₹50,000) enforced again in 10_Hdfc_Gateway.gs.
+     * Wallet credit is gated on the HDFC Status API actual-charged amount,
+     * so tampering the request body cannot inflate the credit.
      */
-    async function payWalletRechargeViaHDFC(amt) {
+    async function payWalletRechargeViaHDFC() {
+      const amt = parseInt($('walletRechargeAmt').value, 10);
+      if (isNaN(amt) || amt < 100)   { toast("Minimum recharge amount is ₹100."); return; }
+      if (amt > 50000)               { toast("Maximum recharge per transaction is ₹50,000."); return; }
+      if (!S.gatewayEnabled) {
+        await sAlert("Payment gateway is not available right now. Please try again later.", "Gateway Unavailable", "⚠️");
+        return;
+      }
       // Open popup INSIDE user gesture (button click) so blockers don't fire.
       // Open the popup maximised — screen.availWidth/Height excludes the
       // OS taskbar, so the window fills the usable screen area on desktop.
@@ -7395,21 +7371,64 @@
     }
 
     /**
-     * Called from hdfc_handleReturnParams when the returning order_id has the
-     * 'W' wallet-recharge marker. Asks the backend to call the HDFC Status
-     * API and credit the wallet with the actual charged amount (idempotent).
+     * Wallet-recharge return handler — UAT-style, no arguments. Reads the
+     * returning order_id from URL params, falling back to localStorage if
+     * the URL didn't carry it (some HDFC test mocks omit order_id, sending
+     * only status + signature).
+     *
+     * Runs FIRST in hdfc_init, BEFORE hdfc_handleReturnParams — that way
+     * 'W'-prefixed (wallet recharge) order ids are claimed here and never
+     * mistakenly reach the order-verification path.
      */
-    async function hdfc_handleRechargeReturn(orderId, status) {
+    async function hdfc_handleRechargeReturn() {
+      const sp = new URLSearchParams(window.location.search);
+      let urlOrderId = sp.get("hdfc_order_id") || sp.get("order_id") || "";
+      const status   = sp.get("hdfc_status")   || sp.get("status");
+
+      let pendingId = "", ts = 0;
+      if (urlOrderId && /^SK\d{6}W/.test(urlOrderId)) {
+        pendingId = urlOrderId;
+      } else {
+        try {
+          const lsId = localStorage.getItem("svaadh_hdfc_pending_recharge");
+          ts = parseInt(localStorage.getItem("svaadh_hdfc_pending_recharge_ts") || "0", 10);
+          if (lsId && /^SK\d{6}W/.test(lsId)) pendingId = lsId;
+        } catch(_) {}
+      }
+
+      if (!pendingId) return;
+
+      // Stale guard — discard if older than 30 min (localStorage entries only).
+      if (ts && (Date.now() - ts) > 30*60*1000) {
+        try {
+          localStorage.removeItem("svaadh_hdfc_pending_recharge");
+          localStorage.removeItem("svaadh_hdfc_pending_recharge_ts");
+        } catch(_) {}
+        return;
+      }
+
+      // Only finalize if URL params suggest a successful return.
+      if (!status) return;
+
+      // Popup-mode short-circuit (URL param OR localStorage marker).
+      const fromUrlPopup = (sp.get("_popup") === "1");
+      if (fromUrlPopup || _hdfcIsPopup("recharge")) {
+        _hdfcRelayAndClose("hdfc_recharge", pendingId, status);
+        return; // opener handles finalize
+      }
+
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
-          body: JSON.stringify({ _action: "hdfc_finalizeWalletRecharge", order_id: orderId })
+          body: JSON.stringify({ _action: "hdfc_finalizeWalletRecharge", order_id: pendingId })
         });
         const data = await res.json();
         try {
           localStorage.removeItem("svaadh_hdfc_pending_recharge");
           localStorage.removeItem("svaadh_hdfc_pending_recharge_ts");
         } catch(_) {}
+        try { window.history.replaceState({}, "", window.location.pathname); } catch(_) {}
+
         if (data.success) {
           if (!data.already_credited) {
             await sAlert(
@@ -7418,10 +7437,11 @@
             );
           }
           try { syncWalletValue && syncWalletValue(true); } catch(_) {}
+          try { refreshWalletBalance && refreshWalletBalance(); } catch(_) {}
         } else {
           await sAlert(
             "Your recharge could not be confirmed (Status: " + status + ").\n\n" +
-            "If money was deducted, please WhatsApp us at +91 93222 46765 with order ID: " + orderId,
+            "If money was deducted, please WhatsApp us at +91 93222 46765 with order ID: " + pendingId,
             "Recharge Not Confirmed", "⚠️"
           );
         }
@@ -9041,7 +9061,11 @@
      * Also checks if we just returned from an HDFC payment (return URL params).
      */
     async function hdfc_init() {
-      // 1. Check for return URL params first (customer coming back from HDFC)
+      // 0. Wallet-recharge return runs FIRST — claims 'W'-marker order ids
+      //    before the order-payment handler can see them.
+      try { await hdfc_handleRechargeReturn(); } catch(_) {}
+
+      // 1. Then check for an order-payment return.
       await hdfc_handleReturnParams();
 
       // 2. Fetch gateway config from backend
@@ -9542,13 +9566,14 @@
         return;
       }
 
+      // Wallet recharge ('W'-marker order ids) is handled by
+      // hdfc_handleRechargeReturn — which runs BEFORE this in hdfc_init.
+      // If a 'W' id still reaches here, bail out: the recharge handler will
+      // have already finalised (or relayed it as a popup).
+      if (/^SK\d{6}W/.test(orderId)) return;
+
       // Clean up URL immediately so user doesn't see ugly params
       window.history.replaceState({}, "", window.location.pathname);
-
-      // ── Wallet recharge return (order_id format: SK<YYMMDD>W...) ───────
-      if (/^SK\d{6}W/.test(orderId)) {
-        return hdfc_handleRechargeReturn(orderId, status);
-      }
 
       // Show a non-dismissible loading overlay — no OK button
       const verifyOverlay = document.createElement("div");
