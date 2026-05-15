@@ -3737,10 +3737,6 @@
           Secured by HDFC SmartGateway · 256-bit SSL
         </p>
 
-        <div style="text-align:center;margin-top:10px;">
-          <a href="javascript:togglePaymentMode('UPI')"
-            style="font-size:0.75rem;color:#666;text-decoration:underline;">Pay via UPI manually instead</a>
-        </div>
       </div>
 
       <!-- WALLET CONFIRMATION CARD -->
@@ -3781,8 +3777,8 @@
           </label>
 
           <div style="text-align:center;">
-            <a href="javascript:togglePaymentMode('UPI')"
-              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay via UPI instead</a>
+            <a href="javascript:togglePaymentMode('Gateway')"
+              style="font-size:0.73rem;color:#94a3b8;text-decoration:underline;">Pay via HDFC Gateway instead</a>
           </div>
         </div>
 
@@ -5204,12 +5200,16 @@
       let isChecked = false;
       if (S.paymentChoice === "Wallet") {
         isChecked = $("walletConfirmCheck")?.checked;
-      } else if (S.paymentChoice === "Split") {
-        isChecked = $("splitConfirmCheck")?.checked;
       } else if (S.paymentChoice === "OnAccount") {
         isChecked = true;
       } else if (S.paymentChoice === "Free") {
         isChecked = $("freeOrderConfirmCheck")?.checked;
+      } else if (S.paymentChoice === "Gateway") {
+        // HDFC gateway path — no upfront confirmation checkbox; the customer
+        // confirms by clicking "Pay via HDFC" on the gateway card itself,
+        // which kicks off hdfc_initiatePayment(). The Place Order button is
+        // hidden / unused for this path (see goNext branch below).
+        isChecked = true;
       } else {
         isChecked = $("paidConfirm")?.checked;
       }
@@ -5386,7 +5386,13 @@
         }
         return;
       }
-      if (S.step === 4) { await placeOrder(); return; }
+      if (S.step === 4) {
+        // Route HDFC gateway through its own initiator; the gateway page
+        // is responsible for the redirect and the verified-order submission
+        // on return. Other paths (Wallet, OnAccount, Free) submit directly.
+        if (S.paymentChoice === "Gateway") { await hdfc_initiatePayment(); return; }
+        await placeOrder(); return;
+      }
       S.step++; updateNav(); window.scrollTo(0, 0);
     }
     function goToStep(s) {
@@ -7022,100 +7028,60 @@
       if ($("splitConfirmCheck")) $("splitConfirmCheck").checked = false;
       if ($("paidConfirm")) $("paidConfirm").checked = false;
 
-      // Determine default payment choice
-      if (!S.tempUpiMode) {
-        if (grandTotal === 0 && walletBonus > 0) {
-          // Loyalty reward exceeds bill — free order, credit goes to wallet
-          S.paymentChoice = "Free";
-          $("freeOrderCard").style.display = "block";
-          ["freeOrderBonus","freeOrderBonusNote","freeOrderBonusCheck"].forEach(id => {
-            const el = $(id); if (el) el.textContent = walletBonus;
-          });
-        } else if (isOnAccount) {
-          S.paymentChoice = "OnAccount";
-          $("onAccountCard").style.display = "block";
-          $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
-          $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
-          $("onAccountCycleDisplay2").textContent = S.profile.billingCycle || "Daily";
-        } else if (wb >= grandTotal && grandTotal > 0) {
-          S.paymentChoice = "Wallet";
-          $("walletConfirmCard").style.display = "block";
-          $("walletDeductAmount").textContent = `₹${grandTotal}`;
-          $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb} <span class="info-icon" onclick="event.stopPropagation();toast('Wallet recharges are verified manually by Admin and can take up to 24 hours. Until then, you can easily pay for today\\'s order directly via UPI!',7000)" style="margin-left:6px;background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;cursor:pointer;font-weight:700;">?</span>`;
-          $("walletConfirmLabelAmt").textContent = grandTotal;
-          const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
-          if (upiLink) upiLink.textContent = `Pay ₹${grandTotal} via UPI QR Instead`;
-        } else if (wb > 0 && grandTotal > 0 && wb < grandTotal) {
-          // Partial wallet: show Split card as default
-          const upiDue = grandTotal - wb;
-          S.paymentChoice = "Split";
-          S.walletCredit = wb;
-          $("splitPayCard").style.display = "block";
-          $("splitTotalDisplay").textContent = `₹${grandTotal}`;
-          $("splitWalletPart").textContent = wb;
-          $("splitUpiPart").textContent = upiDue;
-          $("splitWalletBalDisplay").textContent = wb;
-          $("splitWalletConfirmAmt").textContent = wb;
-          $("splitUpiConfirmAmt").textContent = upiDue;
-          $("splitUpiMr").textContent = upiDue;
-          $("splitWalletMr").textContent = wb;
-          $("splitFullUpiLink").textContent = grandTotal;
-          setupSplitUPI(upiDue);
-        } else {
-          S.paymentChoice = "UPI";
-          $("paymentCard").style.display = "block";
-        }
+      // Determine default payment choice.
+      // POST-MERGE POLICY: only TWO real payment methods are exposed —
+      //   1. Svaadh Wallet (when wallet balance covers the full bill)
+      //   2. HDFC SmartGateway (every other paying case, including partial wallet)
+      // OnAccount and Free remain as special states (billed customers /
+      // loyalty-reward-pays-the-bill), but UPI QR and Split flows are GONE.
+      if (grandTotal === 0 && walletBonus > 0) {
+        // Loyalty reward exceeds bill — free order, credit goes to wallet
+        S.paymentChoice = "Free";
+        $("freeOrderCard").style.display = "block";
+        ["freeOrderBonus","freeOrderBonusNote","freeOrderBonusCheck"].forEach(id => {
+          const el = $(id); if (el) el.textContent = walletBonus;
+        });
+      } else if (isOnAccount) {
+        S.paymentChoice = "OnAccount";
+        $("onAccountCard").style.display = "block";
+        $("onAccountDeductAmount").textContent = `₹${grandTotal}`;
+        $("onAccountCycleDisplay").textContent = S.profile.billingCycle || "Daily";
+        $("onAccountCycleDisplay2").textContent = S.profile.billingCycle || "Daily";
+      } else if (wb >= grandTotal && grandTotal > 0) {
+        // Wallet covers the full bill → Wallet path.
+        S.paymentChoice = "Wallet";
+        $("walletConfirmCard").style.display = "block";
+        $("walletDeductAmount").textContent = `₹${grandTotal}`;
+        $("walletCheckBalance").innerHTML = `Available Wallet Fund: ₹${wb}`;
+        $("walletConfirmLabelAmt").textContent = grandTotal;
+        // Hide the legacy "Pay via UPI QR Instead" alt link — UPI is gone.
+        const upiLink = $("walletConfirmCard").querySelector("a[href*='togglePaymentMode']");
+        if (upiLink) upiLink.style.display = "none";
       } else {
-        S.paymentChoice = "UPI";
-        $("paymentCard").style.display = "block";
-      }
-
-
-
-      // If gateway is enabled and payment is UPI, swap to gateway card
-      if (S.paymentChoice === "UPI") hdfc_showGatewayIfEnabled();
-
-      if (S.paymentChoice === "UPI") {
-        // Show switch back links if applicable
-        if (wb >= grandTotal && grandTotal > 0) {
-          const sw = $("walletSwitchBackWrap");
-          if (sw) {
-            sw.style.display = "block";
-            const balSpan = $("switchBackWalletBal");
-            if (balSpan) balSpan.textContent = wb;
-          }
-        } else if (wb > 0 && wb < grandTotal) {
-          // Partial wallet available — show split option
-          const sw = $("walletSwitchBackWrap");
-          if (sw) {
-            sw.style.display = "block";
-            sw.innerHTML = `<a href="javascript:togglePaymentMode('Split')" class="btn-wallet-alt">🔀 Use ₹${wb} Wallet + Pay ₹${grandTotal - wb} via UPI</a>`;
-          }
+        // Everything else (no wallet OR partial wallet) → HDFC Gateway for full amount.
+        // Partial wallet is intentionally NOT split: customer pays full via gateway,
+        // wallet credit can be used on the next order.
+        S.paymentChoice = "Gateway";
+        if ($("hdfcGatewayCard")) {
+          $("hdfcGatewayCard").style.display = "block";
+          if ($("hdfcGatewayAmount")) $("hdfcGatewayAmount").textContent = "₹" + grandTotal;
+          if ($("hdfcPayBtnAmt"))     $("hdfcPayBtnAmt").textContent     = grandTotal;
         }
-        setupUPI(grandTotal);
       }
+
       $("btnNext").textContent = t('btn_place');
       checkPaymentConfirmation();
     }
 
     function togglePaymentMode(mode) {
-      if (mode === "UPI") {
-        S.tempUpiMode = true;
-        S.paymentChoice = "UPI";
-        S.walletCredit = 0;
-      } else if (mode === "Split") {
-        S.tempUpiMode = false; // allow split branch in buildBillScreen
-        S.paymentChoice = "Split"; // pre-hint; buildBillScreen will confirm
-        S.walletCredit = 0;
-      } else if (mode === "Wallet") {
-        S.tempUpiMode = false;
-        S.paymentChoice = "Wallet";
-        S.walletCredit = 0;
-      } else if (mode === "OnAccount") {
-        S.tempUpiMode = false;
-        S.paymentChoice = "OnAccount";
-        S.walletCredit = 0;
-      }
+      // POST-MERGE: only Wallet, Gateway, OnAccount, Free are valid choices.
+      // Legacy "UPI" and "Split" requests are mapped to the gateway path so
+      // any stale deep-link or onclick still works without breaking the page.
+      S.tempUpiMode  = false;
+      S.walletCredit = 0;
+      if (mode === "Wallet")          S.paymentChoice = "Wallet";
+      else if (mode === "OnAccount")  S.paymentChoice = "OnAccount";
+      else                            S.paymentChoice = "Gateway";   // covers UPI, Split, anything else
       buildBillScreen();
     }
     function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
@@ -8983,7 +8949,9 @@
       try {
         const res  = await fetch(`${APPS_SCRIPT_URL}?action=getConfig`);
         const data = await res.json();
-        S.gatewayEnabled = false; // LOCKED: awaiting HDFC bank approval — do not enable until approved
+        // Honour the backend flag (PAYMENT_GATEWAY_ENABLED Script Property).
+        // The merged backend has UAT-tested HDFC integration; live UAT passed.
+        S.gatewayEnabled = !!(data && data.gateway_enabled);
         S.gatewayEnv     = (data && data.gateway_env) || "test";
         console.log(`HDFC Gateway: ${S.gatewayEnabled ? "ENABLED (" + S.gatewayEnv + ")" : "disabled"}`);
       } catch (e) {
