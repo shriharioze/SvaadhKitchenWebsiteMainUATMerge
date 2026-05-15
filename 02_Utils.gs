@@ -25,6 +25,8 @@ function jsonRes(data) {
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
+// ── GOOGLE ANALYTICS 4 INTEGRATION ──────────────────────────
+const GA4_HEADERS = ["Date", "Source", "Device", "Active_Users", "Sessions", "Page_Views", "Engagement_Rate", "Avg_Session_Duration", "Event_Count"];
 // ── HELPERS ──────────────────────────────────────────────────
 function getSpreadsheet() {
   return SpreadsheetApp.openById(SHEET_ID);
@@ -157,6 +159,10 @@ function initSchema() {
   getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
   return {success: true, message: "Schema initialised"};
 }
+/**
+ * Normalizes phone numbers for reliable comparison across Google Sheets.
+ * Handles scientific notation (e.g., 9.87E+9) and trailing decimals (.0).
+ */
 // Returns true if the order should be excluded from kitchen/prep counts.
 // "Cancelled (Verify UPI)" = soft-cancel pending admin verification —
 // the customer already requested cancellation, do NOT include in kitchen prep.

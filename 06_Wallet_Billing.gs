@@ -40,6 +40,10 @@ function _calculateWalletBalance(phone, preloadedRows) {
 
   return Math.round(balance * 100) / 100;
 }
+/**
+ * Returns last 10 wallet transactions for a customer, newest first.
+ * Each entry: { type, amount, direction, verified, reference, timestamp, balance_after }
+ */
 function getWalletTransactions(phone) {
   if (!phone) return { transactions: [] };
   const ss   = getSpreadsheet();
@@ -508,6 +512,14 @@ function adminCreditWallet(body) {
   
   return {success:true, newBalance: Math.round(newBalance), msg: msg};
 }
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+// Tracks raw material purchases. Each new entry for the same item auto-calculates
+// how long the previous batch lasted → builds consumption rate over time.
+const TAB_INVENTORY      = "SK_Inventory";
+const INVENTORY_HEADERS  = [
+  "Entry_ID","Date","Item","Unit","Quantity","Price_Paid","Notes","Timestamp"
+];
 // ── WALLET TOPUP LOGIC ────────────────────────────────────────────────────────
 function submitWalletRecharge(body) {
   var phone  = String(body.phone || "").trim();
@@ -521,6 +533,9 @@ function submitWalletRecharge(body) {
   
   return {success:true};
 }
+/**
+ * ADMIN: Fetch unverified wallet recharges
+ */
 function getPendingRecharges() {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_WALLET, WALLET_HEADERS);
@@ -551,6 +566,9 @@ function getPendingRecharges() {
   });
   return pending;
 }
+/**
+ * ADMIN: Approve a wallet recharge
+ */
 function approveWalletRecharge(body) {
   const phone = String(body.phone || "").trim();
   const ts    = String(body.timestamp || "").trim();
@@ -626,6 +644,10 @@ function rejectWalletRecharge(body) {
   
   return {success:false, error:"Recharge request not found"};
 }
+/**
+ * Batch process multiple approvals/rejections
+ * body: { tab: 'refunds'|'payments'|'wallet', action: 'approve'|'reject', items: [...] }
+ */
 function batchProcessApprovals(body) {
   const { tab, action, items } = body;
   if (!tab || !action || !items || !items.length) return {success:false, error: "Invalid batch request"};
@@ -647,6 +669,9 @@ function batchProcessApprovals(body) {
   const successCount = results.filter(r => r.success).length;
   return { success: true, total: items.length, successCount };
 }
+/**
+ * ADMIN: Fetch all orders with "Pending" status (usually UPI)
+ */
 function getPendingUPIPayments() {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
@@ -902,6 +927,10 @@ function markBillingCollected(submissionIds) {
   SpreadsheetApp.flush();
   return { success: true, count };
 }
+/**
+ * Undo markBillingCollected: set orders back to "Pending" by submission ID array.
+ * Used by the 8-second undo toast in billing tab.
+ */
 function undoMarkPaid(submissionIds) {
   if (!submissionIds || !submissionIds.length) return { success: false, error: 'No IDs' };
   const ss  = getSpreadsheet();
@@ -921,6 +950,9 @@ function undoMarkPaid(submissionIds) {
   SpreadsheetApp.flush();
   return { success: true, count };
 }
+/**
+ * VIP / Fee Exempt Logic
+ */
 function toggleFeeExempt(phone, status) {
   const ss = getSpreadsheet();
   const custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);

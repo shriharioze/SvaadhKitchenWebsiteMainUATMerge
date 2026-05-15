@@ -774,6 +774,9 @@ function _submitOrderInternal(body) {
 
   return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: loyaltyExcessCredit};
 }
+/**
+ * ADMIN: Toggle On Account status for a customer
+ */
 function markOnAccount(phone, cycle, status) {
   const ss = getSpreadsheet();
   const phoneStr = _normalizePhone(phone);
@@ -836,6 +839,10 @@ function getDayTotalsForDates(phone, datesParam, preloadedRows) {
 
   return { dayTotals: result };
 }
+/**
+ * Calculates current streak and accumulated surcharges for a customer.
+ * Skips Sundays (kitchen closed).
+ */
 function _calculateLoyaltyStreak(phone, preloadedRows) {
   if (!phone) return { streak: 0, pastSurcharge: 0 };
   const ss = getSpreadsheet();
@@ -1415,9 +1422,6 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
 
   return {success: true, message: msg};
 }
-// Shared coord extractor for Apps Script (mirrors client-side regex)
-// Priority: !3d/!4d (actual pinned location) > place/@ (share URL center) >
-// ?q= / ?destination= / ?ll= > @ (camera center — last resort, can be far off)
 
 
 // ── ORDER SUMMARY ────────────────────────────────────────────
@@ -1773,6 +1777,25 @@ function submitManualOrder(body) {
   ordersWs.appendRow(row);
   return { success: true, sid: sid };
 }
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║          HDFC SMARTGATEWAY INTEGRATION                          ║
+// ║  All functions below are gated by PAYMENT_GATEWAY_ENABLED.      ║
+// ║  Nothing here runs unless that flag is true.                    ║
+// ║                                                                  ║
+// ║  HOW IT WORKS (end-to-end):                                     ║
+// ║  1. Customer picks UPI/Card/NetBanking on order.html            ║
+// ║  2. order.html calls hdfc_createSession → gets payment_url      ║
+// ║  3. Customer is redirected to HDFC HyperCheckout page           ║
+// ║  4. HDFC fires webhook → hdfc_handleWebhook marks order paid    ║
+// ║  5. HDFC redirects customer back → order.html verifies via      ║
+// ║     hdfc_verifyReturnPayload (HMAC check)                       ║
+// ║                                                                  ║
+// ║  KEYS NEEDED (set in Script Properties):                        ║
+// ║  HDFC_MERCHANT_ID, HDFC_API_KEY, HDFC_RESPONSE_KEY,            ║
+// ║  HDFC_WEBHOOK_USERNAME, HDFC_WEBHOOK_PASSWORD,                  ║
+// ║  HDFC_RETURN_URL, HDFC_ENV, HDFC_TEST_URL, HDFC_LIVE_URL        ║
+// ╚══════════════════════════════════════════════════════════════════╝
 // ============================================================
 // ONE-TIME REPAIR: Fix Loyalty_Discount markers in SK_Orders
 // ============================================================

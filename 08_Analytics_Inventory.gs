@@ -8,6 +8,11 @@
 // load time, so cross-file function calls work without imports.
 // ============================================================
 
+/**
+ * Fetches the last 30 days of traffic metrics from GA4 and stores them in the sheet.
+ * Includes breakdown by Source and Device.
+ * Requires "Google Analytics Data API" service to be enabled in Apps Script.
+ */
 function syncGA4Data() {
   const propertyId = GA4_PROPERTY_ID;
   if (!propertyId) return "Error: GA4_PROPERTY_ID not set.";
@@ -70,6 +75,9 @@ function syncGA4Data() {
     return "Error: " + e.message;
   }
 }
+/**
+ * Setup a daily trigger to sync GA4 data automatically at 1 AM.
+ */
 function setupAnalyticsTrigger() {
   // Remove existing triggers for this function to avoid duplicates
   const triggers = ScriptApp.getProjectTriggers();
@@ -358,6 +366,44 @@ function deleteCustomExpenseCategory(body) {
   PropertiesService.getScriptProperties().setProperty("CUSTOM_EXP_CATS", JSON.stringify(cats));
   return { success:true, categories: cats };
 }
+
+// ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────
+const TAB_EXPENSES      = "SK_Expenses";
+const EXPENSES_HEADERS  = [
+  "Expense_ID","Date","Category","Item","Amount","Frequency",
+  "Payment_Mode","Notes","Timestamp"
+];
+
+// Category → sub-items map (also used by frontend for dropdowns)
+var EXPENSE_CATEGORIES = {
+  "🥦 Raw Materials": [
+    "Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)",
+    "Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"
+  ],
+  "📦 Packaging": [
+    "Containers / Boxes","Bags & Covers","Labels & Stickers",
+    "Tissue & Napkins","Other Packaging"
+  ],
+  "⛽ Fuel & Transport": [
+    "Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"
+  ],
+  "👨‍🍳 Staff": [
+    "Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"
+  ],
+  "🔌 Utilities": [
+    "LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"
+  ],
+  "🍳 Kitchen & Equipment": [
+    "Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"
+  ],
+  "📣 Marketing": [
+    "Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"
+  ],
+  "🏦 Finance & Admin": [
+    "Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"
+  ],
+  "📝 Miscellaneous": ["Miscellaneous"]
+};
 function saveExpense(body) {
   var ss   = getSpreadsheet();
   var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
@@ -493,6 +539,15 @@ function getExpenseAnalytics(body) {
     categories:   EXPENSE_CATEGORIES
   };
 }
+
+// ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────
+const TAB_ERROR_LOG     = "SK_Error_Log";
+// Column layout: structured JSON fields extracted for easy Sheets filtering.
+// "Extra_JSON" holds any additional fields the client sends beyond the core set.
+const ERROR_LOG_HEADERS = [
+  "Timestamp","Date","Phone","Version","Type","Action",
+  "Attempt","Duration_ms","Message","URL","Extra_JSON"
+];
 function logClientError(body) {
   try {
     var ss  = getSpreadsheet();

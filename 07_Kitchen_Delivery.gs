@@ -252,6 +252,10 @@ function getDriverOrders(date) {
 
   return {date: date, meals: meals};
 }
+/**
+ * Creates a Google Sheet in Drive with delivery details for a given date + meal.
+ * Returns the spreadsheet URL so the client can open it directly.
+ */
 function createDeliverySheet(date, meal) {
   var data = getDriverOrders(date);
   var orders = (data.meals && data.meals[meal]) || [];
@@ -304,6 +308,10 @@ function createDeliverySheet(date, meal) {
 
   return { success: true, url: ss.getUrl(), title: title, count: orders.length };
 }
+
+// Shared coord extractor for Apps Script (mirrors client-side regex)
+// Priority: !3d/!4d (actual pinned location) > place/@ (share URL center) >
+// ?q= / ?destination= / ?ll= > @ (camera center — last resort, can be far off)
 // ── LABEL ORDERS ──────────────────────────────────────────────
 function getLabelOrders(date, meal) {
   var ss = getSpreadsheet();
@@ -339,6 +347,21 @@ function getLabelOrders(date, meal) {
 
   return {orders: orders};
 }
+
+// ── PACKAGING EXPENSES ────────────────────────────────────────
+// Edit unit costs below to match your actual supplier prices
+var PKG_UNIT_COSTS = {
+  "Breakfast Box":           2.36,
+  "Delivery Bag":            1.00,
+  "Label / Sticker":         0.2,
+  "Bread Packet":            0.70,
+  "Sabji Container (Mini)":  2.70,
+  "Sabji Container (Full)":  4.0,
+  "Dal Container":           4.00,
+  "Rice Container":          2.00,
+  "Salad Container":         0.700,
+  "Curd Container":          1.70
+};
 function getPackagingExpenses(date) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
@@ -659,6 +682,12 @@ function _getDeliveryPointLabel(key) {
   };
   return map[key] || key;
 }
+/**
+ * Derives a Google Maps link based on partial address or society name matching.
+ * @param {string} addr - The full address string
+ * @param {string} society - The society name field
+ * @returns {string} - The found maps link or empty string
+ */
 function _deriveMapsLink(addr, society) {
   const dict = {
     "Laburnum Park": "https://maps.app.goo.gl/nEApFaLe5x4PzuHd8",

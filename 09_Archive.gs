@@ -229,6 +229,14 @@ function archiveMonth(year, month) {
     try { lock.releaseLock(); } catch(_) {}
   }
 }
+/**
+ * Returns (creating if needed) the Drive folder for a given year:
+ *   My Drive > WebBased Ordering > Archive > <year>
+ * Returns null if the parent "Web Based Ordering" folder cannot be located.
+ *
+ * The parent-folder ID can be set via Script Property ARCHIVE_PARENT_FOLDER_ID
+ * to bypass the name-based lookup (faster and more reliable across accounts).
+ */
 function _getArchiveYearFolder(year) {
   var yearStr = String(year);
   try {
@@ -324,6 +332,11 @@ function _listArchiveFilesInRange(dateFrom, dateTo) {
   }
   return out;
 }
+/**
+ * Reads SK_Orders rows from all archived files matching the date range.
+ * Returns plain row objects (same shape as getAllRows() — keys = headers).
+ * 10-min CacheService cache per file to avoid re-reading on every UI click.
+ */
 function _readArchivedOrdersInRange(dateFrom, dateTo) {
   var archives = _listArchiveFilesInRange(dateFrom, dateTo);
   if (!archives.length) return [];
@@ -375,6 +388,9 @@ function _readArchivedOrdersInRange(dateFrom, dateTo) {
 
   return allRows;
 }
+/**
+ * Combined order rows for a date range — live SK_Orders + matching archives.
+ */
 function getOrdersInRangeWithArchive(dateFrom, dateTo) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);

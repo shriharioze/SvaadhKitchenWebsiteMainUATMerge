@@ -158,3 +158,12 @@ function setupKeepAliveTrigger() {
     .create();
   Logger.log("keepAlive trigger registered — fires every 10 minutes.");
 }
+
+// ── QUARTERLY ARCHIVE ─────────────────────────────────────────────────────────
+/*
+  Archives SK_Orders and SK_Wallet for a given month into a new Google
+  Spreadsheet, writes Balance Carry Forward snapshots so wallet balances are
+  preserved, then deletes the archived rows from the main sheet.
+
+  Runs on the 10th of every month — archives the previous calendar month.
+  e.g. May 10 → archives April data.

@@ -93,6 +93,29 @@ function _updateLedger(ss, profile, orders) {
     }
   }
 }
+
+// ── AREAS ────────────────────────────────────────────────────
+
+const AREAS_HEADERS = ["Area_Name", "Area_Label", "Free_Delivery"];
+
+const DEFAULT_AREAS = [
+  ["Amanora",         "Amanora Town",                              "FALSE"],
+  ["BG Shirke Road",  "BG Shirke Road",                            "FALSE"],
+  ["Bhosale Nagar",   "Bhosale Nagar (Free Delivery)",             "TRUE"],
+  ["DP Road",         "DP Road",                                   "FALSE"],
+  ["Gadital",         "Gadital",                                   "FALSE"],
+  ["Mandai",          "Hadapsar Mandai",                           "FALSE"],
+  ["Kirtane Baug",    "Kirtane Baug",                              "FALSE"],
+  ["Magarpatta",      "Magarpatta",                                "FALSE"],
+  ["Malwadi",         "Malwadi",                                   "FALSE"],
+  ["Pune-Solapur Road", "Pune-Solapur Road (Till Gadital Only)",   "FALSE"],
+  ["SadeSatraNali",   "SadeSatraNali",                             "FALSE"],
+  ["Triveni Nagar",   "Triveni Nagar (Free Delivery)",             "TRUE"],
+  ["Tupe Patil Road", "Tupe Patil Road",                           "FALSE"],
+  ["Vaiduwadi",       "Vaiduwadi (Till Yash Honda Only)",          "FALSE"],
+  ["Vihar Chowk",     "Vihar Chowk",                               "FALSE"],
+  ["Pickup",          "📦 Self Pickup (Waives all fees)",             "TRUE"]
+];
 function getOrCreateFolderPath(pathParts) {
   var folder = DriveApp.getRootFolder();
   pathParts.forEach(function(name) {
@@ -101,6 +124,10 @@ function getOrCreateFolderPath(pathParts) {
   });
   return folder;
 }
+/**
+ * Run this function once from the Apps Script editor to populate
+ * dummy orders for Today and Tomorrow for testing prints/labels.
+ */
 function seedTestData() {
   try {
     Logger.log("Starting seedTestData...");
@@ -195,15 +222,6 @@ function seedTestData() {
   }
 }
 
-// ============================================================
-// voidOrderRow — soft-cancel an SK_Orders row
-// ============================================================
-// Stamps Payment_Status with a void marker plus reason+timestamp
-// so the order is excluded from reports without being deleted.
-// Used to clean up the SK-20260514-2601 false-Paid row during the
-// HDFC UAT remediation (see CODE_VERSION 14.7 notes).
-// ============================================================
-
 // ── ADMIN: VOID AN SK_ORDERS ROW ─────────────────────────────────────────────
 // Marks an order as void (e.g. duplicate, or marked Paid in error when
 // HDFC actually says AUTHORIZATION_FAILED). Doesn't delete — keeps the row
@@ -237,12 +255,6 @@ function voidOrderRow(submissionId, reason) {
   return { success: false, error: "Submission_ID not found: " + submissionId };
 }
 
-// ============================================================
-// Bank reconciliation tools — ported from main (post-merge sync).
-// Used by the admin dashboard to reconcile a bank-statement export
-// against unpaid SK_Orders rows for a date range and bulk-mark them
-// Paid. Routes wired in 01_Router.gs.
-// ============================================================
 function getUnpaidOrdersData(p) {
   const dateFrom = p.dateFrom;
   const dateTo = p.dateTo;
@@ -468,23 +480,23 @@ function reconcileTransactions(body) {
 function markOrdersPaidBulk(body) {
   const sids = body.submissionIds;
   if (!sids || !sids.length) return {success:false, error:"submissionIds required"};
-
+  
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
   const headers = ws.getRange(1,1,1,ws.getLastColumn()).getValues()[0];
   const hIdx = {};
   headers.forEach((h,i) => { hIdx[h] = i+1; });
-
+  
   const rows = getAllRows(ws);
   let updated = 0;
-
+  
   rows.forEach(r => {
-    if (sids.includes(String(r.Submission_ID)) &&
+    if (sids.includes(String(r.Submission_ID)) && 
         (r.Payment_Status === "Pending" || r.Payment_Status === "on account" || !r.Payment_Status)) {
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
       updated++;
     }
   });
-
+  
   return {success:true, updated};
 }

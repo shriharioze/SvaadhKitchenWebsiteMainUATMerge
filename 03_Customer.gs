@@ -434,32 +434,27 @@ function getCustomerList() {
 
   return {success:true, customers:customers};
 }
+// ── TEST DATA GENERATOR ──────────────────────────────────────
+/**
+ * ADMIN: Grant Review Promo (Manual)
+ */
 function markReviewed(body) {
-  var phone = body.phone;
-  if (!phone) return {success:false, error:"phone required"};
-
-  var ss   = getSpreadsheet();
-  var ws   = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
-  var hIdx = headerIndex(ws);
-  var rows = getAllRows(ws);
-  var normP = _normalizePhone(phone);
-
-  var r = rows.find(function(x) { return _normalizePhone(x.Phone) === normP; });
-  if (!r) return {success:false, error:"Customer not found"};
-
-  var col = hIdx["Review_Promo_Count"];
-  if (!col) return {success:false, error:"Review_Promo_Count column missing"};
-
-  var current = Number(r.Review_Promo_Count) || 0;
-  ws.getRange(r._row, col).setValue(current + 3);
-
-  // Mark as claimed
-  var claimCol = hIdx["Review_Reward_Claimed"];
-  if (claimCol) {
-    ws.getRange(r._row, claimCol).setValue("TRUE");
-  }
-
-  return {success:true, newCount: current + 3};
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  const rows = getAllRows(ws);
+  const phone = _normalizePhone(body.phone);
+  
+  const hIdx = headerIndex(ws);
+  if (!hIdx["Review_Promo_Count"]) return {success: false, error: "Review column not initialized. Please refresh sheet."};
+  
+  const rowIdx = rows.findIndex(x => _normalizePhone(x.Phone) === phone);
+  if (rowIdx === -1) return {success: false, message: "Customer not found."};
+  
+  // Set Review_Promo_Count to 3
+  const realRow = rowIdx + 2;
+  ws.getRange(realRow, hIdx["Review_Promo_Count"]).setValue(3);
+  
+  return {success: true, message: "10% Discount (3x) gifted successfully!"};
 }
 // ── GET CUSTOMER HISTORY ──────────────────────────────────────────────────────
 function getCustomerHistory(phone) {
