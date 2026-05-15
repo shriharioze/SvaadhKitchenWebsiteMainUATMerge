@@ -95,6 +95,10 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(getOrderSummary(p.date));
     }
+    if (action === "getUnpaidOrdersData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getUnpaidOrdersData(p));
+    }
     if (action === "getPackagingExpenses") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       if (p.from && p.to) return jsonRes(getPackagingExpensesRange(p.from, p.to));
@@ -335,6 +339,15 @@ function doPost(e) {
     if (action === "markOnAccount") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markOnAccount(body.phone, body.cycle, body.status));
+    }
+    if (action === "verifyAdminPin") return jsonRes({success: isAdmin});
+    if (action === "reconcileTransactions") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(reconcileTransactions(body));
+    }
+    if (action === "markOrdersPaidBulk") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markOrdersPaidBulk(body));
     }
     if (action === "getBillingData") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
