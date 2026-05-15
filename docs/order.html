@@ -7339,8 +7339,13 @@
      */
     async function payWalletRechargeViaHDFC(amt) {
       // Open popup INSIDE user gesture (button click) so blockers don't fire.
+      // Open the popup maximised — screen.availWidth/Height excludes the
+      // OS taskbar, so the window fills the usable screen area on desktop.
+      // Mobile browsers ignore these hints and use their own tab UI.
+      const _w = (screen && screen.availWidth)  ? screen.availWidth  : 1280;
+      const _h = (screen && screen.availHeight) ? screen.availHeight : 800;
       const popup = window.open("about:blank", "hdfc_recharge",
-        "width=520,height=720,menubar=no,toolbar=no,location=yes");
+        `width=${_w},height=${_h},top=0,left=0,menubar=no,toolbar=no,location=yes,scrollbars=yes,resizable=yes`);
       const popupBlocked = !popup || popup.closed || typeof popup.closed === "undefined";
 
       try {
@@ -9403,8 +9408,13 @@
       // Browsers block window.open() after async work loses user activation.
       // Open the popup IMMEDIATELY here with about:blank, then navigate it
       // to the actual payment URL once the session is ready below.
+      // Open the popup maximised — screen.availWidth/Height excludes the
+      // OS taskbar, so the window fills the usable screen area on desktop.
+      // Mobile browsers ignore these hints and use their own tab UI.
+      const _w = (screen && screen.availWidth)  ? screen.availWidth  : 1280;
+      const _h = (screen && screen.availHeight) ? screen.availHeight : 800;
       const popup = window.open("about:blank", "hdfc_payment",
-        "width=520,height=720,menubar=no,toolbar=no,location=yes");
+        `width=${_w},height=${_h},top=0,left=0,menubar=no,toolbar=no,location=yes,scrollbars=yes,resizable=yes`);
       const popupBlocked = !popup || popup.closed || typeof popup.closed === "undefined";
 
       // Set the marker BEFORE the popup navigates anywhere so that even if
