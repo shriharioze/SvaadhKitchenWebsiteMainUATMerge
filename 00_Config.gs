@@ -141,7 +141,14 @@ const ORDERS_HEADERS = [
   "Special_Notes_Kitchen","Special_Notes_Delivery",
   "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
   "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point",
-  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit"
+  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit",
+  // HDFC SmartGateway columns (auto-healed by getOrCreateTab).
+  // Gateway_Order_ID provides idempotent dedup at submitOrder time so
+  // a single HDFC charge can never produce two SK_Orders rows.
+  // Meal_Credit tracks how much retroactive day-free delivery credit
+  // has already been refunded for this customer's day total — prevents
+  // the double-refund bug when multiple meals are placed on the same date.
+  "Gateway_Order_ID", "Meal_Credit"
 ];
 const ITEM_COL_MAP = {
   // Canonical Names (Universal Standard)
