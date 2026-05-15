@@ -7267,6 +7267,14 @@
       const amt = parseInt($('walletRechargeAmt').value, 10);
       if (isNaN(amt) || amt < 100) { toast("Minimum recharge amount is ₹100."); return; }
 
+      // HDFC gateway path — when PAYMENT_GATEWAY_ENABLED on backend, creates
+      // a top-up session and redirects. The return-flow finalizer credits
+      // exactly the HDFC-charged amount (Status API authoritative).
+      if (S.gatewayEnabled) {
+        return payWalletRechargeViaHDFC(amt);
+      }
+
+      // Legacy fallback — manual UPI flow with admin approval.
       const btn = $('btnSubmitWallet');
       sBtnLoading(btn, true, "Submitting");
 
@@ -7287,6 +7295,75 @@
       } catch (err) {
         sBtnLoading(btn, false);
         await sAlert("Error: " + err.message, "Submission Failed", "❌");
+      }
+    }
+
+    /**
+     * HDFC-backed wallet recharge — creates a top-up session and redirects
+     * the browser to the HDFC HyperCheckout. On return, the URL params land
+     * us in hdfc_handleReturnParams, which routes 'W'-marked order ids here
+     * to hdfc_handleRechargeReturn for finalisation.
+     */
+    async function payWalletRechargeViaHDFC(amt) {
+      const btn = $('btnSubmitWallet');
+      sBtnLoading(btn, true, "Connecting to HDFC");
+      try {
+        const res = await apiPost({
+          _action: "hdfc_createWalletRechargeSession",
+          phone:   S.phone,
+          name:    S.profile?.name || "Customer",
+          amount:  amt
+        });
+        const data = await res.json();
+        if (!data.success || !data.payment_url) {
+          throw new Error(data.error || "Could not start payment.");
+        }
+        // Persist the recharge order_id as a fallback signal for return-flow
+        // (URL param is the primary path; localStorage is the safety net).
+        try {
+          localStorage.setItem("svaadh_hdfc_pending_recharge",    data.order_id);
+          localStorage.setItem("svaadh_hdfc_pending_recharge_ts", String(Date.now()));
+        } catch(_) {}
+        window.location.href = data.payment_url;
+      } catch (err) {
+        sBtnLoading(btn, false);
+        await sAlert("Could not start gateway payment.\n\n" + err.message, "Gateway Error", "❌");
+      }
+    }
+
+    /**
+     * Called from hdfc_handleReturnParams when the returning order_id has the
+     * 'W' wallet-recharge marker. Asks the backend to call the HDFC Status
+     * API and credit the wallet with the actual charged amount (idempotent).
+     */
+    async function hdfc_handleRechargeReturn(orderId, status) {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ _action: "hdfc_finalizeWalletRecharge", order_id: orderId })
+        });
+        const data = await res.json();
+        try {
+          localStorage.removeItem("svaadh_hdfc_pending_recharge");
+          localStorage.removeItem("svaadh_hdfc_pending_recharge_ts");
+        } catch(_) {}
+        if (data.success) {
+          if (!data.already_credited) {
+            await sAlert(
+              "Your wallet has been credited with ₹" + (data.amount_credited || 0) + ".",
+              "Wallet Recharged ✅", "💰"
+            );
+          }
+          try { syncWalletValue && syncWalletValue(true); } catch(_) {}
+        } else {
+          await sAlert(
+            "Your recharge could not be confirmed (Status: " + status + ").\n\n" +
+            "If money was deducted, please WhatsApp us at +91 93222 46765 with order ID: " + orderId,
+            "Recharge Not Confirmed", "⚠️"
+          );
+        }
+      } catch (err) {
+        await sAlert("Error confirming recharge: " + err.message, "Network Error", "❌");
       }
     }
 
@@ -9028,6 +9105,14 @@
 
       // Clean up URL immediately so user doesn't see ugly params
       window.history.replaceState({}, "", window.location.pathname);
+
+      // ── Wallet recharge return (order_id format: SK<YYMMDD>W...) ───────
+      // The wallet-recharge session uses a 'W' marker after the date prefix
+      // to distinguish it from order payments ('G' marker). Route those to
+      // the dedicated finalizer instead of order verification.
+      if (/^SK\d{6}W/.test(orderId)) {
+        return hdfc_handleRechargeReturn(orderId, status);
+      }
 
       // Show a non-dismissible loading overlay — no OK button
       const verifyOverlay = document.createElement("div");
