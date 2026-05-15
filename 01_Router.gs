@@ -26,11 +26,10 @@ function doGet(e) {
       .map(function(k) { return encodeURIComponent(k) + "=" + encodeURIComponent(p[k]); })
       .join("&");
     const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
-    return HtmlService.createHtmlOutput(
-      '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' + redirectUrl + '"></head>' +
-      '<body><script>window.location.replace(' + JSON.stringify(redirectUrl) + ');</script>' +
-      '<p>Redirecting... <a href="' + redirectUrl + '">Click here if not redirected</a></p></body></html>'
-    );
+    // Sandbox-aware full-viewport click target — auto-navigation is blocked
+    // inside the Apps Script HtmlService iframe in many browsers, so we make
+    // the entire page a tap/click target while attempting auto-redirect.
+    return HtmlService.createHtmlOutput(_hdfcReturnRedirectHtml(redirectUrl));
   }
   // ─────────────────────────────────────────────────────────────
 
@@ -208,11 +207,7 @@ function doPost(e) {
         .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(parsedForHdfc[k]))
         .join("&");
       const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
-      return HtmlService.createHtmlOutput(
-        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
-        `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
-        `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
-      );
+      return HtmlService.createHtmlOutput(_hdfcReturnRedirectHtml(redirectUrl));
     }
     // ── Also handle form-encoded POST (Juspay sometimes sends application/x-www-form-urlencoded)
     if (!parsedForHdfc.order_id && e.postData && e.postData.type === "application/x-www-form-urlencoded") {
@@ -463,6 +458,16 @@ function doPost(e) {
     }
     if (action === "hdfc_savePendingOrder") return jsonRes(hdfc_savePendingOrder(body));
     if (action === "hdfc_getPendingOrder")  return jsonRes(hdfc_getPendingOrder(body));
+
+    // Wallet top-up via HDFC SmartGateway (separate from order payment).
+    if (action === "hdfc_createWalletRechargeSession") {
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_createWalletRechargeSession(body));
+    }
+    if (action === "hdfc_finalizeWalletRecharge") {
+      if (!PAYMENT_GATEWAY_ENABLED) return jsonRes({error:"Payment gateway not enabled."});
+      return jsonRes(hdfc_finalizeWalletRecharge(body.order_id));
+    }
 
     if (action === "hdfc_webhook") {
       // HDFC posts to this URL with Basic Auth — verify credentials first
