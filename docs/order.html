@@ -7717,13 +7717,15 @@
       // Render the uneditable order summary BEFORE we potentially clear S.orders
       renderSuccessSummary();
 
-      // HIDE all billing and payment details to show ONLY the success screen
-      $("summaryCard").style.display = "none";
-      $("paymentCard").style.display = "none";
-      $("walletConfirmCard").style.display = "none";
-      if ($("hdfcGatewayCard")) $("hdfcGatewayCard").style.display = "none";
-      $("splitPayCard").style.display = "none";
-      $("freeOrderCard").style.display = "none";
+      // HIDE every card inside screen4 except successCard. Enumerating IDs
+      // previously missed onAccountCard and any future-added card; blanket
+      // sibling-hide is robust and self-maintaining.
+      const screen4 = $("screen4");
+      if (screen4) {
+        Array.from(screen4.children).forEach(el => {
+          if (el.id !== "successCard") el.style.display = "none";
+        });
+      }
 
       $("successCard").style.display = "block";
       $("orderIdDisplay").textContent = id ? id.toUpperCase() : "CONFIRMED";
