@@ -715,32 +715,66 @@ function hdfc_verifyReturnPayload(body) {
   var statusConfirmed = false;
   var confirmedSource = "";
 
+  // States where HDFC EXPLICITLY tells us the txn did NOT succeed.
+  // When we see any of these, do NOT fall back to the webhook log —
+  // even a previous attempt's ORDER_SUCCEEDED webhook is irrelevant
+  // because THIS attempt was rejected by the bank.
+  //
+  // FIX (post-UAT v14.8): an earlier version of this function fell back
+  // to the webhook log whenever statusCheck.confirmed was false. That
+  // included the case where Status API DEFINITIVELY said "failed" —
+  // letting a retried-and-failed transaction get marked Paid because
+  // an older successful attempt under the same order_id was in our
+  // SK_Webhook_Log. HDFC UAT reproduced this scenario by selecting
+  // AUTHORIZATION_FAILED in the Juspay simulator after a prior success.
+  const EXPLICIT_FAILURE_STATES = [
+    "AUTHORIZATION_FAILED", "AUTHENTICATION_FAILED", "JUSPAY_DECLINED",
+    "AUTO_REFUNDED", "VOIDED", "VOID_INITIATED", "DECLINED", "FAILED",
+    "ERROR", "CANCELLED", "REFUNDED"
+  ];
+  const apiStatus = String(statusCheck.status || "").toUpperCase();
+  const isExplicitFailure = EXPLICIT_FAILURE_STATES.indexOf(apiStatus) !== -1;
+
   if (statusCheck.confirmed) {
     statusConfirmed = true;
     confirmedSource = "status-api";
     console.log("HDFC return: Status API confirmed CHARGED for " + orderId + " amount=" + statusCheck.amount);
+  } else if (isExplicitFailure) {
+    // HDFC has explicitly told us the txn failed. Reject without checking
+    // webhook log — an old success webhook from a prior attempt cannot
+    // resurrect a failed retry.
+    console.warn("HDFC return: Status API explicit failure for " + orderId
+      + " — apiStatus='" + apiStatus + "' client_status='" + status + "'."
+      + " Webhook-log fallback INTENTIONALLY SKIPPED.");
+    return {
+      error: "Payment was not successful at HDFC. Status: " + apiStatus,
+      paid:  false,
+      client_status_ignored: true,
+      api_status: apiStatus,
+      order_id:   orderId
+    };
   } else {
-    // Fallback to our own webhook log (the ORDER_SUCCEEDED event from HDFC).
-    // This handles the case where Status API is transiently unavailable
-    // (e.g. urlfetch quota exhausted) but HDFC has already sent us a
-    // verified server-to-server confirmation.
+    // Transient state (FETCH_ERROR, API_ERROR, UNKNOWN, PENDING_VBV,
+    // NEW, AUTHORIZING, etc.) — Status API couldn't give us a final
+    // verdict. NOW it's safe to fall back to the webhook log, because
+    // a verified ORDER_SUCCEEDED webhook is server-to-server proof.
     var webhookProof = null;
     try { webhookProof = _checkWebhookLogForCharge(orderId); } catch(_) {}
     if (webhookProof) {
       statusConfirmed = true;
       confirmedSource = "webhook-log";
-      // Use the webhook's amount for the tamper check below (Status API is unavailable).
       statusCheck.amount    = webhookProof.amount;
       statusCheck.confirmed = true;
-      console.log("HDFC return: Status API unavailable (" + statusCheck.status + "), but ORDER_SUCCEEDED webhook found for " + orderId + " — trusting webhook.");
+      console.log("HDFC return: Status API transient (" + apiStatus + "), ORDER_SUCCEEDED webhook found for " + orderId + " — trusting webhook.");
     } else {
       console.warn("HDFC return: Neither Status API nor webhook log confirm charge for " + orderId
-        + ". client_status='" + status + "' (IGNORED). statusApi='" + statusCheck.status + "'");
+        + ". client_status='" + status + "' (IGNORED). apiStatus='" + apiStatus + "'");
       return {
-        error: "Payment could not be verified by HDFC. Status: " + statusCheck.status,
+        error: "Payment could not be verified by HDFC. Status: " + apiStatus,
         paid:  false,
         client_status_ignored: true,
-        order_id: orderId
+        api_status: apiStatus,
+        order_id:   orderId
       };
     }
   }
