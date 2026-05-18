@@ -673,11 +673,24 @@ function batchProcessApprovals(body) {
  * ADMIN: Fetch all orders with "Pending" status (usually UPI)
  */
 /**
- * Recompute the loyalty waiver for a given order anchored to its own
- * Order_Date (rather than today). Used by admin display endpoints to
- * surface the correct discount amount even when the row's stored
- * Discount_Amount was understated because a past-streak row had a
- * missing Inflation_Surcharge value.
+ * Recompute the loyalty waiver for a given order using the EXACT same
+ * algorithm the order page (frontend) uses to display the customer's
+ * bill. This guarantees the admin approval tab matches what the
+ * customer saw and paid — no drift between layers, no client-trust
+ * tampering surface (server-side computation only).
+ *
+ * Mirror of docs/order.html's calculateLoyaltyStreak() + bill-builder
+ * loyalty branch:
+ *   - Past surcharges = sum of stored Inflation_Surcharge (NO derived
+ *     fallback) for rows strictly before this order's date.
+ *   - Forward-pass streak counter with isConsecutive (Sunday-skip).
+ *   - streakInfo[dStr].surcharge snapshots the running sum BEFORE
+ *     adding dStr's own surcharge (matches frontend's bookkeeping).
+ *   - On 6th day: waiver = streakInfo[lastPastDate].surcharge
+ *                        + Math.ceil(orderFood / 20)
+ *
+ * Returns waiver amount if this order qualifies as the 6th day of an
+ * unbroken streak; otherwise 0.
  */
 function _recomputeLoyaltyWaiverForRow(orderRow, allRows) {
   if (!orderRow) return 0;
@@ -689,8 +702,11 @@ function _recomputeLoyaltyWaiverForRow(orderRow, allRows) {
     : String(orderRow.Order_Date || "").trim();
   if (!orderDate) return 0;
 
+  // dailyTotals from past rows (strictly BEFORE orderDate).
+  // Stored Inflation_Surcharge only — mirrors frontend's
+  //   dailyTotals[dStr] += Number(r.inflation_surcharge) || 0;
   const dailyTotals = {};
-  const rewardDays = new Set();
+  const rewardDays  = new Set();
   allRows.forEach(r => {
     if (_normalizePhone(r.Phone) !== phoneStr) return;
     if (_isOrderCancelled(r.Payment_Status)) return;
@@ -699,36 +715,52 @@ function _recomputeLoyaltyWaiverForRow(orderRow, allRows) {
       : String(r.Order_Date || "").trim();
     if (!d || d >= orderDate) return;
     if (!dailyTotals[d]) dailyTotals[d] = 0;
-    const stored  = Number(r.Inflation_Surcharge) || 0;
-    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
-    dailyTotals[d] += Math.max(stored, derived);
+    dailyTotals[d] += Number(r.Inflation_Surcharge) || 0;
     if (String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes") rewardDays.add(d);
   });
 
-  let accSurch = 0;
-  let streak = 0;
-  const orderD = new Date(orderDate + "T12:00:00");
-  let d = new Date(orderD); d.setDate(d.getDate() - 1);
-  let safety = 0;
-  while (safety < 30) {
-    safety++;
-    if (d.getDay() === 0) { d.setDate(d.getDate() - 1); continue; }
-    const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
-    if (dailyTotals[iso] !== undefined) {
-      if (rewardDays.has(iso)) break;
-      streak++;
-      accSurch += dailyTotals[iso];
-    } else {
-      break;
-    }
-    d.setDate(d.getDate() - 1);
-  }
+  const sortedDates = Object.keys(dailyTotals).sort();
+  if (sortedDates.length === 0) return 0;
 
-  const currentSurch = Math.max(
-    Number(orderRow.Inflation_Surcharge) || 0,
-    Math.ceil((Number(orderRow.Food_Subtotal) || 0) / 20)
-  );
-  return (streak >= 5) ? (accSurch + currentSurch) : 0;
+  // Forward-pass with isConsecutive (Sunday-skip) — mirror frontend.
+  const isConsecutive = function(d1, d2) {
+    const date1 = new Date(d1 + "T12:00:00");
+    const date2 = new Date(d2 + "T12:00:00");
+    const diff  = (date2 - date1) / 86400000;
+    return (diff === 1) || (diff === 2 && date1.getDay() === 6);
+  };
+
+  // streakInfo[dStr].surcharge = sum BEFORE adding dStr's own (mirror).
+  const streakInfo = {};
+  let streakCount     = 0;
+  let streakSurcharge = 0;
+  let lastDate        = null;
+
+  sortedDates.forEach(dStr => {
+    if (lastDate && isConsecutive(lastDate, dStr)) {
+      if (rewardDays.has(lastDate)) {
+        streakCount = 1; streakSurcharge = 0;
+      } else {
+        streakCount++;
+      }
+    } else {
+      streakCount = 1; streakSurcharge = 0;
+    }
+    streakInfo[dStr] = { count: streakCount, surcharge: streakSurcharge };
+    streakSurcharge += (dailyTotals[dStr] || 0);
+    lastDate = dStr;
+  });
+
+  if (!lastDate) return 0;
+  if (!isConsecutive(lastDate, orderDate)) return 0;
+  if (rewardDays.has(lastDate)) return 0;
+
+  const virtualStreakCount   = streakInfo[lastDate].count;
+  const virtualPastSurcharge = streakInfo[lastDate].surcharge;
+  if (virtualStreakCount !== 5) return 0;
+
+  const currentDaySurcharge = Math.ceil((Number(orderRow.Food_Subtotal) || 0) / 20);
+  return virtualPastSurcharge + currentDaySurcharge;
 }
 
 function getPendingUPIPayments() {
