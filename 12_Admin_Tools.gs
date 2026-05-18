@@ -286,7 +286,7 @@ function getUnpaidOrdersData(p) {
 /**
  * Reconcile a bank-statement export against unpaid SK_Orders.
  *
- * Matching is TWO-tiered. A transaction matches ONLY when there is a
+ * Matching is THREE-tiered. A transaction matches ONLY when there is a
  * single unambiguous mapping from tx to one or more orders of the SAME
  * customer. Tiers are tried in priority order; first hit wins.
  *
@@ -295,32 +295,54 @@ function getUnpaidOrdersData(p) {
  * narration (case/space insensitive). Anything failing the name gate is
  * skipped immediately.
  *
- * Tier 1 — SUBMISSION-batch sum match (primary):
+ * Tier 1 — strict same-DELIVERY-date match (tx_date == order_date):
+ *   (1a) single order's Net_Total == tx amount, OR
+ *   (1b) sum of THAT day's B+L+D for the customer == tx amount.
+ *
+ *   Covers the common "ordered + paid same day for same-day delivery"
+ *   pattern. Catches each order individually when the customer pays per
+ *   meal/per day instead of in one lump sum.
+ *
+ * Tier 2 — SUBMISSION-batch sum match (no tx_date constraint beyond
+ * the sanity check tx_date >= submission_date):
  *   Group this customer's unpaid orders by the date embedded in the
  *   Submission_ID (SK-YYYYMMDD-NNNN — the date they checked out, NOT
  *   the delivery date) and accept a batch whose Net_Total sum == tx
- *   amount, provided tx_date >= submission_date (you can't pay for
- *   orders not yet placed). Handles single orders AND multi-order
- *   batches in the same path.
+ *   amount. Handles single orders AND multi-order batches.
  *
- *   Why submission_date is the right anchor: the bank tx happens AT
- *   CHECKOUT, not on the day food arrives. A customer can order on
- *   17th for delivery on 18th and pay on 17th — tx_date matches
- *   submission_date (17), not delivery_date (18).
+ *   Bank tx happens AT CHECKOUT, not on the day food arrives. A
+ *   customer can order on 17th for delivery on 18th and pay on 17th —
+ *   tx_date matches submission_date (17), not delivery_date (18).
  *
  *   Multiple submission-date groups summing to the same tx amount =>
  *   ambiguous => Pending Manual Review with the candidate list.
  *
- * Tier 2 — contiguous-by-DELIVERY-date range (fallback):
+ * Tier 3 — contiguous-by-DELIVERY-date range (fallback):
  *   Last-resort fallback for orders whose Submission_ID doesn't parse
  *   to a valid YYYYMMDD prefix (legacy data / manual admin entries).
  *   Customer's unpaid orders are sorted by delivery date; we look for
  *   any contiguous subrange whose Net_Total sum == tx amount.
  *
- * On a clean Tier-1 / Tier-2 hit those orders are auto-marked Paid in
- * the same call. Everything else returns "Pending Manual Review" so
- * the admin handles it by hand. No fuzzy / partial / name-only
- * matching — those produced false positives in earlier UAT.
+ * Why three tiers (per user spec):
+ *
+ *   Customer Alice places on May 18:
+ *     Order A: delivery May 18, Rs.X
+ *     Order B: delivery May 19, Rs.X
+ *   Pays each individually as two Rs.X transactions on May 18.
+ *
+ *   Without Tier 1: Tier 2 sees a submission-batch with sum Rs.2X
+ *     (doesn't match Rs.X). Tier 3 finds two candidate ranges for each
+ *     tx, declares ambiguous, dumps to manual review.
+ *
+ *   With Tier 1: tx1 matches Order A via strict delivery-date. After
+ *     auto-pay, only Order B unpaid. tx2 fails Tier 1 (May 18 tx vs
+ *     May 19 delivery), but Tier 2 sees a 1-order submission-batch
+ *     summing to Rs.X. Match.
+ *
+ * On a clean Tier-1 / Tier-2 / Tier-3 hit those orders are auto-marked
+ * Paid in the same call. Everything else returns "Pending Manual
+ * Review" so the admin handles it by hand. No fuzzy / partial /
+ * name-only matching — those produced false positives in earlier UAT.
  */
 function reconcileTransactions(body) {
   const transactions = body.transactions; // [{date, description, amount}]
@@ -353,9 +375,9 @@ function reconcileTransactions(body) {
     };
 
     // Walk every customer; STOP on first perfect hit. Tier priority:
-    //   Tier-1: orders grouped by SUBMISSION date (encoded in SK-YYYYMMDD-NNNN)
-    //           — bank tx pairs naturally with checkout, not delivery.
-    //   Tier-2: contiguous-by-DELIVERY-date sliding window — fallback
+    //   Tier-1: tx_date == delivery_date (single order OR same-day B+L+D sum)
+    //   Tier-2: orders grouped by SUBMISSION date (encoded in SK-YYYYMMDD-NNNN)
+    //   Tier-3: contiguous-by-DELIVERY-date sliding window — fallback
     //           for legacy / manually-entered orders without a parseable
     //           Submission_ID prefix.
     for (const phone in groupedByPhone) {
@@ -365,17 +387,67 @@ function reconcileTransactions(body) {
       const nameMatch = nameParts.length > 0 && nameParts.every(part => cleanDesc.includes(part));
       if (!nameMatch) continue;
 
-      // ─── Tier 1: submission-batch sum ─────────────────────────────────
-      // The bank transaction happens AT CHECKOUT, not on the day the
-      // food gets delivered. So the natural anchor is the submission
-      // date encoded in the Submission_ID prefix — same anchor whether
-      // it's a single order or a 12-order weekly pre-book.
+      // ─── Tier 1: strict same-DELIVERY-date match ──────────────────────
+      // Customer paid for today's meal today, pay-as-you-go style.
+      // Single order matched if tx_date == delivery_date AND tx_amount
+      // == Net_Total of any one of customer's unpaid orders that day.
+      // OR sum of all that-customer's B+L+D on that date == tx amount
+      // (lump-sum payment for a whole day's meals).
+      //
+      // This catches the case where a customer has multiple orders
+      // placed in one session (same submission_date) but pays each
+      // order's bill SEPARATELY rather than the cumulative — so the
+      // submission-batch sum wouldn't match a single tx but each
+      // individual order's delivery-date does.
+      if (txDate) {
+        const sameDayOrders = data.orders.filter(o => o.date === txDate);
+        if (sameDayOrders.length > 0) {
+          // (1a) Single-order amount match on same date
+          const singleMatch = sameDayOrders.find(o => Math.round(o.total) === txAmount);
+          if (singleMatch) {
+            bestMatch = {
+              status: "Match",
+              matchType: "Date + Name + Amount (single order, same-day delivery)",
+              phone: phone,
+              name:  data.name,
+              date:  txDate,
+              matchedOrders: [singleMatch],
+              total: singleMatch.total
+            };
+            sidsToMarkPaid.push(singleMatch.id);
+            break;
+          }
+          // (1b) Sum of B+L+D on same date matches tx amount
+          const dailySum = Math.round(sameDayOrders.reduce((s, o) => s + o.total, 0));
+          if (dailySum === txAmount) {
+            bestMatch = {
+              status: "Match",
+              matchType: "Date + Name + Amount (same-day B+L+D)",
+              phone: phone,
+              name:  data.name,
+              date:  txDate,
+              matchedOrders: sameDayOrders,
+              total: dailySum
+            };
+            sameDayOrders.forEach(o => sidsToMarkPaid.push(o.id));
+            break;
+          }
+        }
+      }
+
+      // ─── Tier 2: submission-batch sum ─────────────────────────────────
+      // Reached when Tier 1 didn't match — typically because the tx_date
+      // doesn't match any unpaid order's delivery_date (customer paid
+      // today for a future-dated order).
+      //
+      // Group by the date EMBEDDED IN THE SUBMISSION_ID (the date they
+      // checked out, NOT the meal-delivery date) and look for a batch
+      // whose Net_Total sum == tx amount.
       //
       // Covers:
-      //   * Customer orders today's Lunch on today's morning and pays now
+      //   * Customer orders 1 meal for tomorrow and pays today
       //   * Customer pre-orders a whole week's Lunch + Dinner and pays
       //     the cumulative lump sum in one bank transfer
-      //   * Customer orders 1 meal for tomorrow and pays today
       //
       // Sanity: tx_date >= submission_date (you can't pay for orders not
       // yet placed). Same-day allowed.
@@ -444,8 +516,9 @@ function reconcileTransactions(body) {
         break;
       }
 
-      // ─── Tier 2: contiguous-by-delivery-date range (fallback) ─────────
-      // Reached only when no submission-batch hit. Useful for:
+      // ─── Tier 3: contiguous-by-delivery-date range (fallback) ─────────
+      // Reached only when neither strict-delivery-date nor submission-
+      // batch hit. Useful for:
       //   * Legacy / imported orders whose Submission_ID doesn't follow
       //     the SK-YYYYMMDD-NNNN format
       //   * Customer paying part of a long-overdue unpaid backlog where
