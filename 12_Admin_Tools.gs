@@ -286,29 +286,40 @@ function getUnpaidOrdersData(p) {
 /**
  * Reconcile a bank-statement export against unpaid SK_Orders.
  *
- * Matching is two-tiered. A transaction matches ONLY when there is a single
- * unambiguous mapping from tx to one or more orders of the SAME customer.
+ * Matching is THREE-tiered. A transaction matches ONLY when there is a
+ * single unambiguous mapping from tx to one or more orders of the SAME
+ * customer. Tiers are tried in priority order; first hit wins.
  *
- * Customer-Name gate: every significant token (length > 2) of the
- * customer's name must appear in the transaction narration (case/space
- * insensitive). Anything failing this gate is skipped immediately.
+ * Customer-Name gate (applies to every tier): every significant token
+ * (length > 2) of the customer's name must appear in the transaction
+ * narration (case/space insensitive). Anything failing the name gate is
+ * skipped immediately.
  *
- * Tier-1 — strict same-date match (transaction date == order date):
- *   * (1a) single order's Net_Total == tx amount, OR
- *   * (1b) sum of THAT day's B+L+D for the customer == tx amount.
+ * Tier 1 — strict same-DELIVERY-date match (tx_date == order_date):
+ *   (1a) single order's Net_Total == tx amount, OR
+ *   (1b) sum of THAT day's B+L+D for the customer == tx amount.
  *
- * Tier-2 — contiguous date-sorted range (no tx-date constraint):
- *   Customer's unpaid orders are sorted by date; we look for any
- *   contiguous subrange whose Net_Total sum == tx amount. This covers
- *   the realistic case where a customer transfers (e.g.) Rs.500 to
- *   clear their last three days' B+L+D in one go. Tier-2 only fires if
- *   Tier-1 didn't already find a hit, AND only when EXACTLY ONE
- *   contiguous range matches — multiple matches => ambiguous => manual.
+ * Tier 2 — submission-batch sum match:
+ *   Group this customer's unpaid orders by the date embedded in the
+ *   Submission_ID (the date they checked out, NOT the delivery date)
+ *   and accept a batch whose Net_Total sum == tx amount, provided
+ *   tx_date >= submission_date (you can't pay for orders not yet
+ *   placed). Covers the realistic case where a customer pre-orders a
+ *   whole week of Lunch+Dinner in one session and pays the cumulative
+ *   amount in one bank transfer. Tighter than Tier 3 because the
+ *   matched set is locked to orders demonstrably checked out together.
  *
- * On a clean tier-1 or tier-2 hit, those orders are auto-marked Paid in
- * the same call. Everything else returns "Pending Manual Review" so the
- * admin handles it by hand. No fuzzy / partial / name-only matching —
- * those produced false positives in earlier UAT testing.
+ * Tier 3 — contiguous-by-DELIVERY-date range (no tx_date constraint):
+ *   Last-resort fallback. Customer's unpaid orders are sorted by
+ *   delivery date; we look for any contiguous subrange whose Net_Total
+ *   sum == tx amount. Fires only when Tier 1 and Tier 2 don't already
+ *   match, AND only when EXACTLY ONE contiguous range matches —
+ *   multiple matches => ambiguous => manual review.
+ *
+ * On a clean Tier-1 / Tier-2 / Tier-3 hit those orders are auto-marked
+ * Paid in the same call. Everything else returns "Pending Manual
+ * Review" so the admin handles it by hand. No fuzzy / partial /
+ * name-only matching — those produced false positives in earlier UAT.
  */
 function reconcileTransactions(body) {
   const transactions = body.transactions; // [{date, description, amount}]
@@ -341,11 +352,11 @@ function reconcileTransactions(body) {
     };
 
     // Walk every customer; STOP on first perfect hit. Tier priority:
-    //   Tier-1: tx_date == order_date  (single order OR same-day B+L+D sum)
-    //   Tier-2: any contiguous date-sorted range of THIS customer's
-    //           unpaid orders summing to tx amount (no tx_date constraint;
-    //           covers the "customer paid for last 3 days in one transfer"
-    //           pattern). Must be exactly ONE such range or it's ambiguous.
+    //   Tier-1: tx_date == delivery_date  (single order OR same-day B+L+D sum)
+    //   Tier-2: orders grouped by SUBMISSION date (encoded in SK-YYYYMMDD-NNNN)
+    //           — batch checkout, paid in one transfer
+    //   Tier-3: contiguous-by-delivery-date sliding window — fallback
+    //           when neither strict-date nor submission-batch match.
     for (const phone in groupedByPhone) {
       const data = groupedByPhone[phone];
       const nameParts = data.name.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(x => x.length > 2);
@@ -388,10 +399,72 @@ function reconcileTransactions(body) {
         }
       }
 
-      // ─── Tier 2: contiguous date-sorted range sum ──────────────────────
-      // Covers the case: customer paid Rs.500 for unpaid orders across
-      // May 12-14 (different meals across different days). Tx date may
-      // be any date, often a few days after the last order.
+      // ─── Tier 2: submission-batch sum ─────────────────────────────────
+      // Customer placed multiple orders in ONE session (e.g. an entire
+      // week's Lunch + Dinner pre-orders) and paid the cumulative amount
+      // in a single bank transfer. Group this customer's unpaid orders
+      // by the date EMBEDDED IN THE SUBMISSION_ID (the date they
+      // checked out, NOT the meal-delivery date), and check whether any
+      // such batch sums to the tx amount.
+      //
+      // Why this beats Tier-3 contiguous-range for this case: the
+      // contiguous-range walker uses delivery dates as the sort key, so
+      // it could accidentally include unrelated orders that just happen
+      // to be adjacent in the delivery calendar. Grouping by submission
+      // date locks the matched set to orders that were demonstrably
+      // checked out together — the exact thing a single bank transfer
+      // is most likely paying for.
+      //
+      // Sanity: a tx can't be paying for orders that don't exist yet.
+      // We require tx_date >= submission_date (allowing same-day, since
+      // most batch payments happen within minutes of checkout).
+      const submissionDateFromSid = function(sid) {
+        // Submission_ID format: SK-YYYYMMDD-NNNN  → return YYYY-MM-DD
+        const m = String(sid || "").match(/^SK-(\d{4})(\d{2})(\d{2})-/);
+        return m ? (m[1] + "-" + m[2] + "-" + m[3]) : "";
+      };
+      const bySubmissionDate = {};
+      data.orders.forEach(o => {
+        const sd = submissionDateFromSid(o.id);
+        if (!sd) return;
+        if (txDate && txDate < sd) return;  // tx before submission — impossible, skip
+        if (!bySubmissionDate[sd]) bySubmissionDate[sd] = [];
+        bySubmissionDate[sd].push(o);
+      });
+
+      let batchMatched = false;
+      Object.keys(bySubmissionDate).sort().forEach(sd => {
+        if (batchMatched) return;
+        const grp = bySubmissionDate[sd];
+        // Skip singletons — Tier 1 / single-order match would have caught those.
+        if (grp.length < 2) return;
+        const grpSum = Math.round(grp.reduce((s, o) => s + o.total, 0));
+        if (grpSum !== txAmount) return;
+        // Exact submission-batch hit.
+        const deliveryDates = Array.from(new Set(grp.map(o => o.date))).sort();
+        bestMatch = {
+          status: "Match",
+          matchType: "Name + Amount (submission-batch on " + sd + ", "
+            + grp.length + " orders across " + deliveryDates.length + " delivery date(s))",
+          phone: phone,
+          name: data.name,
+          submission_date: sd,
+          delivery_dates:  deliveryDates,
+          matchedOrders:   grp,
+          total: grpSum
+        };
+        grp.forEach(o => sidsToMarkPaid.push(o.id));
+        batchMatched = true;
+      });
+      if (batchMatched) break;
+
+      // ─── Tier 3: contiguous date-sorted range sum ─────────────────────
+      // Last-resort fallback. Walk this customer's unpaid orders sorted
+      // by delivery date, slide a window summing rounded Net_Totals.
+      // Used when neither strict same-day nor a submission-batch match
+      // applies — e.g. customer pays partial coverage across older
+      // unpaid orders, or batch-payment for orders whose submission_id
+      // doesn't parse (legacy data).
       const sorted = data.orders
         .slice()
         .sort((a, b) =>
