@@ -1585,21 +1585,42 @@ function getOrderSummary(date) {
 
     var items = {};
     if (meal === "Breakfast") {
+      var bfHasCurdSlot = false;
       for (var n = 1; n <= 4; n++) {
         var item = String(r["BF_Item_"+n] || "").trim();
         var qty  = Number(r["BF_Qty_"+n]) || 0;
         if (item && qty > 0) {
           items[item] = (items[item] || 0) + qty;
           m.itemTotals[item] = (m.itemTotals[item] || 0) + qty;
+          if (item === "Curd") bfHasCurdSlot = true;
         }
       }
+      // Dedupe: submitOrder writes Curd to BOTH BF_Item_N and Curd column.
       var curdBf = Number(r.Curd) || 0;
-      if (curdBf > 0) { items["Curd"] = (items["Curd"] || 0) + curdBf; m.itemTotals["Curd"] = (m.itemTotals["Curd"] || 0) + curdBf; }
+      if (curdBf > 0 && !bfHasCurdSlot) {
+        items["Curd"] = (items["Curd"] || 0) + curdBf;
+        m.itemTotals["Curd"] = (m.itemTotals["Curd"] || 0) + curdBf;
+      }
+      // Lunch-style items in a Breakfast order via backend admin edits.
+      LUNCH_DINNER_COLS.forEach(function(col) {
+        if (col === "Curd") return;
+        var q = Number(r[col]) || 0;
+        if (q > 0) { items[col] = (items[col]||0)+q; m.itemTotals[col] = (m.itemTotals[col]||0)+q; }
+      });
     } else {
       LUNCH_DINNER_COLS.forEach(function(col) {
         var q = Number(r[col]) || 0;
         if (q > 0) { items[col] = (items[col]||0)+q; m.itemTotals[col] = (m.itemTotals[col]||0)+q; }
       });
+      // Breakfast-style items in a Lunch/Dinner order via backend.
+      for (var nn = 1; nn <= 4; nn++) {
+        var bItem = String(r["BF_Item_"+nn] || "").trim();
+        var bQty  = Number(r["BF_Qty_"+nn]) || 0;
+        if (bItem && bQty > 0) {
+          items[bItem] = (items[bItem] || 0) + bQty;
+          m.itemTotals[bItem] = (m.itemTotals[bItem] || 0) + bQty;
+        }
+      }
     }
 
     m.count++;

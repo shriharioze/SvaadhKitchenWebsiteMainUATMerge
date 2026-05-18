@@ -57,16 +57,18 @@ function getKitchenSummary(date) {
     var summaryParts = [];
     if (meal === "Breakfast") {
       if (!m.items) m.items = {};
+      var bfHasCurdSlot = false;
       for (var n = 1; n <= 4; n++) {
         var item = String(r["BF_Item_"+n] || "").trim();
         var qty  = Number(r["BF_Qty_"+n]) || 0;
         if (item && qty > 0) {
           m.items[item] = (m.items[item] || 0) + qty;
           summaryParts.push(qty + " " + item);
+          if (item === "Curd") bfHasCurdSlot = true;
         }
       }
       var curdBf = Number(r.Curd) || 0;
-      if (curdBf > 0) {
+      if (curdBf > 0 && !bfHasCurdSlot) {
         m.items["Curd"] = (m.items["Curd"] || 0) + curdBf;
         summaryParts.push(curdBf + " Curd");
       }
@@ -143,6 +145,31 @@ function getKitchenSummary(date) {
       if (riceQ > 0) summaryParts.push(riceQ + " Rice");
       if (saladQ > 0) summaryParts.push(saladQ + " Salad");
       if (curdQ > 0) summaryParts.push(curdQ + " Curd");
+
+      // Cross-meal: backend admin sometimes places breakfast items in a
+      // Lunch/Dinner order (e.g. Poha/Upma) or writes Chapati via BF_Item
+      // slots. Surface them under m.extras so the kitchen UI can show them.
+      if (!m.extras) m.extras = {};
+      for (var bn = 1; bn <= 4; bn++) {
+        var bItem = String(r["BF_Item_"+bn] || "").trim();
+        var bQty  = Number(r["BF_Qty_"+bn]) || 0;
+        if (!bItem || bQty <= 0) continue;
+        if (ROTI_COLS.indexOf(bItem) >= 0 || ROTI_COLS.indexOf(bItem.replace(/ /g,"_")) >= 0) {
+          var rotiCol = (ROTI_COLS.indexOf(bItem) >= 0) ? bItem : bItem.replace(/ /g,"_");
+          m.rotis[rotiCol] = (m.rotis[rotiCol] || 0) + bQty;
+          var packsX = calculatePackets(bQty, ROTI_LIMITS[rotiCol]);
+          packsX.forEach(function(p) { m.rotiMatrix[rotiCol][p] = (m.rotiMatrix[rotiCol][p] || 0) + 1; });
+          summaryParts.push(bQty + " " + rotiCol.replace(/_/g," "));
+        } else if (bItem === "Curd") {
+          m.other.Curd.count += bQty;
+          var cPacksX = calculatePackets(bQty, 2);
+          cPacksX.forEach(function(p) { m.curdMatrix[p] = (m.curdMatrix[p] || 0) + 1; });
+          summaryParts.push(bQty + " Curd");
+        } else {
+          m.extras[bItem] = (m.extras[bItem] || 0) + bQty;
+          summaryParts.push(bQty + " " + bItem);
+        }
+      }
     }
 
     orders.push({
