@@ -672,6 +672,65 @@ function batchProcessApprovals(body) {
 /**
  * ADMIN: Fetch all orders with "Pending" status (usually UPI)
  */
+/**
+ * Recompute the loyalty waiver for a given order anchored to its own
+ * Order_Date (rather than today). Used by admin display endpoints to
+ * surface the correct discount amount even when the row's stored
+ * Discount_Amount was understated because a past-streak row had a
+ * missing Inflation_Surcharge value.
+ */
+function _recomputeLoyaltyWaiverForRow(orderRow, allRows) {
+  if (!orderRow) return 0;
+  const phoneStr = _normalizePhone(orderRow.Phone);
+  if (!phoneStr) return 0;
+
+  const orderDate = orderRow.Order_Date instanceof Date
+    ? Utilities.formatDate(orderRow.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+    : String(orderRow.Order_Date || "").trim();
+  if (!orderDate) return 0;
+
+  const dailyTotals = {};
+  const rewardDays = new Set();
+  allRows.forEach(r => {
+    if (_normalizePhone(r.Phone) !== phoneStr) return;
+    if (_isOrderCancelled(r.Payment_Status)) return;
+    const d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date || "").trim();
+    if (!d || d >= orderDate) return;
+    if (!dailyTotals[d]) dailyTotals[d] = 0;
+    const stored  = Number(r.Inflation_Surcharge) || 0;
+    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
+    dailyTotals[d] += Math.max(stored, derived);
+    if (String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes") rewardDays.add(d);
+  });
+
+  let accSurch = 0;
+  let streak = 0;
+  const orderD = new Date(orderDate + "T12:00:00");
+  let d = new Date(orderD); d.setDate(d.getDate() - 1);
+  let safety = 0;
+  while (safety < 30) {
+    safety++;
+    if (d.getDay() === 0) { d.setDate(d.getDate() - 1); continue; }
+    const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    if (dailyTotals[iso] !== undefined) {
+      if (rewardDays.has(iso)) break;
+      streak++;
+      accSurch += dailyTotals[iso];
+    } else {
+      break;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+
+  const currentSurch = Math.max(
+    Number(orderRow.Inflation_Surcharge) || 0,
+    Math.ceil((Number(orderRow.Food_Subtotal) || 0) / 20)
+  );
+  return (streak >= 5) ? (accSurch + currentSurch) : 0;
+}
+
 function getPendingUPIPayments() {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
@@ -686,14 +745,41 @@ function getPendingUPIPayments() {
              .map(r => {
                const walletCredit = Number(r.Wallet_Credit) || 0;
                const isSplit = String(r.Payment_Method || "").trim() === "Split";
-               const loyaltyDiscount = Number(r.Discount_Amount) || 0;
-               const isLoyalty       = String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes";
+               const storedLoyaltyDiscount = Number(r.Discount_Amount) || 0;
+               const isLoyalty             = String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes";
+
+               // ── Loyalty admin-display correction ────────────────────────
+               // The row's stored Discount_Amount may be too small if any
+               // past-streak row had a missing Inflation_Surcharge column.
+               // Recompute the correct waiver on-the-fly and override the
+               // displayed amount + loyalty_discount so admin sees what
+               // the customer actually paid (after full loyalty), not the
+               // wrongly-stored Net_Total.
+               let displayAmount   = isSplit ? Math.max(0, (Number(r.Net_Total) || 0) - walletCredit) : (Number(r.Net_Total) || 0);
+               let displayLoyalty  = isLoyalty ? storedLoyaltyDiscount : 0;
+               let loyaltyCorrected = false;
+
+               if (isLoyalty) {
+                 const correctedWaiver = _recomputeLoyaltyWaiverForRow(r, rows);
+                 if (correctedWaiver > storedLoyaltyDiscount) {
+                   const food   = Number(r.Food_Subtotal) || 0;
+                   const surch  = Math.max(Number(r.Inflation_Surcharge) || 0, Math.ceil(food / 20));
+                   const del    = Number(r.Delivery_Charge) || 0;
+                   const sFee   = Number(r.Small_Order_Fee) || 0;
+                   const review = Number(r.Review_Discount) || 0;
+                   const correctedNet = Math.max(0, food + del + sFee + surch - correctedWaiver - review);
+                   displayAmount    = isSplit ? Math.max(0, correctedNet - walletCredit) : correctedNet;
+                   displayLoyalty   = correctedWaiver;
+                   loyaltyCorrected = true;
+                 }
+               }
+
                return {
                  id: r.Submission_ID,
                  date: r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd") : r.Order_Date,
                  customer: r.Customer_Name,
                  phone: r.Phone,
-                 amount: isSplit ? Math.max(0, (Number(r.Net_Total) || 0) - walletCredit) : r.Net_Total,
+                 amount: displayAmount,
                  full_amount: r.Net_Total,
                  wallet_credit: walletCredit,
                  meal: r.Meal_Type,
@@ -701,8 +787,13 @@ function getPendingUPIPayments() {
                  status: r.Payment_Status,
                  payment_method: String(r.Payment_Method || ""),
                  refund_preference: r.Refund_Preference || "",
-                 loyalty_discount: isLoyalty ? loyaltyDiscount : 0,
-                 is_loyalty: isLoyalty
+                 loyalty_discount: displayLoyalty,
+                 is_loyalty:       isLoyalty,
+                 // Audit metadata so the admin UI can optionally flag
+                 // rows whose stored Discount_Amount got bumped here.
+                 loyalty_corrected:    loyaltyCorrected,
+                 loyalty_stored_value: storedLoyaltyDiscount,
+                 loyalty_stored_net:   Number(r.Net_Total) || 0
                };
              });
 }
