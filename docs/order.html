@@ -4475,7 +4475,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.16.03";
+    const APP_VERSION = "v2026.05.16.04";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7685,6 +7685,52 @@
             await sAlert("Your order has been placed successfully!", "Order Success", "✅");
           }
           showSuccess(data.submissionId);
+        }
+        else if (data.duplicate_detected) {
+          // Server found an existing non-cancelled order with the same
+          // customer + date + meal + items. Ask the customer explicitly
+          // before placing another. If they confirm, re-submit with the
+          // confirm_duplicate flag and the backend allows it.
+          const existingId   = data.existing_submission_id  || "—";
+          const existingDate = data.existing_order_date     || data.attempted_order_date || "";
+          const existingMeal = data.existing_meal_type      || data.attempted_meal_type  || "";
+          const existingAt   = data.existing_submitted_at   || "";
+          const existingPay  = data.existing_payment_status || "Pending";
+
+          const proceed = await sConfirm(
+            "You already have a " + existingMeal + " order for " + existingDate + " with the same items.<br><br>"
+              + "Existing Order ID: <b>" + existingId + "</b><br>"
+              + "Submitted: " + existingAt + "<br>"
+              + "Status: " + existingPay + "<br><br>"
+              + "Do you want to place <b>ANOTHER</b> identical order?",
+            "Duplicate Order Detected",
+            "⚠️",
+            "",
+            { confirmLabel: "Yes, place duplicate", cancelLabel: "Cancel" }
+          );
+
+          if (proceed) {
+            try {
+              const res2  = await apiPost(Object.assign({}, payload, { confirm_duplicate: true }));
+              const data2 = await res2.json();
+              if (data2.success) {
+                S.isPlaced = true;
+                if (payload.payment_status === "Pending") {
+                  await sAlert(t('toast_payment_submitted'), "Order Placed", "💸");
+                } else {
+                  await sAlert("Your duplicate order has been placed.", "Order Placed", "✅");
+                }
+                showSuccess(data2.submissionId);
+              } else {
+                throw new Error(data2.error || "Could not place duplicate order.");
+              }
+            } catch (e2) {
+              await sAlert("Could not place the duplicate order.\n\n" + e2.message,
+                "Submission Failed", "❌");
+            }
+          } else {
+            toast("Duplicate order cancelled. Your existing order " + existingId + " is unchanged.");
+          }
         }
         else if (data.stock_conflicts && data.stock_conflicts.length) {
           // Server rejected due to stock exhaustion — auto-reduce cart to available
