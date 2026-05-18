@@ -895,6 +895,61 @@ function getDayTotalsForDates(phone, datesParam, preloadedRows) {
  * Calculates current streak and accumulated surcharges for a customer.
  * Skips Sundays (kitchen closed).
  */
+/**
+ * Diagnostic — run from the Apps Script editor to see exactly what the
+ * loyalty-streak calculator is seeing for a specific customer.
+ *
+ * Usage:
+ *   In the editor, add at the bottom:
+ *     function _runDiag() { diagnoseLoyaltyStreak("9930748908"); }
+ *   Pick _runDiag from the function dropdown -> Run.
+ *   Watch the Execution Log.
+ */
+function diagnoseLoyaltyStreak(phone) {
+  if (!phone) { Logger.log("Pass a phone number"); return; }
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, ORDERS_HEADERS);
+  const rows = getAllRows(ws);
+  const phoneStr = _normalizePhone(phone);
+  const todayISO = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+
+  Logger.log("=== diagnoseLoyaltyStreak(" + phone + ") ===");
+  Logger.log("Today (IST): " + todayISO);
+
+  const mine = rows.filter(r => _normalizePhone(r.Phone) === phoneStr);
+  Logger.log("Total rows for this customer: " + mine.length);
+
+  mine.sort((a, b) => {
+    const da = a.Order_Date instanceof Date ? Utilities.formatDate(a.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(a.Order_Date).trim();
+    const db = b.Order_Date instanceof Date ? Utilities.formatDate(b.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(b.Order_Date).trim();
+    return db.localeCompare(da);
+  });
+
+  Logger.log("--- Last 15 rows (newest first) ---");
+  mine.slice(0, 15).forEach((r, idx) => {
+    const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(r.Order_Date).trim();
+    const stored  = Number(r.Inflation_Surcharge);
+    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
+    Logger.log("[" + (idx+1) + "] " + d + " " + r.Meal_Type
+      + "  food=" + r.Food_Subtotal
+      + "  storedSurch=" + (isNaN(stored) ? "(empty)" : stored)
+      + "  derivedSurch=" + derived
+      + "  effective=" + Math.max((Number(r.Inflation_Surcharge)||0), derived)
+      + "  Loyalty=" + (r.Loyalty_Discount || "-")
+      + "  net=" + r.Net_Total
+      + "  status=" + (r.Payment_Status || "-")
+      + "  sid=" + (r.Submission_ID || "-")
+    );
+  });
+
+  const result = _calculateLoyaltyStreak(phone, rows);
+  Logger.log("--- _calculateLoyaltyStreak verdict ---");
+  Logger.log(JSON.stringify(result));
+  Logger.log("Expected next-order behaviour: is6thDay would be " + (result.streak === 5 ? "TRUE" : "FALSE"));
+  Logger.log("If is6thDay TRUE: loyalty waiver = pastSurcharge(" + result.pastSurcharge + ") + today's surcharge");
+  Logger.log("=== end ===");
+}
+
 function _calculateLoyaltyStreak(phone, preloadedRows) {
   if (!phone) return { streak: 0, pastSurcharge: 0 };
   const ss = getSpreadsheet();
@@ -927,7 +982,16 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
     if (d > todayISO) return; // future dates — ignore
 
     if (!dailyTotals[d]) dailyTotals[d] = 0;
-    dailyTotals[d] += (Number(r.Inflation_Surcharge) || (Math.ceil((Number(r.Food_Subtotal)||0)/20)));
+    // Hardened surcharge derivation: take the MAX of the stored
+    // Inflation_Surcharge column and the food-derived value. Protects
+    // against legacy rows / manual admin entries where the
+    // Inflation_Surcharge column was empty (= 0) but Food_Subtotal
+    // shows a real cart — without this, even one such bad row in the
+    // 5-day streak history collapses pastSurcharge to 0 and the
+    // customer ends up paying full price on their day-6 reward.
+    const storedSurch  = Number(r.Inflation_Surcharge) || 0;
+    const derivedSurch = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
+    dailyTotals[d] += Math.max(storedSurch, derivedSurch);
 
     // Track days where the 6-day loyalty reward was already given
     if (String(r.Loyalty_Discount || "").trim().toLowerCase() === "yes") {
@@ -966,6 +1030,19 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
   // return streak=0 so any subsequent meal on the same day doesn't get a double reward.
   if (rewardDays.has(todayISO)) {
     return { streak: 0, pastSurcharge: 0 };
+  }
+
+  // Anomaly logging — if the customer hit a full 5-day streak but the
+  // accumulated surcharge came out unreasonably small (< streakCount,
+  // meaning at least one past day contributed 0), log a warning so we
+  // can audit the affected rows. The Math.max guard above protects the
+  // common cases; this log surfaces any cases it can't fix.
+  if (streakCount >= 5 && accumulatedSurcharge < streakCount) {
+    console.warn("loyalty-streak anomaly — phone=" + phoneStr
+      + " streak=" + streakCount
+      + " accumulatedSurcharge=" + accumulatedSurcharge
+      + " (suspiciously low — at least one past day contributed 0)."
+      + " dailyTotals=" + JSON.stringify(dailyTotals));
   }
 
   return { streak: streakCount, pastSurcharge: accumulatedSurcharge };
