@@ -164,6 +164,30 @@ function _verifyAndAlertMissedOrders(ss, submissionIds) {
 }
 // ── SUBMIT ORDER ─────────────────────────────────────────────
 function submitOrder(body) {
+  // ── REQUEST-LEVEL IDEMPOTENCY ─────────────────────────────────────
+  // Frontend retries (apiFetch on timeout) can re-deliver the SAME POST
+  // body while the original request is still running on the server. The
+  // per-meal duplicate guards below catch most cases, but had an edge
+  // case where the cache.put for the last meal of each date hadn't
+  // committed before the abort fired — leading to duplicated row writes
+  // and duplicate wallet debits.
+  //
+  // Fix: client passes a unique request_id. The very FIRST thing we do
+  // is check the cache for that id and replay the full response if seen.
+  // The full response is also cached at the END so any subsequent retry
+  // returns the same payload without re-running any work.
+  const _reqId = String(body && body.request_id || "").trim();
+  const _reqCache = CacheService.getScriptCache();
+  if (_reqId) {
+    try {
+      const _cached = _reqCache.get("submitOrder_req_" + _reqId);
+      if (_cached) {
+        console.log("submitOrder idempotency replay for request_id=" + _reqId);
+        try { return JSON.parse(_cached); } catch(_) { /* corrupt — fall through */ }
+      }
+    } catch(_) {}
+  }
+
   // Serialize submitOrder calls to prevent stock-race + wallet-race between concurrent customers.
   // ALSO: enforce Gateway_Order_ID idempotency before any writes happen — if a row
   // already exists in SK_Orders for this HDFC order, return the existing Submission_IDs
@@ -174,6 +198,17 @@ function submitOrder(body) {
   try { lock.waitLock(20000); }
   catch(e) { return { error: "Server busy — please retry in a few seconds." }; }
   try {
+    // Re-check the idempotency cache AFTER acquiring the lock — the
+    // original request may still have been running when we first looked.
+    if (_reqId) {
+      try {
+        const _cached2 = _reqCache.get("submitOrder_req_" + _reqId);
+        if (_cached2) {
+          console.log("submitOrder idempotency replay (post-lock) for request_id=" + _reqId);
+          try { return JSON.parse(_cached2); } catch(_) {}
+        }
+      } catch(_) {}
+    }
     const gatewayOrderIdGuard = String(body.gateway_order_id || "").trim();
     if (gatewayOrderIdGuard) {
       const ss       = getSpreadsheet();
@@ -203,7 +238,13 @@ function submitOrder(body) {
         }
       }
     }
-    return _submitOrderInternal(body);
+    const _result = _submitOrderInternal(body);
+    // Cache the FULL response so any retry within 10 minutes replays it
+    // verbatim — including error responses (duplicate_detected, stock_conflicts).
+    if (_reqId) {
+      try { _reqCache.put("submitOrder_req_" + _reqId, JSON.stringify(_result), 600); } catch(_) {}
+    }
+    return _result;
   } finally {
     try { lock.releaseLock(); } catch(e) {}
   }
