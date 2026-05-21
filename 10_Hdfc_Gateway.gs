@@ -29,6 +29,106 @@ function hdfc_hmacSha256(message, secret) {
   return sig.map(function(b) { return ("0" + (b & 0xFF).toString(16)).slice(-2); }).join("");
 }
 
+/**
+ * Compute HMAC-SHA256 of `message` with `secret` and return Base64-encoded
+ * digest (NOT hex). Used by the canonical Juspay/SmartGateway signature
+ * verification scheme.
+ */
+function hdfc_hmacSha256Base64(message, secret) {
+  const sig = Utilities.computeHmacSha256Signature(
+    Utilities.newBlob(message).getBytes(),
+    Utilities.newBlob(secret).getBytes()
+  );
+  return Utilities.base64Encode(sig);
+}
+
+/**
+ * PHP-style urlencode: encodeURIComponent + " " -> "+" and a few extras.
+ * Juspay's signature contract uses this encoding when building the
+ * key=value&key=value HMAC message string.
+ */
+function hdfc_phpUrlEncode(s) {
+  return encodeURIComponent(String(s == null ? "" : s))
+    .replace(/%20/g, "+")
+    .replace(/!/g, "%21")
+    .replace(/\*/g, "%2A")
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29")
+    .replace(/~/g, "%7E");
+}
+
+/**
+ * Canonical Juspay / HDFC SmartGateway return-URL signature verification
+ * (post-vulnerability-fix format). Per HDFC's integration spec:
+ *
+ *   1. Take every return param except `signature`.
+ *   2. Sort the param keys alphabetically.
+ *   3. Build the message string as `k1=v1&k2=v2&...` where each value is
+ *      PHP-urlencoded.
+ *   4. HMAC-SHA256(message, RESPONSE_KEY) → base64 digest.
+ *   5. Compare to the received `signature` param. HDFC URL-encodes the
+ *      base64 in the redirect URL, so URLSearchParams.get() has already
+ *      decoded it once — we compare the raw base64.
+ *
+ * Returns the matched format ("canonical" / "canonical-with-algo-excluded"
+ * / "legacy" / "") so callers can log which path verified.
+ *
+ * @param {Object} params  All return-URL params (key→value, decoded once)
+ * @param {string} key     HDFC_RESPONSE_KEY
+ * @returns {string}       Name of the format that matched, or "" if none
+ */
+function hdfc_verifySignatureMultiFormat(params, key) {
+  if (!params || !key) return "";
+  const received = String(params.signature || "").trim();
+  if (!received) return "";
+
+  // Build canonical message (everything except `signature`)
+  const buildMsg = function(excludeKeys) {
+    const filtered = [];
+    for (const k in params) {
+      if (excludeKeys.indexOf(k) !== -1) continue;
+      if (params[k] === undefined || params[k] === null) continue;
+      filtered.push([k, String(params[k])]);
+    }
+    filtered.sort(function(a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+    return filtered.map(function(p) {
+      return p[0] + "=" + hdfc_phpUrlEncode(p[1]);
+    }).join("&");
+  };
+
+  // Some senders URL-encode the base64 sig in the redirect URL;
+  // URLSearchParams.get() has already decoded it once, but if the sender
+  // double-encoded we may also need to try the un-decoded form.
+  const candidates = [received];
+  try { candidates.push(decodeURIComponent(received)); } catch(_) {}
+
+  // ── Format A: canonical, exclude only "signature" ─────────────
+  // This is the spec-correct form HDFC's vulnerability-fixed gateway sends.
+  const msgA = buildMsg(["signature"]);
+  const sigA = hdfc_hmacSha256Base64(msgA, key);
+  for (var i = 0; i < candidates.length; i++) {
+    if (sigA === candidates[i]) return "canonical";
+  }
+
+  // ── Format B: canonical, exclude both "signature" and "signature_algorithm" ──
+  // Some Juspay versions exclude both. Try as fallback.
+  const msgB = buildMsg(["signature", "signature_algorithm"]);
+  const sigB = hdfc_hmacSha256Base64(msgB, key);
+  for (var j = 0; j < candidates.length; j++) {
+    if (sigB === candidates[j]) return "canonical-no-algo";
+  }
+
+  // ── Format C: legacy hex `order_id|status` (pre-vulnerability-fix) ────
+  const legacyMsg = String(params.order_id || "") + "|" + String(params.status || "");
+  const sigLegacy = hdfc_hmacSha256(legacyMsg, key);  // hex
+  for (var m = 0; m < candidates.length; m++) {
+    if (sigLegacy.toLowerCase() === String(candidates[m]).toLowerCase()) return "legacy";
+  }
+
+  return "";
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // HDFC return-URL → GitHub Pages redirect HTML
 // ════════════════════════════════════════════════════════════════════════
@@ -681,13 +781,39 @@ function hdfc_verifyReturnPayload(body) {
   // If signature is present and key is configured, verify it.
   // On mismatch: do NOT reject outright — fall back to Status API (Step 2).
   // Reason: HDFC UAT may not send a valid signature; Status API is authoritative.
+  //
+  // HDFC's POST-vulnerability-fix gateway uses the CANONICAL Juspay format
+  // (sort all params except `signature`, PHP-urlencode values, HMAC-SHA256,
+  // base64). The PRE-fix format used a legacy `order_id|status` hex HMAC.
+  // We support both via hdfc_verifySignatureMultiFormat so the integration
+  // works against either gateway version.
   var signatureOk = false;
   if (HDFC_RESPONSE_KEY && signature) {
-    const expectedSig = hdfc_hmacSha256(orderId + "|" + status, HDFC_RESPONSE_KEY);
-    if (expectedSig.toLowerCase() === signature.toLowerCase()) {
+    // body may include the full return-URL payload (status_id, signature_algorithm,
+    // etc. — sent by the frontend after HDFC's vulnerability fix).
+    // Build the param map the verifier needs.
+    const sigParams = {};
+    for (const k in body) {
+      // Skip our own routing keys
+      if (k === "_action" || k === "pin" || k === "sessionPin") continue;
+      sigParams[k] = body[k];
+    }
+    // Ensure the three canonical keys are present (frontend always sends these)
+    sigParams.order_id  = orderId;
+    sigParams.status    = status;
+    sigParams.signature = signature;
+
+    const matchedFormat = hdfc_verifySignatureMultiFormat(sigParams, HDFC_RESPONSE_KEY);
+    if (matchedFormat) {
       signatureOk = true;
+      console.log("HDFC return: HMAC verified for " + orderId
+        + " via format=" + matchedFormat
+        + " (algo=" + (body.signature_algorithm || "n/a") + ")");
     } else {
-      console.warn("HDFC return: HMAC mismatch for order " + orderId + " — falling back to Status API.");
+      console.warn("HDFC return: HMAC mismatch for order " + orderId
+        + " — tried canonical, canonical-no-algo, and legacy formats."
+        + " params=" + JSON.stringify(Object.keys(sigParams))
+        + " — falling back to Status API.");
     }
   } else {
     console.warn("HDFC return: No signature or key — falling back to Status API.");

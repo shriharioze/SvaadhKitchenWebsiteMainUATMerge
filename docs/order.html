@@ -4611,7 +4611,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.20.2";
+    const APP_VERSION = "v2026.05.20.3";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9880,6 +9880,12 @@
       let   orderId   = params.get("hdfc_order_id")  || params.get("order_id");
       const status    = params.get("hdfc_status")    || params.get("status");
       const signature = params.get("hdfc_sig")       || params.get("signature");
+      // Capture EVERY return-URL param so the backend can run the canonical
+      // Juspay HMAC verification (it signs sorted-all-params, not just
+      // order_id|status). Post-vulnerability-fix HDFC includes status_id,
+      // signature_algorithm, and possibly more — we forward them all.
+      const allReturnParams = {};
+      params.forEach(function(value, key) { allReturnParams[key] = value; });
 
       // HDFC sometimes returns status without order_id. Recover from localStorage.
       if (!orderId && status) {
@@ -9943,12 +9949,15 @@
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: "POST",
-          body: JSON.stringify({
+          // Spread all return-URL params first, then overwrite with the
+          // canonical fields we always send. This lets the backend HMAC
+          // verifier reconstruct the full param set HDFC signed.
+          body: JSON.stringify(Object.assign({}, allReturnParams, {
             _action:   "hdfc_verifyReturn",
             order_id:  orderId,
             status:    status,
             signature: signature || ""
-          })
+          }))
         });
         const data = await res.json();
 
