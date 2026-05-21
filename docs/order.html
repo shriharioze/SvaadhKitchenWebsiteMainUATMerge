@@ -887,6 +887,21 @@
       cursor: not-allowed;
     }
 
+    .cal-day.kitchen-closed {
+      color: #c0392b;
+      background: #fdf2f0;
+      cursor: pointer;
+      position: relative;
+    }
+    .cal-closed-badge {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-size: 0.6rem;
+      line-height: 1;
+      pointer-events: none;
+    }
+
     .cal-day:not(.disabled):not(.empty):hover:not(.selected) {
       background: #fdf0ee;
       border-color: #f0a899;
@@ -4596,7 +4611,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.19.7";
+    const APP_VERSION = "v2026.05.20.1";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -4977,6 +4992,7 @@
         payment_preference: "Daily Payment", feeExempt: false
       },
       selectedDates: [], menuCache: {}, orders: {},
+      kitchenClosedDates: [],  // populated by fetchKitchenClosedDates()
       calYear: 0, calMonth: 0,
       grandTotal: 0, runningTotal: 0, walletBalance: 0, walletCredit: 0,
       tempUpiMode: false,
@@ -6223,6 +6239,7 @@
     function initCalendar() {
       const ist = getIST(); S.calYear = ist.getUTCFullYear(); S.calMonth = ist.getUTCMonth();
       renderCalendar();
+      fetchKitchenClosedDates().then(() => renderCalendar()).catch(() => {});
       $("calPrev").onclick = () => { S.calMonth--; if (S.calMonth < 0) { S.calMonth = 11; S.calYear--; } renderCalendar(); };
       $("calNext").onclick = () => { S.calMonth++; if (S.calMonth > 11) { S.calMonth = 0; S.calYear++; } renderCalendar(); };
     }
@@ -6233,22 +6250,43 @@
       $("calDayNames").innerHTML = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => `<div class="cal-day-name">${d}</div>`).join("");
       const ist = getIST(), today = toISO(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate());
       const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate();
+      const closedSet = new Set(S.kitchenClosedDates || []);
       let html = "";
       for (let i = 0; i < fd; i++)html += `<div class="cal-day empty"></div>`;
       for (let d = 1; d <= dim; d++) {
         const ds = toISO(y, m, d), isSun = new Date(ds + "T12:00:00").getDay() === 0, past = ds < today, sel = S.selectedDates.includes(ds);
+        const isKitchenClosed = !isSun && !past && closedSet.has(ds);
         // Issue 3: disable today if all meal cutoffs have already passed
         const avail = getMealAvailability(ds);
         const allCutoffPassed = ds === today && !avail.Breakfast && !avail.Lunch && !avail.Dinner;
-        const disabled = isSun || past || allCutoffPassed;
+        const disabled = isSun || past || allCutoffPassed || isKitchenClosed;
         let cls = "cal-day";
         if (disabled) cls += " disabled"; else if (sel) cls += " selected";
         if (ds === today && !sel && !disabled) cls += " today";
         if (allCutoffPassed && !sel) cls += " disabled";
-        html += `<div class="${cls}" ${!disabled ? `onclick="toggleDate('${ds}')"` : ""} title="${allCutoffPassed ? t('all_cutoffs_passed_title') : ""}">${d}</div>`;
+        if (isKitchenClosed) cls += " kitchen-closed";
+        const inner = isKitchenClosed
+          ? `${d}<span class="cal-closed-badge" title="Kitchen closed">🚫</span>`
+          : `${d}`;
+        const click = isKitchenClosed
+          ? `onclick="showKitchenClosedToast()"`
+          : (!disabled ? `onclick="toggleDate('${ds}')"` : "");
+        html += `<div class="${cls}" ${click} title="${isKitchenClosed ? 'Kitchen is closed on this day' : (allCutoffPassed ? t('all_cutoffs_passed_title') : '')}">${inner}</div>`;
       }
       $("calGrid").innerHTML = html;
       updateDateSummary();
+    }
+    function showKitchenClosedToast() {
+      toast("Kitchen is closed on this day, sorry for inconvenience caused", 3500);
+    }
+    async function fetchKitchenClosedDates() {
+      try {
+        const res  = await apiFetch(`${APPS_SCRIPT_URL}?action=getKitchenClosedDates&_t=${Date.now()}`, {}, { silent: true });
+        const data = await res.json();
+        S.kitchenClosedDates = Array.isArray(data.closedDates) ? data.closedDates : [];
+      } catch (e) {
+        S.kitchenClosedDates = S.kitchenClosedDates || [];
+      }
     }
     function toggleDate(ds) {
       const idx = S.selectedDates.indexOf(ds);
@@ -7900,6 +7938,21 @@
           } else {
             toast("Duplicate order cancelled. Your existing order " + existingId + " is unchanged.");
           }
+        }
+        else if (data.kitchen_closed && Array.isArray(data.closed_dates) && data.closed_dates.length) {
+          await fetchKitchenClosedDates();
+          data.closed_dates.forEach(d => {
+            const idx = S.selectedDates.indexOf(d);
+            if (idx >= 0) S.selectedDates.splice(idx, 1);
+            if (S.orders[d]) delete S.orders[d];
+          });
+          await sAlert(
+            `Kitchen is closed on:<br><br><b>${data.closed_dates.join(", ")}</b><br><br>` +
+            `We've removed these dates from your cart. Please review and try again.`,
+            "Kitchen Closed", "🚫"
+          );
+          renderCalendar();
+          goToStep(2);
         }
         else if (data.stock_conflicts && data.stock_conflicts.length) {
           // Server rejected due to stock exhaustion — auto-reduce cart to available

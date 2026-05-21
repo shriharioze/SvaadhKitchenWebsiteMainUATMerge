@@ -184,6 +184,7 @@ function doGet(e) {
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getMenuBatch") return jsonRes(getMenuBatch(p.dates));
+    if (action === "getKitchenClosedDates") return jsonRes(getKitchenClosedDates());
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
     if (action === "getWalletValue") return jsonRes({wallet_balance: _calculateWalletBalance(p.phone)});
@@ -287,6 +288,10 @@ function doPost(e) {
     if (action === "adminCancelOrder") {
       if (!isAdmin) return jsonRes({success:false, error: "STRICT ADMIN PIN REQUIRED"});
       return jsonRes(adminCancelOrder(body));
+    }
+    if (action === "setKitchenClosed") {
+      if (!isAdmin) return jsonRes({success:false, error: "STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(setKitchenClosed(body));
     }
     if (action === "markRefunded") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});

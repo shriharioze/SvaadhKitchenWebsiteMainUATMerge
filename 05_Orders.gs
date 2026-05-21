@@ -337,6 +337,33 @@ function _submitOrderInternal(body) {
   let virtualStreakCount = initialStreakInfo.streak;
   let virtualPastSurcharge = initialStreakInfo.pastSurcharge;
 
+  // ════ KITCHEN CLOSURE PRE-FLIGHT ════
+  // Reject the entire submission if ANY ordered date has been marked
+  // Kitchen Closed via the admin Daily Menu toggle.
+  {
+    const closedHits = [];
+    for (const _o of orders) {
+      const _menuForDate = menuRowsAll.find(function(mr) {
+        const d = mr.Date instanceof Date
+          ? Utilities.formatDate(mr.Date, "Asia/Kolkata", "yyyy-MM-dd")
+          : String(mr.Date).trim();
+        return d === _o.date;
+      });
+      const _closed = !!(_menuForDate && (_menuForDate.Kitchen_Closed === true ||
+        String(_menuForDate.Kitchen_Closed || "").toLowerCase() === "true"));
+      if (_closed) closedHits.push(_o.date);
+    }
+    if (closedHits.length) {
+      return {
+        success: false,
+        kitchen_closed: true,
+        closed_dates: closedHits,
+        error: "Kitchen is closed on " + closedHits.join(", ")
+             + ". Please remove that date from your cart and try again."
+      };
+    }
+  }
+
   // ════ STOCK LIMIT PRE-FLIGHT ════
   // Hard-block submission if any requested item exceeds remaining stock.
   // Runs under LockService so concurrent submissions see each other's counts.
