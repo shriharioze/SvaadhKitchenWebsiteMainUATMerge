@@ -480,19 +480,25 @@ function setKitchenClosed(body) {
       };
     }
 
-    let cancelled = 0, refundedWallet = 0, refundedUpi = 0;
+    // deleteOrder auto-detects On Account from row's Payment_Status, so
+    // passing rType="none" for those is safe — it cancels the row and
+    // excludes it from the next monthly bill, no payout needed.
+    let cancelled = 0, refundedWallet = 0, refundedUpi = 0, onAccountAdjusted = 0;
     activeMatches.forEach(function(r) {
       const pStat = String(r.Payment_Status || "").toLowerCase();
-      let rType = "none";
-      if (pStat === "wallet paid") rType = "wallet";
-      else if (pStat === "paid" || pStat.indexOf("pending") !== -1) rType = "manual_upi";
+      let rType = "none", bucket = "other";
+      if (pStat === "wallet paid") { rType = "wallet"; bucket = "wallet"; }
+      else if (pStat === "on account" || pStat === "onaccount") { rType = "none"; bucket = "on_account"; }
+      else if (pStat === "paid" || pStat.indexOf("pending") !== -1) { rType = "manual_upi"; bucket = "upi"; }
       try {
         const res = deleteOrder(String(r.Phone || ""), String(r.Submission_ID || ""),
                                 rType, { isAdmin: true });
         if (res && res.success) {
           cancelled++;
-          if (rType === "wallet")    refundedWallet += (Number(r.Net_Total) || 0);
-          if (rType === "manual_upi") refundedUpi    += (Number(r.Net_Total) || 0);
+          const amt = Number(r.Net_Total) || 0;
+          if (bucket === "wallet")     refundedWallet    += amt;
+          if (bucket === "upi")        refundedUpi       += amt;
+          if (bucket === "on_account") onAccountAdjusted += amt;
         }
         SpreadsheetApp.flush();
       } catch(e) {
@@ -502,12 +508,21 @@ function setKitchenClosed(body) {
 
     _writeKitchenClosedFlag(menuWs, mIdx, dateStr, true);
     _invalidateCache("menu_v2_" + dateStr, "kitchen_closed_dates_v1", "adminData_v1");
+
+    var parts = [];
+    if (refundedWallet > 0)    parts.push("₹" + refundedWallet + " refunded to wallets");
+    if (refundedUpi > 0)       parts.push("₹" + refundedUpi + " queued for UPI refund");
+    if (onAccountAdjusted > 0) parts.push("₹" + onAccountAdjusted + " removed from On-Account balances (no payout — just won't be billed)");
+    var breakdown = parts.length ? (" — " + parts.join(", ") + ".") : ".";
+
     return {
       success: true, isClosed: true,
-      cancelled: cancelled, refundedWallet: refundedWallet, refundedUpi: refundedUpi,
+      cancelled: cancelled,
+      refundedWallet: refundedWallet,
+      refundedUpi: refundedUpi,
+      onAccountAdjusted: onAccountAdjusted,
       message: "Kitchen closed for " + dateStr + ". " + cancelled
-             + " order(s) cancelled — ₹" + refundedWallet + " refunded to wallets, ₹"
-             + refundedUpi + " queued for UPI refund."
+             + " order(s) cancelled" + breakdown
     };
   }
 
