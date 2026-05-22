@@ -214,7 +214,11 @@ function doPost(e) {
       const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
       return HtmlService.createHtmlOutput(_hdfcReturnRedirectHtml(redirectUrl));
     }
-    // ── Also handle form-encoded POST (Juspay sometimes sends application/x-www-form-urlencoded)
+    // ── Also handle form-encoded POST (Juspay sends this for the failure path)
+    // Previously this branch returned a minimal HTML with no window.close()
+    // attempt, leaving the popup open after AUTHORIZATION_FAILED. Now it uses
+    // the same full close-loop template as the success/JSON paths so the
+    // popup auto-closes consistently in both outcomes.
     if (!parsedForHdfc.order_id && e.postData && e.postData.type === "application/x-www-form-urlencoded") {
       const formParams = e.parameter || {};
       if (formParams.order_id && formParams.status) {
@@ -222,11 +226,7 @@ function doPost(e) {
           .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(formParams[k]))
           .join("&");
         const redirectUrl = HDFC_ORDER_PAGE_URL + "?" + params;
-        return HtmlService.createHtmlOutput(
-          `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head>` +
-          `<body><script>window.location.replace(${JSON.stringify(redirectUrl)});</script>` +
-          `<p>Redirecting... <a href="${redirectUrl}">Click here if not redirected</a></p></body></html>`
-        );
+        return HtmlService.createHtmlOutput(_hdfcReturnRedirectHtml(redirectUrl));
       }
     }
     // ── Normal API actions ─────────────────────────────────────
