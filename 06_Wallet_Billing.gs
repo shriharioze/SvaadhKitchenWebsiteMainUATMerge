@@ -687,7 +687,7 @@ function batchProcessApprovals(body) {
  *   - streakInfo[dStr].surcharge snapshots the running sum BEFORE
  *     adding dStr's own surcharge (matches frontend's bookkeeping).
  *   - On 6th day: waiver = streakInfo[lastPastDate].surcharge
- *                        + Math.ceil(orderFood / 20)
+ *                        + Math.ceil(orderFood * 0.06)
  *
  * Returns waiver amount if this order qualifies as the 6th day of an
  * unbroken streak; otherwise 0.
@@ -759,7 +759,7 @@ function _recomputeLoyaltyWaiverForRow(orderRow, allRows) {
   const virtualPastSurcharge = streakInfo[lastDate].surcharge;
   if (virtualStreakCount !== 5) return 0;
 
-  const currentDaySurcharge = Math.ceil((Number(orderRow.Food_Subtotal) || 0) / 20);
+  const currentDaySurcharge = Math.ceil((Number(orderRow.Food_Subtotal) || 0) * 0.06);
   return virtualPastSurcharge + currentDaySurcharge;
 }
 
@@ -795,7 +795,7 @@ function getPendingUPIPayments() {
                  const correctedWaiver = _recomputeLoyaltyWaiverForRow(r, rows);
                  if (correctedWaiver > storedLoyaltyDiscount) {
                    const food   = Number(r.Food_Subtotal) || 0;
-                   const surch  = Math.max(Number(r.Inflation_Surcharge) || 0, Math.ceil(food / 20));
+                   const surch  = Math.max(Number(r.Inflation_Surcharge) || 0, Math.ceil(food * 0.06));
                    const del    = Number(r.Delivery_Charge) || 0;
                    const sFee   = Number(r.Small_Order_Fee) || 0;
                    const review = Number(r.Review_Discount) || 0;

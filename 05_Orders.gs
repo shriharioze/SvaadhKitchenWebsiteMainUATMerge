@@ -266,7 +266,7 @@ function _submitOrderInternal(body) {
 
   // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Nagar")
   const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
-  const DELIVERY  = 10;
+  const DELIVERY  = 11;
 
   const submissionIds = [];
 
@@ -494,7 +494,7 @@ function _submitOrderInternal(body) {
     const getDisc = (sub) => {
       if (is6thDay) {
         // Loyalty Discount: Waive all 6 days of surcharge
-        const currentSurcharge = Math.ceil(submissionDayFoodTotal / 20);
+        const currentSurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
         const totalWaiver = virtualPastSurcharge + currentSurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
@@ -502,7 +502,7 @@ function _submitOrderInternal(body) {
     };
 
     // Update virtual streak state for NEXT loop iteration
-    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal / 20);
+    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
     if (is6thDay) {
       virtualStreakCount = 0;
       virtualPastSurcharge = 0;
@@ -588,7 +588,7 @@ function _submitOrderInternal(body) {
       // On the 6th day, the surcharge IS charged (consistency), and the loyalty discount
       // (totalWaiver) includes all 6 days of surcharge so it covers it. Net effect:
       // the 6th-day surcharge charge and refund cancel each other; customer gets back days 1–5.
-      const inflationSurcharge = Math.ceil(sub / 20);
+      const inflationSurcharge = Math.ceil(sub * 0.06);
 
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
@@ -1025,7 +1025,7 @@ function diagnoseLoyaltyStreak(phone) {
   mine.slice(0, 15).forEach((r, idx) => {
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(r.Order_Date).trim();
     const stored  = Number(r.Inflation_Surcharge);
-    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
+    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) * 0.06);
     Logger.log("[" + (idx+1) + "] " + d + " " + r.Meal_Type
       + "  food=" + r.Food_Subtotal
       + "  storedSurch=" + (isNaN(stored) ? "(empty)" : stored)
@@ -1086,7 +1086,7 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
     // 5-day streak history collapses pastSurcharge to 0 and the
     // customer ends up paying full price on their day-6 reward.
     const storedSurch  = Number(r.Inflation_Surcharge) || 0;
-    const derivedSurch = Math.ceil((Number(r.Food_Subtotal) || 0) / 20);
+    const derivedSurch = Math.ceil((Number(r.Food_Subtotal) || 0) * 0.06);
     dailyTotals[d] += Math.max(storedSurch, derivedSurch);
 
     // Track days where the 6-day loyalty reward was already given
@@ -1409,7 +1409,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
 
         // 1. Delivery Clawback: order was in non-free area but charged ₹0 due to threshold
         if (xSub > 0 && isNonFree(xArea) && (Number(x.Delivery_Charge) || 0) === 0) {
-          deliveryOwed += 10;
+          deliveryOwed += 11;
           netDelta += 10;
           if (delivColIdx) ws.getRange(x._row, delivColIdx).setValue(10);
         }
@@ -1480,8 +1480,8 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
         lines.push(`  • -₹${overDiscount} — discount reversal: a loyalty discount applied to your other order(s) on this day is reversed since it was earned as part of this streak order.`);
       }
       if (deliveryOwed > 0) {
-        const numOrders = deliveryOwed / 10;
-        lines.push(`  • -₹${deliveryOwed} — delivery fee: your remaining ${numOrders > 1 ? numOrders + " orders" : "order"} had free delivery because day total was ₹150+. It now drops below ₹150, so ₹10 delivery applies.`);
+        const numOrders = deliveryOwed / 11;
+        lines.push(`  • -₹${deliveryOwed} — delivery fee: your remaining ${numOrders > 1 ? numOrders + " orders" : "order"} had free delivery because day total was ₹150+. It now drops below ₹150, so ₹11 delivery applies.`);
       }
       if (smallFeeOwed > 0) {
         lines.push(`  • -₹${smallFeeOwed} — small cart fee: a remaining order under ₹50 had its ₹10 small cart fee waived (day total was ₹150+). Now that drops below ₹150, the fee applies.`);

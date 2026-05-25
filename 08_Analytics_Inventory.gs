@@ -186,7 +186,7 @@ function getAnalytics(p) {
     var food=Number(r.Food_Subtotal)||0;
     // Backfill surcharge for old rows where Inflation_Surcharge column was blank
     var surchargeRaw=Number(r.Inflation_Surcharge);
-    var surcharge = (!isNaN(surchargeRaw) && surchargeRaw > 0) ? surchargeRaw : (food > 0 ? Math.ceil(food/20) : 0);
+    var surcharge = (!isNaN(surchargeRaw) && surchargeRaw > 0) ? surchargeRaw : (food > 0 ? Math.ceil(food*0.06) : 0);
     // Small_Order_Fee: exact backfill using Option B (checks VIP, pickup, day threshold)
     var smallFee = calcSmallFee(r);
     var payStatus = String(r.Payment_Status || "").trim();

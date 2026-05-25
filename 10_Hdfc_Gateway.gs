@@ -320,7 +320,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     return Number(LD_PRICE[colKey] || 0);
   }
 
-  const DELIVERY = 10;
+  const DELIVERY = 11;
   const ss = getSpreadsheet();
   const allAreas      = getAreas() || [];
   const freeAreaNames = allAreas.filter(function(a){return a.free;}).map(function(a){return a.name;});
@@ -423,7 +423,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
 
     function getDisc(sub) {
       if (is6thDay) {
-        const currentSurcharge = Math.ceil(submissionDayFoodTotal / 20);
+        const currentSurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
         const totalWaiver = virtualPastSurcharge + currentSurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
@@ -431,7 +431,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     }
 
     // Update virtual streak for next iteration
-    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal / 20);
+    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
     if (is6thDay) {
       virtualStreakCount   = 0;
       virtualPastSurcharge = 0;
@@ -493,7 +493,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
         : 0;
 
       const discAmt = getDisc(sub);
-      const inflationSurcharge = Math.ceil(sub / 20);
+      const inflationSurcharge = Math.ceil(sub * 0.06);
 
       // Review promo (10% off per meal; decrement in-memory only)
       let reviewDiscount = 0;
