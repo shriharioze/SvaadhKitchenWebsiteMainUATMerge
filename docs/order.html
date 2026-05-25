@@ -4481,7 +4481,22 @@
       </div>
     </div>
 
-    <div style="text-align:center; padding: 30px 0 60px; color: #999; font-size: 0.7rem; font-weight: 500;">
+    <!-- Compliance footer — policy links reachable from the checkout page.
+         Kept text-only and minimal so it doesn't disrupt the app-like UX. -->
+    <div style="text-align:center; padding: 24px 16px 18px; color: #999; font-size: 0.7rem; font-weight: 500; line-height: 1.8;">
+      <div>
+        <a href="terms.html" style="color:#888; text-decoration:none; margin:0 6px;">Terms</a> ·
+        <a href="privacy.html" style="color:#888; text-decoration:none; margin:0 6px;">Privacy</a> ·
+        <a href="refund.html" style="color:#888; text-decoration:none; margin:0 6px;">Refunds</a> ·
+        <a href="shipping.html" style="color:#888; text-decoration:none; margin:0 6px;">Shipping</a>
+      </div>
+      <div style="margin-top:6px; font-size:0.66rem; opacity:0.85;">
+        <a href="https://www.svaadhkitchen.in" style="color:#888; text-decoration:none;">Svaadh Kitchen</a>
+        · A 104, Shree Laxmi Vihar Society, Bhosale Nagar, Hadapsar, Pune 411028
+      </div>
+    </div>
+
+    <div style="text-align:center; padding: 8px 0 60px; color: #999; font-size: 0.7rem; font-weight: 500;">
       Svaadh Kitchen <span id="verLabel"></span>
     </div>
   </div><!-- /container -->
@@ -4611,7 +4626,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.22.1";
+    const APP_VERSION = "v2026.05.25.1";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
