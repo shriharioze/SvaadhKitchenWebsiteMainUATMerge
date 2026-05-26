@@ -1727,22 +1727,18 @@
 
     // ── INITIAL STATE ON LOAD ──
     (function () {
-      // ALWAYS default to today's IST date on a fresh page open.
-      // We only restore a saved date if it's still today — otherwise the
-      // kitchen view would silently keep showing yesterday's data when the
-      // staff opens the tab in the morning (or after the auto-bump at
-      // 21:00 IST). Manual date changes are still honoured for the rest
-      // of the current calendar day.
-      const today        = todayIST();
-      const savedDate    = sessionStorage.getItem('sk_kitchen_date');
-      const savedAnchor  = sessionStorage.getItem('sk_kitchen_date_anchor');
-      if (savedDate && savedAnchor === today) {
-        document.getElementById("datePicker").value = savedDate;
-      } else {
-        document.getElementById("datePicker").value = today;
-        sessionStorage.setItem('sk_kitchen_date', today);
+      // ALWAYS reset to today's IST date on every page refresh, with no
+      // exceptions. Earlier this preserved a same-day saved date, but
+      // staff occasionally prepared meals against a stale picker value
+      // after a long-idle refresh. Forcing today on every load is the
+      // safer default — they can still pick a different date manually
+      // from the picker after load if they need to.
+      const today = todayIST();
+      document.getElementById("datePicker").value = today;
+      try {
+        sessionStorage.setItem('sk_kitchen_date',        today);
         sessionStorage.setItem('sk_kitchen_date_anchor', today);
-      }
+      } catch (_) {}
 
       const savedTab = sessionStorage.getItem('sk_kitchen_tab');
       if (savedTab) _currentTab = savedTab;
