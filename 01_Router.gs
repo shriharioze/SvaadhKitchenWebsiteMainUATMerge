@@ -81,6 +81,13 @@ function doGet(e) {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getLabelOrders(p.date, p.meal));
     }
+    // ── LABEL GAP (shared across all kitchen devices) ──
+    if (action === "getLabelGap") {
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+      const v = SP.getProperty("LABEL_GAP_MM");
+      const num = (v !== null && !isNaN(Number(v))) ? Number(v) : 2.7;
+      return jsonRes({gap_mm: num});
+    }
 
     // FULL ADMIN ACCESS (Admin PIN ONLY)
     if (action === "getAdminData") {
@@ -330,8 +337,20 @@ function doPost(e) {
       return jsonRes(saveSabjiItem(body));
     }
     if (action === "saveLabels") {
-      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      // Label PDF upload — allow kitchen PIN too, matching the
+      // getLabelOrders endpoint's staff-level auth.
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(saveLabels(body));
+    }
+    if (action === "setLabelGap") {
+      // Single global label-gap value, shared across every kitchen device.
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+      const v = Number(body.gap_mm);
+      if (!isFinite(v) || v < 0 || v > 20) {
+        return jsonRes({success: false, error: "Invalid gap value (must be 0–20 mm)"});
+      }
+      SP.setProperty("LABEL_GAP_MM", String(v));
+      return jsonRes({success: true, gap_mm: v});
     }
     if (action === "markCustomersPaid") {
       if (!isAdmin) return jsonRes({error:"Invalid PIN"});
