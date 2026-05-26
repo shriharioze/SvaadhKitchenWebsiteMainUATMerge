@@ -8,7 +8,7 @@
        compares this to the KITCHEN_VERSION constant baked into the
        loaded JS and silently hard-refreshes if they differ — closes
        the "staff is running yesterday's cached HTML" gap. -->
-  <meta name="app-version" content="v2026.05.25.3">
+  <meta name="app-version" content="v2026.05.25.4">
   <title>Svaadh Kitchen</title>
   <link rel="icon" type="image/x-icon" href="../images/svaadh-kitchen-hero.PNG">
   <link rel="shortcut icon" href="../images/svaadh-kitchen-hero.PNG">
@@ -1180,9 +1180,16 @@
 
       console.log("[AutoLabel] Firing " + meal + " for " + date);
 
+      // Remember where staff was BEFORE we hijack the view, so we can
+      // restore it when done. A refresh after lunch/dinner cutoff used
+      // to leave them stranded on the Labels tab.
+      const _prevTab = _currentTab;
+      let _switchedAway = false;
+
       try {
         if (typeof switchKTab === "function" && _currentTab !== "Labels") {
           switchKTab("Labels");
+          _switchedAway = true;
           await new Promise(r => setTimeout(r, 700));
         }
 
@@ -1224,6 +1231,11 @@
         console.error("[AutoLabel] Failed for " + date + " " + meal + ": " + (e && e.message));
         try { localStorage.removeItem(_autoLabelKey(date, meal)); } catch(_) {}
         if (typeof toast === "function") toast("⚠️ Auto-label failed for " + meal + " — please generate manually", 9000);
+      } finally {
+        // Restore the tab staff was on before we hijacked the view.
+        if (_switchedAway && _prevTab && _prevTab !== "Labels" && typeof switchKTab === "function") {
+          try { switchKTab(_prevTab); } catch(_) {}
+        }
       }
     }
 
@@ -1866,7 +1878,7 @@
     // compare its meta-version to this constant. If they differ, the
     // staff is running cached/stale HTML — silently hard-reload so the
     // newest build always wins. No prompts, no surprises.
-    const KITCHEN_VERSION = "v2026.05.25.3";
+    const KITCHEN_VERSION = "v2026.05.25.4";
     (async function _kitchenVersionCheck() {
       try {
         const badge = document.getElementById("kitchenVerBadge");
