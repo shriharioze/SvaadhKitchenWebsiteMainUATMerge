@@ -4626,7 +4626,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.25.2";
+    const APP_VERSION = "v2026.05.25.3";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5614,6 +5614,11 @@
           }
 
           S.profile = {
+            // Spread first so server-loaded flags (feeExempt / onAccount /
+            // billingCycle / pending_amount / promoCount) survive the address
+            // edit. Without this, VIPs lose their feeExempt flag mid-flow and
+            // start getting charged delivery on the bill page.
+            ...S.profile,
             name, first_name: firstName, last_name: lastName, area,
             wing: isPickup ? "" : $("wingInput").value.trim(),
             flat: isPickup ? "" : $("flatInput").value.trim(),
@@ -5674,6 +5679,10 @@
           const cBf = clean(bf), cL = clean(l), cD = clean(d), cP = clean(primary);
 
           S.profile = {
+            // Spread first so server-loaded flags (feeExempt / onAccount /
+            // billingCycle / pending_amount / promoCount) survive the address
+            // edit. Without this, VIPs lose their feeExempt flag mid-flow.
+            ...S.profile,
             name, first_name: firstName, last_name: lastName, area: cP.area, wing: cP.wing, flat: cP.flat, floor: cP.floor,
             society: cP.society, delivery_point: cP.delivery_point || "door", maps: cP.maps, landmark: cP.landmark,
             payment_preference: $("payFreqSelect").value
