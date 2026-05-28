@@ -1035,7 +1035,11 @@
         if (data.error) {
           if (!autoPin) {
             K.pin = ""; renderDots();
-            document.getElementById("kErr").textContent = "Incorrect PIN";
+            // Only call it a PIN problem when the backend actually says so.
+            // Otherwise surface the real error (e.g. "Unknown action" → backend
+            // not redeployed) instead of misleading "Incorrect PIN".
+            const isAuth = /unauthor|incorrect pin|invalid pin/i.test(String(data.error));
+            document.getElementById("kErr").textContent = isAuth ? "Incorrect PIN" : ("Backend: " + data.error);
           } else {
             localStorage.removeItem('sk-kitchen-pin');
           }
