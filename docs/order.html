@@ -5314,7 +5314,7 @@
       const btn = $("btnNext");
       delete btn.dataset.locked;
       btn.style.filter = "none";
-      const labels = [t('btn_continue'), t('btn_continue'), t('btn_continue'), t('btn_review'), t('btn_place')];
+      const labels = [t('btn_continue'), t('btn_save_continue'), t('btn_continue'), t('btn_review'), t('btn_place')];
       btn.innerHTML = labels[s];
       // Disable if nothing ordered yet
       if (s === 3 && !hasAnyOrder()) { $("btnNext").disabled = true; $("btnNext").style.opacity = "0.45"; }
@@ -5332,7 +5332,12 @@
       }
 
       // Streak motivator — shown on date-selection and meal-selection screens
-      if (s === 2) renderStreakBanner("streakBannerDates");
+      if (s === 2) {
+        renderStreakBanner("streakBannerDates");
+        // Review promo banner — re-render on every visit to the dates page so
+        // it shows regardless of which auth path the customer arrived through.
+        if ($("step3ReviewPromo")) $("step3ReviewPromo").innerHTML = showReviewPromoBanner();
+      }
       if (s === 3) renderStreakBanner("streakBannerMeals");
 
       // Re-render calendar every time user lands on step 2 so admin cutoff overrides
@@ -5365,9 +5370,10 @@
         stopGraceTimer();
       }
 
-      // Toggle Save Profile Button visibility
+      // Save Profile button removed from page 2 — the "Save & Continue"
+      // button now persists the profile (see goNext step===1 upsertProfile).
       const saveBtnWrap = $("saveProfileBtnWrap");
-      if (saveBtnWrap) saveBtnWrap.style.display = (s === 1) ? "block" : "none";
+      if (saveBtnWrap) saveBtnWrap.style.display = "none";
 
       // Toggle Quick Button Bar (Wallet, profile avatar) only after step 0
       const qb = $("quickButtonBar");

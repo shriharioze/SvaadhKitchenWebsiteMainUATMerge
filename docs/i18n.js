@@ -116,6 +116,7 @@
     // ── Nav / Buttons ────────────────────────────────────
     btn_back_nav: "← Back",
     btn_continue: "Continue →",
+    btn_save_continue: "Save & Continue →",
     btn_review: "Review Order →",
     btn_place: "Place Order 🎉",
 
