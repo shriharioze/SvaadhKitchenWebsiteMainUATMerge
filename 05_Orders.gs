@@ -1046,6 +1046,27 @@ function diagnoseLoyaltyStreak(phone) {
   Logger.log("=== end ===");
 }
 
+// Returns a map { "yyyy-MM-dd": true } of all admin-marked kitchen-closed
+// dates (Kitchen_Closed flag in SK_Daily_Menu). Used by the loyalty streak so
+// a day the OWNER closed never counts as the customer breaking their streak.
+function _kitchenClosedSet() {
+  const data = _cachedData("kitchen_closed_set_v1", 60, function() {
+    const ss = getSpreadsheet();
+    const ws = getOrCreateTab(ss, TAB_MENU, []);
+    const out = [];
+    getAllRows(ws).forEach(function(r) {
+      const isClosed = (r.Kitchen_Closed === true || String(r.Kitchen_Closed || "").toLowerCase() === "true");
+      if (!isClosed) return;
+      const d = r.Date instanceof Date ? Utilities.formatDate(r.Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Date).trim();
+      if (d) out.push(d);
+    });
+    return { dates: out };
+  });
+  const set = {};
+  (data.dates || []).forEach(function(d) { set[d] = true; });
+  return set;
+}
+
 function _calculateLoyaltyStreak(phone, preloadedRows) {
   if (!phone) return { streak: 0, pastSurcharge: 0 };
   const ss = getSpreadsheet();
@@ -1098,15 +1119,16 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
   let streakCount = 0;
   let accumulatedSurcharge = 0;
 
+  const closedSet = _kitchenClosedSet(); // admin days-off — skipped like Sundays, never break the streak
   let d = new Date(); d.setDate(d.getDate() - 1); // start from yesterday
   let safety = 0;
-  while (safety < 30) {
+  while (safety < 40) {
     safety++;
-    if (d.getDay() === 0) { // Skip Sunday (closed)
+    const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
+    if (d.getDay() === 0 || closedSet[iso]) { // Skip Sunday OR admin-closed day — don't break streak
       d.setDate(d.getDate() - 1);
       continue;
     }
-    const iso = Utilities.formatDate(d, "Asia/Kolkata", "yyyy-MM-dd");
     if (dailyTotals[iso] !== undefined) {
       if (rewardDays.has(iso)) {
         // This day was a 6th-day reward day — it marks the END of the previous cycle.

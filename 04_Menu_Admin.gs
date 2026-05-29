@@ -198,6 +198,9 @@ function getKitchenClosedDates() {
     const ws   = getOrCreateTab(ss, TAB_MENU, []);
     const rows = getAllRows(ws);
     const today = getISTDate();
+    // Include the recent past (40 days) too — the loyalty streak looks backward
+    // and must skip admin days-off so they don't break a customer's streak.
+    const cutoff = Utilities.formatDate(new Date(Date.now() - 40 * 86400000), "Asia/Kolkata", "yyyy-MM-dd");
     const closed = [];
     rows.forEach(function(r) {
       const isClosed = (r.Kitchen_Closed === true ||
@@ -206,7 +209,7 @@ function getKitchenClosedDates() {
       const d = r.Date instanceof Date
         ? Utilities.formatDate(r.Date, "Asia/Kolkata", "yyyy-MM-dd")
         : String(r.Date).trim();
-      if (!d || d < today) return;
+      if (!d || d < cutoff) return;
       closed.push(d);
     });
     closed.sort();

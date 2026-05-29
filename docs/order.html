@@ -8786,11 +8786,11 @@
 
         while (safety < 60) {
           safety++;
-          if (d.getDay() === 0) { // Skip Sunday
+          let iso = d.toISOString().split('T')[0];
+          if (d.getDay() === 0 || (S.kitchenClosedDates || []).includes(iso)) { // Skip Sunday OR admin day-off
             d.setDate(d.getDate() - 1);
             continue;
           }
-          let iso = d.toISOString().split('T')[0];
           if (dailyTotals[iso] !== undefined) {
             if (rewardDays.has(iso) && iso !== endDate) break; // Break if we hit a previous reward (unless it's the end itself)
             count++;
