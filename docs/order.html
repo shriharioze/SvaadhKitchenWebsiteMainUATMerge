@@ -4626,7 +4626,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.05.31.2";
+    const APP_VERSION = "v2026.06.01.1";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5324,7 +5324,7 @@
         // Fire-and-forget — doesn't block UI, populates S.existingOrders in background.
         if (S.phone && !S._existingOrdersPrefetched) {
           S._existingOrdersPrefetched = true;
-          apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${S.phone}`, {}, { silent: true })
+          apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${S.phone}&_t=${Date.now()}`, {}, { silent: true })
             .then(r => r.json())
             .then(d => { if (d.orders) S.existingOrders = d.orders; })
             .catch(() => {});
@@ -8074,7 +8074,7 @@
       }
       if (!cartEntries.length) return null;
 
-      const url = `${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${encodeURIComponent(S.phone)}`;
+      const url = `${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${encodeURIComponent(S.phone)}&_t=${Date.now()}`;
 
       for (let i = 0; i < MAX_POLLS; i++) {
         if (i > 0) await _sleep(POLL_DELAY);
@@ -8844,7 +8844,7 @@
       cancelledWrap.innerHTML = "";
       pastWrap.innerHTML = "";
       try {
-        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}`);
+        const res = await apiFetch(`${APPS_SCRIPT_URL}?action=getCustomerOrders&phone=${phone}&_t=${Date.now()}`);
         const data = await res.json();
         
         S.existingOrders = data.orders || [];
@@ -9261,7 +9261,10 @@
             await sAlert("Order cancelled successfully.", "Done", "✅");
           }
           syncWalletValue(true); // Update main UI balance (force bypass debounce)
-          loadExistingOrders(S.phone); // Refresh upcoming list
+          // Expand the Cancelled section so the user immediately sees the order
+          // move out of Upcoming and into its own tab on refresh.
+          window.orderViewState.cancelled = true;
+          await loadExistingOrders(S.phone); // Refresh (cache-busted) → cancelled order leaves Upcoming
         } else {
           // Surface the actual server-side error instead of a generic message
           const firstErr = results.find(r => !r.success && r.error)?.error;
