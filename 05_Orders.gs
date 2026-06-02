@@ -1683,7 +1683,8 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
 function getOrderSummary(date) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  // Merge IntentAmplify orders (tagged [IA]) into the admin daily summary.
+  var rows = getAllRows(ws).concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
 
   var dayRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date
@@ -1788,6 +1789,9 @@ function getOrderHistory(p) {
     console.warn("getOrderHistory: archive lookup failed, falling back to live: " + e.message);
     rows = getAllRows(ws);
   }
+
+  // Merge IntentAmplify orders (tagged [IA]) into the admin order history.
+  try { if (typeof ia_rowsAsSK === "function") rows = rows.concat(ia_rowsAsSK()); } catch (e) {}
 
   var fmtDate = function(v) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();

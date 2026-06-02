@@ -106,6 +106,16 @@ function getAnalytics(p) {
   // overlap this date range. 10-min CacheService cache keeps repeat
   // queries fast.
   var combined = getOrdersInRangeWithArchive(dateFrom, dateTo);
+  // Merge IntentAmplify orders in range into combined analytics revenue.
+  try {
+    if (typeof ia_rowsAsSK === "function") {
+      var _iaInRange = ia_rowsAsSK().filter(function(r) {
+        var d = fmtDate(r.Order_Date);
+        return d >= dateFrom && d <= dateTo;
+      });
+      combined = combined.concat(_iaInRange);
+    }
+  } catch(_) {}
   var rows = combined.filter(function(r) {
     return !_isOrderCancelled(r.Payment_Status);
   });

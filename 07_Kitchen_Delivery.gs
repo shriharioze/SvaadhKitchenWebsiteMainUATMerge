@@ -25,7 +25,8 @@ function calculatePackets(total, max) {
 function getKitchenSummary(date) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getRecentRows(ws, 1500);
+  // Merge IntentAmplify orders (tagged [IA], S4 address) into the same prep view.
+  var rows = getRecentRows(ws, 1500).concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
 
   var dayRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date
@@ -214,7 +215,8 @@ function getKitchenSummary(date) {
 function getDriverOrders(date) {
   var ss   = getSpreadsheet();
   var ws   = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getRecentRows(ws, 1500);
+  // Merge IntentAmplify orders (tagged [IA], S4 delivery) into the driver view.
+  var rows = getRecentRows(ws, 1500).concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
   var meals = {Breakfast: [], Lunch: [], Dinner: []};
 
   // Load delivery status from SK_Deliveries tab (both EnRoute_At and Delivered_At)
@@ -343,7 +345,8 @@ function createDeliverySheet(date, meal) {
 function getLabelOrders(date, meal) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  // Merge IntentAmplify orders so their labels print too (name prefixed [IA]).
+  var rows = getAllRows(ws).concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
   var COLS = ["Chapati","Without_Oil_Chapati","Phulka","Ghee_Phulka","Jowar_Bhakri","Bajra_Bhakri",
               "Dry_Sabji_Mini","Dry_Sabji_Full","Curry_Sabji_Mini","Curry_Sabji_Full","Dal","Rice","Salad"];
 
