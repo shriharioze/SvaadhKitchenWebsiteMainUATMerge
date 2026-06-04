@@ -1683,8 +1683,10 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
 function getOrderSummary(date) {
   var ss = getSpreadsheet();
   var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  // Merge IntentAmplify orders (tagged [IA]) into the admin daily summary.
-  var rows = getAllRows(ws).concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
+  // Live + archived orders for this date (archive opened only if the date is
+  // in an archived month), plus IntentAmplify orders (tagged [IA]).
+  var rows = getOrdersInRangeWithArchive(date, date)
+               .concat(typeof ia_rowsAsSK === "function" ? ia_rowsAsSK() : []);
 
   var dayRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date

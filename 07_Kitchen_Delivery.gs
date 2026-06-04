@@ -517,9 +517,8 @@ var PKG_UNIT_COSTS = {
   "Curd Container":          1.70
 };
 function getPackagingExpenses(date) {
-  var ss = getSpreadsheet();
-  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  // Live + archived orders for this date (archive opened only for archived months).
+  var rows = getOrdersInRangeWithArchive(date, date);
 
   var dayRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date
@@ -577,9 +576,8 @@ function getPackagingExpenses(date) {
 }
 // ── PACKAGING EXPENSES — RANGE ───────────────────────────────
 function getPackagingExpensesRange(from, to) {
-  var ss = getSpreadsheet();
-  var ws = getOrCreateTab(ss, TAB_ORDERS, []);
-  var rows = getAllRows(ws);
+  // Live + archived orders for the range (archives opened only for archived months).
+  var rows = getOrdersInRangeWithArchive(from, to);
 
   var rangeRows = rows.filter(function(r) {
     var d = r.Order_Date instanceof Date
