@@ -63,7 +63,8 @@ function doGet(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markOnAccount(p.phone, p.cycle, p.status));
     }
-    
+    if (action === "getOnAccountBill") return jsonRes(getOnAccountBill(p.phone));
+
     // KITCHEN & DRIVER ACCESS (Staff PIN ONLY)
     if (action === "getKitchenSummary") {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
