@@ -74,6 +74,14 @@ function doGet(e) {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(getDriverOrders(p.date));
     }
+    if (action === "getDeliveryRoute") {
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+      return jsonRes(getDeliveryRoute());
+    }
+    if (action === "buildDeliveryRoute") {
+      if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
+      return jsonRes(buildDeliveryRoute(p.days));
+    }
     if (action === "createDeliverySheet") {
       if (!isStaff) return jsonRes({error:"STRICT STAFF PIN REQUIRED"});
       return jsonRes(createDeliverySheet(p.date, p.meal));
