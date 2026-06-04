@@ -300,7 +300,9 @@ function getDatePayments(date) {
     return v instanceof Date ? Utilities.formatDate(v,"Asia/Kolkata","yyyy-MM-dd") : String(v).trim();
   };
 
-  var rows = getAllRows(ws).filter(function(r){return fmtDate(r.Order_Date)===date && !_isOrderCancelled(r.Payment_Status);});
+  // Live + archived for this date (archive opened only if the date is archived).
+  var rows = getOrdersInRangeWithArchive(date, date)
+               .filter(function(r){return fmtDate(r.Order_Date)===date && !_isOrderCancelled(r.Payment_Status);});
 
   var map = {};
   rows.forEach(function(r) {
