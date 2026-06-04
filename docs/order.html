@@ -4637,7 +4637,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.03.5";
+    const APP_VERSION = "v2026.06.03.6";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -8389,8 +8389,20 @@
         if (label) label.textContent = "Couldn't check — tap to retry";
       }
     }
-    function onVersionItemClick() {
+    async function onVersionItemClick() {
       if (_updateAvailable === true) {
+        // If the cart has items, warn first — a hard refresh clears an in-progress order.
+        let cartFull = false;
+        try { cartFull = (typeof hasAnyOrder === "function" && hasAnyOrder()); } catch (_) {}
+        if (!cartFull) { try { cartFull = Object.keys(JSON.parse(localStorage.getItem('sk_orders') || '{}')).length > 0; } catch (_) {} }
+        if (cartFull) {
+          const ok = await sConfirm(
+            "You have items in your cart. Updating to the latest version will <b>clear your cart</b> — you'll need to re-add your meal.<br><br>Update now, or finish placing this order first?",
+            "Items in your cart", "🛒", "",
+            { confirmLabel: "Update anyway", cancelLabel: "Keep my cart" }
+          );
+          if (!ok) return;
+        }
         const base = window.location.href.split("#")[0];
         const sep  = base.indexOf("?") === -1 ? "?" : "&";
         window.location.replace(base + sep + "_v=" + Date.now());  // hard refresh to new build
