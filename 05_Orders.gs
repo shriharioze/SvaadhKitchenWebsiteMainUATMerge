@@ -1304,7 +1304,9 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
   const mealNorm = String(r.Meal_Type || "").trim().toLowerCase();
   const mealKey  = mealNorm.charAt(0).toUpperCase() + mealNorm.slice(1);
   if (orderDateStr === today) {
-    const cutoffHour = CUTOFFS[mealKey];
+    // Use the latest (override-aware) cutoff for this date, not a stale default.
+    const effCutoffs = _effectiveCutoffsForDate(orderDateStr);
+    const cutoffHour = effCutoffs[mealKey];
     if (cutoffHour !== undefined && hourIST >= cutoffHour) {
       return {success: false, error: `Cutoff for ${mealKey} has already passed`};
     }
