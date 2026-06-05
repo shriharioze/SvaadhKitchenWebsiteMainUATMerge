@@ -421,6 +421,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markSalaryCredited(body.name, body.period, body.amount));
     }
+    if (action === "updateStaff") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(updateStaff(body.name, body.fields));
+    }
     if (action === "undoMarkPaid") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(undoMarkPaid(body.submissionIds));
