@@ -405,6 +405,22 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(markBillingCollected(body.submissionIds));
     }
+    if (action === "getAttendanceData") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(getAttendanceData(body.month));
+    }
+    if (action === "markAttendance") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markAttendance(body.name, body.date, body.status));
+    }
+    if (action === "addIncentive") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(addIncentive(body.name, body.date, body.amount, body.note));
+    }
+    if (action === "markSalaryCredited") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(markSalaryCredited(body.name, body.period, body.amount));
+    }
     if (action === "undoMarkPaid") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(undoMarkPaid(body.submissionIds));
