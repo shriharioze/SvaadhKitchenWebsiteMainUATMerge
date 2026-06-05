@@ -407,7 +407,7 @@ function doPost(e) {
     }
     if (action === "getAttendanceData") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
-      return jsonRes(getAttendanceData(body.month));
+      return jsonRes(getAttendanceData(body.month, body.date));
     }
     if (action === "markAttendance") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
