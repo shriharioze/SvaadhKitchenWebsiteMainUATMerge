@@ -1222,6 +1222,20 @@ function hdfc_processWebhookLog() {
         // Placeholder — refund logic goes here when needed
         result = "Refund event acknowledged.";
 
+      } else if (eventName === "ORDER_FAILED" || HDFC_FAILURE_STATES.indexOf(String(order.status || "").toUpperCase()) !== -1) {
+        // Payment failed / declined / auth failure (AUTHENTICATION_FAILED,
+        // AUTHORIZATION_FAILED, JUSPAY_DECLINED, etc.) → mark the order Failed.
+        // NEVER un-pays a confirmed order. Usually a no-op (failed payments don't
+        // create an order row), but closes out any stray Pending row + records it.
+        const oid = String(order.order_id || "").trim();
+        if (oid && /^SK\d{6}W/.test(oid)) {
+          result = "Wallet-recharge failure (" + (order.status || eventName) + ") — no order row.";
+        } else {
+          const failResult = hdfc_markOrderFailed(order);
+          result = JSON.stringify(failResult);
+          if (failResult.error) newStatus = "FAILED";
+        }
+
       } else {
         result = "Unhandled event type: " + eventName;
       }
@@ -1321,6 +1335,72 @@ function hdfc_markOrderPaid(order) {
   } catch (err) {
     console.error("hdfc_markOrderPaid error:", err.message);
     return { error: "Failed to update order: " + err.message };
+  }
+}
+
+// HDFC/Juspay statuses that mean the transaction did NOT succeed.
+var HDFC_FAILURE_STATES = [
+  "AUTHORIZATION_FAILED", "AUTHENTICATION_FAILED", "JUSPAY_DECLINED",
+  "DECLINED", "FAILED", "ERROR", "VOIDED", "VOID_INITIATED",
+  "AUTO_REFUNDED", "CANCELLED"
+];
+
+/**
+ * Internal: marks a Svaadh order row Failed when HDFC reports a failed/declined
+ * payment via the webhook. Defensive — it will NEVER overwrite a Paid/Collected
+ * row (so a late failure webhook from a retried attempt can't un-pay a confirmed
+ * order). Most failed payments never create an order row at all (the order is
+ * only written after hdfc_verifyReturn confirms CHARGED), so this is typically a
+ * no-op that just records "no order placed".
+ *
+ * @param {Object} order  Order object from HDFC webhook content.order
+ */
+function hdfc_markOrderFailed(order) {
+  const orderId = String(order.order_id || "").trim();
+  const why     = String(order.status || "FAILED").toUpperCase();
+  if (!orderId) return { error: "Webhook: missing order_id." };
+
+  console.log("HDFC Webhook FAILURE for order " + orderId + " (status=" + why + ")");
+
+  try {
+    const ss   = getSpreadsheet();
+    const ws   = getOrCreateTab(ss, TAB_ORDERS, []);
+    const data = ws.getDataRange().getValues();
+    if (data.length < 2) return { success: true, message: "No orders to update." };
+
+    const headers     = data[0];
+    const COL_SID     = headers.indexOf("Submission_ID");
+    const COL_PSTATUS = headers.indexOf("Payment_Status");
+    const COL_NOTES   = headers.indexOf("Kitchen_Notes");
+    if (COL_SID < 0 || COL_PSTATUS < 0) return { error: "Webhook: required columns missing in SK_Orders." };
+
+    var failed = 0, skippedPaid = 0;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][COL_SID] || "").trim() === orderId) {
+        const cur = String(data[i][COL_PSTATUS] || "").toLowerCase();
+        // NEVER touch a confirmed-paid order (could be a later/duplicate attempt).
+        if (cur === "paid" || cur === "collected" || cur === "wallet paid") { skippedPaid++; continue; }
+        if (cur === "failed") continue; // already failed
+        ws.getRange(i + 1, COL_PSTATUS + 1).setValue("Failed");
+        if (COL_NOTES >= 0) {
+          var existing = String(data[i][COL_NOTES] || "");
+          var note = "Gateway " + why;
+          ws.getRange(i + 1, COL_NOTES + 1).setValue(existing ? existing + " | " + note : note);
+        }
+        failed++;
+      }
+    }
+
+    if (failed === 0) {
+      return { success: true, message: skippedPaid
+        ? "Order " + orderId + " already Paid — failure webhook ignored (later/duplicate attempt)."
+        : "No unpaid order row for " + orderId + " — payment failed before any order was placed (nothing to mark)." };
+    }
+    return { success: true, message: "Order " + orderId + " marked Failed (" + failed + " row(s), " + why + ")." };
+
+  } catch (err) {
+    console.error("hdfc_markOrderFailed error:", err.message);
+    return { error: "Failed to mark order failed: " + err.message };
   }
 }
 
