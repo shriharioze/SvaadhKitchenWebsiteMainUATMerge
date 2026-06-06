@@ -4184,27 +4184,8 @@
             <div id="successSummary"></div>
           </div>
 
-          <!-- UPI IDs — pay / re-copy. (Order check is already handled by the
-               forced "Quick check" popup, so no redundant check card here.) -->
-          <div style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border:1.5px solid #5eead4;
-                      border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 15px rgba(13,148,136,0.08);">
-            <div style="font-size:0.9rem;font-weight:800;color:#0f766e;margin-bottom:10px;text-align:center;">📲 Pay via UPI</div>
-            <div style="text-align:center;">
-              <div class="upi-id" onclick="copyUPI()" title="Tap to copy UPI ID"
-                   style="cursor:pointer;font-weight:700;color:#0f766e;font-size:0.9rem;letter-spacing:0.3px;display:inline-block;background:#ccfbf1;padding:7px 18px;border-radius:20px;">
-                9819969682@hdfc
-              </div>
-              <div style="font-size:0.7rem;color:#64748b;margin-top:4px;">tap to copy</div>
-            </div>
-            <div style="text-align:center;margin-top:12px;padding:8px 10px;background:#f9fafb;border:1px dashed #cbd5e1;border-radius:10px;">
-              <div style="font-size:0.66rem;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.2px;text-transform:uppercase;">Alternate UPI ID (Backup)</div>
-              <div class="upi-id" onclick="copyBackupUPI()" title="Tap to copy backup UPI ID"
-                   style="cursor:pointer;font-weight:600;color:#475569;font-size:0.82rem;letter-spacing:0.3px;display:inline-block;background:#fff;padding:5px 14px;border-radius:16px;border:1px solid #e2e8f0;">
-                shriharioze07-1@okhdfcbank
-              </div>
-              <div style="font-size:0.64rem;color:#94a3b8;margin-top:4px;">Use only if the primary UPI ID doesn't work</div>
-            </div>
-          </div>
+          <!-- (Payment is via the HDFC gateway in this build — no UPI card on the
+               success page. Order check is handled by the forced "Quick check" popup.) -->
 
           <!-- Delivery Heads-Up card — permanent -->
           <div id="deliveryTipCard" style="display:none; position:relative;
@@ -8305,13 +8286,13 @@
         '<div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:24px 20px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.3);">' +
           '<div style="font-size:2.4rem;margin-bottom:8px;">🛡️</div>' +
           '<div style="font-size:1.1rem;font-weight:800;color:#0369a1;margin-bottom:12px;">Quick check</div>' +
-          '<div style="font-size:0.85rem;color:#075985;line-height:1.6;text-align:left;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px;margin-bottom:8px;">' +
-            'Please tap the button below to make sure this order shows up in your orders list:<br><br>' +
-            '✅ <b>If it\'s there</b> — you\'re all set, your meal is confirmed!<br>' +
-            '❌ <b>If it\'s missing</b> — please place the order once more. <b>Payment only once</b>.' +
+          '<div style="font-size:0.88rem;color:#075985;line-height:1.6;text-align:left;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px;margin-bottom:16px;">' +
+            'Please check if this order shows up in your orders list.<br><br>' +
+            '✅ <b>If it\'s there</b> — you\'re all set!<br>' +
+            '❌ <b>If it\'s not</b> — please <b>message us immediately</b>.' +
           '</div>' +
-          '<div style="font-size:0.75rem;color:#64748b;font-style:italic;margin-bottom:18px;">Apologies for the inconvenience — we\'re actively working to make this smoother. 🙏</div>' +
           '<button id="orderVerifyBtn" style="width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(2,132,199,0.35);display:flex;align-items:center;justify-content:center;gap:8px;">🔍 Manage Orders — Check My Order</button>' +
+          '<a href="https://wa.me/919322246765" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:0.82rem;color:#0369a1;font-weight:700;text-decoration:none;">💬 Message us on WhatsApp</a>' +
         '</div>';
       // No dismiss on overlay click — swallow it so there's no escape.
       overlay.addEventListener("click", function(e){ if (e.target === overlay) { e.stopPropagation(); e.preventDefault(); } });
@@ -9878,6 +9859,15 @@
           type: type, orderId: orderId, status: status, ts: Date.now()
         }));
       } catch(_) {}
+      // Cross-origin relay: localStorage storage events only fire when popup and
+      // opener share an origin. If the popup returned to a different origin than
+      // the tab that opened it, postMessage the opener directly (works across
+      // origins) so it can close this popup + show success without manual close.
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ __svaadhHdfc: true, type: type, orderId: orderId, status: status }, "*");
+        }
+      } catch(_) {}
       try { window.history.replaceState({}, "", window.location.pathname); } catch(_) {}
       try {
         document.body.innerHTML =
@@ -9916,6 +9906,22 @@
       };
       window.addEventListener("storage", handler);
       window._hdfcPopupResultHandler = handler;
+
+      // Cross-origin fallback: listen for postMessage from the popup.
+      // The popup side sends { __svaadhHdfc: true, type, orderId, status }
+      // via window.opener.postMessage when localStorage relay can't work.
+      const msgHandler = (e) => {
+        if (!e.data || !e.data.__svaadhHdfc) return;
+        if (e.data.type !== expectedType) return;
+        if (e.data.orderId && e.data.orderId !== orderId) return;
+        window.removeEventListener("message", msgHandler);
+        // Also clean up the storage listener since we got the result via postMessage
+        window.removeEventListener("storage", handler);
+        window._hdfcPopupResultHandler = null;
+        try { localStorage.removeItem("svaadh_hdfc_popup_result"); } catch(_) {}
+        onResult(e.data);
+      };
+      window.addEventListener("message", msgHandler);
     }
 
     /**
