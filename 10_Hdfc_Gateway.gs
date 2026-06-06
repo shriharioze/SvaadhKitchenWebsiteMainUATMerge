@@ -320,7 +320,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     return Number(LD_PRICE[colKey] || 0);
   }
 
-  const DELIVERY = 11;
+  const DELIVERY = 10; // MUST match the order page's DELIVERY_CHARGE so the gateway charge == cart total
   const ss = getSpreadsheet();
   const allAreas      = getAreas() || [];
   const freeAreaNames = allAreas.filter(function(a){return a.free;}).map(function(a){return a.name;});

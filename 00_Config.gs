@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.1; // 2026-06-06: dup-const compile fix; webhook failure→Failed; submitOrder server-verifies gateway payment (never trusts client "Paid"); attendance payroll module
+const CODE_VERSION   = 15.2; // 2026-06-06: gateway amount now matches cart exactly (correct per-meal delivery area in pending save; DELIVERY aligned to 10)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

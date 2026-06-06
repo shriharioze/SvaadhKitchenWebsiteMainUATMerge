@@ -4640,7 +4640,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.06.4";
+    const APP_VERSION = "v2026.06.06.5";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -10225,6 +10225,27 @@
       const isSplit    = (S.paymentChoice === "Split");
       const walletHint = isSplit ? Number(S.walletCredit || 0) : 0;
 
+      // Build orders carrying the ACTUAL per-meal delivery area — the same source
+      // the cart's delivery/fee calc uses (getMealAddr). S.orders[date][meal].area
+      // is captured at date-add time and can be stale (e.g. an old free/pickup
+      // area), which made the server's authoritative recompute drop delivery and
+      // charge less than the cart. This keeps the gateway amount == cart amount.
+      const ordersForServer = {};
+      (S.selectedDates || []).forEach(date => {
+        const dayObj = S.orders[date]; if (!dayObj) return;
+        ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
+          const mObj = dayObj[meal];
+          if (!mObj || (mObj.subtotal || 0) <= 0) return;
+          const mAddr = getMealAddr(meal);
+          const isPickup = !!(mAddr.area && mAddr.area.toLowerCase().includes("pickup"));
+          (ordersForServer[date] = ordersForServer[date] || {})[meal] = {
+            items:    mObj.items || {},
+            subtotal: mObj.subtotal || 0,
+            area:     isPickup ? "Self Pickup" : (mAddr.area || "")
+          };
+        });
+      });
+
       try {
         await fetch(APPS_SCRIPT_URL, {
           method: "POST",
@@ -10233,7 +10254,7 @@
             order_id:       tempId,
             phone:          S.phone         || "",
             amount:         S.grandTotal    || 0,
-            orders:         S.orders        || {},
+            orders:         ordersForServer,
             selectedDates:  S.selectedDates || [],
             profile:        S.profile       || {},
             mealAddrs:      S.mealAddrs     || {},
