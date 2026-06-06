@@ -3844,8 +3844,11 @@
         </div>
       </div>
 
-      <!-- UPI (daily customers) -->
-      <div id="paymentCard">
+      <!-- UPI (manual) — hidden by default in the merged/gateway build so it
+           doesn't flash before the HDFC Gateway card loads. The bill-builder
+           shows the correct card (wallet / gateway / split / on-account); this
+           manual-UPI card is never shown here. -->
+      <div id="paymentCard" style="display:none;">
 
         <!-- UPI Header banner -->
         <div style="background:linear-gradient(135deg,#0f766e,#0891b2);border-radius:18px 18px 0 0;padding:20px 20px 28px;color:#fff;text-align:center;position:relative;overflow:hidden;">
@@ -4640,7 +4643,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.06.1";
+    const APP_VERSION = "v2026.06.06.2";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
