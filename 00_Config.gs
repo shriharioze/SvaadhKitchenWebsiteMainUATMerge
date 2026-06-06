@@ -139,16 +139,9 @@ const ORDERS_HEADERS = [
   "Dal","Rice","Salad","Curd",
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
-  "Food_Subtotal","Delivery_Charge","Discount_Amount","Review_Discount","Net_Total",
-  "Payment_Method","Payment_Status","Payment_Freq","First_Time","Source","Refund_Preference", "Packed", "Delivery_Point",
-  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit",
-  // HDFC SmartGateway columns (auto-healed by getOrCreateTab).
-  // Gateway_Order_ID provides idempotent dedup at submitOrder time so
-  // a single HDFC charge can never produce two SK_Orders rows.
-  // Meal_Credit tracks how much retroactive day-free delivery credit
-  // has already been refunded for this customer's day total — prevents
-  // the double-refund bug when multiple meals are placed on the same date.
-  "Gateway_Order_ID", "Meal_Credit"
+  "Food_Subtotal", "Delivery_Charge", "Small_Order_Fee", "Inflation_Surcharge", "Discount_Amount", "Review_Discount", "Meal_Credit", "Net_Total",
+  "Payment_Method", "Payment_Status", "Payment_Freq", "First_Time", "Source", "Refund_Preference", "Packed", "Delivery_Point",
+  "Loyalty_Discount", "Wallet_Credit", "Gateway_Order_ID"
 ];
 const ITEM_COL_MAP = {
   // Canonical Names (Universal Standard)
