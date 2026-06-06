@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.0; // Merge of main + UAT HDFC: gateway idempotency, status-API authoritative credit, meal-credit double-refund fix
+const CODE_VERSION   = 15.1; // 2026-06-06: dup-const compile fix; webhook failure→Failed; submitOrder server-verifies gateway payment (never trusts client "Paid"); attendance payroll module
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
