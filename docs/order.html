@@ -9260,21 +9260,13 @@
         const todayCutoffs = data.today_cutoffs || CUTOFFS;
 
         const processGroup = (orderArray) => {
-          const groups = {};
-          orderArray.forEach(o => {
-            const isCanc = String(o.payment_status || "").toLowerCase().includes("cancelled") ? "canc" : "act";
-            const key = `${o.date}_${o.meal}_${isCanc}`;
-            if (!groups[key]) {
-              groups[key] = { ...o, rowIds: [o.rowId], summaryParts: [o.summary || "(items)"], totalSum: Number(o.total) || 0 };
-            } else {
-              groups[key].rowIds.push(o.rowId);
-              groups[key].summaryParts.push(o.summary || "(items)");
-              groups[key].totalSum += Number(o.total) || 0;
-              if (o.enRouteAt && !groups[key].enRouteAt) groups[key].enRouteAt = o.enRouteAt;
-              if (o.deliveredAt && !groups[key].deliveredAt) groups[key].deliveredAt = o.deliveredAt;
-            }
-          });
-          return Object.values(groups);
+          // Each order is its own row — no merging of same-date/meal orders.
+          return orderArray.map(o => ({
+            ...o,
+            rowIds: [o.rowId],
+            summaryParts: [o.summary || "(items)"],
+            totalSum: Number(o.total) || 0
+          }));
         };
 
         // 1. Separate Upcoming vs Past vs Cancelled
