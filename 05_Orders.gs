@@ -295,7 +295,7 @@ function _submitOrderInternal(body) {
 
   // Fetch free areas dynamically (replaces hardcoded FREE_AREA = "Bhosale Nagar")
   const freeAreaNames = getAreas().filter(function(a){ return a.free; }).map(function(a){ return a.name; });
-  const DELIVERY  = 10; // MUST match the order page's DELIVERY_CHARGE (cart) + the gateway recompute
+  const DELIVERY  = 11; // MUST match the order page's DELIVERY_CHARGE (cart) + the gateway recompute
 
   const submissionIds = [];
 
