@@ -95,27 +95,7 @@ function _updateLedger(ss, profile, orders) {
 }
 
 // ── AREAS ────────────────────────────────────────────────────
-
-const AREAS_HEADERS = ["Area_Name", "Area_Label", "Free_Delivery"];
-
-const DEFAULT_AREAS = [
-  ["Amanora",         "Amanora Town",                              "FALSE"],
-  ["BG Shirke Road",  "BG Shirke Road",                            "FALSE"],
-  ["Bhosale Nagar",   "Bhosale Nagar (Free Delivery)",             "TRUE"],
-  ["DP Road",         "DP Road",                                   "FALSE"],
-  ["Gadital",         "Gadital",                                   "FALSE"],
-  ["Mandai",          "Hadapsar Mandai",                           "FALSE"],
-  ["Kirtane Baug",    "Kirtane Baug",                              "FALSE"],
-  ["Magarpatta",      "Magarpatta",                                "FALSE"],
-  ["Malwadi",         "Malwadi",                                   "FALSE"],
-  ["Pune-Solapur Road", "Pune-Solapur Road (Till Gadital Only)",   "FALSE"],
-  ["SadeSatraNali",   "SadeSatraNali",                             "FALSE"],
-  ["Triveni Nagar",   "Triveni Nagar (Free Delivery)",             "TRUE"],
-  ["Tupe Patil Road", "Tupe Patil Road",                           "FALSE"],
-  ["Vaiduwadi",       "Vaiduwadi (Till Yash Honda Only)",          "FALSE"],
-  ["Vihar Chowk",     "Vihar Chowk",                               "FALSE"],
-  ["Pickup",          "📦 Self Pickup (Waives all fees)",             "TRUE"]
-];
+// AREAS_HEADERS + DEFAULT_AREAS are declared in 00_Config.gs.
 function getOrCreateFolderPath(pathParts) {
   var folder = DriveApp.getRootFolder();
   pathParts.forEach(function(name) {

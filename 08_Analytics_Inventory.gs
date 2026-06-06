@@ -378,42 +378,7 @@ function deleteCustomExpenseCategory(body) {
 }
 
 // ── KITCHEN EXPENSES ──────────────────────────────────────────────────────────
-const TAB_EXPENSES      = "SK_Expenses";
-const EXPENSES_HEADERS  = [
-  "Expense_ID","Date","Category","Item","Amount","Frequency",
-  "Payment_Mode","Notes","Timestamp"
-];
-
-// Category → sub-items map (also used by frontend for dropdowns)
-var EXPENSE_CATEGORIES = {
-  "🥦 Raw Materials": [
-    "Vegetables & Greens","Fruits","Dairy (Milk/Curd/Paneer/Butter)",
-    "Oil & Ghee","Spices & Masala","Dry Groceries (Dal/Rice/Atta)","Other Raw Material"
-  ],
-  "📦 Packaging": [
-    "Containers / Boxes","Bags & Covers","Labels & Stickers",
-    "Tissue & Napkins","Other Packaging"
-  ],
-  "⛽ Fuel & Transport": [
-    "Petrol / CNG","Vehicle Maintenance","Delivery Outsourcing","Other Transport"
-  ],
-  "👨‍🍳 Staff": [
-    "Cook Salary","Helper Salary","Delivery Person Salary","Part-time Staff","Other Staff"
-  ],
-  "🔌 Utilities": [
-    "LPG Cylinder","Electricity Bill","Water Bill","Internet / Phone","Other Utility"
-  ],
-  "🍳 Kitchen & Equipment": [
-    "Equipment Purchase","Equipment Repair / Service","Utensils","Cleaning Supplies","Other Kitchen"
-  ],
-  "📣 Marketing": [
-    "Printing / Pamphlets","Online Advertising","Branding / Design","Other Marketing"
-  ],
-  "🏦 Finance & Admin": [
-    "Bank Charges","Platform / Software Fees","GST / Tax","Other Finance"
-  ],
-  "📝 Miscellaneous": ["Miscellaneous"]
-};
+// TAB_EXPENSES, EXPENSES_HEADERS and EXPENSE_CATEGORIES are declared in 00_Config.gs.
 function saveExpense(body) {
   var ss   = getSpreadsheet();
   var ws   = getOrCreateTab(ss, TAB_EXPENSES, EXPENSES_HEADERS);
@@ -551,13 +516,7 @@ function getExpenseAnalytics(body) {
 }
 
 // ── CLIENT ERROR LOG ──────────────────────────────────────────────────────────
-const TAB_ERROR_LOG     = "SK_Error_Log";
-// Column layout: structured JSON fields extracted for easy Sheets filtering.
-// "Extra_JSON" holds any additional fields the client sends beyond the core set.
-const ERROR_LOG_HEADERS = [
-  "Timestamp","Date","Phone","Version","Type","Action",
-  "Attempt","Duration_ms","Message","URL","Extra_JSON"
-];
+// TAB_ERROR_LOG + ERROR_LOG_HEADERS are declared in 00_Config.gs.
 function logClientError(body) {
   try {
     var ss  = getSpreadsheet();

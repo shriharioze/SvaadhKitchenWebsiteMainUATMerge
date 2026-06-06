@@ -26,7 +26,7 @@ function jsonRes(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 // ── GOOGLE ANALYTICS 4 INTEGRATION ──────────────────────────
-const GA4_HEADERS = ["Date", "Source", "Device", "Active_Users", "Sessions", "Page_Views", "Engagement_Rate", "Avg_Session_Duration", "Event_Count"];
+// GA4_HEADERS is declared in 00_Config.gs (single source of truth).
 // ── HELPERS ──────────────────────────────────────────────────
 function getSpreadsheet() {
   return SpreadsheetApp.openById(SHEET_ID);

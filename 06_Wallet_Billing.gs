@@ -515,13 +515,7 @@ function adminCreditWallet(body) {
   return {success:true, newBalance: Math.round(newBalance), msg: msg};
 }
 
-// ── INVENTORY ─────────────────────────────────────────────────────────────────
-// Tracks raw material purchases. Each new entry for the same item auto-calculates
-// how long the previous batch lasted → builds consumption rate over time.
-const TAB_INVENTORY      = "SK_Inventory";
-const INVENTORY_HEADERS  = [
-  "Entry_ID","Date","Item","Unit","Quantity","Price_Paid","Notes","Timestamp"
-];
+// TAB_INVENTORY + INVENTORY_HEADERS are declared in 00_Config.gs.
 // ── WALLET TOPUP LOGIC ────────────────────────────────────────────────────────
 function submitWalletRecharge(body) {
   var phone  = String(body.phone || "").trim();
