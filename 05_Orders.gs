@@ -188,6 +188,35 @@ function submitOrder(body) {
     } catch(_) {}
   }
 
+  // ── GATEWAY PAYMENT RE-VERIFICATION (server-authoritative) ────────────────
+  // SECURITY: never trust the client-sent payment_status for HDFC orders. The
+  // write path must independently confirm with HDFC — a crafted direct POST
+  // could otherwise write a "Paid" order with a fake gateway_order_id without
+  // ever paying. We re-check HDFC's own Status API / verified webhook log and
+  // OVERRIDE the status:
+  //   • Status API CHARGED (+ amount OK) or verified webhook → "Paid"
+  //   • HDFC explicit failure (AUTH_FAILED, DECLINED, …)      → reject, no row
+  //   • not yet confirmed (transient)                          → "Pending"
+  //     (the webhook processor + reconciler flip it to Paid once HDFC confirms)
+  // Done BEFORE the lock so the external API call doesn't hold it.
+  if (PAYMENT_GATEWAY_ENABLED && String((body && body.payment_method) || "") === "Gateway (HDFC)") {
+    try {
+      const _gc = _hdfcConfirmGatewayOrder(String((body && body.gateway_order_id) || "").trim());
+      if (_gc.status === "Failed") {
+        return { success: false, paid: false, gateway_unverified: true,
+          error: _gc.error || "Payment was not successful at HDFC. Your order has NOT been placed." };
+      }
+      // Replace whatever the client claimed with the server-verified truth.
+      body.payment_status = (_gc.status === "Paid") ? "Paid" : "Pending";
+      console.log("submitOrder gateway re-verify: order_id=" + (body.gateway_order_id || "?")
+        + " → " + body.payment_status + " (client claim ignored).");
+    } catch (gErr) {
+      // If verification itself errors, be conservative — write Pending, never Paid.
+      console.warn("submitOrder gateway re-verify error: " + gErr.message + " — writing Pending.");
+      body.payment_status = "Pending";
+    }
+  }
+
   // Serialize submitOrder calls to prevent stock-race + wallet-race between concurrent customers.
   // ALSO: enforce Gateway_Order_ID idempotency before any writes happen — if a row
   // already exists in SK_Orders for this HDFC order, return the existing Submission_IDs

@@ -1404,6 +1404,65 @@ function hdfc_markOrderFailed(order) {
   }
 }
 
+/**
+ * Returns a human message if the gateway-charged amount is BELOW the
+ * server-authoritative cart total (defense-in-depth post-payment amount check),
+ * else null. Compares HDFC's actual charged amount against _computeAuthoritativeTotal
+ * of the saved pending cart (minus the server-validated wallet portion for Split).
+ */
+function _hdfcAmountMismatch(gatewayOrderId, chargedAmount) {
+  try {
+    const charged = Number(chargedAmount || 0);
+    if (charged <= 0) return null; // can't verify — don't block on missing data
+    const props = PropertiesService.getScriptProperties();
+    const pendingEntry = JSON.parse(props.getProperty("HDFC_PENDING_ORDERS") || "{}")[gatewayOrderId] || null;
+    if (!pendingEntry || !pendingEntry.orders) return null; // no basis to compare
+    const fullTotal     = _computeAuthoritativeTotal(pendingEntry.orders, pendingEntry.phone || "");
+    const walletApplied = (String(pendingEntry.payment_choice || "") === "Split") ? Number(pendingEntry.wallet_applied || 0) : 0;
+    const expected      = Math.max(0, fullTotal - walletApplied);
+    if (expected > 0 && charged < expected - 1) {
+      console.error("⚠️ submitOrder amount mismatch — order_id=" + gatewayOrderId
+        + " charged=" + charged + " expected=" + expected);
+      return "Payment amount mismatch (charged ₹" + charged + " vs expected ₹" + expected + ").";
+    }
+  } catch (e) { /* non-fatal — don't block on checker errors */ }
+  return null;
+}
+
+/**
+ * Server-authoritative confirmation of an HDFC order's pay status, for the
+ * submitOrder write path. NEVER trusts client input.
+ *   returns { status: "Paid" }                 — Status API CHARGED or verified webhook (+ amount OK)
+ *   returns { status: "Failed", error }        — HDFC explicitly reports failure / amount mismatch
+ *   returns { status: "Pending" }              — not yet confirmable (transient) — webhook/reconciler will confirm
+ */
+function _hdfcConfirmGatewayOrder(gatewayOrderId) {
+  if (!gatewayOrderId) return { status: "Pending" };
+
+  var sc;
+  try { sc = hdfc_getOrderStatus(gatewayOrderId); }
+  catch (e) { sc = { confirmed: false, status: "FETCH_ERROR", amount: 0 }; }
+  const apiStatus = String(sc.status || "").toUpperCase();
+
+  if (sc.confirmed) {
+    const m = _hdfcAmountMismatch(gatewayOrderId, sc.amount);
+    return m ? { status: "Failed", error: m } : { status: "Paid" };
+  }
+  if (HDFC_FAILURE_STATES.indexOf(apiStatus) !== -1) {
+    return { status: "Failed", error: "HDFC reports the payment " + apiStatus + "." };
+  }
+  // Status API couldn't give a final verdict (transient) — a server-to-server
+  // verified ORDER_SUCCEEDED webhook is also authoritative proof.
+  var proof = null;
+  try { proof = _checkWebhookLogForCharge(gatewayOrderId); } catch (_) {}
+  if (proof) {
+    const m2 = _hdfcAmountMismatch(gatewayOrderId, proof.amount);
+    return m2 ? { status: "Failed", error: m2 } : { status: "Paid" };
+  }
+  // Nothing confirms it yet → write Pending, never Paid.
+  return { status: "Pending" };
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PENDING ORDER STORE
