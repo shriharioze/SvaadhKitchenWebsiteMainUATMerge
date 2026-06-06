@@ -4621,7 +4621,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.06.6";
+    const APP_VERSION = "v2026.06.06.7";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9363,14 +9363,22 @@
             const delBtnHtml = cutoffCrossed
               ? `<button class="omr-del-btn" style="opacity:0.55;border-style:dashed;cursor:not-allowed;" onclick="cancelBlockedMsg()" title="Cutoff crossed — no cancellation allowed">🔒 Cancellation closed</button>`
               : `<button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>`;
+
+            const checkboxHtml = cutoffCrossed 
+              ? `<input type="checkbox" disabled style="opacity:0.5; cursor:not-allowed; accent-color:#e65100;" title="Cutoff crossed">`
+              : `<input type="checkbox" class="bulk-cancel-cb" value="${o.rowId}" onchange="updateBulkCancelBtn()" style="cursor:pointer; width:18px; height:18px; accent-color:#e65100;">`;
+
             return `<div class="order-manage-row">
           <div class="omr-top">
-            <div class="omr-info">
-              <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
-              <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                ${trackHtml ? trackHtml : ""}
-                ${payChip}
+            <div style="display:flex; align-items:center; gap:12px; flex:1;">
+              ${checkboxHtml}
+              <div class="omr-info" style="flex:1;">
+                <div class="omr-title">${formatDate(o.date)} — ${o.meal}</div>
+                <div class="omr-sub">${o.summaryParts.join(", ")} · ₹${o.totalSum}</div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  ${trackHtml ? trackHtml : ""}
+                  ${payChip}
+                </div>
               </div>
             </div>
             <div class="omr-actions">
@@ -9380,7 +9388,23 @@
         </div>`;
           }).join("");
         }
-        upcomingWrap.innerHTML = upcomingHeaderHtml + `<div id="upcomingContent" class="collapsible-content ${window.orderViewState.upcoming ? "open" : ""}">${upcomingRowsHtml}</div>`;
+
+        let bulkDeleteBtnHtml = "";
+        if (upcoming.some(o => {
+            const cutoffH = (todayCutoffs[o.meal] ?? CUTOFFS[o.meal] ?? 23);
+            return !((o.date === today) && (hNow >= cutoffH));
+        })) {
+           bulkDeleteBtnHtml = `
+             <div style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center; background:#fffaf0; border-bottom:1px solid #ffe0b2;">
+               <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; color:#e65100; font-weight:600;">
+                 <input type="checkbox" id="bulkCancelSelectAll" onchange="toggleAllBulkCancel(this.checked)" style="width:16px; height:16px; accent-color:#e65100;"> Select All
+               </label>
+               <button id="bulkCancelBtn" onclick="deleteSelectedOrders()" style="display:none; padding:6px 14px; background:#e65100; color:#fff; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(230,81,0,0.2);">🗑 Delete Selected</button>
+             </div>
+           `;
+        }
+
+        upcomingWrap.innerHTML = upcomingHeaderHtml + `<div id="upcomingContent" class="collapsible-content ${window.orderViewState.upcoming ? "open" : ""}">${bulkDeleteBtnHtml}${upcomingRowsHtml}</div>`;
         _checkJustPlacedSync(phone, upcomingWrap);
 
         // ── RENDER CANCELLED ──
@@ -9624,7 +9648,87 @@
       }
     }
 
+    window.updateBulkCancelBtn = function() {
+      const cbs = document.querySelectorAll('.bulk-cancel-cb:checked');
+      const btn = document.getElementById('bulkCancelBtn');
+      if(btn) btn.style.display = cbs.length > 0 ? 'block' : 'none';
+      
+      const selectAllCb = document.getElementById('bulkCancelSelectAll');
+      const totalCbs = document.querySelectorAll('.bulk-cancel-cb:not([disabled])');
+      if(selectAllCb && totalCbs.length > 0) {
+        selectAllCb.checked = (cbs.length === totalCbs.length);
+      }
+    };
 
+    window.toggleAllBulkCancel = function(checked) {
+      document.querySelectorAll('.bulk-cancel-cb:not([disabled])').forEach(cb => cb.checked = checked);
+      window.updateBulkCancelBtn();
+    };
+
+    window.deleteSelectedOrders = async function() {
+      const cbs = document.querySelectorAll('.bulk-cancel-cb:checked');
+      if (cbs.length === 0) return;
+      const count = cbs.length;
+
+      const confirmed = await sConfirm(`Cancel these <b>${count}</b> selected orders?`, "Cancel Orders", "🗑️", "काय तुम्ही निवडलेल्या ऑर्डर रद्द करू इच्छिता?");
+      if (!confirmed) return;
+
+      const rowIds = Array.from(cbs).map(cb => cb.value);
+
+      let totalPaid = 0, potentialAmt = 0;
+      let hasWallet = false, hasManualUpi = false, hasPending = false, hasSplit = false;
+
+      rowIds.forEach(rid => {
+        const cached = orderDataCache[rid] || {};
+        totalPaid += (Number(cached.original_total_paid) || 0);
+        potentialAmt += (Number(cached.potential_total) || 0);
+        if (cached.is_wallet) hasWallet = true;
+        if (cached.is_split) hasSplit = true;
+        if (String(cached.status || "").toLowerCase().trim() === "pending") hasPending = true;
+      });
+
+      let refundType = "none";
+      if (hasSplit || (totalPaid > 0 && hasWallet)) {
+        await sAlert(`Refund for the selected orders will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💳");
+        refundType = "wallet";
+      } else if (totalPaid > 0) {
+        const choice = await sPromptRefund(`Total paid for selected orders is ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "रीफंड कुठे हवा आहे?", { wallet: "Wallet (Instant)" });
+        if (choice === "exit") return;
+        refundType = (choice === "wallet") ? "wallet" : "manual_upi";
+      } else if (hasPending && potentialAmt > 0 && !hasWallet) {
+        const choice = await sPromptRefund(`Total pending payment is ₹${potentialAmt}. Once admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?", { wallet: "Svaadh Wallet (Upto 3 working days)" });
+        if (choice === "exit") return;
+        refundType = (choice === "wallet") ? "wallet" : "manual_upi";
+      }
+
+      sLoading(true, "Cancelling orders…");
+      try {
+        const results = [];
+        for (const rid of rowIds) {
+          const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ _action: "deleteOrder", phone: S.phone, rowId: rid, refundType: refundType })
+          }).then(r => r.json());
+          results.push(res);
+        }
+
+        sLoading(false);
+        const isAlreadyCancelled = (res) => !res.success && /already/i.test(res.error || "") && /cancel/i.test(res.error || "");
+        const success = results.every(res => res.success || isAlreadyCancelled(res));
+        if (success) {
+          syncWalletValue(true);
+          window.orderViewState.cancelled = true;
+          await loadExistingOrders(S.phone);
+          await sAlert(`Successfully cancelled ${count} orders.`, "Done", "✅");
+        } else {
+          const firstErr = results.find(r => !r.success && !isAlreadyCancelled(r))?.error || "Unknown error";
+          throw new Error(firstErr || "Cancellation failed for some orders.");
+        }
+      } catch(e) {
+        sLoading(false);
+        await sAlert("Error: " + e.message, "Failure", "❌");
+      }
+    };
 
     // ═══════════════════════════════════════════════════════════
     // THEME TOGGLE
