@@ -139,9 +139,9 @@ const ORDERS_HEADERS = [
   "Dal","Rice","Salad","Curd",
   "BF_Item_1","BF_Qty_1","BF_Item_2","BF_Qty_2","BF_Item_3","BF_Qty_3","BF_Item_4","BF_Qty_4",
   "Special_Notes_Kitchen","Special_Notes_Delivery",
-  "Food_Subtotal", "Delivery_Charge", "Small_Order_Fee", "Inflation_Surcharge", "Discount_Amount", "Review_Discount", "Meal_Credit", "Net_Total",
+  "Food_Subtotal", "Delivery_Charge", "Discount_Amount", "Review_Discount", "Net_Total",
   "Payment_Method", "Payment_Status", "Payment_Freq", "First_Time", "Source", "Refund_Preference", "Packed", "Delivery_Point",
-  "Loyalty_Discount", "Wallet_Credit", "Gateway_Order_ID"
+  "Inflation_Surcharge", "Loyalty_Discount", "Wallet_Credit", "Gateway_Order_ID", "Meal_Credit"
 ];
 const ITEM_COL_MAP = {
   // Canonical Names (Universal Standard)
