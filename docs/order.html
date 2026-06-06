@@ -9127,13 +9127,32 @@
 
       if (streaks.length === 0) return { count: 0, surcharge: 0, start: null, end: null };
 
-      // Winner: Longest streak, then earliest start
-      streaks.sort((a, b) => {
+      // A streak is only valid if it reached the cart dates, today, or the previous valid ordering day.
+      // We calculate the previous valid day by starting from today and going back one valid day.
+      let dPrev = getIST();
+      dPrev.setUTCDate(dPrev.getUTCDate() - 1);
+      let safetyFilter = 0;
+      while (safetyFilter < 10) {
+        safetyFilter++;
+        let iso = `${dPrev.getUTCFullYear()}-${String(dPrev.getUTCMonth() + 1).padStart(2, "0")}-${String(dPrev.getUTCDate()).padStart(2, "0")}`;
+        if (dPrev.getUTCDay() === 0 || (S.kitchenClosedDates || []).includes(iso)) {
+          dPrev.setUTCDate(dPrev.getUTCDate() - 1);
+        } else {
+          break;
+        }
+      }
+      const prevValidDay = `${dPrev.getUTCFullYear()}-${String(dPrev.getUTCMonth() + 1).padStart(2, "0")}-${String(dPrev.getUTCDate()).padStart(2, "0")}`;
+
+      const activeStreaks = streaks.filter(s => s.end >= prevValidDay);
+      if (activeStreaks.length === 0) return { count: 0, surcharge: 0, start: null, end: null };
+
+      // Winner: Longest active streak, then earliest start
+      activeStreaks.sort((a, b) => {
         if (b.count !== a.count) return b.count - a.count;
         return a.start.localeCompare(b.start);
       });
 
-      return streaks[0];
+      return activeStreaks[0];
     }
 
     function refreshStreakUI() {
