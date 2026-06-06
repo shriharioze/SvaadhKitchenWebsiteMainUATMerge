@@ -9366,7 +9366,7 @@
 
             const checkboxHtml = cutoffCrossed 
               ? `<input type="checkbox" disabled style="opacity:0.5; cursor:not-allowed; accent-color:#e65100;" title="Cutoff crossed">`
-              : `<input type="checkbox" class="bulk-cancel-cb" value="${o.rowId}" onchange="updateBulkCancelBtn()" style="cursor:pointer; width:18px; height:18px; accent-color:#e65100;">`;
+              : `<input type="checkbox" class="bulk-cancel-cb" value="${o.rowId}" data-date="${o.date}" data-meal="${o.meal}" onchange="updateBulkCancelBtn()" style="cursor:pointer; width:18px; height:18px; accent-color:#e65100;">`;
 
             return `<div class="order-manage-row">
           <div class="omr-top">
@@ -9670,7 +9670,15 @@
       if (cbs.length === 0) return;
       const count = cbs.length;
 
-      const confirmed = await sConfirm(`Cancel these <b>${count}</b> selected orders?`, "Cancel Orders", "🗑️", "काय तुम्ही निवडलेल्या ऑर्डर रद्द करू इच्छिता?");
+      const summaries = Array.from(cbs).map(cb => {
+        const d = cb.getAttribute('data-date');
+        const m = cb.getAttribute('data-meal');
+        return `<b>${m}</b> on <b>${formatDate(d)}</b>`;
+      });
+      const uniqueSummaries = [...new Set(summaries)];
+      const summaryListHtml = `<ul style="text-align:left; font-size:0.85rem; margin:10px 0; padding-left:20px;">${uniqueSummaries.map(s => `<li>${s}</li>`).join('')}</ul>`;
+
+      const confirmed = await sConfirm(`Cancel these <b>${count}</b> selected orders?<br>${summaryListHtml}`, "Cancel Orders", "🗑️", "काय तुम्ही निवडलेल्या ऑर्डर रद्द करू इच्छिता?");
       if (!confirmed) return;
 
       const rowIds = Array.from(cbs).map(cb => cb.value);
@@ -9719,7 +9727,17 @@
           syncWalletValue(true);
           window.orderViewState.cancelled = true;
           await loadExistingOrders(S.phone);
-          await sAlert(`Successfully cancelled ${count} orders.`, "Done", "✅");
+          
+          let successMsg = `Successfully cancelled ${count} orders.`;
+          if (totalPaid > 0) {
+            successMsg += `<br><br>Total refund of <b>₹${totalPaid}</b> has been processed.`;
+            if (refundType === "wallet") successMsg += " Added to Svaadh Wallet.";
+            else successMsg += " We'll process it within 1-2 days.";
+          } else if (potentialAmt > 0 && hasPending) {
+            successMsg += `<br><br>Total pending refund of <b>₹${potentialAmt}</b> will be processed after admin verification.`;
+          }
+          
+          await sAlert(successMsg, "Done", "✅");
         } else {
           const firstErr = results.find(r => !r.success && !isAlreadyCancelled(r))?.error || "Unknown error";
           throw new Error(firstErr || "Cancellation failed for some orders.");
