@@ -306,7 +306,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
   // ── Authoritative price lookup (mirror of frontend FIXED_MEAL_ITEMS) ──
   const LD_PRICE = {
     "Chapati": 10, "Without Oil Chapati": 9, "Phulka": 8, "Ghee Phulka": 11,
-    "Jowar Bhakri": 21, "Bajra Bhakri": 21,
+    "Jowar Bhakri": 22, "Bajra Bhakri": 22,
     "Dry Sabji Mini (100ml)": 24, "Dry Sabji Full (250ml)": 48,
     "Curry Sabji Mini (100ml)": 24, "Curry Sabji Full (250ml)": 48,
     "Dal (200ml)": 24, "Rice (100g)": 13, "Salad (40g)": 8, "Curd (50g)": 13
