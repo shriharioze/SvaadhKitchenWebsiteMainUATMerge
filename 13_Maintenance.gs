@@ -89,7 +89,7 @@ function buildSystemPrompt(extraMenu) {
     +"Self pickup also available (no delivery charge).\n"
     +"Uses Pure Ghee & Groundnut refined oil. Pure Veg kitchen.\n"
     +"Discounts(auto): 5% off≥₹300/day, 7.5% off≥₹450/day.\n"
-    +"Payment: Wallet (Prepaid) or UPI("+B.payment.upi_id+"), prepaid cycle (requires wallet balance).\n"
+    +"Payment: Wallet (Prepaid) or our secure payment gateway (UPI / card / net-banking), prepaid cycle (requires wallet balance).\n"
     +"Order: "+B.ordering.order_url+" — no login needed, phone=identity, can book multiple days.\n"
     +"WhatsApp: "+B.contact.whatsapp+" | WA group: "+B.contact.whatsapp_group+"\n"
     +"Reply in customer's language (English/Hindi/Marathi). Be brief & warm. Match the language they use."

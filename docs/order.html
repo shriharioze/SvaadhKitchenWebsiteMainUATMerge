@@ -251,7 +251,7 @@
       "name": "How do I order from Svaadh Kitchen?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Visit svaadhkitchen.in/order.html, enter your phone number, add your delivery address, pick your dates, choose your meals à la carte (Breakfast, Lunch, Dinner), and pay via UPI or Svaadh Wallet. No app download needed."
+        "text": "Visit svaadhkitchen.in/order.html, enter your phone number, add your delivery address, pick your dates, choose your meals à la carte (Breakfast, Lunch, Dinner), and pay via our secure payment gateway or Svaadh Wallet. No app download needed."
       }
     },
     {
@@ -291,7 +291,7 @@
       "name": "What payment methods are accepted?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "We accept UPI payments and Svaadh Wallet (prepaid credits for 1-tap instant ordering). Regular customers can also use On Account billing with daily or monthly settlement."
+        "text": "We accept payments through our secure payment gateway (UPI, card, or net-banking) and Svaadh Wallet (prepaid credits for 1-tap instant ordering). Regular customers can also use On Account billing with daily or monthly settlement."
       }
     },
     {
@@ -299,7 +299,7 @@
       "name": "What is Svaadh Wallet?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Svaadh Wallet is a prepaid credit system. Load a minimum of ₹100 via UPI and your balance auto-deducts with each order — no need to scan a QR every time. Your balance is always visible on the order page."
+        "text": "Svaadh Wallet is a prepaid credit system. Load a minimum of ₹100 through our secure payment gateway and your balance auto-deducts with each order — no need to pay online every time. Your balance is always visible on the order page."
       }
     },
     {
@@ -3109,8 +3109,7 @@
         <div class="how-num">5</div>
         <div class="how-step-text">
           <h4 data-i18n="how_step5_title">Review your bill &amp; pay</h4>
-          <p data-i18n="how_step5_desc">See your full itemized bill with discounts applied automatically. Pay via UPI QR
-            code or your preferred UPI app.</p>
+          <p data-i18n="how_step5_desc">See your full itemized bill with discounts applied automatically. Pay securely by UPI, card, or net-banking.</p>
         </div>
       </div>
 
@@ -3998,7 +3997,7 @@
             <div style="flex-shrink:0;width:30px;height:30px;background:linear-gradient(135deg,#166534,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#fff;">✓</div>
             <div style="flex:1;">
               <div style="font-size:0.82rem;font-weight:700;color:#14532d;margin-bottom:2px;">Balance Sufficient — Instant Confirm</div>
-              <div style="font-size:0.77rem;color:#166534;line-height:1.5;">Your Svaadh Wallet has enough balance. No UPI needed — order confirmed the moment you place it.</div>
+              <div style="font-size:0.77rem;color:#166534;line-height:1.5;">Your Svaadh Wallet has enough balance. No online payment needed — order confirmed the moment you place it.</div>
             </div>
             <div style="flex-shrink:0;background:#16a34a;color:#fff;border-radius:8px;padding:4px 10px;font-size:0.75rem;font-weight:800;">Auto</div>
           </div>
@@ -4621,7 +4620,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.2";
+    const APP_VERSION = "v2026.06.07.3";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -5211,8 +5210,8 @@
     // ═══════════════════════════════════════════════════════════
     const FAQ_ITEMS = [
       { q: "Where do I find Manage Orders, Wallet, Guide etc.?", a: "After login, tap the <strong>profile avatar (your initials)</strong> at the top-right of the order page. A side drawer opens with: 📍 Addresses · 📖 Guide · 🛒 Manage Orders · 💳 Wallet · 📞 Contact us · 🛵 Call delivery partner · ⭐ Rate &amp; Review · 🚪 Log out." },
-      { q: "What's the correct UPI payment flow?", a: "Please follow this order to avoid order-not-placed issues on low-RAM phones:<br>1️⃣ Copy the UPI ID shown on the bill page<br>2️⃣ Note down the amount<br>3️⃣ Tick <strong>“Will pay”</strong> and tap <strong>Place Order</strong> first<br>4️⃣ Once the Success screen loads, open GPay/PhonePe/Paytm and pay using the copied UPI ID<br><br>Submitting before switching apps guarantees the order is saved — your phone may otherwise pause our app in the background." },
-      { q: "What is Svaadh Wallet (Prepaid Credits)?", a: "Svaadh Wallet is a prepaid system for <strong>1-tap instant ordering</strong>. Load ₹100+ via UPI to skip per-order payments. Your balance is always visible at the top-left wallet chip from Step 2 onwards. To add funds, tap the wallet chip or open the avatar drawer → <strong>Wallet</strong>." },
+      { q: "What's the payment flow?", a: "When you reach the bill page, tap <strong>Pay</strong> — a secure payment window opens where you can pay by <strong>UPI, card, or net-banking</strong>. As soon as the payment succeeds, that window closes automatically and your order is confirmed on the Success screen. If your <strong>Svaadh Wallet</strong> has enough balance, it's even simpler — just tick the confirm box and tap <strong>Place Order</strong> for 1-tap ordering, no online payment needed." },
+      { q: "What is Svaadh Wallet (Prepaid Credits)?", a: "Svaadh Wallet is a prepaid system for <strong>1-tap instant ordering</strong>. Load ₹100+ via our secure payment gateway to skip per-order payments. Your balance is always visible at the top-left wallet chip from Step 2 onwards. To add funds, tap the wallet chip or open the avatar drawer → <strong>Wallet</strong>." },
       { q: "How do I track my delivery in real-time?", a: "Open avatar drawer → <strong>Manage Orders</strong>. Once our driver marks your order as 'Out for Delivery', a <strong>🚗 Out for Delivery</strong> badge appears next to that order's timing. To call the delivery partner directly, use <strong>🛵 Call delivery partner (Abhijeet · 86055 12646)</strong> from the drawer." },
       { q: "Can I install this as an App on my phone?", a: "Yes! Look for the <strong>📲 Install App</strong> button on the home screen. This adds Svaadh Kitchen to your home screen for fast, one-tap access just like a regular app." },
       { q: "What's included in your thali / meals?", a: "We follow a <strong>Make Your Own Meal</strong> model — pick exactly what you want:<br>🫓 <strong>Breads</strong>: Chapati ₹9 · Without Oil Chapati ₹8 · Phulka ₹7 · Ghee Phulka ₹10 · Jowar/Bajra Bhakri ₹20<br>🥘 <strong>Sabji</strong>: Mini 100ml ₹22 · Full 250ml ₹45 (changes daily)<br>🍲 <strong>Dal</strong> 200ml ₹22 · <strong>Rice</strong> 100g ₹12 · <strong>Salad</strong> 40g ₹7 · <strong>Curd</strong> 50g ₹12<br>🌅 <strong>Breakfast</strong>: Rotating daily items (₹35–₹70) — Poha, Upma, Paratha &amp; more." },
@@ -5222,7 +5221,7 @@
       { q: "What is the 6-day loyalty reward?", a: "Order at least one meal on 6 consecutive kitchen-open days (Sundays don't break the streak — they're skipped). On the 6th day, the surcharge accumulated from your previous 5 days is refunded back into your bill as a <strong>Loyalty Reward</strong>. The bill page shows your current streak progress." },
       { q: "Can I edit or delete my order?", a: "Editing an existing order is not possible. To make corrections, <strong>delete</strong> the existing order from Manage Orders and place a <strong>new</strong> one before the cutoff. Wallet payments are refunded instantly to the wallet; UPI refunds are processed within 1–2 working days." },
       { q: "Do you offer self-pickup?", a: "Yes! Select <strong>📦 Self Pickup</strong> as your delivery area. Both the delivery charge and the small-order fee are <strong>completely waived</strong> for pickup. Free delivery also applies to 🏠 Bhosale Nagar and 📍 Triveni Nagar." },
-      { q: "I didn't see a confirmation — was my order placed?", a: "Open avatar drawer → <strong>Manage Orders</strong> and check the Upcoming list. If your order shows there, it's locked in — <strong>do not pay again</strong>. If it's missing, place again and choose 'Already Paid' if you've already completed the UPI payment." },
+      { q: "I didn't see a confirmation — was my order placed?", a: "Open avatar drawer → <strong>Manage Orders</strong> and check the Upcoming list. If your order shows there, it's locked in — <strong>do not pay again</strong>. If it's missing, place again and choose 'Already Paid' if you've already completed the payment." },
     ];
 
     function buildFAQ() {
@@ -8719,7 +8718,7 @@
           <div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:12px;border-left:4px solid #27ae60;">
             <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💰 What is Svaadh Wallet?</div>
             <div style="font-size:0.78rem;color:#444;line-height:1.7;">
-              A prepaid credit system linked to your phone number. You load money in advance and each order is automatically deducted — no UPI scan needed every time.
+              A prepaid credit system linked to your phone number. You load money in advance and each order is automatically deducted — no online payment needed every time.
             </div>
           </div>
 
@@ -8728,10 +8727,10 @@
             <div style="font-size:0.78rem;color:#444;line-height:1.7;">
               1. On the order page, tap the <b>wallet balance chip</b> on the top-left bar (Step 2 onwards) — or open the avatar drawer → <b>Wallet</b><br>
               2. Enter the amount (minimum <b>₹100</b>)<br>
-              3. Pay via UPI to our ID: <b>9819969682@hdfc</b><br>
-              4. Submit the recharge request — our team verifies and credits within a few hours<br><br>
+              3. Tap <b>Add Money</b> — a secure payment window opens where you can pay by <b>UPI, card, or net-banking</b><br>
+              4. Once the payment succeeds, the window closes automatically and your balance is credited<br><br>
               <span style="background:#e8f8f0;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#1e8449;">
-                ✅ You'll see the balance update once it's verified. You can still place orders while waiting — just pay via UPI for that order.
+                ✅ Your updated balance shows as soon as the payment is confirmed — no waiting, no manual verification.
               </span>
             </div>
           </div>
@@ -8740,7 +8739,7 @@
             <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">⚡ How Orders Are Deducted</div>
             <div style="font-size:0.78rem;color:#444;line-height:1.7;">
               When you reach the payment step, if your wallet has enough balance, it's automatically selected.<br>
-              Check the confirm box → Place Order → done. No QR, no UPI app needed.<br><br>
+              Check the confirm box → Place Order → done. No payment window, no online payment needed.<br><br>
               Your balance is always shown at the top right of the order form from Step 2 onwards.
             </div>
           </div>
@@ -8772,7 +8771,7 @@
               ["3","Pick Your Dates","Tap on one or more dates on the calendar. You can order for today, tomorrow, or the whole week in one go. Dates with orders already placed are highlighted."],
               ["4","Build Your Meal","For each date, choose your meals — Breakfast, Lunch, and/or Dinner. Pick exactly what you want à la carte: Chapati, Sabji, Dal, Rice, etc. Today's sabji is shown live."],
               ["5","Review Your Bill","See your full itemised bill with all charges and discounts applied automatically. Check the total before paying."],
-              ["6","Pay &amp; Confirm","If paying via UPI: copy the UPI ID, note the amount, tick <b>“Will pay”</b>, and tap <b>Place Order</b> first — then switch to GPay/PhonePe and complete the payment once the Success screen loads. If using Svaadh Wallet, just tick the confirm box and place the order — 1-tap, no UPI app needed."]
+              ["6","Pay &amp; Confirm","Tap <b>Pay</b> — a secure payment window opens where you can pay by UPI, card, or net-banking. As soon as it succeeds, the window closes and your order is confirmed on the Success screen automatically. If using Svaadh Wallet, just tick the confirm box and place the order — 1-tap, no online payment needed."]
             ].map(([n,title,desc]) => `
               <div style="display:flex;gap:12px;align-items:flex-start;background:#f8f9fa;border-radius:12px;padding:12px 14px;">
                 <div style="min-width:28px;height:28px;border-radius:50%;background:#1E1240;color:#fff;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${n}</div>
@@ -8824,7 +8823,7 @@
             <div style="font-size:0.82rem;font-weight:700;color:#1a252f;margin-bottom:8px;">💸 Refund After Cancellation</div>
             <div style="font-size:0.78rem;color:#444;line-height:1.7;">
               <b>Wallet payments:</b> Credited back to your Svaadh Wallet instantly.<br>
-              <b>UPI payments:</b> A refund request is raised. Our team processes it within 1–2 working days. You'll receive it back to your original UPI account.<br><br>
+              <b>Gateway payments (UPI / card / net-banking):</b> A refund request is raised. Our team processes it within 1–2 working days. You'll receive it back to your original payment method.<br><br>
               If you don't hear back in 2 days, WhatsApp us at <b>+91 93222 46765</b>.
             </div>
           </div>
@@ -10900,7 +10899,7 @@
       "Order 6 days in a row to earn a loyalty reward — all market surcharge from the last 6 days gets credited back as a discount!",
       "Sundays don't break your streak — Saturday + Monday still counts as consecutive days.",
       // 💳 Wallet
-      "Load your Svaadh Wallet for instant 1-tap checkout — no UPI app needed every time.",
+      "Load your Svaadh Wallet for instant 1-tap checkout — no online payment needed every time.",
       "Wallet orders skip the payment step — just confirm and you're done.",
       "Your wallet balance is shown on the order confirmation screen — keep it topped up!",
       "Recharge your wallet anytime by sending the amount to our UPI.",

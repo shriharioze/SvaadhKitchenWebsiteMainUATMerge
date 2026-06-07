@@ -242,13 +242,13 @@ const BUSINESS_CONTEXT = {
     note: "Discounts are applied automatically per day's total when placing an order."
   },
   payment: {
-    options: ["Svaadh Wallet (Prepaid)", "UPI", "Prepaid Wallet Billing"],
+    options: ["Svaadh Wallet (Prepaid)", "Secure Payment Gateway (UPI / Card / Net-banking)", "Prepaid Wallet Billing"],
     upi_id: "9819969682@hdfc",
     prepaid_wallet: "Prepaid Wallet Billing operates as a prepaid wallet. Customers must maintain a top-up balance, and orders are deducted immediately."
   },
   ordering: {
     order_url: "https://www.svaadhkitchen.in/order.html",
-    process: "Open the order form → enter phone number → fill address → pick dates → choose meals → review bill → pay via Wallet or UPI.",
+    process: "Open the order form → enter phone number → fill address → pick dates → choose meals → review bill → pay via Wallet or our secure payment gateway (UPI / card / net-banking).",
     advance: "Select multiple dates on the calendar to order for the full week in one go.",
     edit_cancel: "Use 'View/Edit existing orders' on the order form home screen to edit or cancel before the cutoff.",
     no_login: "No login needed — phone number is your identity. Details are saved automatically."
