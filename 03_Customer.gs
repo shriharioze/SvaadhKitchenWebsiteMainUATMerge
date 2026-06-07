@@ -216,8 +216,24 @@ function getCustomerOrders(phone) {
     });
   }
 
+  // Refund-status map (from SK_Refunds) keyed by Submission_ID — lets Manage
+  // Orders show "Refund processing / refunded" so the customer doesn't have to
+  // message us. Only gateway / manual-UPI refunds live here (wallet refunds are
+  // instant and never queued).
+  const refundMap = {};
+  const refWs = ss.getSheetByName(TAB_REFUNDS);
+  if (refWs && refWs.getLastRow() > 1) {
+    getAllRows(refWs).forEach(rf => {
+      const sid = String(rf.Submission_ID || "").trim();
+      if (sid) refundMap[sid] = {
+        status: String(rf.Status || "").trim(),
+        mode:   String(rf.Refund_Mode || "").trim()
+      };
+    });
+  }
+
   const allFiltered = rows.filter(r => String(r.Phone).trim() === String(phone).trim());
-  
+
   const upcoming = allFiltered
     .filter(r => fmtD(r) >= today)
     .sort((a,b) => fmtD(a).localeCompare(fmtD(b)))
@@ -237,6 +253,8 @@ function getCustomerOrders(phone) {
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         wallet_credit:      Number(r.Wallet_Credit) || 0,
+        refund_status:      (refundMap[String(r.Submission_ID)] || {}).status || "",
+        refund_mode:        (refundMap[String(r.Submission_ID)] || {}).mode   || "",
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
@@ -263,6 +281,8 @@ function getCustomerOrders(phone) {
         payment_status:     r.Payment_Status,
         payment_method:     r.Payment_Method,
         wallet_credit:      Number(r.Wallet_Credit) || 0,
+        refund_status:      (refundMap[String(r.Submission_ID)] || {}).status || "",
+        refund_mode:        (refundMap[String(r.Submission_ID)] || {}).mode   || "",
         deliveredAt:        delTracker.deliveredAt,
         enRouteAt:          delTracker.enRouteAt
       };
