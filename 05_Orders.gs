@@ -1672,13 +1672,41 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     else if (finalType === "manual_upi") {
       const REF_HEADERS = ["Submission_ID","Phone","Name","Amount","Meal","Date","Status","Timestamp","Adjustment_Note","Refund_Mode"];
       const refWs = getOrCreateTab(ss, TAB_REFUNDS, REF_HEADERS);
-      const note = adjustment > 0
+      let note = adjustment > 0
         ? `Adjusted -₹${adjustment} (overDiscount:${overDiscount}, deliveryOwed:${deliveryOwed}, smallFeeOwed:${smallFeeOwed}, loyaltyClawback:${loyaltyClawback})`
         : "";
-      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, "Pending", now, note, "upi"]);
+
+      // ── AUTOMATIC GATEWAY REFUND ───────────────────────────────────────────
+      // If this order was charged through the HDFC payment gateway, push the
+      // refund straight to HDFC/Juspay via the refund API — money goes back to
+      // the customer's original method with zero manual steps (works even if
+      // nobody can access a dashboard). If the API call fails for ANY reason we
+      // fall back to the manual "Pending" queue, so a refund is never lost.
+      const gOrderId = String(r.Gateway_Order_ID || "").trim();
+      let refundStatusTxt = "Pending", refundModeTxt = "upi", autoRefunded = false;
+      if (gOrderId && refundAmt > 0 && typeof hdfc_initiateRefund === "function") {
+        const reqId = ("RF" + String(rowId)).replace(/[^A-Za-z0-9]/g, "").slice(0, 30);
+        let rf;
+        try { rf = hdfc_initiateRefund(gOrderId, refundAmt, reqId); }
+        catch (e) { rf = { error: e.message }; }
+        if (rf && rf.success) {
+          autoRefunded    = true;
+          refundModeTxt   = "gateway";
+          refundStatusTxt = (rf.status === "SUCCESS" || rf.status === "REFUNDED") ? "Refunded" : "Processing";
+          note = (note ? note + " | " : "") + "GW:" + gOrderId + " refundId:" + (rf.refund_id || reqId) + " (" + rf.status + ")";
+          console.log("AUTO-REFUND ok: " + gOrderId + " ₹" + refundAmt + " status=" + rf.status);
+        } else {
+          note = (note ? note + " | " : "") + "GW:" + gOrderId + " auto-refund FAILED: " + ((rf && rf.error) || "unknown") + " — queued for manual";
+          console.warn("AUTO-REFUND failed → manual queue: " + ((rf && rf.error) || "unknown"));
+        }
+      }
+
+      refWs.appendRow([rowId, phone, custName, refundAmt, r.Meal_Type, orderDateStr, refundStatusTxt, now, note, refundModeTxt]);
       const upiLine = cancellationCharge > 0
-        ? `₹0 refunded via UPI — ₹${cancellationCharge} charged to your Wallet (will be collected on your next order).`
-        : `₹${refundAmt} refund request raised — we'll process it within 1-2 days.`;
+        ? `₹0 refunded — ₹${cancellationCharge} charged to your Wallet (will be collected on your next order).`
+        : (autoRefunded
+            ? `₹${refundAmt} refund has been initiated to your original payment method — it usually lands within 1–3 working days.`
+            : `₹${refundAmt} refund request raised — we'll process it within 1-2 days.`);
       msg = buildRefundBreakdown() + `\n\n` + upiLine;
     }
   } 

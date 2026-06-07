@@ -759,6 +759,114 @@ function hdfc_getOrderStatus(orderId) {
 }
 
 /**
+ * Initiates an AUTOMATIC refund against a gateway-charged order via the
+ * HDFC SmartGateway / Juspay refund API — no manual action needed.
+ *
+ * Endpoint: POST {HDFC_BASE_URL}/orders/{order_id}/refunds
+ * Auth:     Basic base64(API_KEY + ":") + x-merchantid header (same as the rest)
+ * Body:     unique_request_id, amount   (application/x-www-form-urlencoded)
+ *
+ * Idempotent: Juspay rejects a duplicate unique_request_id, so re-running a
+ * refund for the same order row can never pay twice — safe to retry.
+ * Partial refunds are supported (amount may be < the original charge), and
+ * several partial refunds can be raised against one order_id (each meal row
+ * gets its own unique_request_id).
+ *
+ * @param {string} gatewayOrderId  The Gateway_Order_ID stored on the order row.
+ * @param {number} amount          Amount to refund in ₹ (may be partial).
+ * @param {string} uniqueRequestId Stable per-refund id (row-based) for idempotency.
+ * @returns {{success:true,status:string,refund_id:string,raw:Object}|{error:string}}
+ */
+function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId) {
+  if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) {
+    return { error: "Gateway credentials not configured." };
+  }
+  gatewayOrderId = String(gatewayOrderId || "").trim();
+  if (!gatewayOrderId) return { error: "Missing gateway order id." };
+  amount = Math.round(Number(amount) * 100) / 100;
+  if (!(amount > 0)) return { error: "Refund amount must be greater than 0." };
+  // unique_request_id: ≤30 alphanumerics, stable per refund (idempotency key).
+  uniqueRequestId = String(uniqueRequestId || ("RF" + gatewayOrderId + Date.now()))
+                      .replace(/[^A-Za-z0-9]/g, "").slice(0, 30);
+
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
+  const payload   = "unique_request_id=" + encodeURIComponent(uniqueRequestId)
+                  + "&amount="           + encodeURIComponent(amount.toFixed(2));
+  const options = {
+    method:      "post",
+    contentType: "application/x-www-form-urlencoded",
+    headers: {
+      "Authorization": "Basic " + authToken,
+      "x-merchantid":  HDFC_MERCHANT_ID,
+      "version":       "2023-01-01"
+    },
+    payload:            payload,
+    muteHttpExceptions: true
+  };
+
+  try {
+    const url  = HDFC_BASE_URL + "/orders/" + encodeURIComponent(gatewayOrderId) + "/refunds";
+    const resp = UrlFetchApp.fetch(url, options);
+    const code = resp.getResponseCode();
+    const json = JSON.parse(resp.getContentText() || "{}");
+    console.log("hdfc_initiateRefund [" + code + "] " + gatewayOrderId + " ₹" + amount
+                + " req=" + uniqueRequestId + ":", JSON.stringify(json));
+
+    if (code !== 200 && code !== 201) {
+      const errMsg = (json.error_info && json.error_info.user_message)
+        || json.error_message || json.error_info || ("HTTP " + code);
+      return { error: "Refund API failed: " + errMsg, http: code, raw: json };
+    }
+
+    // Juspay returns the full order object; the refund we just raised is in refunds[].
+    var refundStatus = "PENDING", refundId = uniqueRequestId;
+    if (Array.isArray(json.refunds) && json.refunds.length) {
+      var mine = json.refunds.filter(function(x){ return x.unique_request_id === uniqueRequestId; });
+      var rf   = mine.length ? mine[mine.length - 1] : json.refunds[json.refunds.length - 1];
+      refundStatus = String(rf.status || "PENDING").toUpperCase();
+      refundId     = String(rf.id || rf.unique_request_id || uniqueRequestId);
+    }
+    return { success: true, status: refundStatus, refund_id: refundId, raw: json };
+  } catch (err) {
+    console.error("hdfc_initiateRefund error:", err.message);
+    return { error: "Network error during refund: " + err.message };
+  }
+}
+
+/**
+ * Marks the matching row in the Refunds sheet as fully refunded once HDFC
+ * confirms (REFUND_SUCCEEDED webhook). Best-effort: matches by gateway order_id
+ * recorded in the Adjustment_Note. Never throws.
+ */
+function _hdfcMarkRefundSettled(gatewayOrderId, refundId) {
+  try {
+    gatewayOrderId = String(gatewayOrderId || "").trim();
+    if (!gatewayOrderId) return;
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const ws = ss.getSheetByName(TAB_REFUNDS);
+    if (!ws) return;
+    const data    = ws.getDataRange().getValues();
+    const headers = data[0] || [];
+    const cStatus = headers.indexOf("Status");
+    const cNote   = headers.indexOf("Adjustment_Note");
+    const cMode   = headers.indexOf("Refund_Mode");
+    if (cStatus === -1 || cNote === -1) return;
+    for (var i = 1; i < data.length; i++) {
+      var note   = String(data[i][cNote] || "");
+      var status = String(data[i][cStatus] || "").toLowerCase();
+      var isGw   = cMode === -1 ? true : String(data[i][cMode] || "").toLowerCase() === "gateway";
+      if (isGw && note.indexOf(gatewayOrderId) !== -1 && status !== "refunded") {
+        ws.getRange(i + 1, cStatus + 1).setValue("Refunded");
+        ws.getRange(i + 1, cNote   + 1).setValue(note + " | settled:" + (refundId || "") + " @ " + new Date());
+        console.log("_hdfcMarkRefundSettled: row " + (i+1) + " marked Refunded for " + gatewayOrderId);
+      }
+    }
+  } catch (e) {
+    console.warn("_hdfcMarkRefundSettled error:", e.message);
+  }
+}
+
+/**
  * STEP 3 — Called by order.html when customer lands back after payment.
  * Verifies the HMAC signature on return URL params.
  * Signature = HMAC_SHA256(order_id + "|" + status, HDFC_RESPONSE_KEY)
@@ -1218,9 +1326,19 @@ function hdfc_processWebhookLog() {
           if (markResult.error) newStatus = "FAILED";
         }
 
-      } else if (eventName === "REFUND_INITIATED" || eventName === "REFUND_SUCCEEDED") {
-        // Placeholder — refund logic goes here when needed
-        result = "Refund event acknowledged.";
+      } else if (eventName === "REFUND_INITIATED" || eventName === "REFUND_SUCCEEDED" || eventName === "REFUND_FAILED") {
+        // Auto-refunds are raised at cancellation time via hdfc_initiateRefund().
+        // When HDFC confirms settlement, flip the matching Refunds row to "Refunded"
+        // so the sheet reflects reality without any manual update.
+        var rOid   = String(order.order_id || "").trim();
+        var rList  = Array.isArray(order.refunds) ? order.refunds : [];
+        var rRefId = rList.length ? String(rList[rList.length - 1].id || rList[rList.length - 1].unique_request_id || "") : "";
+        if (eventName === "REFUND_SUCCEEDED" && rOid) {
+          _hdfcMarkRefundSettled(rOid, rRefId);
+          result = "Refund settled for " + rOid + (rRefId ? " (" + rRefId + ")" : "");
+        } else {
+          result = "Refund event acknowledged (" + eventName + ") for " + rOid;
+        }
 
       } else if (eventName === "ORDER_FAILED" || HDFC_FAILURE_STATES.indexOf(String(order.status || "").toUpperCase()) !== -1) {
         // Payment failed / declined / auth failure (AUTHENTICATION_FAILED,
@@ -1526,6 +1644,21 @@ function testHdfcConnection() {
     description: "Svaadh Kitchen — Connection Test"
   });
   console.log("testHdfcConnection result:", JSON.stringify(result, null, 2));
+}
+
+/**
+ * UAT smoke test for automatic refunds. Run from the Apps Script editor AFTER
+ * completing a real test payment, passing that order's Gateway_Order_ID and the
+ * amount (or a smaller partial amount). Verifies the refund API end-to-end
+ * without going through a cancellation. Safe — UAT money only.
+ *
+ *   testHdfcRefund("SKG260607ABC123XYZ", 11);
+ */
+function testHdfcRefund(gatewayOrderId, amount) {
+  if (!gatewayOrderId) { console.log("Pass a CHARGED UAT Gateway_Order_ID, e.g. testHdfcRefund('SKG...', 11)"); return; }
+  const reqId  = ("RFTEST" + Date.now()).slice(0, 30);
+  const result = hdfc_initiateRefund(gatewayOrderId, Number(amount) || 1, reqId);
+  console.log("testHdfcRefund result:", JSON.stringify(result, null, 2));
 }
 
 
