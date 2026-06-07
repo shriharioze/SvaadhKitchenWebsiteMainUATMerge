@@ -4614,7 +4614,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.12";
+    const APP_VERSION = "v2026.06.07.13";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -7162,21 +7162,8 @@
         ["Breakfast", "Lunch", "Dinner"].forEach(meal => {
           const mObj = dayOrders[meal]; const sub = mObj?.subtotal || 0; if (sub <= 0) return;
 
-          let mealReviewDiscount = 0;
-          if (promoTracker > 0) {
-            mealReviewDiscount = Math.round(sub * 0.10);
-            const progressNum = 4 - promoTracker;
-            html += `<div class="bill-line" style="font-weight:700; color:var(--ink); padding:10px 0 6px; border-bottom: 2px solid #eee; margin-top:12px;"><span>${ICONS[meal]} ${meal} (Discount ${progressNum}/3)</span><span>₹${sub}</span></div>`;
-            promoTracker--;
-          } else {
-            html += `<div class="bill-line" style="font-weight:700; color:var(--ink); padding:10px 0 6px; border-bottom: 2px solid #eee; margin-top:12px;"><span>${ICONS[meal]} ${meal}</span><span>₹${sub}</span></div>`;
-          }
-          for (const [colKey, qty] of Object.entries(mObj.items || {})) {
-            if (qty <= 0) continue;
-            const p = getPrice(colKey, meal, date), n = getItemName(colKey, meal, date);
-            html += `<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p * qty}</span></div>`;
-          }
-
+          // ── Compute this meal's charges/credits FIRST, so the meal header can
+          //    show the ALL-IN total (food + delivery + small fee − review reward). ──
           const mAddr = getMealAddr(meal);
           const isPickup = (mAddr.area === "Self Pickup");
           const isFreeArea = FREE_AREAS.includes(mAddr.area);
@@ -7184,31 +7171,40 @@
 
           let mealExtras = [];
 
-          // 1 & 2. Credits (Moved to date-level adjustments at bottom)
+          // Review reward (10% off — decrements the promo tracker)
+          let mealReviewDiscount = 0;
+          let progressLabel = "";
+          if (promoTracker > 0) {
+            mealReviewDiscount = Math.round(sub * 0.10);
+            progressLabel = ` (Discount ${4 - promoTracker}/3)`;
+            promoTracker--;
+          }
 
-
-          // 3. Small Order Fee (current)
-          // Waived if isDayFree or Pickup or VIP. Else applies if Lunch/Dinner and meal total < 50
+          // Small Order Fee — Lunch/Dinner under ₹50 (unless day-free / pickup / VIP)
           if (!S.profile.feeExempt && !isDayFree && !isPickup && (meal === "Lunch" || meal === "Dinner") && sub > 0 && combinedMealSub < 50) {
-            const fee = 10;
-            mealExtras.push({ icon: "📦", name: "Small Order Fee", val: fee, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
-            totalSmallOrderFee += fee;
+            mealExtras.push({ icon: "📦", name: "Small Order Fee", val: 10, desc: "A small flat fee applied to orders below ₹50 to help cover baseline packaging & logistics overheads." });
+            totalSmallOrderFee += 10;
           }
-
-          // 4. Delivery (current)
-          // Waived if isDayFree or Pickup or FreeArea or VIP
+          // Delivery — unless day-free / pickup / free-area / VIP
           if (!S.profile.feeExempt && !isDayFree && !isPickup && !isFreeArea && sub > 0) {
-            const fee = DELIVERY_CHARGE;
-            mealExtras.push({ icon: "🚚", name: `Delivery Charge`, val: fee });
-            totalDelivery += fee;
+            mealExtras.push({ icon: "🚚", name: `Delivery Charge`, val: DELIVERY_CHARGE });
+            totalDelivery += DELIVERY_CHARGE;
           }
-
-          // 5. Market surcharge REMOVED — the ~6% is now baked into item prices.
-
-          // 6. Review Reward Discount
+          // Market surcharge REMOVED — the ~6% is now baked into item prices.
+          // Review Reward credit
           if (mealReviewDiscount > 0) {
             mealExtras.push({ icon: "🎁", name: "Google Review Reward", val: -mealReviewDiscount, credit: true });
-            dayReviewDiscountTotal += mealReviewDiscount; // Add to a date-level tracker
+            dayReviewDiscountTotal += mealReviewDiscount;
+          }
+
+          // Meal header shows food + this meal's own charges (all-in total)
+          const mealAllIn = sub + mealExtras.reduce((s, e) => s + e.val, 0);
+          html += `<div class="bill-line" style="font-weight:700; color:var(--ink); padding:10px 0 6px; border-bottom: 2px solid #eee; margin-top:12px;"><span>${ICONS[meal]} ${meal}${progressLabel}</span><span>₹${mealAllIn}</span></div>`;
+          // Food breakdown (items)
+          for (const [colKey, qty] of Object.entries(mObj.items || {})) {
+            if (qty <= 0) continue;
+            const p = getPrice(colKey, meal, date), n = getItemName(colKey, meal, date);
+            html += `<div class="bill-line indent"><span>${qty} × ${n}</span><span>₹${p * qty}</span></div>`;
           }
 
           if (mealExtras.length > 0) {
