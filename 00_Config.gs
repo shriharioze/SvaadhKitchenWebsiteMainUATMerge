@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 16.1; // 2026-06-07: wallet balance — gateway recharges + order/refund txns always count (Verified gate now only applies to PENDING MANUAL recharges); robust verified parsing
+const CODE_VERSION   = 16.2; // 2026-06-07: FIX admin approval display — loyalty reward was recomputed per-meal (showed full day reward on each of a day's meals = looked 3×). Now shows stored Net_Total/Discount (display-only; no financial impact)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
