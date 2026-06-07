@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.4; // 2026-06-07: refund status surfaced in Manage Orders (refund_status/refund_mode from SK_Refunds); + auto gateway refunds (15.3)
+const CODE_VERSION   = 15.5; // 2026-06-07: UPI-only gateway (zero MDR; HDFC_UPI_ONLY flag, payment_filter on order + recharge sessions); + refund status in Manage Orders (15.4)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
@@ -57,6 +57,12 @@ const HDFC_WEBHOOK_PASSWORD = SP.getProperty("HDFC_WEBHOOK_PASSWORD") || "";
 const HDFC_ENV              = SP.getProperty("HDFC_ENV")              || "test";
 const HDFC_RETURN_URL       = SP.getProperty("HDFC_RETURN_URL")       || "";
 const HDFC_ORDER_PAGE_URL   = SP.getProperty("HDFC_ORDER_PAGE_URL")   || "https://svaadhkitchen.in/order.html";
+// UPI-ONLY: hide cards / net-banking / wallets on the gateway so the merchant
+// bears ZERO MDR (UPI is NIL MDR; cards can't be surcharged per the HDFC
+// agreement). Default ON — set Script Property HDFC_UPI_ONLY = "false" to allow
+// all methods again (no redeploy needed). NOTE: the gateway DASHBOARD payment-
+// page config is authoritative; keep it in sync there too.
+const HDFC_UPI_ONLY         = SP.getProperty("HDFC_UPI_ONLY") !== "false";
 const HDFC_BASE_URL         = HDFC_ENV === "live"
   
 ? (SP.getProperty("HDFC_LIVE_URL") || "https://smartgateway.hdfcbank.com")

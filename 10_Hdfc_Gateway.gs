@@ -644,6 +644,13 @@ function hdfc_createSession(body) {
     notification_url:       HDFC_RETURN_URL   // webhook URL per-session (fallback if dashboard not set)
   };
 
+  // UPI-only: restrict the checkout to UPI so no card / net-banking MDR is
+  // incurred (cards can't be surcharged per the HDFC agreement). Authoritative
+  // control is the gateway dashboard; this is a per-session belt-and-suspenders.
+  if (HDFC_UPI_ONLY) {
+    payload.payment_filter = { allowed_methods: [ { payment_method_type: "UPI" } ] };
+  }
+
   // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
   // Merchant ID goes in a separate x-merchantid header (NOT in the auth string)
   const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
@@ -1745,6 +1752,11 @@ function hdfc_createWalletRechargeSession(body) {
     udf3:                   "svaadh_kitchen_recharge",
     notification_url:       HDFC_RETURN_URL
   };
+
+  // UPI-only (same policy as order payments) — no card / net-banking MDR.
+  if (HDFC_UPI_ONLY) {
+    payload.payment_filter = { allowed_methods: [ { payment_method_type: "UPI" } ] };
+  }
 
   try {
     const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
