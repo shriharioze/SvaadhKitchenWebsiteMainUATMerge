@@ -4620,7 +4620,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.4";
+    const APP_VERSION = "v2026.06.07.5";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9376,6 +9376,8 @@
               payChip = `<div style="display:inline-block;background:#f5f0ff;color:#5b21b6;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #c4b5fd;margin-top:5px;vertical-align:middle;">🔀 ₹${walletCredit} Wallet + ₹${upiDue} UPI · ${splitStat}</div>`;
             } else if (isWalletPay) {
               payChip = `<div style="display:inline-block;background:#eafaf1;color:#1a6640;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #b7e4c7;margin-top:5px;vertical-align:middle;">💳 Wallet</div>`;
+            } else if (payMeth.includes("gateway")) {
+              payChip = `<div style="display:inline-block;background:#e0f2fe;color:#075985;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #bae6fd;margin-top:5px;vertical-align:middle;">🔒 Gateway</div>`;
             } else {
               payChip = `<div style="display:inline-block;background:#f3e5f5;color:#6a1b9a;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #d1c4e9;margin-top:5px;vertical-align:middle;">📱 UPI</div>`;
             }
@@ -9517,7 +9519,9 @@
               <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
                 ${o.payment_method?.toLowerCase().includes("wallet") ?
                 `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">💳 Wallet</div>` :
-                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">📱 UPI</div>`}
+                (o.payment_method?.toLowerCase().includes("gateway") ?
+                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">🔒 Gateway</div>` :
+                `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">📱 UPI</div>`)}
                 ${o.items_raw ? `<button onclick='_reorderMeal("${o.meal}", this.dataset.items)' ${itemsRawAttr}
                   style="font-size:0.65rem;font-weight:700;padding:2px 9px;border-radius:99px;border:1.5px solid #1E1240;color:#1E1240;background:#fff5f4;cursor:pointer;">📋 Reorder</button>` : ''}
               </div>
