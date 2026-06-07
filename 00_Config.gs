@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 16.0; // 2026-06-07: refund 401 diagnosis — optional x-resellerid header (HDFC_RESELLER_ID) on refund/getOrderRefunds; retryQueuedRefunds() admin helper
+const CODE_VERSION   = 16.1; // 2026-06-07: wallet balance — gateway recharges + order/refund txns always count (Verified gate now only applies to PENDING MANUAL recharges); robust verified parsing
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

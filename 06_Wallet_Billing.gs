@@ -22,13 +22,23 @@ function _calculateWalletBalance(phone, preloadedRows) {
     const rPhone = _normalizePhone(w.Phone);
     if (rPhone !== pStr) return;
 
-    // Only count verified transactions
-    const rVer = String(w.Verified || "").trim().toUpperCase();
-    if (rVer !== "TRUE" && rVer !== "YES" && rVer !== "VERIFIED") return;
+    const rVerRaw = _get(w, "Verified");
+    const rVer = String(rVerRaw === undefined || rVerRaw === null ? "" : rVerRaw).trim().toUpperCase();
+    const isVerified = (rVerRaw === true || rVer === "TRUE" || rVer === "YES" || rVer === "VERIFIED" || rVer === "1" || rVer === "Y");
 
-    const rAmt = _cleanNum(_get(w, "Amount"));
+    const rAmt  = _cleanNum(_get(w, "Amount"));
     // Also check legacy columns where Txn_Type may have been stored in a "Balance" column
     const rType = String(_get(w, "Txn_Type") || _get(w, "Balance") || "").trim().toLowerCase();
+    const rRef  = String(_get(w, "Reference_ID") || "").trim();
+
+    // The "Verified" gate exists ONLY for MANUAL UPI recharges awaiting admin
+    // approval. Gateway recharges (charged via HDFC) and every other system
+    // transaction — order deductions, refunds, cancellations, carry-forwards —
+    // are inherently trusted and must always count. A gateway recharge is
+    // identified by its txn type ("…Gateway…") or its W-prefixed reference id.
+    const isRecharge        = rType.includes("recharge");
+    const isGatewayRecharge = isRecharge && (rType.includes("gateway") || /^SK\d{6}W/i.test(rRef));
+    if (isRecharge && !isGatewayRecharge && !isVerified) return; // pending manual recharge — don't count yet
 
     if (rType.includes("recharge") || rType.includes("refund") || rType.includes("credit")
         || rType.includes("carry forward") || rType.includes("carry-forward")) {
