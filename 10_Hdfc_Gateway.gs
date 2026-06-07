@@ -804,15 +804,17 @@ function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId, routingId)
   const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
   const payload   = "unique_request_id=" + encodeURIComponent(uniqueRequestId)
                   + "&amount="           + encodeURIComponent(amount.toFixed(2));
+  const headers = {
+    "Authorization": "Basic " + authToken,
+    "x-merchantid":  HDFC_MERCHANT_ID,
+    "x-routing-id":  routingId,
+    "version":       "2023-01-01"
+  };
+  if (HDFC_RESELLER_ID) headers["x-resellerid"] = HDFC_RESELLER_ID;
   const options = {
     method:      "post",
     contentType: "application/x-www-form-urlencoded",
-    headers: {
-      "Authorization": "Basic " + authToken,
-      "x-merchantid":  HDFC_MERCHANT_ID,
-      "x-routing-id":  routingId,
-      "version":       "2023-01-01"
-    },
+    headers:            headers,
     payload:            payload,
     muteHttpExceptions: true
   };
@@ -865,15 +867,14 @@ function hdfc_getOrderRefunds(gatewayOrderId) {
   gatewayOrderId = String(gatewayOrderId || "").trim();
   if (!gatewayOrderId) return { error: "Missing gateway order id." };
   const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
-  const options = {
-    method: "get",
-    headers: {
-      "Authorization": "Basic " + authToken,
-      "x-merchantid":  HDFC_MERCHANT_ID,
-      "version":       "2023-01-01"
-    },
-    muteHttpExceptions: true
+  const headers = {
+    "Authorization": "Basic " + authToken,
+    "x-merchantid":  HDFC_MERCHANT_ID,
+    "x-routing-id":  gatewayOrderId,
+    "version":       "2023-01-01"
   };
+  if (HDFC_RESELLER_ID) headers["x-resellerid"] = HDFC_RESELLER_ID;
+  const options = { method: "get", headers: headers, muteHttpExceptions: true };
   try {
     const resp = UrlFetchApp.fetch(HDFC_BASE_URL + "/orders/" + encodeURIComponent(gatewayOrderId), options);
     if (resp.getResponseCode() !== 200) return { error: "HTTP " + resp.getResponseCode() };

@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.9; // 2026-06-07: gateway-paid cancel remark now reflects real refund status (Cancelled – Refund Processing/Refunded/Pending) instead of always "UPI Refund Pending"
+const CODE_VERSION   = 16.0; // 2026-06-07: refund 401 diagnosis — optional x-resellerid header (HDFC_RESELLER_ID) on refund/getOrderRefunds; retryQueuedRefunds() admin helper
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
@@ -51,6 +51,10 @@ const PAYMENT_GATEWAY_ENABLED = (SP.getProperty("PAYMENT_GATEWAY_ENABLED") === "
 
 const HDFC_MERCHANT_ID      = SP.getProperty("HDFC_MERCHANT_ID")      || "";
 const HDFC_API_KEY          = SP.getProperty("HDFC_API_KEY")          || "";
+// Optional reseller id — the Refund API docs list x-resellerid as a header. The
+// session/status calls work without it, but the refund endpoint may require it.
+// Set Script Property HDFC_RESELLER_ID if HDFC tells you the value. Sent only if set.
+const HDFC_RESELLER_ID      = SP.getProperty("HDFC_RESELLER_ID")      || "";
 const HDFC_RESPONSE_KEY     = SP.getProperty("HDFC_RESPONSE_KEY")     || "";
 const HDFC_WEBHOOK_USERNAME = SP.getProperty("HDFC_WEBHOOK_USERNAME") || "";
 const HDFC_WEBHOOK_PASSWORD = SP.getProperty("HDFC_WEBHOOK_PASSWORD") || "";

@@ -317,3 +317,63 @@ function reconcilePendingRefunds() {
   if (settled || failed) Logger.log("reconcilePendingRefunds: settled " + settled + ", failed " + failed + ".");
 }
 
+/**
+ * ONE-SHOT ADMIN HELPER — run manually from the Apps Script editor AFTER HDFC
+ * enables refund access. Re-attempts every gateway refund that previously failed
+ * (SK_Refunds rows with Status "Pending" and an "auto-refund FAILED" note). On
+ * success the row flips to Processing/gateway and the 5-min reconciler then
+ * settles it to Refunded — so the manual queue clears itself with no per-order work.
+ * @returns {string} summary
+ */
+function retryQueuedRefunds() {
+  const ss = getSpreadsheet();
+  const refWs = ss.getSheetByName(TAB_REFUNDS);
+  if (!refWs || refWs.getLastRow() < 2) return "No refunds to retry.";
+
+  const data = refWs.getDataRange().getValues();
+  const H = data[0];
+  const cSid = H.indexOf("Submission_ID"), cAmt = H.indexOf("Amount"), cPhone = H.indexOf("Phone");
+  const cStatus = H.indexOf("Status"), cNote = H.indexOf("Adjustment_Note"), cMode = H.indexOf("Refund_Mode");
+  if (cSid === -1 || cStatus === -1 || cAmt === -1) return "Refunds sheet missing columns.";
+
+  // Submission_ID → Gateway_Order_ID
+  const gwMap = {};
+  const ordWs = ss.getSheetByName(TAB_ORDERS);
+  if (ordWs && ordWs.getLastRow() > 1) {
+    const od = ordWs.getDataRange().getValues();
+    const oH = od[0], oSid = oH.indexOf("Submission_ID"), oGw = oH.indexOf("Gateway_Order_ID");
+    if (oSid !== -1 && oGw !== -1) for (var k = 1; k < od.length; k++) {
+      var s = String(od[k][oSid] || "").trim(); if (s) gwMap[s] = String(od[k][oGw] || "").trim();
+    }
+  }
+
+  var retried = 0, ok = 0;
+  for (var i = 1; i < data.length; i++) {
+    var status = String(data[i][cStatus] || "").trim().toLowerCase();
+    var note   = String(data[i][cNote] || "");
+    if (status !== "pending" || note.indexOf("auto-refund FAILED") === -1) continue;
+
+    var sid = String(data[i][cSid] || "").trim();
+    var gOrderId = gwMap[sid] || "";
+    var amt = Number(data[i][cAmt]) || 0;
+    var phone = String(data[i][cPhone] || "");
+    if (!gOrderId || !(amt > 0)) continue;
+
+    retried++;
+    var reqId = ("RF" + sid).replace(/[^A-Za-z0-9]/g, "").slice(0, 20);
+    var rf = hdfc_initiateRefund(gOrderId, amt, reqId, phone);
+    if (rf && rf.success) {
+      ok++;
+      var st = (rf.status === "SUCCESS" || rf.status === "REFUNDED") ? "Refunded" : "Processing";
+      refWs.getRange(i + 1, cStatus + 1).setValue(st);
+      if (cMode !== -1) refWs.getRange(i + 1, cMode + 1).setValue("gateway");
+      if (cNote !== -1) refWs.getRange(i + 1, cNote + 1).setValue(note + " | RETRIED ok: " + (rf.refund_id || reqId) + " (" + rf.status + ")");
+    } else if (cNote !== -1) {
+      refWs.getRange(i + 1, cNote + 1).setValue(note + " | retry failed: " + ((rf && rf.error) || "unknown"));
+    }
+  }
+  const summary = "retryQueuedRefunds: retried " + retried + ", succeeded " + ok + ".";
+  Logger.log(summary);
+  return summary;
+}
+
