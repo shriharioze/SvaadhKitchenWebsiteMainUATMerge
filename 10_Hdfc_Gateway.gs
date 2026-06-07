@@ -305,11 +305,11 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
 
   // ── Authoritative price lookup (mirror of frontend FIXED_MEAL_ITEMS) ──
   const LD_PRICE = {
-    "Chapati": 9, "Without Oil Chapati": 8, "Phulka": 7, "Ghee Phulka": 10,
-    "Jowar Bhakri": 20, "Bajra Bhakri": 20,
-    "Dry Sabji Mini (100ml)": 22, "Dry Sabji Full (250ml)": 45,
-    "Curry Sabji Mini (100ml)": 22, "Curry Sabji Full (250ml)": 45,
-    "Dal (200ml)": 22, "Rice (100g)": 12, "Salad (40g)": 7, "Curd (50g)": 12
+    "Chapati": 10, "Without Oil Chapati": 9, "Phulka": 8, "Ghee Phulka": 11,
+    "Jowar Bhakri": 21, "Bajra Bhakri": 21,
+    "Dry Sabji Mini (100ml)": 24, "Dry Sabji Full (250ml)": 48,
+    "Curry Sabji Mini (100ml)": 24, "Curry Sabji Full (250ml)": 48,
+    "Dal (200ml)": 24, "Rice (100g)": 13, "Salad (40g)": 8, "Curd (50g)": 13
   };
   function priceOf(colKey, meal, menu) {
     if (meal === "Breakfast") {
@@ -410,7 +410,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     const mealsThisSubmission = Object.keys(mealSubs);
     const existingMeals       = Object.keys(existingDateInfo).filter(function(t){ return (Number(existingDateInfo[t].subtotal)||0) > 0; });
     const totalMealsCount     = Array.from(new Set(mealsThisSubmission.concat(existingMeals))).length;
-    const dynamicFreeThreshold = totalMealsCount <= 1 ? 100 : 150;
+    const dynamicFreeThreshold = totalMealsCount <= 1 ? 106 : 159;
     const isDayFree           = (combinedDayTotal >= dynamicFreeThreshold);
 
     // Day-tier discount (5%/7.5%) — pro-rated to this submission
@@ -423,15 +423,16 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
 
     function getDisc(sub) {
       if (is6thDay) {
-        const currentSurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
+        // Loyalty reward: flat 5% back across all 6 days' food (no surcharge anymore)
+        const currentSurcharge = Math.round(submissionDayFoodTotal * 0.05);
         const totalWaiver = virtualPastSurcharge + currentSurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
       return submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
     }
 
-    // Update virtual streak for next iteration
-    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
+    // Update virtual streak for next iteration (accrue 5% of food)
+    const currentDaySurcharge = Math.round(submissionDayFoodTotal * 0.05);
     if (is6thDay) {
       virtualStreakCount   = 0;
       virtualPastSurcharge = 0;
@@ -493,7 +494,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
         : 0;
 
       const discAmt = getDisc(sub);
-      const inflationSurcharge = Math.ceil(sub * 0.06);
+      // Market surcharge REMOVED — ~6% baked into item prices, so not charged here.
 
       // Review promo (10% off per meal; decrement in-memory only)
       let reviewDiscount = 0;
@@ -502,7 +503,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
         promoCount--;
       }
 
-      const netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
+      const netTotal = Math.round(sub + delCharge + smallOrderFee - discAmt - mealCredit - reviewDiscount);
       dayNet += netTotal;
     });
 

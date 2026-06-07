@@ -547,7 +547,7 @@ function _submitOrderInternal(body) {
     const existingMeals = Object.keys(existingDateInfo).filter(mType => (Number(existingDateInfo[mType].subtotal) || 0) > 0);
     const allMealsOnDate = Array.from(new Set([...mealsThisSubmission, ...existingMeals]));
     const totalMealsCount = allMealsOnDate.length;
-    const dynamicFreeThreshold = totalMealsCount <= 1 ? 100 : 150;
+    const dynamicFreeThreshold = totalMealsCount <= 1 ? 106 : 159;
 
     // Calculate total food subtotal for this specific submission's date
     const submissionDayFoodTotal = order.meals.reduce((s, m) => s + (Number(m.subtotal) || 0), 0);
@@ -569,16 +569,16 @@ function _submitOrderInternal(body) {
     // Pro-rate the submission-level discount across meals in this submission
     const getDisc = (sub) => {
       if (is6thDay) {
-        // Loyalty Discount: Waive all 6 days of surcharge
-        const currentSurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
+        // Loyalty reward: flat 5% back across all 6 days' food (no surcharge anymore)
+        const currentSurcharge = Math.round(submissionDayFoodTotal * 0.05);
         const totalWaiver = virtualPastSurcharge + currentSurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
       return submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
     };
 
-    // Update virtual streak state for NEXT loop iteration
-    const currentDaySurcharge = Math.ceil(submissionDayFoodTotal * 0.06);
+    // Update virtual streak state for NEXT loop iteration (accrue 5% of food)
+    const currentDaySurcharge = Math.round(submissionDayFoodTotal * 0.05);
     if (is6thDay) {
       virtualStreakCount = 0;
       virtualPastSurcharge = 0;
@@ -661,10 +661,10 @@ function _submitOrderInternal(body) {
         : 0;
 
       const discAmt = getDisc(sub);
-      // On the 6th day, the surcharge IS charged (consistency), and the loyalty discount
-      // (totalWaiver) includes all 6 days of surcharge so it covers it. Net effect:
-      // the 6th-day surcharge charge and refund cancel each other; customer gets back days 1–5.
-      const inflationSurcharge = Math.ceil(sub * 0.06);
+      // Market surcharge REMOVED — the ~6% is baked into item prices. We still
+      // store a per-meal 5% "accrual" in Inflation_Surcharge so the loyalty
+      // streak can give it back on the 6th day; it is NOT added to the bill.
+      const inflationSurcharge = Math.round(sub * 0.05);
 
       // Google Review Promo Logic (10% OFF per meal)
       let reviewDiscount = 0;
@@ -674,7 +674,7 @@ function _submitOrderInternal(body) {
         promoCount--;
       }
 
-      let netTotal = Math.round(sub + delCharge + smallOrderFee + inflationSurcharge - discAmt - mealCredit - reviewDiscount);
+      let netTotal = Math.round(sub + delCharge + smallOrderFee - discAmt - mealCredit - reviewDiscount);
       // If the 6th-day loyalty discount exceeds this meal's bill, clamp to ₹0 and
       // accumulate the surplus — it gets credited to the customer's wallet after all rows are written.
       if (is6thDay && netTotal < 0) {
@@ -1108,7 +1108,7 @@ function diagnoseLoyaltyStreak(phone) {
   mine.slice(0, 15).forEach((r, idx) => {
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(r.Order_Date).trim();
     const stored  = Number(r.Inflation_Surcharge);
-    const derived = Math.ceil((Number(r.Food_Subtotal) || 0) * 0.06);
+    const derived = Math.round((Number(r.Food_Subtotal) || 0) * 0.05);
     Logger.log("[" + (idx+1) + "] " + d + " " + r.Meal_Type
       + "  food=" + r.Food_Subtotal
       + "  storedSurch=" + (isNaN(stored) ? "(empty)" : stored)
@@ -1190,7 +1190,7 @@ function _calculateLoyaltyStreak(phone, preloadedRows) {
     // 5-day streak history collapses pastSurcharge to 0 and the
     // customer ends up paying full price on their day-6 reward.
     const storedSurch  = Number(r.Inflation_Surcharge) || 0;
-    const derivedSurch = Math.ceil((Number(r.Food_Subtotal) || 0) * 0.06);
+    const derivedSurch = Math.round((Number(r.Food_Subtotal) || 0) * 0.05); // loyalty accrual = 5% of food
     dailyTotals[d] += Math.max(storedSurch, derivedSurch);
 
     // Track days where the 6-day loyalty reward was already given
