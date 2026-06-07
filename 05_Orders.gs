@@ -1685,9 +1685,9 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
       const gOrderId = String(r.Gateway_Order_ID || "").trim();
       let refundStatusTxt = "Pending", refundModeTxt = "upi", autoRefunded = false;
       if (gOrderId && refundAmt > 0 && typeof hdfc_initiateRefund === "function") {
-        const reqId = ("RF" + String(rowId)).replace(/[^A-Za-z0-9]/g, "").slice(0, 30);
+        const reqId = ("RF" + String(rowId)).replace(/[^A-Za-z0-9]/g, "").slice(0, 20); // HDFC: < 21 chars
         let rf;
-        try { rf = hdfc_initiateRefund(gOrderId, refundAmt, reqId); }
+        try { rf = hdfc_initiateRefund(gOrderId, refundAmt, reqId, phone); }
         catch (e) { rf = { error: e.message }; }
         if (rf && rf.success) {
           autoRefunded    = true;

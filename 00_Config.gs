@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.5; // 2026-06-07: UPI-only gateway (zero MDR; HDFC_UPI_ONLY flag, payment_filter on order + recharge sessions); + refund status in Manage Orders (15.4)
+const CODE_VERSION   = 15.6; // 2026-06-07: refund API made spec-correct per HDFC docs (unique_request_id <21 chars, x-routing-id header, duplicate.call=success); UPI-only (15.5)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

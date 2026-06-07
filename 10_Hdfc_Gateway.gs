@@ -784,7 +784,7 @@ function hdfc_getOrderStatus(orderId) {
  * @param {string} uniqueRequestId Stable per-refund id (row-based) for idempotency.
  * @returns {{success:true,status:string,refund_id:string,raw:Object}|{error:string}}
  */
-function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId) {
+function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId, routingId) {
   if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) {
     return { error: "Gateway credentials not configured." };
   }
@@ -792,9 +792,12 @@ function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId) {
   if (!gatewayOrderId) return { error: "Missing gateway order id." };
   amount = Math.round(Number(amount) * 100) / 100;
   if (!(amount > 0)) return { error: "Refund amount must be greater than 0." };
-  // unique_request_id: ≤30 alphanumerics, stable per refund (idempotency key).
-  uniqueRequestId = String(uniqueRequestId || ("RF" + gatewayOrderId + Date.now()))
-                      .replace(/[^A-Za-z0-9]/g, "").slice(0, 30);
+  // unique_request_id: HDFC requires < 21 chars, alphanumeric, unique per refund
+  // (idempotency key — a re-run for the same order row never double-refunds).
+  uniqueRequestId = String(uniqueRequestId || ("RF" + Date.now()))
+                      .replace(/[^A-Za-z0-9]/g, "").slice(0, 20);
+  // x-routing-id: required header — customer/cart affinity id (default = order id).
+  routingId = String(routingId || gatewayOrderId).replace(/[^A-Za-z0-9]/g, "").slice(0, 40);
 
   const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
   const payload   = "unique_request_id=" + encodeURIComponent(uniqueRequestId)
@@ -805,6 +808,7 @@ function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId) {
     headers: {
       "Authorization": "Basic " + authToken,
       "x-merchantid":  HDFC_MERCHANT_ID,
+      "x-routing-id":  routingId,
       "version":       "2023-01-01"
     },
     payload:            payload,
@@ -818,6 +822,14 @@ function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId) {
     const json = JSON.parse(resp.getContentText() || "{}");
     console.log("hdfc_initiateRefund [" + code + "] " + gatewayOrderId + " ₹" + amount
                 + " req=" + uniqueRequestId + ":", JSON.stringify(json));
+
+    // Idempotency: a duplicate.call error means this exact refund was already
+    // accepted earlier — treat as success so a retry never queues a 2nd refund.
+    const errCode = String((json.error_info && json.error_info.code) || json.error_code || json.code || "").toLowerCase();
+    if ((code === 400 || code === 409) && errCode.indexOf("duplicate") !== -1) {
+      console.log("hdfc_initiateRefund: duplicate.call — refund already exists, treating as success.");
+      return { success: true, status: "PENDING", refund_id: uniqueRequestId, duplicate: true, raw: json };
+    }
 
     if (code !== 200 && code !== 201) {
       const errMsg = (json.error_info && json.error_info.user_message)
@@ -1663,7 +1675,7 @@ function testHdfcConnection() {
  */
 function testHdfcRefund(gatewayOrderId, amount) {
   if (!gatewayOrderId) { console.log("Pass a CHARGED UAT Gateway_Order_ID, e.g. testHdfcRefund('SKG...', 11)"); return; }
-  const reqId  = ("RFTEST" + Date.now()).slice(0, 30);
+  const reqId  = ("RFT" + Date.now()).slice(0, 20); // HDFC: < 21 chars
   const result = hdfc_initiateRefund(gatewayOrderId, Number(amount) || 1, reqId);
   console.log("testHdfcRefund result:", JSON.stringify(result, null, 2));
 }
