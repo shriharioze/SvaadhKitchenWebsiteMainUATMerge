@@ -4620,7 +4620,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.7";
+    const APP_VERSION = "v2026.06.07.8";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9738,45 +9738,81 @@
       // single-order cancel — so every row is actually cancelled, not just the
       // group's representative row.
       const selectedGroups = Array.from(cbs).map(cb => cb.value);
-      const rowIds = [...new Set(selectedGroups.flatMap(rid => (orderDataCache[rid] && orderDataCache[rid].all_row_ids) || [rid]))];
 
-      let totalPaid = 0, potentialAmt = 0;
-      let hasWallet = false, hasPending = false, hasSplit = false;
-
-      // Aggregate refund signals per selected GROUP (the representative's cache
-      // holds the group-level totals) to avoid double-counting a group's rows.
+      // ── Per-order refund routing: each order goes back to ITS OWN original
+      //    method. Wallet/Split orders always refund to Wallet; gateway-paid
+      //    orders go to the customer's chosen method (asked once, not per order).
+      let totalPaid = 0, potentialAmt = 0, hasPaidGateway = false, hasPendingGateway = false;
       selectedGroups.forEach(rid => {
-        const cached = orderDataCache[rid] || {};
-        totalPaid += (Number(cached.original_total_paid) || 0);
-        potentialAmt += (Number(cached.potential_total) || 0);
-        if (cached.is_wallet) hasWallet = true;
-        if (cached.is_split) hasSplit = true;
-        if (String(cached.status || "").toLowerCase().trim() === "pending") hasPending = true;
+        const c = orderDataCache[rid] || {};
+        const paid = Number(c.original_total_paid) || 0;
+        const pending = String(c.status || "").toLowerCase().trim() === "pending";
+        totalPaid += paid;
+        potentialAmt += (Number(c.potential_total) || 0);
+        if (!c.is_wallet && !c.is_split && paid > 0) hasPaidGateway = true;
+        if (!c.is_wallet && !c.is_split && pending && !paid) hasPendingGateway = true;
       });
 
-      let refundType = "none";
-      if (hasSplit || (totalPaid > 0 && hasWallet)) {
-        await sAlert(`Refund for the selected orders will be credited back to your Svaadh Wallet (Upto 3 working days).`, "Refund Info", "💳");
-        refundType = "wallet";
-      } else if (totalPaid > 0) {
-        const choice = await sPromptRefund(`Total paid for selected orders is ₹${totalPaid}. Where should we send your refund?`, "Refund Method", "💰", "रीफंड कुठे हवा आहे?", { wallet: "Wallet (Instant)" });
+      let paidChoice = "manual_upi"; // default: back to the original payment method
+      if (hasPaidGateway) {
+        const choice = await sPromptRefund(`Some of these orders were paid online (₹${totalPaid} total). Where should we send those refunds?`, "Refund Method", "💰", "रीफंड कुठे हवा आहे?", { wallet: "Svaadh Wallet (Instant)" });
         if (choice === "exit") return;
-        refundType = (choice === "wallet") ? "wallet" : "manual_upi";
-      } else if (hasPending && potentialAmt > 0 && !hasWallet) {
-        const choice = await sPromptRefund(`Total pending payment is ₹${potentialAmt}. Once admin confirms your payment, we will process the refund to your choice below:`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?", { wallet: "Svaadh Wallet (Upto 3 working days)" });
+        paidChoice = (choice === "wallet") ? "wallet" : "manual_upi";
+      } else if (hasPendingGateway) {
+        const choice = await sPromptRefund(`Some selected orders have a pending online payment (₹${potentialAmt} total). Once admin confirms, where should we send those refunds?`, "Refund Method", "⏳", "रीफंड कुठे हवा आहे?", { wallet: "Svaadh Wallet (Upto 3 working days)" });
         if (choice === "exit") return;
-        refundType = (choice === "wallet") ? "wallet" : "manual_upi";
+        paidChoice = (choice === "wallet") ? "wallet" : "manual_upi";
+      }
+
+      // Resolve each group's refund method: wallet/split → wallet; paid/pending → choice.
+      const groupRefundType = {};
+      selectedGroups.forEach(rid => {
+        const c = orderDataCache[rid] || {};
+        const paid = Number(c.original_total_paid) || 0;
+        const pending = String(c.status || "").toLowerCase().trim() === "pending";
+        groupRefundType[rid] = (c.is_wallet || c.is_split) ? "wallet"
+                              : (paid > 0 || pending) ? paidChoice
+                              : "none";
+      });
+
+      // ── Preview: fetch each order's refund breakdown and show before final confirm.
+      sLoading(true, "Calculating refunds…");
+      const previewBlocks = [];
+      for (const grp of selectedGroups) {
+        const c = orderDataCache[grp] || {};
+        const firstRowId = (c.all_row_ids && c.all_row_ids[0]) || grp;
+        try {
+          const prev = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ _action: "previewCancellation", phone: S.phone, rowId: firstRowId, refundType: groupRefundType[grp] })
+          }).then(r => r.json());
+          if (prev && prev.success && prev.dryRun && prev.breakdownText) previewBlocks.push(prev.breakdownText);
+        } catch (e) { /* non-fatal — skip this order's preview */ }
+      }
+      sLoading(false);
+
+      if (previewBlocks.length) {
+        const previewHtml = previewBlocks
+          .map(t => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"))
+          .join("<hr style='border:none;border-top:1px solid #eee;margin:10px 0;'>");
+        const goAhead = await sConfirm(`<div style='font-size:.82rem;line-height:1.6;text-align:left;max-height:50vh;overflow-y:auto;'>${previewHtml}</div>`, "Confirm Cancellation", "💸", "वरील तपशील बघून रद्द करायचे आहे का?");
+        if (!goAhead) return;
       }
 
       sLoading(true, "Cancelling orders…");
       try {
+        // Cancel each order with ITS OWN refund method; expand groups to all rows.
         const results = [];
-        for (const rid of rowIds) {
-          const res = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ _action: "deleteOrder", phone: S.phone, rowId: rid, refundType: refundType })
-          }).then(r => r.json());
-          results.push(res);
+        for (const grp of selectedGroups) {
+          const c = orderDataCache[grp] || {};
+          const ids = (c.all_row_ids && c.all_row_ids.length) ? c.all_row_ids : [grp];
+          for (const rid of ids) {
+            const res = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              body: JSON.stringify({ _action: "deleteOrder", phone: S.phone, rowId: rid, refundType: groupRefundType[grp] })
+            }).then(r => r.json());
+            results.push(res);
+          }
         }
 
         sLoading(false);
@@ -9786,16 +9822,15 @@
           syncWalletValue(true);
           window.orderViewState.cancelled = true;
           await loadExistingOrders(S.phone);
-          
-          let successMsg = `Successfully cancelled ${count} orders.`;
-          if (totalPaid > 0) {
-            successMsg += `<br><br>Total refund of <b>₹${totalPaid}</b> has been processed.`;
-            if (refundType === "wallet") successMsg += " Added to Svaadh Wallet.";
-            else successMsg += " We'll process it within 1-2 days.";
-          } else if (potentialAmt > 0 && hasPending) {
-            successMsg += `<br><br>Total pending refund of <b>₹${potentialAmt}</b> will be processed after admin verification.`;
-          }
-          
+
+          // Summarise where refunds went (each to its own original method).
+          const toOriginal = selectedGroups.some(g => groupRefundType[g] === "manual_upi");
+          const toWallet   = selectedGroups.some(g => groupRefundType[g] === "wallet");
+          let successMsg = `Successfully cancelled ${count} order${count > 1 ? 's' : ''}.`;
+          const refundLines = [];
+          if (toWallet)   refundLines.push("💳 Wallet payments credited back to your Svaadh Wallet");
+          if (toOriginal) refundLines.push("🔒 Online payments are being refunded to your original payment method (1–3 working days)");
+          if (refundLines.length) successMsg += `<br><br>${refundLines.join("<br>")}`;
           await sAlert(successMsg, "Done", "✅");
         } else {
           const firstErr = results.find(r => !r.success && !isAlreadyCancelled(r))?.error || "Unknown error";
