@@ -362,6 +362,52 @@ function _submitOrderInternal(body) {
 
   // Sort orders by date to ensure virtual streak runs chronologically
   orders.sort((a,b) => a.date.localeCompare(b.date));
+
+  // ── SERVER-SIDE SUBTOTAL RECOMPUTE (TAMPER PROTECTION) ──
+  // Overwrite any client-sent meal.subtotal with the server's authoritative price.
+  const LD_PRICE = {
+    "Chapati": 9, "Without Oil Chapati": 8, "Phulka": 7, "Ghee Phulka": 10,
+    "Jowar Bhakri": 20, "Bajra Bhakri": 20,
+    "Dry Sabji Mini (100ml)": 22, "Dry Sabji Full (250ml)": 45,
+    "Curry Sabji Mini (100ml)": 22, "Curry Sabji Full (250ml)": 45,
+    "Dal (200ml)": 22, "Rice (100g)": 12, "Salad (40g)": 7, "Curd (50g)": 12
+  };
+  const menuCache = {};
+  for (const dateOrder of orders) {
+    if (!menuCache[dateOrder.date]) {
+      menuCache[dateOrder.date] = getMenu(dateOrder.date);
+    }
+    const menuForDate = menuCache[dateOrder.date];
+
+    for (const meal of dateOrder.meals) {
+      let authSub = 0;
+      let items = meal.items || [];
+      if (typeof items === "string") { try { items = JSON.parse(items); } catch(e) { items = []; } }
+      if (!Array.isArray(items)) items = [];
+      
+      for (const it of items) {
+        const qty = Number(it.qty) || 0;
+        if (qty <= 0) continue;
+        let price = 0;
+        if (meal.type === "Breakfast") {
+          if (it.colKey === "B_CURD") price = 12;
+          else {
+            const f = (menuForDate.breakfast || []).find(b => b.name === it.colKey);
+            if (f) price = Number(f.price) || 0;
+          }
+        } else {
+          price = Number(LD_PRICE[it.colKey] || 0);
+        }
+        authSub += (price * qty);
+      }
+      
+      if (Math.abs(Number(meal.subtotal || 0) - authSub) > 1) {
+        console.warn(`⚠️ SERVER OVERRIDE: Client subtotal ${meal.subtotal} for ${meal.type} on ${dateOrder.date} replaced with ${authSub}`);
+      }
+      meal.subtotal = authSub;
+    }
+  }
+
   const initialStreakInfo = _calculateLoyaltyStreak(profile.phone, allOrderRows);
   let virtualStreakCount = initialStreakInfo.streak;
   let virtualPastSurcharge = initialStreakInfo.pastSurcharge;
@@ -1675,7 +1721,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
             `Once Admin verifies your ₹${upiDue} UPI payment, it will also be added to your Wallet (1-2 days). ✅`
           : `₹${walletCredit} has been refunded to your Wallet. ✅`;
       }
-      return { success: true, message: softCancelMsg };
+      return { success: true, message: softCancelMsg, refundAmt: Number(r.Net_Total) || 0, adjustment: 0 };
     } else {
       console.error(`FAILED: Missing columns for soft-cancel. StatusCol:${statusCol}, PrefCol:${prefCol}`);
     }
@@ -1706,7 +1752,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     }
   }
 
-  return {success: true, message: msg};
+  return {success: true, message: msg, refundAmt: typeof refundAmt !== "undefined" ? refundAmt : 0, adjustment: typeof adjustment !== "undefined" ? adjustment : 0};
 }
 
 

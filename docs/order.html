@@ -4621,7 +4621,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.1";
+    const APP_VERSION = "v2026.06.07.2";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9129,7 +9129,12 @@
 
       // A streak is only valid if it reached the cart dates, today, or the previous valid ordering day.
       // We calculate the previous valid day by starting from today and going back one valid day.
-      let dPrev = getIST();
+      let dPrev;
+      if (S.serverToday) {
+        dPrev = new Date(S.serverToday + "T12:00:00");
+      } else {
+        dPrev = getIST();
+      }
       dPrev.setUTCDate(dPrev.getUTCDate() - 1);
       let safetyFilter = 0;
       while (safetyFilter < 10) {
@@ -9203,6 +9208,7 @@
         const wb = Number(data.wallet_balance) || 0;
         const oab = Number(data.on_account_balance) || 0;
         S.profile = (S.profile || {});
+        S.serverToday = data.server_today;
         S.walletBalance = wb;
         S.onAccountBalance = oab;
         if ($("headerWalletBalance")) $("headerWalletBalance").textContent = `₹${wb}`;
@@ -10021,40 +10027,51 @@
       doClose();
     }
 
-    // One global storage-event listener; replaced on each new payment.
+    // Two listeners (replaced on each new payment): a same-origin storage event
+    // AND a cross-origin postMessage from the popup. Whichever fires first wins;
+    // a one-shot guard makes sure onResult runs exactly once even though the
+    // popup emits both relays near-simultaneously.
     function _hdfcInstallPopupResultListener(orderId, expectedType, onResult) {
       if (window._hdfcPopupResultHandler) {
         window.removeEventListener("storage", window._hdfcPopupResultHandler);
         window._hdfcPopupResultHandler = null;
       }
+      if (window._hdfcPopupMsgHandler) {
+        window.removeEventListener("message", window._hdfcPopupMsgHandler);
+        window._hdfcPopupMsgHandler = null;
+      }
+      let fired = false;
+      const finish = (data) => {
+        if (fired) return;
+        fired = true;
+        try { localStorage.removeItem("svaadh_hdfc_popup_result"); } catch(_) {}
+        window.removeEventListener("storage", handler);
+        window.removeEventListener("message", msgHandler);
+        window._hdfcPopupResultHandler = null;
+        window._hdfcPopupMsgHandler = null;
+        onResult(data);
+      };
+      // Same-origin path: localStorage storage event.
       const handler = (e) => {
         if (e.key !== "svaadh_hdfc_popup_result" || !e.newValue) return;
         let data; try { data = JSON.parse(e.newValue); } catch(_) { return; }
         if (!data || data.type !== expectedType) return;
         if (data.orderId && data.orderId !== orderId) return;
-        try { localStorage.removeItem("svaadh_hdfc_popup_result"); } catch(_) {}
-        window.removeEventListener("storage", handler);
-        window._hdfcPopupResultHandler = null;
-        onResult(data);
+        finish(data);
       };
-      window.addEventListener("storage", handler);
-      window._hdfcPopupResultHandler = handler;
-
-      // Cross-origin fallback: listen for postMessage from the popup.
-      // The popup side sends { __svaadhHdfc: true, type, orderId, status }
-      // via window.opener.postMessage when localStorage relay can't work.
+      // Cross-origin path: postMessage sent by the popup's window.opener call.
+      // ({ __svaadhHdfc: true, type, orderId, status }) — used when the popup
+      // returned to a different origin than the opener, so storage can't relay.
       const msgHandler = (e) => {
         if (!e.data || !e.data.__svaadhHdfc) return;
         if (e.data.type !== expectedType) return;
         if (e.data.orderId && e.data.orderId !== orderId) return;
-        window.removeEventListener("message", msgHandler);
-        // Also clean up the storage listener since we got the result via postMessage
-        window.removeEventListener("storage", handler);
-        window._hdfcPopupResultHandler = null;
-        try { localStorage.removeItem("svaadh_hdfc_popup_result"); } catch(_) {}
-        onResult(e.data);
+        finish(e.data);
       };
+      window.addEventListener("storage", handler);
       window.addEventListener("message", msgHandler);
+      window._hdfcPopupResultHandler = handler;
+      window._hdfcPopupMsgHandler = msgHandler;
     }
 
     /**

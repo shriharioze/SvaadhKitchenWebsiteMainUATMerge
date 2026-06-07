@@ -295,6 +295,7 @@ function getCustomerOrders(phone) {
     // Today's effective (override-aware) cutoff hours so Manage Orders can
     // disable the Cancel button once a meal's cutoff has passed.
     today_cutoffs: _effectiveCutoffsForDate(today),
+    server_today: today,
     month_summary: {
       month: monthName,
       total: monthTotal,

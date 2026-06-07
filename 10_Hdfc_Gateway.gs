@@ -1292,18 +1292,26 @@ function hdfc_markOrderPaid(order) {
     if (data.length < 2) return { error: "Orders sheet is empty." };
 
     const headers     = data[0];
+    const COL_GATEWAY = headers.indexOf("Gateway_Order_ID");
     const COL_SID     = headers.indexOf("Submission_ID");
     const COL_PSTATUS = headers.indexOf("Payment_Status");
     const COL_PMETHOD = headers.indexOf("Payment_Method");
     const COL_NOTES   = headers.indexOf("Kitchen_Notes");
 
-    if (COL_SID < 0 || COL_PSTATUS < 0) {
+    if (COL_PSTATUS < 0) {
       return { error: "Webhook: required columns missing in SK_Orders." };
     }
 
     var updated = 0;
     for (var i = 1; i < data.length; i++) {
-      if (String(data[i][COL_SID] || "").trim() === orderId) {
+      let isMatch = false;
+      if (COL_GATEWAY >= 0 && String(data[i][COL_GATEWAY] || "").trim() === orderId) {
+        isMatch = true;
+      } else if (COL_SID >= 0 && String(data[i][COL_SID] || "").trim() === orderId) {
+        isMatch = true;
+      }
+      
+      if (isMatch) {
 
         // ── Step 2: Duplicate check — skip if already marked Paid ──
         const currentStatus = String(data[i][COL_PSTATUS] || "").toLowerCase();
@@ -1369,14 +1377,22 @@ function hdfc_markOrderFailed(order) {
     if (data.length < 2) return { success: true, message: "No orders to update." };
 
     const headers     = data[0];
+    const COL_GATEWAY = headers.indexOf("Gateway_Order_ID");
     const COL_SID     = headers.indexOf("Submission_ID");
     const COL_PSTATUS = headers.indexOf("Payment_Status");
     const COL_NOTES   = headers.indexOf("Kitchen_Notes");
-    if (COL_SID < 0 || COL_PSTATUS < 0) return { error: "Webhook: required columns missing in SK_Orders." };
+    if (COL_PSTATUS < 0) return { error: "Webhook: required columns missing in SK_Orders." };
 
     var failed = 0, skippedPaid = 0;
     for (var i = 1; i < data.length; i++) {
-      if (String(data[i][COL_SID] || "").trim() === orderId) {
+      let isMatch = false;
+      if (COL_GATEWAY >= 0 && String(data[i][COL_GATEWAY] || "").trim() === orderId) {
+        isMatch = true;
+      } else if (COL_SID >= 0 && String(data[i][COL_SID] || "").trim() === orderId) {
+        isMatch = true;
+      }
+
+      if (isMatch) {
         const cur = String(data[i][COL_PSTATUS] || "").toLowerCase();
         // NEVER touch a confirmed-paid order (could be a later/duplicate attempt).
         if (cur === "paid" || cur === "collected" || cur === "wallet paid") { skippedPaid++; continue; }
