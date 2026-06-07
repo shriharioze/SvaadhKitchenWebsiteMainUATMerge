@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 15.8; // 2026-06-07: refund reconciler (reconcilePendingRefunds polls Status API → Refunded, webhook-independent; hdfc_getOrderRefunds); refund prompt label → "original payment method"
+const CODE_VERSION   = 15.9; // 2026-06-07: gateway-paid cancel remark now reflects real refund status (Cancelled – Refund Processing/Refunded/Pending) instead of always "UPI Refund Pending"
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

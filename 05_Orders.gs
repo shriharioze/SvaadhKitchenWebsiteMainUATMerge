@@ -1423,6 +1423,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
   const pStatStr = String(r.Payment_Status).toLowerCase();
   const isOnAccountOrder = pStatStr === "on account";
   let finalType = refundType; // Declare here so it is accessible at the end of the function for the soft-cancel remark.
+  let gwRefundStatusTxt = "";  // "Processing" | "Refunded" when a gateway auto-refund ran — drives the cancel remark.
 
   if (pStatStr === "paid" || pStatStr === "wallet paid" || isOnAccountOrder) {
     const custName = r.Customer_Name || "Customer";
@@ -1693,6 +1694,7 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
           autoRefunded    = true;
           refundModeTxt   = "gateway";
           refundStatusTxt = (rf.status === "SUCCESS" || rf.status === "REFUNDED") ? "Refunded" : "Processing";
+          gwRefundStatusTxt = refundStatusTxt; // carry to the cancel remark below
           note = (note ? note + " | " : "") + "GW:" + gOrderId + " refundId:" + (rf.refund_id || reqId) + " (" + rf.status + ")";
           console.log("AUTO-REFUND ok: " + gOrderId + " ₹" + refundAmt + " status=" + rf.status);
         } else {
@@ -1766,7 +1768,11 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
       if (finalType === "wallet" || finalType === "__split_handled__") {
         cancelRemark = "Cancelled \u2013 Refunded to Wallet";
       } else if (finalType === "manual_upi") {
-        cancelRemark = "Cancelled \u2013 UPI Refund Pending";
+        // Gateway auto-refund ran \u2192 reflect its real status; otherwise it's
+        // queued for manual processing (legacy UPI orders, or API fallback).
+        if (gwRefundStatusTxt === "Refunded")        cancelRemark = "Cancelled \u2013 Refunded";
+        else if (gwRefundStatusTxt === "Processing") cancelRemark = "Cancelled \u2013 Refund Processing";
+        else                                         cancelRemark = "Cancelled \u2013 Refund Pending";
       } else if (finalType === "__on_account_handled__") {
         cancelRemark = "Cancelled \u2013 On Account";
       } else {
