@@ -648,7 +648,9 @@ function hdfc_createSession(body) {
   // incurred (cards can't be surcharged per the HDFC agreement). Authoritative
   // control is the gateway dashboard; this is a per-session belt-and-suspenders.
   if (HDFC_UPI_ONLY) {
-    payload.payment_filter = { allowed_methods: [ { payment_method_type: "UPI" } ] };
+    // HDFC "payment locking" format (case-sensitive): allowDefaultOptions:false
+    // hides every default method, then we re-enable ONLY UPI.
+    payload.payment_filter = { allowDefaultOptions: false, options: [ { enable: true, paymentMethodType: "UPI" } ] };
   }
 
   // Juspay Basic Auth: base64(api_key + ":") — API key as username, empty password
@@ -1767,7 +1769,9 @@ function hdfc_createWalletRechargeSession(body) {
 
   // UPI-only (same policy as order payments) — no card / net-banking MDR.
   if (HDFC_UPI_ONLY) {
-    payload.payment_filter = { allowed_methods: [ { payment_method_type: "UPI" } ] };
+    // HDFC "payment locking" format (case-sensitive): allowDefaultOptions:false
+    // hides every default method, then we re-enable ONLY UPI.
+    payload.payment_filter = { allowDefaultOptions: false, options: [ { enable: true, paymentMethodType: "UPI" } ] };
   }
 
   try {
