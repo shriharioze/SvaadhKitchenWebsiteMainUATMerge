@@ -4620,7 +4620,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.5";
+    const APP_VERSION = "v2026.06.07.6";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -8811,7 +8811,7 @@
             <div style="font-size:0.78rem;color:#444;line-height:1.7;">
               1. Tap your <b>profile avatar</b> (top-right) → choose <b>Manage Orders</b> from the drawer<br>
               2. Find the upcoming order you want to cancel<br>
-              3. Tap the <b>Delete</b> button on that order<br>
+              3. Tap the <b>Cancel</b> button on that order<br>
               4. Confirm the cancellation<br><br>
               <span style="background:#fdecea;border-radius:6px;padding:6px 10px;display:block;font-size:0.75rem;color:#c0392b;">
                 ⚠️ Direct editing is not possible. To change items — delete the order and place a new one before the cutoff.
@@ -9388,7 +9388,7 @@
             const cutoffCrossed = (o.date === today) && (hNow >= cutoffH);
             const delBtnHtml = cutoffCrossed
               ? `<button class="omr-del-btn" style="opacity:0.55;border-style:dashed;cursor:not-allowed;" onclick="cancelBlockedMsg()" title="Cutoff crossed — no cancellation allowed">🔒 Cancellation closed</button>`
-              : `<button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Delete</button>`;
+              : `<button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Cancel</button>`;
 
             const checkboxHtml = cutoffCrossed 
               ? `<input type="checkbox" disabled style="opacity:0.5; cursor:not-allowed; accent-color:#e65100;" title="Cutoff crossed">`
@@ -9425,7 +9425,7 @@
                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; cursor:pointer; color:#e65100; font-weight:600;">
                  <input type="checkbox" id="bulkCancelSelectAll" onchange="toggleAllBulkCancel(this.checked)" style="width:16px; height:16px; accent-color:#e65100;"> Select All
                </label>
-               <button id="bulkCancelBtn" onclick="deleteSelectedOrders()" style="display:none; padding:6px 14px; background:#e65100; color:#fff; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(230,81,0,0.2);">🗑 Delete Selected</button>
+               <button id="bulkCancelBtn" onclick="deleteSelectedOrders()" style="display:none; padding:6px 14px; background:#e65100; color:#fff; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer; box-shadow:0 2px 4px rgba(230,81,0,0.2);">🗑 Cancel Selected</button>
              </div>
            `;
         }
@@ -9733,12 +9733,19 @@
       const confirmed = await sConfirm(`Cancel these <b>${count}</b> selected orders?<br>${summaryListHtml}`, "Cancel Orders", "🗑️", "काय तुम्ही निवडलेल्या ऑर्डर रद्द करू इच्छिता?");
       if (!confirmed) return;
 
-      const rowIds = Array.from(cbs).map(cb => cb.value);
+      // Each checkbox is a DISPLAYED order that may bundle several backend rows
+      // (combined meals). Expand to ALL underlying row ids — exactly like the
+      // single-order cancel — so every row is actually cancelled, not just the
+      // group's representative row.
+      const selectedGroups = Array.from(cbs).map(cb => cb.value);
+      const rowIds = [...new Set(selectedGroups.flatMap(rid => (orderDataCache[rid] && orderDataCache[rid].all_row_ids) || [rid]))];
 
       let totalPaid = 0, potentialAmt = 0;
-      let hasWallet = false, hasManualUpi = false, hasPending = false, hasSplit = false;
+      let hasWallet = false, hasPending = false, hasSplit = false;
 
-      rowIds.forEach(rid => {
+      // Aggregate refund signals per selected GROUP (the representative's cache
+      // holds the group-level totals) to avoid double-counting a group's rows.
+      selectedGroups.forEach(rid => {
         const cached = orderDataCache[rid] || {};
         totalPaid += (Number(cached.original_total_paid) || 0);
         potentialAmt += (Number(cached.potential_total) || 0);
