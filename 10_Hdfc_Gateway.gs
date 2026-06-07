@@ -855,6 +855,36 @@ function hdfc_initiateRefund(gatewayOrderId, amount, uniqueRequestId, routingId)
 }
 
 /**
+ * Reads an order from the Status API and returns its refunds[] array (each with
+ * status, unique_request_id, amount). Used by the refund reconciler to settle
+ * "Processing" refunds WITHOUT depending on the REFUND_SUCCEEDED webhook.
+ * @returns {{success:true,refunds:Array}|{error:string}}
+ */
+function hdfc_getOrderRefunds(gatewayOrderId) {
+  if (!HDFC_MERCHANT_ID || !HDFC_API_KEY) return { error: "Gateway credentials not configured." };
+  gatewayOrderId = String(gatewayOrderId || "").trim();
+  if (!gatewayOrderId) return { error: "Missing gateway order id." };
+  const authToken = Utilities.base64Encode(HDFC_API_KEY + ":");
+  const options = {
+    method: "get",
+    headers: {
+      "Authorization": "Basic " + authToken,
+      "x-merchantid":  HDFC_MERCHANT_ID,
+      "version":       "2023-01-01"
+    },
+    muteHttpExceptions: true
+  };
+  try {
+    const resp = UrlFetchApp.fetch(HDFC_BASE_URL + "/orders/" + encodeURIComponent(gatewayOrderId), options);
+    if (resp.getResponseCode() !== 200) return { error: "HTTP " + resp.getResponseCode() };
+    const json = JSON.parse(resp.getContentText() || "{}");
+    return { success: true, refunds: Array.isArray(json.refunds) ? json.refunds : [] };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+/**
  * Marks the matching row in the Refunds sheet as fully refunded once HDFC
  * confirms (REFUND_SUCCEEDED webhook). Best-effort: matches by gateway order_id
  * recorded in the Adjustment_Note. Never throws.

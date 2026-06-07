@@ -26,6 +26,11 @@ function setupReconcileTrigger() {
 function reconcilePendingOrders() {
   if (!PAYMENT_GATEWAY_ENABLED) { Logger.log("reconcilePendingOrders: gateway disabled, skipping."); return; }
 
+  // Webhook-independent fallback: settle any gateway refunds still "Processing"
+  // by polling the Status API. Runs every 5 min on this same trigger, so a refund
+  // reaches "Refunded" even if the HDFC REFUND_SUCCEEDED webhook never arrives.
+  try { reconcilePendingRefunds(); } catch (e) { Logger.log("reconcilePendingRefunds error: " + e.message); }
+
   const props   = PropertiesService.getScriptProperties();
   const raw     = props.getProperty("HDFC_PENDING_ORDERS") || "{}";
   var pending;
@@ -237,5 +242,78 @@ function _buildSubmitBodyFromPending(orderId, entry, statusCheck) {
     // Tag the source so logs make it clear this row came from the reconciler
     placed_via:       "reconciler"
   };
+}
+
+/**
+ * Webhook-independent settlement of automatic gateway refunds. Sweeps SK_Refunds
+ * for rows still "Processing" (mode = gateway) and polls the Status API for that
+ * order's refunds[]. Matches the row's refund by its unique_request_id
+ * (RF + Submission_ID) and:
+ *   - SUCCESS  → flip the row to "Refunded"
+ *   - FAILURE  → flip to "Refund Failed" (so it's visible, not silently stuck)
+ *   - anything else → leave as Processing and retry next sweep.
+ * Called every 5 min from reconcilePendingOrders(). Never throws.
+ */
+function reconcilePendingRefunds() {
+  const ss = getSpreadsheet();
+  const refWs = ss.getSheetByName(TAB_REFUNDS);
+  if (!refWs || refWs.getLastRow() < 2) return;
+
+  const data = refWs.getDataRange().getValues();
+  const H = data[0];
+  const cSid    = H.indexOf("Submission_ID");
+  const cStatus = H.indexOf("Status");
+  const cMode   = H.indexOf("Refund_Mode");
+  const cNote   = H.indexOf("Adjustment_Note");
+  if (cSid === -1 || cStatus === -1) return;
+
+  // Submission_ID → Gateway_Order_ID map from SK_Orders.
+  const gwMap = {};
+  const ordWs = ss.getSheetByName(TAB_ORDERS);
+  if (ordWs && ordWs.getLastRow() > 1) {
+    const od = ordWs.getDataRange().getValues();
+    const oH = od[0];
+    const oSid = oH.indexOf("Submission_ID");
+    const oGw  = oH.indexOf("Gateway_Order_ID");
+    if (oSid !== -1 && oGw !== -1) {
+      for (var k = 1; k < od.length; k++) {
+        var s = String(od[k][oSid] || "").trim();
+        if (s) gwMap[s] = String(od[k][oGw] || "").trim();
+      }
+    }
+  }
+
+  var settled = 0, failed = 0;
+  for (var i = 1; i < data.length; i++) {
+    var status = String(data[i][cStatus] || "").trim().toLowerCase();
+    var mode   = cMode === -1 ? "" : String(data[i][cMode] || "").trim().toLowerCase();
+    if (status !== "processing" || mode !== "gateway") continue;
+
+    var sid = String(data[i][cSid] || "").trim();
+    var gOrderId = gwMap[sid] || "";
+    if (!gOrderId) continue;
+
+    var res = hdfc_getOrderRefunds(gOrderId);
+    if (!res || !res.success) continue;
+
+    // Match THIS row's refund by the unique_request_id we sent (RF + Submission_ID).
+    var reqId = ("RF" + sid).replace(/[^A-Za-z0-9]/g, "").slice(0, 20);
+    var mine  = res.refunds.filter(function(r){ return String(r.unique_request_id || "") === reqId; });
+    var rf    = mine.length ? mine[mine.length - 1] : null;
+    if (!rf) continue;
+
+    var st = String(rf.status || "").toUpperCase();
+    if (st.indexOf("SUCCESS") !== -1 || st === "REFUNDED") {
+      refWs.getRange(i + 1, cStatus + 1).setValue("Refunded");
+      if (cNote !== -1) refWs.getRange(i + 1, cNote + 1).setValue(String(data[i][cNote] || "") + " | settled via reconciler @ " + new Date());
+      settled++;
+    } else if (st.indexOf("FAIL") !== -1) {
+      refWs.getRange(i + 1, cStatus + 1).setValue("Refund Failed");
+      if (cNote !== -1) refWs.getRange(i + 1, cNote + 1).setValue(String(data[i][cNote] || "") + " | gateway reported " + st + " @ " + new Date());
+      failed++;
+    }
+    // else still pending at the gateway — leave Processing, retry next sweep.
+  }
+  if (settled || failed) Logger.log("reconcilePendingRefunds: settled " + settled + ", failed " + failed + ".");
 }
 

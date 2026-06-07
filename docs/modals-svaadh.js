@@ -112,7 +112,7 @@ const sBtnLoading = (btn, isLoading, loadingText = "") => {
  */
 const sPromptRefund = (msg, title = "Refund Method", icon = "💰", subtitle = "", customLabels = {}) => {
   const lblWallet = customLabels.wallet || "Svaadh Wallet";
-  const lblUPI = customLabels.upi || "UPI (Upto 3 working days)";
+  const lblUPI = customLabels.upi || "Original payment method (1–3 working days)";
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 's-modal-overlay';
