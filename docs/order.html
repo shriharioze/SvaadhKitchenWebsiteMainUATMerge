@@ -4614,7 +4614,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.07.17";
+    const APP_VERSION = "v2026.06.07.18";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -6831,7 +6831,13 @@
         nameToColKey["Curd"] = "B_CURD";
       } else {
         (FIXED_MEAL_ITEMS[meal] || []).forEach(g =>
-          g.items.forEach(it => { nameToColKey[it.name] = it.colKey; })
+          g.items.forEach(it => {
+            nameToColKey[it.name] = it.colKey;
+            // Items_JSON stores SIZE-LESS names (e.g. "Dry Sabji Full" for
+            // "Dry Sabji Full (250ml)"), so also map the suffix-stripped name.
+            const shortName = it.name.replace(/\s*\([^)]*\)\s*$/, "").trim();
+            if (shortName && shortName !== it.name) nameToColKey[shortName] = it.colKey;
+          })
         );
       }
 
