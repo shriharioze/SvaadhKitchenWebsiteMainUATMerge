@@ -51,6 +51,48 @@ function getMenuBatch(datesStr) {
   });
   return result;
 }
+// For the REORDER flow: given a comma-separated list of breakfast item names,
+// returns whether the calendar should be restricted and to which dates.
+//  - Everyday items (master Active, e.g. Poha/Upma) impose NO restriction.
+//  - Special items (e.g. Aloo Paratha) restrict to upcoming dates whose daily
+//    Breakfast_JSON includes them (intersection if several specials).
+// Returns { restrict: bool, dates: ["yyyy-MM-dd", ...] }.
+function getBreakfastItemDates(itemsStr) {
+  const items = String(itemsStr || "").split(',').map(s => s.trim()).filter(Boolean);
+  if (!items.length) return { restrict: false, dates: [] };
+  const _norm = function(n){ return String(n||"").toLowerCase().replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/\s+/g," ").trim(); };
+  const ss = getSpreadsheet();
+
+  // Everyday (master-Active) breakfast item names — these are on EVERY day.
+  const bfWs = getOrCreateTab(ss, TAB_BF_MASTER, []);
+  const activeSet = new Set(getAllRows(bfWs).filter(function(x){ return String(x.Active).toLowerCase() !== "false"; }).map(function(x){ return _norm(x.Name); }));
+
+  const specials = items.map(_norm).filter(function(n){ return n && !activeSet.has(n); });
+  if (!specials.length) return { restrict: false, dates: [] }; // all everyday → no restriction
+
+  const today = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  const menuWs = getOrCreateTab(ss, TAB_MENU, []);
+  const datesByItem = {};
+  specials.forEach(function(s){ datesByItem[s] = {}; });
+  getAllRows(menuWs).forEach(function(r){
+    const d = r.Date instanceof Date ? Utilities.formatDate(r.Date, "Asia/Kolkata", "yyyy-MM-dd") : String(r.Date||"").trim();
+    if (!d || d < today || !r.Breakfast_JSON) return;
+    let parsed; try { parsed = JSON.parse(r.Breakfast_JSON); } catch(e) { return; }
+    if (!Array.isArray(parsed)) return;
+    const namesOnDay = {};
+    parsed.forEach(function(x){ namesOnDay[_norm(x && x.name)] = true; });
+    specials.forEach(function(s){ if (namesOnDay[s]) datesByItem[s][d] = true; });
+  });
+
+  // allowed = intersection of every special item's date set
+  let allowed = null;
+  specials.forEach(function(s){
+    const ks = Object.keys(datesByItem[s]);
+    if (allowed === null) allowed = ks;
+    else allowed = allowed.filter(function(x){ return datesByItem[s][x]; });
+  });
+  return { restrict: true, dates: (allowed || []).sort() };
+}
 function _getMenuUncached(dateStr) {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_MENU, []);

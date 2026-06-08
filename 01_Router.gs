@@ -200,6 +200,7 @@ function doGet(e) {
     // Fallback menu / orders for customers (legacy)
     if (action === "getMenu") return jsonRes(getMenu(p.date));
     if (action === "getMenuBatch") return jsonRes(getMenuBatch(p.dates));
+    if (action === "getBreakfastItemDates") return jsonRes(getBreakfastItemDates(p.items));
     if (action === "getKitchenClosedDates") return jsonRes(getKitchenClosedDates());
     if (action === "getWeeklyMenu") return jsonRes(getWeeklyMenu());
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(p.phone));
