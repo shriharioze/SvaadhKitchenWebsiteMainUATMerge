@@ -4614,7 +4614,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.08.1";
+    const APP_VERSION = "v2026.06.08.2";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9635,7 +9635,7 @@
                 (o.payment_method?.toLowerCase().includes("gateway") ?
                 `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">🔒 Gateway</div>` :
                 `<div style="display:inline-block;background:#f9fafb;color:#666;font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:700;border:1px solid #ddd;">📱 UPI</div>`)}
-                ${o.items_raw ? `<button onclick='_startReorder("${o.meal}", this.dataset.items)' ${itemsRawAttr}
+                ${(o.items_raw && o.meal !== "Breakfast") ? `<button onclick='_startReorder("${o.meal}", this.dataset.items)' ${itemsRawAttr}
                   style="font-size:0.65rem;font-weight:700;padding:2px 9px;border-radius:99px;border:1.5px solid #1E1240;color:#1E1240;background:#fff5f4;cursor:pointer;">📋 Reorder</button>` : ''}
               </div>
             </div>
