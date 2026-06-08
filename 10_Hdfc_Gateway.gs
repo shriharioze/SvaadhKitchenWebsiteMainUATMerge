@@ -366,6 +366,36 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
   const initialStreakInfo  = _calculateLoyaltyStreak(phoneStr);
   let virtualStreakCount   = initialStreakInfo.streak || 0;
   let virtualPastSurcharge = initialStreakInfo.pastSurcharge || 0;
+  // Streak gap guard (mirrors submitOrder + the cart) so the gateway-recomputed
+  // amount equals the cart and never applies the 6th-day reward across a gap.
+  let prevStreakDate = initialStreakInfo.end || null;
+  const _closedSetGW = _kitchenClosedSet();
+  const _orderedDaysGW = new Set(dateList);
+  try {
+    const _gwWs = getSpreadsheet().getSheetByName(TAB_ORDERS);
+    if (_gwWs) getAllRows(_gwWs).forEach(function(r) {
+      if (_normalizePhone(r.Phone) !== phoneStr) return;
+      if (_isOrderCancelled(r.Payment_Status)) return;
+      const dd = r.Order_Date instanceof Date
+        ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+        : String(r.Order_Date || "").trim().substring(0, 10);
+      if (dd) _orderedDaysGW.add(dd);
+    });
+  } catch (e) {}
+  const _gwStreakConsecutive = function(d1, d2) {
+    if (!d1 || !d2) return false;
+    const a = new Date(d1 + "T12:00:00"), b = new Date(d2 + "T12:00:00");
+    const diff = Math.round((b - a) / 86400000);
+    if (diff <= 0) return false;
+    if (diff === 1) return true;
+    let cur = new Date(a); cur.setDate(cur.getDate() + 1);
+    while (cur < b) {
+      const iso = Utilities.formatDate(cur, "Asia/Kolkata", "yyyy-MM-dd");
+      if (cur.getDay() !== 0 && !_closedSetGW[iso] && !_orderedDaysGW.has(iso)) return false;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return true;
+  };
 
   // ── Menu cache ──────────────────────────────────────────────────────
   const menuCache = {};
@@ -382,6 +412,12 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     const menu = getMenuCached(orderDate);
     const existingDateInfo = existingDayTotals[orderDate] || {};
 
+    // Gap guard: a date not consecutive with the previous ordered day breaks the
+    // streak — restart so the reward can't fire (and the charge stays = cart).
+    if (prevStreakDate && !_gwStreakConsecutive(prevStreakDate, orderDate)) {
+      virtualStreakCount = 0;
+      virtualPastSurcharge = 0;
+    }
     const is6thDay = (virtualStreakCount === 5);
 
     // Compute per-meal subtotals from authoritative prices first (replaces client-supplied subtotals)
@@ -440,6 +476,7 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
       virtualStreakCount++;
       virtualPastSurcharge += currentDaySurcharge;
     }
+    prevStreakDate = orderDate; // ordered day — track for the next gap check
 
     // Per-meal compute (mirror submitOrder's inner loop) — accumulate at DAY level
     let dayNet = 0;

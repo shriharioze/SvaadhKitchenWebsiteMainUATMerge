@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 16.5; // 2026-06-07: price hike rounding -> always CEIL (no revenue loss vs old surcharge). Jowar/Bajra 21->22. + thresholds 106/159 (16.4)
+const CODE_VERSION   = 16.6; // 2026-06-07: FIX loyalty streak carrying across ordering gaps (gap guard in cart + submitOrder + gateway)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
