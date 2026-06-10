@@ -510,6 +510,11 @@ function doPost(e) {
       try { setupQuarterlyArchiveTrigger(); return jsonRes({success:true}); }
       catch(e) { return jsonRes({success:false, error:e.message}); }
     }
+    if (action === "setupAutoDeliveredTrigger") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      try { return jsonRes({success:true, message: setupAutoDeliveredTrigger()}); }
+      catch(e) { return jsonRes({success:false, error:e.message}); }
+    }
 
     if (action === "setPin") {
       const profile = { phone: body.phone, pin: body.pin };
