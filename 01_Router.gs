@@ -465,6 +465,10 @@ function doPost(e) {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(adminCreditWallet(body));
     }
+    if (action === "adminResetPin") {
+      if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
+      return jsonRes(adminResetPin(body));
+    }
     if (action === "rejectWalletRecharge") {
       if (!isAdmin) return jsonRes({error:"STRICT ADMIN PIN REQUIRED"});
       return jsonRes(rejectWalletRecharge(body));
@@ -593,6 +597,7 @@ function doPost(e) {
     if (action === "ia_submitOrder") return jsonRes(ia_submitOrder(body));
     if (action === "ia_setMenu")     return jsonRes(ia_setMenu(body));
     if (action === "ia_approve")     return jsonRes(ia_approve(body));
+    if (action === "ia_resetPin")    return jsonRes(ia_resetPin(body));
     if (action === "ia_markDelivered")    return jsonRes(ia_markDelivered(body));
     if (action === "ia_batchMarkEnRoute") return jsonRes(ia_batchMarkEnRoute(body));
 

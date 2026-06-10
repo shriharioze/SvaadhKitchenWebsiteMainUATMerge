@@ -9,6 +9,30 @@
 // ============================================================
 
 // ── GET CUSTOMER ─────────────────────────────────────────────
+// ── ADMIN RESET CUSTOMER PIN ──────────────────────────────────────────────────
+// Clears the PIN cell for a customer so they can set a new one on next login.
+// The row is kept; getCustomer() then returns hasPin:false → the order flow
+// shows the "set a new PIN" screen automatically.
+function adminResetPin(body) {
+  var phone = _normalizePhone(body.phone);
+  if (!phone || phone.length < 10) return { success: false, error: "Valid phone required" };
+  var ss = getSpreadsheet();
+  var ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
+  if (ws.getLastRow() < 2) return { success: false, error: "Customer not found." };
+  var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  var pinCol   = headers.indexOf("PIN") + 1;
+  var phoneCol = headers.indexOf("Phone");
+  if (!pinCol || phoneCol < 0) return { success: false, error: "Schema error: PIN/Phone column missing." };
+  var data = ws.getRange(2, 1, ws.getLastRow() - 1, ws.getLastColumn()).getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (_normalizePhone(data[i][phoneCol]) === phone) {
+      ws.getRange(i + 2, pinCol).setValue("");
+      return { success: true };
+    }
+  }
+  return { success: false, error: "Customer not found." };
+}
+
 function getCustomer(phone) {
   if (!phone) return {found: false};
   const ss = getSpreadsheet();
