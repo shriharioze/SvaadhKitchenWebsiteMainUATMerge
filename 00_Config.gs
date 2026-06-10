@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 17.0; // 2026-06-10: ADD autoMarkDeliveredDaily midnight trigger + resilient Start Delivery (optimistic unlock + offline queue)
+const CODE_VERSION   = 17.1; // 2026-06-10: FIX loyalty streak undercount — today's placed orders now count as streak days (frontend/backend parity)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

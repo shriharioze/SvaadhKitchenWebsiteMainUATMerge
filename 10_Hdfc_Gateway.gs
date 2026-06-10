@@ -412,13 +412,16 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     const menu = getMenuCached(orderDate);
     const existingDateInfo = existingDayTotals[orderDate] || {};
 
+    // Same-day add-on: a cart date equal to the last counted streak day is the
+    // SAME day — never a gap, never a fresh 6th-day trigger (already counted).
+    const isSameStreakDay = !!(prevStreakDate && prevStreakDate === orderDate);
     // Gap guard: a date not consecutive with the previous ordered day breaks the
     // streak — restart so the reward can't fire (and the charge stays = cart).
-    if (prevStreakDate && !_gwStreakConsecutive(prevStreakDate, orderDate)) {
+    if (prevStreakDate && !isSameStreakDay && !_gwStreakConsecutive(prevStreakDate, orderDate)) {
       virtualStreakCount = 0;
       virtualPastSurcharge = 0;
     }
-    const is6thDay = (virtualStreakCount === 5);
+    const is6thDay = !isSameStreakDay && (virtualStreakCount === 5);
 
     // Compute per-meal subtotals from authoritative prices first (replaces client-supplied subtotals)
     const mealSubs = {};   // { Breakfast: { sub, area }, ... }
@@ -472,6 +475,10 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     if (is6thDay) {
       virtualStreakCount   = 0;
       virtualPastSurcharge = 0;
+    } else if (isSameStreakDay) {
+      // Same day as the last counted streak day — no new streak day, but this
+      // submission's accrual joins that day's total for a future 6th-day waiver.
+      virtualPastSurcharge += currentDaySurcharge;
     } else {
       virtualStreakCount++;
       virtualPastSurcharge += currentDaySurcharge;
