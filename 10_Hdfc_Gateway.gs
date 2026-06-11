@@ -450,7 +450,9 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     const existingMeals       = Object.keys(existingDateInfo).filter(function(t){ return (Number(existingDateInfo[t].subtotal)||0) > 0; });
     const totalMealsCount     = Array.from(new Set(mealsThisSubmission.concat(existingMeals))).length;
     const dynamicFreeThreshold = totalMealsCount <= 1 ? 106 : 159;
-    const isDayFree           = (combinedDayTotal >= dynamicFreeThreshold);
+    // VIP counts as a "free day" too — matches frontend + submitOrder, so a VIP
+    // whose earlier same-day orders were charged fees gets them credited back.
+    const isDayFree           = (combinedDayTotal >= dynamicFreeThreshold) || isFeeExempt;
 
     // Day-tier discount (5%/7.5%) — pro-rated to this submission
     let discRate = 0;
@@ -460,18 +462,22 @@ function _computeAuthoritativeTotal(savedOrders, phone) {
     const prevDayDiscAmt    = Object.values(existingDateInfo).reduce(function(s, m){ return s + (Number(m.discount_applied)||0); }, 0);
     const submissionDateDiscAmt = Math.max(0, totalDayDiscAmt - prevDayDiscAmt);
 
+    // Accrual = SUM of per-meal rounds — exactly what each meal row stores in
+    // Inflation_Surcharge (round(sub × 5%)); mirrors the submitOrder fix.
+    const submissionDaySurcharge = Object.keys(mealSubs).reduce(
+      function(s, mt) { return s + Math.round((Number(mealSubs[mt].sub) || 0) * 0.05); }, 0);
+
     function getDisc(sub) {
       if (is6thDay) {
         // Loyalty reward: flat 5% back across all 6 days' food (no surcharge anymore)
-        const currentSurcharge = Math.round(submissionDayFoodTotal * 0.05);
-        const totalWaiver = virtualPastSurcharge + currentSurcharge;
+        const totalWaiver = virtualPastSurcharge + submissionDaySurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
       return submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
     }
 
     // Update virtual streak for next iteration (accrue 5% of food)
-    const currentDaySurcharge = Math.round(submissionDayFoodTotal * 0.05);
+    const currentDaySurcharge = submissionDaySurcharge;
     if (is6thDay) {
       virtualStreakCount   = 0;
       virtualPastSurcharge = 0;

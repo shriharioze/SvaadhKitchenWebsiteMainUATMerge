@@ -606,19 +606,24 @@ function _submitOrderInternal(body) {
     // The discount to apply to this ENTIRE submission for this date = entitled - already_applied
     const submissionDateDiscAmt = Math.max(0, totalDayDiscAmt - prevDayDiscAmt);
 
+    // Accrual = SUM of per-meal rounds — exactly what each meal row STORES in
+    // Inflation_Surcharge (round(sub × 5%)). A single per-day round drifted ±₹1
+    // on multi-meal days vs _calculateLoyaltyStreak, which sums per-row values.
+    const submissionDaySurcharge = order.meals.reduce(
+      (s, m) => s + Math.round((Number(m.subtotal) || 0) * 0.05), 0);
+
     // Pro-rate the submission-level discount across meals in this submission
     const getDisc = (sub) => {
       if (is6thDay) {
         // Loyalty reward: flat 5% back across all 6 days' food (no surcharge anymore)
-        const currentSurcharge = Math.round(submissionDayFoodTotal * 0.05);
-        const totalWaiver = virtualPastSurcharge + currentSurcharge;
+        const totalWaiver = virtualPastSurcharge + submissionDaySurcharge;
         return submissionDayFoodTotal > 0 ? Math.round(totalWaiver * (sub / submissionDayFoodTotal)) : 0;
       }
       return submissionDayFoodTotal > 0 ? Math.round(submissionDateDiscAmt * (sub / submissionDayFoodTotal)) : 0;
     };
 
     // Update virtual streak state for NEXT loop iteration (accrue 5% of food)
-    const currentDaySurcharge = Math.round(submissionDayFoodTotal * 0.05);
+    const currentDaySurcharge = submissionDaySurcharge;
     if (is6thDay) {
       virtualStreakCount = 0;
       virtualPastSurcharge = 0;
@@ -657,11 +662,14 @@ function _submitOrderInternal(body) {
       
       // Delivery & Fee logic (matches frontend)
       const isPickup  = (mealArea.toLowerCase().includes("pickup"));
-      const isDayFree = (combinedDayTotal >= dynamicFreeThreshold);
       const isFreeArea = freeAreaNames.includes(mealArea);
 
       // VIP Fee Exemption
       const isFeeExempt = (cRowIdx !== -1 && (cRows[cRowIdx].Fee_Exempt === "Yes" || cRows[cRowIdx].Fee_Exempt === true));
+
+      // VIP counts as a "free day" too — matches the frontend, so a VIP whose
+      // earlier same-day orders were charged fees gets them credited back below.
+      const isDayFree = (combinedDayTotal >= dynamicFreeThreshold) || isFeeExempt;
 
       let delCharge = 0;
       if (!isFeeExempt && !isDayFree && !isPickup && !isFreeArea && sub > 0) {
@@ -720,9 +728,12 @@ function _submitOrderInternal(body) {
       }
 
       let netTotal = Math.round(sub + delCharge + smallOrderFee - discAmt - mealCredit - reviewDiscount);
-      // If the 6th-day loyalty discount exceeds this meal's bill, clamp to ₹0 and
-      // accumulate the surplus — it gets credited to the customer's wallet after all rows are written.
-      if (is6thDay && netTotal < 0) {
+      // A bill can never be negative. Clamp to ₹0 and credit the surplus to the
+      // wallet after all rows are written. Covers BOTH the 6th-day waiver
+      // exceeding the day's bill AND retroactive discount/fee credits exceeding
+      // a small top-up order (e.g. ₹10 add-on that pushes the day over a
+      // discount tier, earning back more than the add-on costs).
+      if (netTotal < 0) {
         loyaltyExcessCredit += Math.abs(netTotal);
         netTotal = 0;
       }
@@ -1036,7 +1047,7 @@ function _submitOrderInternal(body) {
     try {
       _appendWalletTransaction(
         profile.phone || "", profile.name || "Customer",
-        "Loyalty Streak Reward (Excess Credit)",
+        "Bill Surplus Credit (discount/credit exceeded order value)",
         loyaltyExcessCredit, true, submissionIds[0] || ""
       );
     } catch(e) { /* non-fatal */ }
@@ -1481,9 +1492,11 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
     const deleteDate = orderDateStr;
     const deleteMeal = String(r.Meal_Type).trim();
 
-    // Get all orders for this phone+date (excluding the one being deleted)
+    // Get all ACTIVE orders for this phone+date (excluding the one being deleted
+    // and any already-cancelled rows — those must not inflate day totals).
     const sameDayRows = rows.filter(x =>
       String(x.Phone).trim() === String(phone).trim() &&
+      !_isOrderCancelled(x.Payment_Status) &&
       (() => {
         const xd = x.Order_Date instanceof Date
           ? Utilities.formatDate(x.Order_Date, 'Asia/Kolkata', 'yyyy-MM-dd')
@@ -1542,17 +1555,23 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
       }
     }
 
-    // Delivery & Fee eligibility for remaining same-day orders
-    // If combined day total drops below 150 after deletion → those remaining orders
-    // should have been charged fees → customer saved them unjustly.
-    const FREE_THR_D = 150;
+    // Delivery & Fee eligibility for remaining same-day orders.
+    // Mirrors submitOrder's DYNAMIC threshold (1 meal → ₹106, 2+ meals → ₹159):
+    // the day WAS free under its old meal-count threshold but the REMAINING
+    // orders no longer qualify under theirs → fees are owed.
+    const _mealsIn = (rowsArr) => new Set(
+      rowsArr.filter(x => (Number(x.Food_Subtotal) || 0) > 0)
+             .map(x => String(x.Meal_Type).trim())
+    ).size;
+    const oldThreshold = _mealsIn(sameDayRows.concat([r])) <= 1 ? 106 : 159;
+    const remThreshold = _mealsIn(sameDayRows) <= 1 ? 106 : 159;
     const freeAreaNames2 = getAreas().filter(a => a.free).map(a => a.name);
     const isNonFree = (area) => !freeAreaNames2.includes(area) && area !== "Self Pickup";
 
     let deliveryOwed = 0;
     let smallFeeOwed = 0;
 
-    if (oldDaySubtotal >= FREE_THR_D && remainingDaySubtotal < FREE_THR_D) {
+    if (oldDaySubtotal >= oldThreshold && remainingDaySubtotal < remThreshold) {
       // Day total drops below free-delivery threshold → remaining orders now owe fees.
       // We claw the amounts from THIS refund, AND update those rows in the sheet so that
       // if they are later cancelled themselves, the clawback doesn't fire a second time.
@@ -1566,10 +1585,12 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
         let netDelta = 0;
 
         // 1. Delivery Clawback: order was in non-free area but charged ₹0 due to threshold
+        // Delivery is ₹11 everywhere — refund deduction, row Delivery_Charge and
+        // Net_Total bump must all use the same figure (was 11/10/10: ₹1 hole).
         if (xSub > 0 && isNonFree(xArea) && (Number(x.Delivery_Charge) || 0) === 0) {
           deliveryOwed += 11;
-          netDelta += 10;
-          if (delivColIdx && !opts.dryRun) ws.getRange(x._row, delivColIdx).setValue(10);
+          netDelta += 11;
+          if (delivColIdx && !opts.dryRun) ws.getRange(x._row, delivColIdx).setValue(11);
         }
 
         // 2. Small Order Fee Clawback: Lunch/Dinner sub < ₹50 was waived due to threshold
@@ -1656,10 +1677,10 @@ function _deleteOrderInternal(phone, rowId, refundType, opts) {
       }
       if (deliveryOwed > 0) {
         const numOrders = deliveryOwed / 11;
-        lines.push(`  • -₹${deliveryOwed} — delivery fee: your remaining ${numOrders > 1 ? numOrders + " orders" : "order"} had free delivery because day total was ₹150+. It now drops below ₹150, so ₹11 delivery applies.`);
+        lines.push(`  • -₹${deliveryOwed} — delivery fee: your remaining ${numOrders > 1 ? numOrders + " orders" : "order"} had free delivery because the day total met the free-delivery threshold. It now drops below ₹${remThreshold}, so ₹11 delivery applies.`);
       }
       if (smallFeeOwed > 0) {
-        lines.push(`  • -₹${smallFeeOwed} — small cart fee: a remaining order under ₹50 had its ₹10 small cart fee waived (day total was ₹150+). Now that drops below ₹150, the fee applies.`);
+        lines.push(`  • -₹${smallFeeOwed} — small cart fee: a remaining order under ₹50 had its ₹10 small cart fee waived (day total met the threshold). Now that drops below ₹${remThreshold}, the fee applies.`);
       }
       if (loyaltyClawback > 0) {
         lines.push(`  • -₹${loyaltyClawback} — loyalty reward reversal: ${loyaltyClawbackNote}`);
