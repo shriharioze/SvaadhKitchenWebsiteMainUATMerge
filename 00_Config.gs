@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 17.4; // 2026-06-12: AUDIT batch 1 — negative-net clamp generalized, per-meal accrual, ₹11 delivery clawback, dynamic clawback threshold (106/159), cancelled rows excluded, VIP retro-credit parity
+const CODE_VERSION   = 17.5; // 2026-06-12: AUDIT batch 2 — single markReviewed (+3, claimed flag), promo/surplus backout on duplicate skips, layer-4 dup guard moved to pre-flight, promo use restored on cancellation
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

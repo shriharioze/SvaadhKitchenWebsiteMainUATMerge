@@ -646,28 +646,10 @@ function getReviews() {
     return { error: true, message: e.message };
   }
 }
-// ── TEST DATA GENERATOR ──────────────────────────────────────
-/**
- * ADMIN: Grant Review Promo (Manual)
- */
-function markReviewed(body) {
-  const ss = getSpreadsheet();
-  const ws = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
-  const rows = getAllRows(ws);
-  const phone = _normalizePhone(body.phone);
-  
-  const hIdx = headerIndex(ws);
-  if (!hIdx["Review_Promo_Count"]) return {success: false, error: "Review column not initialized. Please refresh sheet."};
-  
-  const rowIdx = rows.findIndex(x => _normalizePhone(x.Phone) === phone);
-  if (rowIdx === -1) return {success: false, message: "Customer not found."};
-  
-  // Set Review_Promo_Count to 3
-  const realRow = rowIdx + 2;
-  ws.getRange(realRow, hIdx["Review_Promo_Count"]).setValue(3);
-  
-  return {success: true, message: "10% Discount (3x) gifted successfully!"};
-}
+// NOTE: markReviewed lives earlier in this file (the +3-stacking version that
+// also sets Review_Reward_Claimed). A second definition here used to OVERWRITE
+// the count to 3 — wiping any unused balance — and, being the later definition,
+// silently shadowed the correct one. Removed.
 function setStandardOrder(phone, itemsJSON, templateName, meal) {
   var ss = getSpreadsheet();
   var custWs = getOrCreateTab(ss, TAB_CUSTOMERS, CUSTOMERS_HEADERS);
