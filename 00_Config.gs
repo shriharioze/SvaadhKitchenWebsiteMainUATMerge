@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 17.2; // 2026-06-10: FIX fixLoyaltyDiscountMarkers — replay now also skips admin kitchen-closed days (was Sundays only)
+const CODE_VERSION   = 17.3; // 2026-06-12: FIX cancellation — dry-run preview no longer mutates rows; loyalty clawback marks reward recovered on payoff row (no double-claw)
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
