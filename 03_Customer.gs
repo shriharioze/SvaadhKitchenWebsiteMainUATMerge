@@ -171,7 +171,20 @@ function _upsertCustomer(ss, profile) {
     if (profile.landmark !== undefined) update("Landmark",      profile.landmark || "");
     if (profile.delivery_point !== undefined) update("Delivery_Point", _getDeliveryPointLabel(profile.delivery_point));
     if (profile.payment_preference !== undefined) update("Payment_Freq",  profile.payment_preference);
-    if (profile.pin) update("PIN", profile.pin);
+    // SECURITY: never CHANGE an existing non-blank PIN via upsert. Only write
+    // the PIN when the stored one is blank (new account / admin-cleared reset)
+    // or identical (mid-flow re-save). Without this, setPin/upsertProfile let
+    // anyone who knows a phone number overwrite the PIN and seize the account
+    // (and its wallet). A real "change PIN knowing the old one" flow doesn't
+    // exist in this app, so nothing legitimate is blocked.
+    if (profile.pin) {
+      const _storedPin = String(existing.PIN || "").trim();
+      if (_storedPin === "" || _storedPin === String(profile.pin).trim()) {
+        update("PIN", profile.pin);
+      } else {
+        console.warn("⚠️ PIN overwrite BLOCKED for " + pStr + " — existing PIN not replaced (takeover guard).");
+      }
+    }
     if (profile.meal_addresses) update("Meal_Addresses", profile.meal_addresses);
     if (profile.standardOrder !== undefined) update("Standard_Order", profile.standardOrder);
     if (profile.onAccount !== undefined) update("On_Account", profile.onAccount);
