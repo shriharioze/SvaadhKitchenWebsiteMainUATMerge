@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 18.0; // 2026-06-12: AUDIT D — single-day packaging expenses now exclude cancelled orders (matches range variant); rest of kitchen/delivery audited clean
+const CODE_VERSION   = 18.1; // 2026-06-12: AUDIT F (IntentAmplify) — ia_isOpen weekend guard (server-side parity), defensive cancelled filter in ia_rowsAsSK; prices server-sourced, clean
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
