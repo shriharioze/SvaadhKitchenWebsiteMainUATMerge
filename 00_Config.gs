@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 17.8; // 2026-06-12: AUDIT B1-B3 (wallet) — cancellation charge now debits (was crediting), split wallet budgeted across meals, recharge sanity cap
+const CODE_VERSION   = 17.9; // 2026-06-12: AUDIT B4-B6 — markRefunded idempotency+lock (no double credit), verify-time clawback dynamic threshold + ₹11 delivery, markCustomersPaid date normalize
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

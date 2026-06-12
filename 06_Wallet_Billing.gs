@@ -142,6 +142,11 @@ function getPendingRefunds() {
   return rows.filter(r => ["Pending", "Verification Required"].includes(String(r.Status)));
 }
 function markRefunded(submissionId) {
+  // Serialize so a double-click / concurrent batch can't process the same
+  // refund row twice (which would credit the wallet again).
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(8000); } catch(e) { return {success: false, error: "Server busy — please retry"}; }
+  try {
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_REFUNDS, []);
   const data = ws.getDataRange().getValues();
@@ -159,6 +164,13 @@ function markRefunded(submissionId) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][idIdx]) === String(submissionId)) {
       const row = data[i];
+      // Idempotency guard: if this refund was already settled, do NOT credit
+      // again. (Matched by submission id only, so without this a re-fire would
+      // re-run the wallet credit.)
+      const curStatus = String(row[statusIdx] || "").trim().toLowerCase();
+      if (curStatus.indexOf("refunded") === 0 || curStatus.indexOf("rejected") === 0) {
+        return {success: true, alreadyProcessed: true};
+      }
       const mode = modeIdx !== -1 ? String(row[modeIdx]).toLowerCase() : "upi";
       const phone = phoneIdx !== -1 ? String(row[phoneIdx]) : "";
       const name = nameIdx !== -1 ? String(row[nameIdx]) : "Customer";
@@ -200,6 +212,9 @@ function markRefunded(submissionId) {
     }
   }
   return {success: false, error: "Refund request not found"};
+  } finally {
+    lock.releaseLock();
+  }
 }
 function markRefundRejected(submissionId) {
   const ss = getSpreadsheet();
@@ -288,9 +303,14 @@ function markCustomersPaid(body) {
   const rows    = getAllRows(ws);
   let   updated = 0;
   rows.forEach(r => {
+    // Normalize Order_Date — Date-typed cells stringify to "Sat Jun 12 2026…"
+    // which sorts AFTER every "yyyy-MM-dd" bound, silently excluding them.
+    const od = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date || "").trim();
     if (phones.includes(String(r.Phone||"").trim()) &&
-        String(r.Order_Date) >= dateFrom &&
-        String(r.Order_Date) <= dateTo   &&
+        od >= dateFrom &&
+        od <= dateTo   &&
         (r.Payment_Status === "Pending" ||
          r.Payment_Status === "on account" ||
          !r.Payment_Status)) {
@@ -426,8 +446,12 @@ function markOrdersStatus(body) {
       let scSmallFeeOwed = 0;
       const scFreeAreas  = getAreas().filter(a => a.free).map(a => a.name);
       const scIsNonFree  = (area) => !scFreeAreas.includes(area) && area !== "Self Pickup";
-      const scFreeThr    = 150;
-      if (scOldTotal >= scFreeThr && scRemaining < scFreeThr) {
+      // Dynamic free-delivery threshold by remaining meal count (matches submitOrder
+      // and _deleteOrderInternal): 1 meal → ₹106, 2+ → ₹159. Was a static ₹150.
+      const _scMeals = (arr) => new Set(arr.filter(x => (Number(x.Food_Subtotal) || 0) > 0).map(x => String(x.Meal_Type).trim())).size;
+      const scOldThr = _scMeals(scSameDayRows.concat([r])) <= 1 ? 106 : 159;
+      const scRemThr = _scMeals(scSameDayRows) <= 1 ? 106 : 159;
+      if (scOldTotal >= scOldThr && scRemaining < scRemThr) {
         const scHIdx2    = headerIndex(ws);
         const scDelCol   = scHIdx2["Delivery_Charge"];
         const scSmallCol = scHIdx2["Small_Order_Fee"];
@@ -436,9 +460,10 @@ function markOrdersStatus(body) {
           const xSub  = Number(x.Food_Subtotal) || 0;
           const xMeal = String(x.Meal_Type).trim();
           let scNetDelta = 0;
+          // Delivery is ₹11 everywhere — refund deduction and stored charge must match.
           if (xSub > 0 && scIsNonFree(x.Area || "") && (Number(x.Delivery_Charge) || 0) === 0) {
-            scDeliveryOwed += 10; scNetDelta += 10;
-            if (scDelCol) ws.getRange(x._row, scDelCol).setValue(10);
+            scDeliveryOwed += 11; scNetDelta += 11;
+            if (scDelCol) ws.getRange(x._row, scDelCol).setValue(11);
           }
           if ((xMeal === "Lunch" || xMeal === "Dinner") && xSub > 0 && xSub < 50
               && (Number(x.Small_Order_Fee) || 0) === 0) {
