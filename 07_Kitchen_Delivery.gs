@@ -538,7 +538,8 @@ function getPackagingExpenses(date) {
     var d = r.Order_Date instanceof Date
       ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
       : String(r.Order_Date).trim();
-    return d === date;
+    // Exclude cancelled — they consume no packaging (matches the range variant).
+    return d === date && !_isOrderCancelled(r.Payment_Status);
   });
 
   if (dayRows.length === 0) return {date: date, orderCount: 0, meals: {}, items: [], total: 0};
