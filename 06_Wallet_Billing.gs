@@ -532,6 +532,9 @@ function submitWalletRecharge(body) {
   var name   = String(body.name || "").trim();
   var amount = Number(body.amount);
   if (!phone || isNaN(amount) || amount <= 0) return {success:false, error:"Invalid amount or phone"};
+  // Sanity cap — keeps the pending-recharge list clean (admin still verifies
+  // every entry before it touches the balance; this just blocks absurd values).
+  if (amount > 50000) return {success:false, error:"Recharge amount too large. Please contact us for amounts above ₹50,000."};
 
   // Unverified entry requiring admin to flip to TRUE
   const rechargeRef = "RCH-" + Utilities.formatDate(getISTDate(), "Asia/Kolkata", "yyyyMMdd-HHmmss") + "-" + phone.slice(-4);
