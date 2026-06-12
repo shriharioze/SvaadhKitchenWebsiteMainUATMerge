@@ -333,6 +333,26 @@ function getWeeklyMenu() {
 function getAdminData() {
   return _cachedData("adminData_v1", 30, _getAdminDataUncached);
 }
+
+// Lightweight id→name map for the breakfast + sabji masters ONLY.
+// submitOrder uses this to resolve item-id columns; it must NOT call the full
+// getAdminData(), whose menuEntries pass scans every order row per menu date
+// (O(orders × dates)) and took ~40s cold — the entire order-placement lag.
+// Two small sheet reads, cached 5 min (masters change rarely).
+function _getMastersMap() {
+  return _cachedData("mastersMap_v1", 300, function() {
+    const ss = getSpreadsheet();
+    const map = {};
+    getAllRows(getOrCreateTab(ss, TAB_BF_MASTER, [])).forEach(function(r) {
+      if (r.ID !== "" && r.ID !== undefined) map[String(r.ID)] = String(r.Name || "");
+    });
+    getAllRows(getOrCreateTab(ss, TAB_SABJI, [])).forEach(function(r) {
+      if (r.ID !== "" && r.ID !== undefined) map[String(r.ID)] = String(r.Name || "");
+    });
+    return map;
+  });
+}
+
 function _getAdminDataUncached() {
   const ss = getSpreadsheet();
 
@@ -346,6 +366,28 @@ function _getAdminDataUncached() {
 
   const ordersWsAdm = getOrCreateTab(ss, TAB_ORDERS, []);
   const allOrdersAdm = getAllRows(ordersWsAdm);
+
+  // Build per-date ordered-unit counts in ONE pass over all orders. Previously
+  // countOrderedUnits(allOrders, date) was called per menu row → O(orders ×
+  // dates) with a JSON.parse for every order each time (the ~40s hot spot).
+  const countsByDate = {};
+  allOrdersAdm.forEach(function(row) {
+    if (_isOrderCancelled(row.Payment_Status)) return;
+    const dd = row.Order_Date instanceof Date
+      ? Utilities.formatDate(row.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(row.Order_Date || "").trim();
+    if (!dd) return;
+    const meal = String(row.Meal_Type || "");
+    if (!countsByDate[dd]) countsByDate[dd] = { Breakfast: {}, Lunch: {}, Dinner: {} };
+    if (!countsByDate[dd][meal]) return;
+    let items = {};
+    try { items = JSON.parse(row.Items_JSON || "{}"); } catch (e) {}
+    Object.entries(items).forEach(function(pair) {
+      let k = pair[0];
+      if (meal === "Breakfast" && k === "Curd") k = "Breakfast Curd";
+      countsByDate[dd][meal][k] = (countsByDate[dd][meal][k] || 0) + Number(pair[1] || 0);
+    });
+  });
 
   const breakfastMaster = bfRows.map(r => ({
     id: String(r.ID), name: String(r.Name), price: Number(r.Price),
@@ -373,7 +415,7 @@ function _getAdminDataUncached() {
     try { if (r.Orders_Closed) ordersClosed = JSON.parse(r.Orders_Closed); } catch(e) {}
     let stockLimits = {};
     try { if (r.Stock_JSON) stockLimits = JSON.parse(r.Stock_JSON); } catch(e) {}
-    const orderedCounts = countOrderedUnits(allOrdersAdm, d);
+    const orderedCounts = countsByDate[d] || { Breakfast: {}, Lunch: {}, Dinner: {} };
     const unitsRemaining = {};
     ["Breakfast","Lunch","Dinner"].forEach(meal => {
       Object.entries(stockLimits[meal] || {}).forEach(([colKey, limit]) => {

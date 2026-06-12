@@ -335,13 +335,11 @@ function _submitOrderInternal(body) {
     }
   }
 
-  // Pre-fetch masters once for ID -> Name resolution in sheet columns
-  const masterMap = {};
-  try {
-    const masters = getAdminData();
-    (masters.breakfastMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
-    (masters.sabjiMaster || []).forEach(m => masterMap[String(m.id)] = m.name);
-  } catch(e) { console.error("Master fetch failed in submitOrder", e); }
+  // Masters for ID -> Name resolution in sheet columns. Lightweight masters-only
+  // lookup (NOT getAdminData — that scans every order per menu date, ~40s cold,
+  // and was the entire place-order lag). Cached 5 min.
+  let masterMap = {};
+  try { masterMap = _getMastersMap(); } catch(e) { console.error("Master fetch failed in submitOrder", e); }
 
   // Strip weight/measure suffixes like [175g], [200g], [100ml], (2 pieces) etc.
   // so backend always stores the clean item name regardless of what frontend shows.
