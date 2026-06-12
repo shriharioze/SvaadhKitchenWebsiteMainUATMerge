@@ -4614,7 +4614,7 @@
     // CONFIG
     // ═══════════════════════════════════════════════════════════
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY8K_CutPoN0GRWutUZksfP7nTM39LCmM0lxudXISBJIaH9oKR2fw3Ck3djBhOu5vyzA/exec"; // MERGED DEPLOYMENT (main + UAT HDFC)
-    const APP_VERSION = "v2026.06.12.1";
+    const APP_VERSION = "v2026.06.12.2";
     const UPI_VPA = "9819969682@hdfc";
     const UPI_NAME = "Svaadh Kitchen";
     let FREE_AREAS = ["Bhosale Nagar"];   // populated dynamically from API
@@ -9526,9 +9526,9 @@
               ? `<button class="omr-del-btn" style="opacity:0.55;border-style:dashed;cursor:not-allowed;" onclick="cancelBlockedMsg()" title="Cutoff crossed — no cancellation allowed">🔒 Cancellation closed</button>`
               : `<button class="omr-del-btn" onclick="deleteOrder('${o.rowId}','${o.date}','${o.meal}')">🗑 Cancel</button>`;
 
-            const checkboxHtml = cutoffCrossed 
-              ? `<input type="checkbox" disabled style="opacity:0.5; cursor:not-allowed; accent-color:#e65100;" title="Cutoff crossed">`
-              : `<input type="checkbox" class="bulk-cancel-cb" value="${o.rowId}" data-date="${o.date}" data-meal="${o.meal}" onchange="updateBulkCancelBtn()" style="cursor:pointer; width:18px; height:18px; accent-color:#e65100;">`;
+            const checkboxHtml = cutoffCrossed
+              ? `<input type="checkbox" disabled style="opacity:0.5; cursor:not-allowed; width:18px; height:18px; flex-shrink:0; accent-color:#e65100;" title="Cutoff crossed">`
+              : `<input type="checkbox" class="bulk-cancel-cb" value="${o.rowId}" data-date="${o.date}" data-meal="${o.meal}" onchange="updateBulkCancelBtn()" style="cursor:pointer; width:18px; height:18px; flex-shrink:0; accent-color:#e65100;">`;
 
             return `<div class="order-manage-row">
           <div class="omr-top">
