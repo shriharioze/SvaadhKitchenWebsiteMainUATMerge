@@ -586,6 +586,7 @@ function _submitOrderInternal(body) {
   const _normPhone = _normalizePhone(profile.phone);
   let loyaltyExcessCredit = 0; // accumulates surplus when 6th-day discount exceeds the bill
   let grandNetTotal = 0;       // sum of all per-meal Net_Totals — returned so the UPI QR matches what's recorded
+  let newRowsWritten = 0;      // rows actually appended this call — 0 means everything was a dedupe replay
   // SPLIT: one cart-level wallet budget (the frontend sends the whole intended
   // wallet portion in body.wallet_credit). Spent down per meal so the wallet is
   // distributed correctly across a multi-meal cart instead of re-applied to each
@@ -1096,6 +1097,7 @@ function _submitOrderInternal(body) {
       }
 
       ordersWs.appendRow(row);
+      newRowsWritten++;
       _missedOrderSafetyNet(ss, sid, row, profile.phone);  // safety net — verify write succeeded
     }
   }
@@ -1146,7 +1148,24 @@ function _submitOrderInternal(body) {
     _invalidateCache(...submissionDates.map(d => "menu_v2_" + d));
   }
 
-  return {success: true, submissionId: submissionIds[0] || "", wallet_bonus: loyaltyExcessCredit, grand_total: grandNetTotal};
+  // HARD GUARD: never return an "empty success". If no meal was even processed
+  // (empty/missing orders payload), that is an ERROR — the old behaviour
+  // returned {success:true, submissionId:"", grand_total:0}, showing the
+  // customer a success screen while NOTHING was written to the sheet.
+  if (!submissionIds.length) {
+    console.error("submitOrder received no valid order items — phone=" + phoneStr
+      + " ordersLen=" + (orders ? orders.length : "n/a"));
+    return { error: "No order items were received. Please refresh the page and try placing your order again." };
+  }
+
+  return {
+    success: true,
+    submissionId: submissionIds[0] || "",
+    wallet_bonus: loyaltyExcessCredit,
+    grand_total: grandNetTotal,
+    rows_written: newRowsWritten,          // diagnosability: 0 = pure dedupe replay
+    replayed: newRowsWritten === 0         // true → this exact order already existed (retry/double-tap)
+  };
 }
 /**
  * ADMIN: Toggle On Account status for a customer

@@ -606,8 +606,14 @@ function doPost(e) {
     if (action === "ia_markDelivered")    return jsonRes(ia_markDelivered(body));
     if (action === "ia_batchMarkEnRoute") return jsonRes(ia_batchMarkEnRoute(body));
 
-    // Regular order submission
-    return jsonRes(submitOrder(body));
+    // Regular order submission — the ONLY POST with no _action. Anything else
+    // (unknown/typo'd actions, malformed debug payloads) must NOT fall through
+    // to submitOrder: that used to return {success:true, submissionId:""} for a
+    // body with no orders — a phantom "success" with nothing written.
+    if (action === "" && Array.isArray(body.orders) && body.orders.length) {
+      return jsonRes(submitOrder(body));
+    }
+    return jsonRes({ error: "Unknown action" + (action ? ": '" + action + "'" : " (no orders payload)") });
   } catch(err) {
     return jsonRes({error: err.message});
   }
