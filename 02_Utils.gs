@@ -33,44 +33,32 @@ function getSpreadsheet() {
 }
 function getOrCreateTab(ss, name, headers) {
   let ws = ss.getSheetByName(name);
-  const isNew = !ws;
   if (!ws) {
     ws = ss.insertSheet(name);
   }
 
   if (headers && headers.length > 0) {
     const lastCol = ws.getLastColumn();
+    const currentHeaders = lastCol > 0 ? ws.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h||"").trim()) : [];
 
-    if (isNew || lastCol === 0) {
-      // Brand-new / empty sheet → write the full header row once.
-      ws.getRange(1, 1, 1, headers.length).setValues([headers]);
-      ws.getRange(1, 1, 1, headers.length)
-        .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
-      ws.setFrozenRows(1);
-      headers.forEach((h, i) => {
+    // HEADER-ROW REPAIR (label-only, never moves data, never deletes columns).
+    // getAllRows reads every row BY HEADER NAME, so a drifted header row makes
+    // the whole app read the wrong column (e.g. PIN comes back blank and an
+    // existing customer is wrongly asked to set a new PIN). Data in these sheets
+    // is maintained in the canonical constant order, so aligning the LABELS is
+    // correct and safe. Only row 1 is touched; cell data is never moved.
+    headers.forEach((h, i) => {
+      if (currentHeaders[i] !== h) {
+        ws.getRange(1, i + 1).setValue(h)
+          .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
+        if (i === 0) ws.setFrozenRows(1);
         if (h === "Phone" || h === "PIN") ws.getRange(1, i + 1, ws.getMaxRows(), 1).setNumberFormat("@");
-      });
-    } else {
-      // ── EXISTING POPULATED SHEET — NON-DESTRUCTIVE ────────────────────────
-      // NEVER rename/reposition existing headers, and NEVER delete columns.
-      // The old code forced row 1 to equal `headers` BY POSITION and deleted
-      // any extra columns — when a live sheet's real column order differed from
-      // the constant (even by one), that relabelled columns onto the wrong data
-      // and physically wiped real order data (Submitted_At / Order_Date) during
-      // archive. We now only APPEND headers that are genuinely absent, as new
-      // trailing columns. Anything else is left exactly as it is.
-      const current = ws.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h || "").trim());
-      const have = {};
-      current.forEach(h => { if (h) have[h] = true; });
-      headers.forEach(h => {
-        if (h && !have[h]) {
-          const col = ws.getLastColumn() + 1;
-          ws.getRange(1, col).setValue(h).setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
-          if (h === "Phone" || h === "PIN") ws.getRange(1, col, ws.getMaxRows(), 1).setNumberFormat("@");
-          have[h] = true;
-        }
-      });
-    }
+      }
+    });
+
+    // COLUMN DELETION REMOVED (2026-06-13) — it was the data-loss footgun that
+    // erased SK_Orders columns (Order_Date / Submitted_At) during archive when
+    // the sheet briefly had an extra column. Extra columns are now left alone.
   }
   return ws;
 }
