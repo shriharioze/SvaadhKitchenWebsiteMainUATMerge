@@ -225,7 +225,7 @@ function voidOrderRow(submissionId, reason) {
       const existingNote = String(data[r][notesCol] || "").trim();
       const newNote = existingNote ? existingNote + " | " + note : note;
 
-      if (psCol !== -1)    ws.getRange(r + 1, psCol + 1).setValue("Voided");
+      if (psCol !== -1)    ws.getRange(r + 1, psCol + 1).setValue("Cancelled - Voided");  // "Cancelled" prefix so _isOrderCancelled excludes it from prep/revenue/stock
       if (notesCol !== -1) ws.getRange(r + 1, notesCol + 1).setValue(newNote);
       SpreadsheetApp.flush();
       console.log("voidOrderRow: " + submissionId + " voided. Reason: " + reason);
@@ -246,8 +246,9 @@ function getUnpaidOrdersData(p) {
 
   const relevant = rows.filter(r => {
     const d = r.Order_Date instanceof Date ? Utilities.formatDate(r.Order_Date,"Asia/Kolkata","yyyy-MM-dd") : String(r.Order_Date).trim();
+    const _ps = String(r.Payment_Status || "").trim().toLowerCase();  // canonical is "On Account" (capital) — normalize so it isn't excluded
     return d >= dateFrom && d <= dateTo &&
-    (r.Payment_Status === "Pending" || r.Payment_Status === "on account" || !r.Payment_Status);
+    (_ps === "pending" || _ps === "on account" || !_ps);
   });
 
   const orders = relevant.map(r => ({
@@ -602,8 +603,9 @@ function markOrdersPaidBulk(body) {
   let updated = 0;
   
   rows.forEach(r => {
-    if (sids.includes(String(r.Submission_ID)) && 
-        (r.Payment_Status === "Pending" || r.Payment_Status === "on account" || !r.Payment_Status)) {
+    const _ps = String(r.Payment_Status || "").trim().toLowerCase();  // canonical is "On Account" (capital) — normalize so it isn't skipped
+    if (sids.includes(String(r.Submission_ID)) &&
+        (_ps === "pending" || _ps === "on account" || !_ps)) {
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
       updated++;
     }

@@ -2381,7 +2381,7 @@ function submitManualOrder(body) {
   set("Net_Total",      amount);
   set("Payment_Method", orderPayMethod);
   set("Payment_Status", orderPayStatus);
-  set("Address",        custAddress);
+  set("Full_Address",   custAddress);  // was "Address" — no such column, so manual-order address was silently dropped
   set("Area",           custArea);
   set("Society",        custSociety);
   set("Maps_Link",      custMaps);

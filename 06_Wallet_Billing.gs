@@ -260,7 +260,7 @@ function getUnpaidCustomers(p) {
     String(r.Order_Date) >= dateFrom &&
     String(r.Order_Date) <= dateTo   &&
     (r.Payment_Status === "Pending" ||
-     r.Payment_Status === "on account" ||
+     String(r.Payment_Status||"").trim().toLowerCase() === "on account" ||
      !r.Payment_Status)
   );
 
@@ -312,7 +312,7 @@ function markCustomersPaid(body) {
         od >= dateFrom &&
         od <= dateTo   &&
         (r.Payment_Status === "Pending" ||
-         r.Payment_Status === "on account" ||
+         String(r.Payment_Status||"").trim().toLowerCase() === "on account" ||
          !r.Payment_Status)) {
       ws.getRange(r._row, hIdx["Payment_Status"]).setValue("Paid");
       updated++;
