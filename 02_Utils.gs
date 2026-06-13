@@ -33,34 +33,43 @@ function getSpreadsheet() {
 }
 function getOrCreateTab(ss, name, headers) {
   let ws = ss.getSheetByName(name);
+  const isNew = !ws;
   if (!ws) {
     ws = ss.insertSheet(name);
   }
-  
+
   if (headers && headers.length > 0) {
     const lastCol = ws.getLastColumn();
-    const currentHeaders = lastCol > 0 ? ws.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h||"").trim()) : [];
-    
-    // Force header row synchronization by explicitly setting range if any mismatch
-    headers.forEach((h, i) => {
-      if (currentHeaders[i] !== h) {
-        ws.getRange(1, i + 1).setValue(h)
-          .setFontWeight("bold")
-          .setBackground("#c0392b")
-          .setFontColor("white");
-        if (i === 0) ws.setFrozenRows(1);
-        // Force certain columns to stay as Plain Text to preserve leading zeros
-        if (h === "Phone" || h === "PIN") {
-          ws.getRange(1, i + 1, ws.getMaxRows(), 1).setNumberFormat("@");
-        }
-      }
-    });
 
-    // CRITICAL: If headers were provided, ensure No Extra Columns exist beyond them
-    // This prevents "Timestamp" duplicates if things drifted in legacy versions
-    if (headers.length > 0 && ws.getLastColumn() > headers.length) {
-      const extra = ws.getLastColumn() - headers.length;
-      ws.deleteColumns(headers.length + 1, extra);
+    if (isNew || lastCol === 0) {
+      // Brand-new / empty sheet → write the full header row once.
+      ws.getRange(1, 1, 1, headers.length).setValues([headers]);
+      ws.getRange(1, 1, 1, headers.length)
+        .setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
+      ws.setFrozenRows(1);
+      headers.forEach((h, i) => {
+        if (h === "Phone" || h === "PIN") ws.getRange(1, i + 1, ws.getMaxRows(), 1).setNumberFormat("@");
+      });
+    } else {
+      // ── EXISTING POPULATED SHEET — NON-DESTRUCTIVE ────────────────────────
+      // NEVER rename/reposition existing headers, and NEVER delete columns.
+      // The old code forced row 1 to equal `headers` BY POSITION and deleted
+      // any extra columns — when a live sheet's real column order differed from
+      // the constant (even by one), that relabelled columns onto the wrong data
+      // and physically wiped real order data (Submitted_At / Order_Date) during
+      // archive. We now only APPEND headers that are genuinely absent, as new
+      // trailing columns. Anything else is left exactly as it is.
+      const current = ws.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h || "").trim());
+      const have = {};
+      current.forEach(h => { if (h) have[h] = true; });
+      headers.forEach(h => {
+        if (h && !have[h]) {
+          const col = ws.getLastColumn() + 1;
+          ws.getRange(1, col).setValue(h).setFontWeight("bold").setBackground("#c0392b").setFontColor("white");
+          if (h === "Phone" || h === "PIN") ws.getRange(1, col, ws.getMaxRows(), 1).setNumberFormat("@");
+          have[h] = true;
+        }
+      });
     }
   }
   return ws;
