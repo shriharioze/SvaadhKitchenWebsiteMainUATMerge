@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 18.6; // 2026-06-13: E3/E8 audit — on-account bulk-pay/unpaid filters were case-sensitive ("on account" vs written "On Account"), silently skipping on-account orders in getUnpaidCustomers/markCustomersPaid/getUnpaidOrdersData/markOrdersPaidBulk; now case-insensitive. submitManualOrder address → "Full_Address". voidOrderRow status → "Cancelled - Voided" so prep/revenue exclude it. Matches live 17.1.
+const CODE_VERSION   = 18.7; // 2026-06-13: E1/E9 audit — setKitchenClosed summary no longer counts unpaid "pending" orders as UPI refunds (cosmetic). getBillingData: blank Billing_Cycle defaults to "Daily" so missing-cycle On-Account customers aren't invisible in billing tabs. (E module audit complete.) Matches live 17.2.
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

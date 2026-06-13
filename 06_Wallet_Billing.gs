@@ -966,8 +966,11 @@ function getBillingData(cycle, filterValue) {
   onAccountOrders.forEach(r => {
     const phone = String(r.Phone || '').trim();
     const cust  = custMap[phone] || {};
-    // Only include customers whose billing_cycle matches requested cycle
-    if ((cust.billing_cycle || '').toLowerCase() !== cycle.toLowerCase()) return;
+    // Only include customers whose billing_cycle matches requested cycle.
+    // Blank Billing_Cycle defaults to "Daily" (system-wide default) so an
+    // On-Account customer with a missing cycle still surfaces in the Daily
+    // collection view instead of being invisible in every billing tab.
+    if ((cust.billing_cycle || 'Daily').toLowerCase() !== cycle.toLowerCase()) return;
 
     if (!grouped[phone]) {
       grouped[phone] = {

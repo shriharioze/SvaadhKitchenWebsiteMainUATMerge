@@ -576,7 +576,8 @@ function setKitchenClosed(body) {
       let rType = "none", bucket = "other";
       if (pStat === "wallet paid") { rType = "wallet"; bucket = "wallet"; }
       else if (pStat === "on account" || pStat === "onaccount") { rType = "none"; bucket = "on_account"; }
-      else if (pStat === "paid" || pStat.indexOf("pending") !== -1) { rType = "manual_upi"; bucket = "upi"; }
+      else if (pStat === "paid") { rType = "manual_upi"; bucket = "upi"; }
+      else if (pStat.indexOf("pending") !== -1) { rType = "none"; bucket = "other"; }  // unpaid — cancel only, no refund (don't inflate the UPI-refund summary total)
       try {
         const res = deleteOrder(String(r.Phone || ""), String(r.Submission_ID || ""),
                                 rType, { isAdmin: true });
