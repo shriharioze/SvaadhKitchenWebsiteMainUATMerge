@@ -258,7 +258,18 @@ function _checkWebhookLogForCharge(orderId) {
         const status    = String(txnDetail.status || order.status || "").trim().toUpperCase();
         const amount    = Number(txnDetail.txn_amount || order.amount || 0);
         if (status === "CHARGED" && amount > 0) {
-          return { amount: amount, source: "webhook_log", logRow: r + 1 };
+          // SECURITY: the webhook is UNAUTHENTICATED — Apps Script doPost cannot read
+          // HDFC's Basic-Auth header, so a logged "CHARGED" payload is NOT by itself
+          // proof of payment (anyone who knows the doPost URL could forge one and get
+          // a free order). Re-confirm server-to-server via the Status API before
+          // trusting it, and use the API's amount as authoritative. If the API can't
+          // confirm, return null → the order stays Pending and the reconciler retries.
+          var _sc = null;
+          try { _sc = hdfc_getOrderStatus(orderId); } catch (_) { _sc = null; }
+          if (_sc && _sc.confirmed) {
+            return { amount: Number(_sc.amount || amount), source: "webhook_log+status", logRow: r + 1 };
+          }
+          return null;
         }
       } catch (e) {
         // Bad JSON in this row, keep walking
@@ -1487,7 +1498,7 @@ function hdfc_processWebhookLog() {
  */
 function hdfc_markOrderPaid(order) {
   const orderId = String(order.order_id || "").trim();
-  const txnId   = String(order.txn_id   || order.id || "").trim();
+  let   txnId   = String(order.txn_id   || order.id || "").trim();  // reassigned below from Status API — must be let, not const
   const method  = String(order.payment_method_type || order.payment_method || "Gateway").trim();
 
   if (!orderId) return { error: "Webhook: missing order_id." };

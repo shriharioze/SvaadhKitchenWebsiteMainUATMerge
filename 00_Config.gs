@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 18.8; // 2026-06-13: G1 SECURITY — ungated updateProfile/upsertProfile honored onAccount/billingCycle from the body, letting anyone self-promote any phone to pay-later On-Account. Strip those admin-only fields from both customer routes (admin markOnAccount path unaffected). Matches live 17.3.
+const CODE_VERSION   = 18.9; // 2026-06-14: Module C (HDFC) audit — SECURITY: _checkWebhookLogForCharge trusted unauthenticated webhook-log "CHARGED" as payment proof (forgeable → free orders); now re-confirms server-to-server via Status API before trusting (protects verifyReturn, confirmGatewayOrder, reconciler). Fix const-reassignment in hdfc_markOrderPaid (txnId const→let). Matches live 17.4.
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.
