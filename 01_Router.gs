@@ -613,6 +613,16 @@ function doPost(e) {
     if (action === "ia_markDelivered")    return jsonRes(ia_markDelivered(body));
     if (action === "ia_batchMarkEnRoute") return jsonRes(ia_batchMarkEnRoute(body));
 
+    // Admin "place from favorite" / bulk-favorite placement (vault_admin.html)
+    // posts _action:"processOrder" with the same {profile, orders:[{date,meals}]}
+    // payload as a regular submission. Route it (and the explicit "submitOrder"
+    // name) to submitOrder. Same orders[]-present guard as the no-action path so
+    // a malformed payload can't produce the old phantom "success".
+    if ((action === "processOrder" || action === "submitOrder")
+        && Array.isArray(body.orders) && body.orders.length) {
+      return jsonRes(submitOrder(body));
+    }
+
     // Regular order submission — the ONLY POST with no _action. Anything else
     // (unknown/typo'd actions, malformed debug payloads) must NOT fall through
     // to submitOrder: that used to return {success:true, submissionId:""} for a
