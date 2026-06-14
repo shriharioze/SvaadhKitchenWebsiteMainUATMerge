@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 18.10; // 2026-06-14: FIX admin "place from favorite" — vault_admin.html posts _action:"processOrder" with no matching router handler ("Unknown action"); favorites/bulk-favorite placement never worked. Route processOrder (and explicit "submitOrder") to submitOrder, guarded by orders[]-present. Matches live 17.5.
+const CODE_VERSION   = 18.11; // 2026-06-14: NEW per-meal order CAP. Admin sets Order_Cap_JSON (max orders) per date+meal; when active orders hit the cap that meal is SOLD OUT for the day — submitOrder rejects (authoritative, under lock), getMenu marks orders_closed+sold_out, order.html shows "Sold Out for Today". No cap = unchanged. New menu column Order_Cap_JSON. Matches live 17.6.
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

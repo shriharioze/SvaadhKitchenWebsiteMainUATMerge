@@ -495,10 +495,20 @@ function _submitOrderInternal(body) {
       });
       let _ordersClosedW = {};
       try { if (_menuRowW && _menuRowW.Orders_Closed) _ordersClosedW = JSON.parse(_menuRowW.Orders_Closed); } catch(e) {}
+      // Per-meal max-order cap. Count active (non-cancelled) orders for this date
+      // from the FULL sheet — authoritative, and exact because submitOrder runs
+      // under LockService (concurrent orders can't both slip past the cap).
+      let _orderCapW = {};
+      try { if (_menuRowW && _menuRowW.Order_Cap_JSON) _orderCapW = JSON.parse(_menuRowW.Order_Cap_JSON); } catch(e) {}
+      const _capCountsW = Object.keys(_orderCapW).length ? _countActiveMealOrders(allOrderRows, _d) : null;
       const _effCutW = (_d === _wToday) ? _effectiveCutoffsForDate(_d) : null;
       for (const _m of (_o.meals || [])) {
         const _mt = String(_m.type || "");
         if (_ordersClosedW[_mt]) { _wViolations.push(_mt + " orders are closed for " + _d + "."); continue; }
+        const _capW = _capCountsW ? Number(_orderCapW[_mt] || 0) : 0;
+        if (_capW > 0 && (_capCountsW[_mt] || 0) >= _capW) {
+          _wViolations.push(_mt + " is sold out for " + _d + " — the daily order limit has been reached."); continue;
+        }
         if (_effCutW && _effCutW[_mt] !== undefined && _wHour >= _effCutW[_mt]) {
           _wViolations.push("The " + _mt + " cutoff for today (" + _d + ") has already passed.");
         }
