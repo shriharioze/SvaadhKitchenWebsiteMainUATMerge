@@ -228,6 +228,10 @@ function _getMenuUncached(dateStr) {
   // (non-cancelled) order count reaches its cap it is SOLD OUT for the day.
   let orderCaps = {};
   try { if (r && r.Order_Cap_JSON) orderCaps = JSON.parse(r.Order_Cap_JSON); } catch(e) {}
+  // Per-meal flag: offer Self Pickup / Porter when delivery is full? Default ON
+  // (missing/true). false = hard sold-out (no alternatives offered).
+  let capAlt = {};
+  try { if (r && r.Cap_Alt_JSON) capAlt = JSON.parse(r.Cap_Alt_JSON); } catch(e) {}
 
   const ordersWs2   = getOrCreateTab(ss, TAB_ORDERS, []);
   // OPTIMIZATION: Only read the last 500 rows to compute stock limit (covers today and yesterday).
@@ -252,7 +256,11 @@ function _getMenuUncached(dateStr) {
   const soldOut = {};
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
     const cap = Number(orderCaps[meal] || 0);
-    if (cap > 0 && (orderCounts[meal] || 0) >= cap) soldOut[meal] = true;
+    if (cap > 0 && (orderCounts[meal] || 0) >= cap) {
+      soldOut[meal] = true;
+      // Alternatives OFF → hard sold-out: close the meal entirely (no pickup/porter).
+      if (capAlt[meal] === false) ordersClosed[meal] = true;
+    }
   });
 
   return {
@@ -267,6 +275,7 @@ function _getMenuUncached(dateStr) {
     stock_limits: stockLimits,
     units_remaining: unitsRemaining,
     order_caps:    orderCaps,    // admin display: configured per-meal max
+    cap_alt:       capAlt,       // admin display: per-meal "offer pickup/porter" flags
     order_counts:  orderCounts,  // admin display: active orders placed so far
     sold_out:      soldOut,      // customer display: meal hit its cap today
     kitchen_closed: _kitchenClosed
@@ -462,6 +471,8 @@ function _getAdminDataUncached() {
     try { if (r.Stock_JSON) stockLimits = JSON.parse(r.Stock_JSON); } catch(e) {}
     let orderCaps = {};
     try { if (r.Order_Cap_JSON) orderCaps = JSON.parse(r.Order_Cap_JSON); } catch(e) {}
+    let capAlt = {};
+    try { if (r.Cap_Alt_JSON) capAlt = JSON.parse(r.Cap_Alt_JSON); } catch(e) {}
     const orderedCounts = countsByDate[d] || { Breakfast: {}, Lunch: {}, Dinner: {} };
     const unitsRemaining = {};
     ["Breakfast","Lunch","Dinner"].forEach(meal => {
@@ -485,6 +496,7 @@ function _getAdminDataUncached() {
       stock_limits:     stockLimits,
       units_remaining:  unitsRemaining,
       order_caps:       orderCaps,
+      cap_alt:          capAlt,
       order_counts:     mealOrderCounts[d] || { Breakfast: 0, Lunch: 0, Dinner: 0 },
       kitchen_closed:   kitchenClosed,
     };
@@ -499,7 +511,7 @@ function saveMenu(body) {
   const ws = getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
     "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
-    "OOS_JSON","Orders_Closed","Stock_JSON","Kitchen_Closed","Order_Cap_JSON"
+    "OOS_JSON","Orders_Closed","Stock_JSON","Kitchen_Closed","Order_Cap_JSON","Cap_Alt_JSON"
   ]);
   const rows = getAllRows(ws);
   let hIdx = headerIndex(ws);
@@ -513,6 +525,13 @@ function saveMenu(body) {
   // Self-heal: ensure Order_Cap_JSON column exists (per-meal max-order caps).
   if (!hIdx["Order_Cap_JSON"]) {
     ws.getRange(1, ws.getLastColumn() + 1).setValue("Order_Cap_JSON");
+    SpreadsheetApp.flush();
+    hIdx = headerIndex(ws);
+  }
+  // Self-heal: ensure Cap_Alt_JSON column exists (per-meal: offer Self Pickup /
+  // Porter when delivery is full? default ON; false = hard sold-out).
+  if (!hIdx["Cap_Alt_JSON"]) {
+    ws.getRange(1, ws.getLastColumn() + 1).setValue("Cap_Alt_JSON");
     SpreadsheetApp.flush();
     hIdx = headerIndex(ws);
   }
@@ -556,6 +575,12 @@ function saveMenu(body) {
     (body.order_caps !== undefined)
       ? JSON.stringify(body.order_caps || {})
       : (existing && existing.Order_Cap_JSON ? String(existing.Order_Cap_JSON) : "{}"),
+    // Per-meal "offer Self Pickup / Porter when delivery full" flags, e.g.
+    // {"Breakfast":false}. Missing/true = offer alternatives (default). Preserve
+    // if this save doesn't carry cap_alt.
+    (body.cap_alt !== undefined)
+      ? JSON.stringify(body.cap_alt || {})
+      : (existing && existing.Cap_Alt_JSON ? String(existing.Cap_Alt_JSON) : "{}"),
   ];
 
   if (existing) {
@@ -587,7 +612,7 @@ function setKitchenClosed(body) {
   const menuWs = getOrCreateTab(ss, TAB_MENU, [
     "Date","Breakfast_JSON","Lunch_Dry","Lunch_Curry","Dinner_Dry","Dinner_Curry",
     "Cutoff_Breakfast","Cutoff_Lunch","Cutoff_Dinner",
-    "OOS_JSON","Orders_Closed","Stock_JSON","Kitchen_Closed","Order_Cap_JSON"
+    "OOS_JSON","Orders_Closed","Stock_JSON","Kitchen_Closed","Order_Cap_JSON","Cap_Alt_JSON"
   ]);
   let mIdx = headerIndex(menuWs);
   if (!mIdx["Kitchen_Closed"]) {

@@ -500,17 +500,31 @@ function _submitOrderInternal(body) {
       // under LockService (concurrent orders can't both slip past the cap).
       let _orderCapW = {};
       try { if (_menuRowW && _menuRowW.Order_Cap_JSON) _orderCapW = JSON.parse(_menuRowW.Order_Cap_JSON); } catch(e) {}
+      let _capAltW = {};   // per-meal: offer Self Pickup / Porter when full? default ON
+      try { if (_menuRowW && _menuRowW.Cap_Alt_JSON) _capAltW = JSON.parse(_menuRowW.Cap_Alt_JSON); } catch(e) {}
       const _capCountsW = Object.keys(_orderCapW).length ? _countActiveMealOrders(allOrderRows, _d) : null;
       const _effCutW = (_d === _wToday) ? _effectiveCutoffsForDate(_d) : null;
       for (const _m of (_o.meals || [])) {
         const _mt = String(_m.type || "");
         if (_ordersClosedW[_mt]) { _wViolations.push(_mt + " orders are closed for " + _d + "."); continue; }
         const _capW = _capCountsW ? Number(_orderCapW[_mt] || 0) : 0;
-        // Cap is a DELIVERY limit — Self Pickup / Porter bypass it.
-        const _mAreaW = String(_m.area || profile.area || "").toLowerCase();
-        const _mIsDeliveryW = (_mAreaW.indexOf("pickup") === -1 && _mAreaW !== "porter");
-        if (_mIsDeliveryW && _capW > 0 && (_capCountsW[_mt] || 0) >= _capW) {
-          _wViolations.push(_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day."); continue;
+        const _capExceededW = _capW > 0 && _capCountsW && (_capCountsW[_mt] || 0) >= _capW;
+        if (_capExceededW) {
+          // Cap is a DELIVERY limit. Self Pickup / Porter bypass it ONLY when the
+          // admin left alternatives ON for this meal (default). If turned OFF, the
+          // meal is a hard sold-out — block delivery AND pickup/porter.
+          const _mAreaW = String(_m.area || profile.area || "").toLowerCase();
+          const _mIsDeliveryW = (_mAreaW.indexOf("pickup") === -1 && _mAreaW !== "porter");
+          const _altOnW = (_capAltW[_mt] !== false);
+          if (_mIsDeliveryW) {
+            _wViolations.push(_altOnW
+              ? (_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day.")
+              : (_mt + " is sold out for " + _d + " — the daily order limit has been reached."));
+            continue;
+          } else if (!_altOnW) {
+            _wViolations.push(_mt + " is sold out for " + _d + " — the daily order limit has been reached."); continue;
+          }
+          // pickup/porter + alternatives ON → allowed (falls through)
         }
         if (_effCutW && _effCutW[_mt] !== undefined && _wHour >= _effCutW[_mt]) {
           _wViolations.push("The " + _mt + " cutoff for today (" + _d + ") has already passed.");
