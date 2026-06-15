@@ -503,7 +503,7 @@ function _submitOrderInternal(body) {
       let _capAltW = {};   // per-meal: offer Self Pickup / Porter when full? default ON
       try { if (_menuRowW && _menuRowW.Cap_Alt_JSON) _capAltW = JSON.parse(_menuRowW.Cap_Alt_JSON); } catch(e) {}
       const _capCountsW   = Object.keys(_orderCapW).length ? _countActiveMealOrders(allOrderRows, _d) : null;
-      const _deliverySocW = Object.keys(_orderCapW).length ? _activeDeliverySocieties(allOrderRows, _d) : null;
+      const _delIdxW = Object.keys(_orderCapW).length ? _activeDeliveryIndex(allOrderRows, _d) : null;
       const _effCutW = (_d === _wToday) ? _effectiveCutoffsForDate(_d) : null;
       for (const _m of (_o.meals || [])) {
         const _mt = String(_m.type || "");
@@ -525,16 +525,21 @@ function _submitOrderInternal(body) {
             // new delivery burden).
             const _isFreeAreaW = freeAreaNames.indexOf(_m.area || profile.area || "") !== -1;
             if (!_isFreeAreaW) {
+              const _idxMtW = _delIdxW && _delIdxW[_mt];
               const _socW = _normSocietyKey(_m.society || profile.society || "");
-              const _alreadyW = !!(_socW && _deliverySocW && _deliverySocW[_mt] && _deliverySocW[_mt][_socW]);
-              if (!_alreadyW) {
+              const _socAlreadyW  = !!(_socW && _idxMtW && _idxMtW.soc[_socW]);
+              // This same customer already has a delivery for this date+meal →
+              // adding more is the same stop, let them through past the cap.
+              const _phW = _normalizePhone(profile.phone || "");
+              const _selfAlreadyW = !!(_phW && _idxMtW && _idxMtW.ph[_phW]);
+              if (!_socAlreadyW && !_selfAlreadyW) {
                 _wViolations.push(_altOnW
                   ? (_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day.")
                   : (_mt + " is sold out for " + _d + " — the daily order limit has been reached."));
                 continue;
               }
             }
-            // free area OR same-building piggyback → allowed (falls through)
+            // free area OR same-building OR own existing delivery → allowed (falls through)
           } else if (!_altOnW) {
             _wViolations.push(_mt + " is sold out for " + _d + " — the daily order limit has been reached."); continue;
           }

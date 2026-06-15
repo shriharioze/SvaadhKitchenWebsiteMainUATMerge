@@ -42,12 +42,12 @@ function countOrderedUnits(ordersRows, dateStr) {
 function _normSocietyKey(s) {
   return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]/g, "");
 }
-// For one date, the set (per meal) of normalized societies we ALREADY have an
-// active DELIVERY order to. Lets a customer "piggyback" onto an existing
-// delivery stop even after the delivery cap is reached (same building = no extra
-// stop), before we fall back to offering Self Pickup / Porter.
-function _activeDeliverySocieties(rows, dateStr) {
-  const out = { Breakfast: {}, Lunch: {}, Dinner: {} };
+// For one date, per meal, the sets of normalized societies AND normalized phones
+// we ALREADY have an active DELIVERY order for. Lets a customer through the
+// delivery cap when (a) we're already delivering to their society, or (b) THEY
+// already have a delivery order for that meal (adding more = the same stop).
+function _activeDeliveryIndex(rows, dateStr) {
+  const out = { Breakfast: { soc: {}, ph: {} }, Lunch: { soc: {}, ph: {} }, Dinner: { soc: {}, ph: {} } };
   for (var i = 0; i < rows.length; i++) {
     const r = rows[i];
     const d = r.Order_Date instanceof Date
@@ -60,17 +60,21 @@ function _activeDeliverySocieties(rows, dateStr) {
     const mt = String(r.Meal_Type || "").trim();
     if (!out[mt]) continue;
     const soc = _normSocietyKey(r.Society);
-    if (soc) out[mt][soc] = true;
+    if (soc) out[mt].soc[soc] = true;
+    const ph = _normalizePhone(r.Phone);
+    if (ph) out[mt].ph[ph] = true;
   }
   return out;
 }
-// Customer-facing lookup: for each {date, meal, society}, is there already an
-// active delivery to that society? The order page calls this when a delivery cap
-// is reached — if reachable, the order proceeds as a normal delivery; otherwise
-// it offers Self Pickup / Porter. submitOrder re-checks authoritatively.
+// Customer-facing lookup: for each {date, meal, society} (+ body.phone), is there
+// already an active delivery to that society OR an existing delivery by this same
+// customer? The order page calls this when a delivery cap is reached — if
+// reachable, the order proceeds as a normal delivery; otherwise it offers Self
+// Pickup / Porter. submitOrder re-checks authoritatively.
 function checkDeliveryReachable(body) {
   const items = (body && body.items) || [];
   if (!Array.isArray(items) || !items.length) return { results: [] };
+  const phone = _normalizePhone((body && body.phone) || "");
   const ss = getSpreadsheet();
   const ws = getOrCreateTab(ss, TAB_ORDERS, []);
   const rows = getRecentRows(ws, 2000);
@@ -79,8 +83,9 @@ function checkDeliveryReachable(body) {
     const date = String(it.date || "").trim();
     const meal = String(it.meal || "").trim();
     const soc  = _normSocietyKey(it.society || "");
-    if (!byDate[date]) byDate[date] = _activeDeliverySocieties(rows, date);
-    const reachable = !!(soc && byDate[date][meal] && byDate[date][meal][soc]);
+    if (!byDate[date]) byDate[date] = _activeDeliveryIndex(rows, date);
+    const idx = byDate[date][meal] || { soc: {}, ph: {} };
+    const reachable = !!((soc && idx.soc[soc]) || (phone && idx.ph[phone]));
     return { date: date, meal: meal, reachable: reachable };
   });
   return { results: results };
