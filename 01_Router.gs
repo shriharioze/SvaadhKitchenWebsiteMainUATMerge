@@ -272,6 +272,7 @@ function doPost(e) {
     if (action === "deleteOrder") return jsonRes(deleteOrder(body.phone, body.rowId, body.refundType, { isAdmin: isAdmin }));
     if (action === "previewCancellation") return jsonRes(_deleteOrderInternal(body.phone, body.rowId, body.refundType || "wallet", { dryRun: true }));
     if (action === "getCustomerOrders") return jsonRes(getCustomerOrders(body.phone));
+    if (action === "checkDeliveryReachable") return jsonRes(checkDeliveryReachable(body));
     if (action === "verifyOrderPlaced") return jsonRes(verifyOrderPlaced(body));
     if (action === "updateProfile") {
       const profile = body.profile;

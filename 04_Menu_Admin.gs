@@ -37,6 +37,54 @@ function countOrderedUnits(ordersRows, dateStr) {
   return counts;
 }
 // ── GET MENU ─────────────────────────────────────────────────
+// Normalize a society/building name for LENIENT matching (lowercase + drop all
+// non-alphanumerics) so "Pentagon 1" / "pentagon-1" / "Pentagon1" all match.
+function _normSocietyKey(s) {
+  return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+// For one date, the set (per meal) of normalized societies we ALREADY have an
+// active DELIVERY order to. Lets a customer "piggyback" onto an existing
+// delivery stop even after the delivery cap is reached (same building = no extra
+// stop), before we fall back to offering Self Pickup / Porter.
+function _activeDeliverySocieties(rows, dateStr) {
+  const out = { Breakfast: {}, Lunch: {}, Dinner: {} };
+  for (var i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const d = r.Order_Date instanceof Date
+      ? Utilities.formatDate(r.Order_Date, "Asia/Kolkata", "yyyy-MM-dd")
+      : String(r.Order_Date || "").trim();
+    if (d !== dateStr) continue;
+    if (_isOrderCancelled(r.Payment_Status)) continue;
+    const ar = String(r.Area || "").toLowerCase();
+    if (ar.indexOf("pickup") !== -1 || ar === "porter") continue; // delivery only
+    const mt = String(r.Meal_Type || "").trim();
+    if (!out[mt]) continue;
+    const soc = _normSocietyKey(r.Society);
+    if (soc) out[mt][soc] = true;
+  }
+  return out;
+}
+// Customer-facing lookup: for each {date, meal, society}, is there already an
+// active delivery to that society? The order page calls this when a delivery cap
+// is reached — if reachable, the order proceeds as a normal delivery; otherwise
+// it offers Self Pickup / Porter. submitOrder re-checks authoritatively.
+function checkDeliveryReachable(body) {
+  const items = (body && body.items) || [];
+  if (!Array.isArray(items) || !items.length) return { results: [] };
+  const ss = getSpreadsheet();
+  const ws = getOrCreateTab(ss, TAB_ORDERS, []);
+  const rows = getRecentRows(ws, 2000);
+  const byDate = {};
+  const results = items.map(function(it) {
+    const date = String(it.date || "").trim();
+    const meal = String(it.meal || "").trim();
+    const soc  = _normSocietyKey(it.society || "");
+    if (!byDate[date]) byDate[date] = _activeDeliverySocieties(rows, date);
+    const reachable = !!(soc && byDate[date][meal] && byDate[date][meal][soc]);
+    return { date: date, meal: meal, reachable: reachable };
+  });
+  return { results: results };
+}
 // Count ACTIVE (non-cancelled) orders per meal type for one date, from a rows
 // array. One order row = one order. Cancelled rows free their slot. Shared by
 // getMenu (display) and the submitOrder cap guard (authoritative).

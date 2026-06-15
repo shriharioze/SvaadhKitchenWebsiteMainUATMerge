@@ -24,7 +24,7 @@ const KITCHEN_PIN    = SP.getProperty("KITCHEN_PIN") || "7284";
 const PLACE_ID       = SP.getProperty("PLACE_ID") || "";
 const GOOGLE_PLACES_API_KEY = SP.getProperty("GOOGLE_PLACES_API_KEY") || "";
 const GA4_PROPERTY_ID       = "396771381"; // User provided Property ID
-const CODE_VERSION   = 18.13; // 2026-06-14: per-meal toggle (Cap_Alt_JSON) to enable/disable the Self Pickup/Porter offer when delivery is full. Default ON. OFF = hard sold-out: getMenu sets orders_closed, submitOrder blocks delivery AND pickup/porter past cap. New menu column Cap_Alt_JSON. Matches live 17.8.
+const CODE_VERSION   = 18.14; // 2026-06-15: delivery-cap exemptions. Free-delivery areas (Bhosale Nagar/Triveni Nagar) count toward the cap but are never blocked (home turf, till cutoff). "Piggyback": if we already deliver to the customer's society that date+meal, allow one more past the cap (same stop). New checkDeliveryReachable endpoint. Matches live 17.9.
 const LEDGER_FOLDER  = "Svaadh Customer Ledgers";
 // ── PAYMENT GATEWAY CONFIG ───────────────────────────────────
 // Controlled via Script Properties — never hardcoded.

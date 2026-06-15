@@ -502,7 +502,8 @@ function _submitOrderInternal(body) {
       try { if (_menuRowW && _menuRowW.Order_Cap_JSON) _orderCapW = JSON.parse(_menuRowW.Order_Cap_JSON); } catch(e) {}
       let _capAltW = {};   // per-meal: offer Self Pickup / Porter when full? default ON
       try { if (_menuRowW && _menuRowW.Cap_Alt_JSON) _capAltW = JSON.parse(_menuRowW.Cap_Alt_JSON); } catch(e) {}
-      const _capCountsW = Object.keys(_orderCapW).length ? _countActiveMealOrders(allOrderRows, _d) : null;
+      const _capCountsW   = Object.keys(_orderCapW).length ? _countActiveMealOrders(allOrderRows, _d) : null;
+      const _deliverySocW = Object.keys(_orderCapW).length ? _activeDeliverySocieties(allOrderRows, _d) : null;
       const _effCutW = (_d === _wToday) ? _effectiveCutoffsForDate(_d) : null;
       for (const _m of (_o.meals || [])) {
         const _mt = String(_m.type || "");
@@ -517,10 +518,23 @@ function _submitOrderInternal(body) {
           const _mIsDeliveryW = (_mAreaW.indexOf("pickup") === -1 && _mAreaW !== "porter");
           const _altOnW = (_capAltW[_mt] !== false);
           if (_mIsDeliveryW) {
-            _wViolations.push(_altOnW
-              ? (_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day.")
-              : (_mt + " is sold out for " + _d + " — the daily order limit has been reached."));
-            continue;
+            // Free-delivery areas (Bhosale Nagar / Triveni Nagar) are home turf:
+            // they COUNT toward the cap but are never BLOCKED by it (allowed till
+            // cutoff). Otherwise allow a "piggyback" when we already have an active
+            // delivery to this customer's society for this date+meal (SAME stop, no
+            // new delivery burden).
+            const _isFreeAreaW = freeAreaNames.indexOf(_m.area || profile.area || "") !== -1;
+            if (!_isFreeAreaW) {
+              const _socW = _normSocietyKey(_m.society || profile.society || "");
+              const _alreadyW = !!(_socW && _deliverySocW && _deliverySocW[_mt] && _deliverySocW[_mt][_socW]);
+              if (!_alreadyW) {
+                _wViolations.push(_altOnW
+                  ? (_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day.")
+                  : (_mt + " is sold out for " + _d + " — the daily order limit has been reached."));
+                continue;
+              }
+            }
+            // free area OR same-building piggyback → allowed (falls through)
           } else if (!_altOnW) {
             _wViolations.push(_mt + " is sold out for " + _d + " — the daily order limit has been reached."); continue;
           }
