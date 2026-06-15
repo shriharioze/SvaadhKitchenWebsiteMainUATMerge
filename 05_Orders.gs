@@ -506,8 +506,11 @@ function _submitOrderInternal(body) {
         const _mt = String(_m.type || "");
         if (_ordersClosedW[_mt]) { _wViolations.push(_mt + " orders are closed for " + _d + "."); continue; }
         const _capW = _capCountsW ? Number(_orderCapW[_mt] || 0) : 0;
-        if (_capW > 0 && (_capCountsW[_mt] || 0) >= _capW) {
-          _wViolations.push(_mt + " is sold out for " + _d + " — the daily order limit has been reached."); continue;
+        // Cap is a DELIVERY limit — Self Pickup / Porter bypass it.
+        const _mAreaW = String(_m.area || profile.area || "").toLowerCase();
+        const _mIsDeliveryW = (_mAreaW.indexOf("pickup") === -1 && _mAreaW !== "porter");
+        if (_mIsDeliveryW && _capW > 0 && (_capCountsW[_mt] || 0) >= _capW) {
+          _wViolations.push(_mt + " delivery is full for " + _d + " — please choose Self Pickup or Porter, or order for another day."); continue;
         }
         if (_effCutW && _effCutW[_mt] !== undefined && _wHour >= _effCutW[_mt]) {
           _wViolations.push("The " + _mt + " cutoff for today (" + _d + ") has already passed.");
@@ -796,6 +799,10 @@ function _submitOrderInternal(body) {
       
       // Delivery & Fee logic (matches frontend)
       const isPickup  = (mealArea.toLowerCase().includes("pickup"));
+      // Porter = cap-overflow option: we hand the food to a courier the CUSTOMER
+      // books & pays. We don't deliver, so (like Self Pickup) our delivery + small
+      // -order fees are waived.
+      const isPorter  = (mealArea.toLowerCase() === "porter");
       const isFreeArea = freeAreaNames.includes(mealArea);
 
       // VIP Fee Exemption
@@ -806,12 +813,12 @@ function _submitOrderInternal(body) {
       const isDayFree = (combinedDayTotal >= dynamicFreeThreshold) || isFeeExempt;
 
       let delCharge = 0;
-      if (!isFeeExempt && !isDayFree && !isPickup && !isFreeArea && sub > 0) {
+      if (!isFeeExempt && !isDayFree && !isPickup && !isPorter && !isFreeArea && sub > 0) {
         delCharge = DELIVERY;
       }
 
       let smallOrderFee = 0;
-      if (!isFeeExempt && !isDayFree && !isPickup && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
+      if (!isFeeExempt && !isDayFree && !isPickup && !isPorter && (mealType === "Lunch" || mealType === "Dinner") && sub > 0 && combinedMealSub < 50) {
         smallOrderFee = 10;
       }
 
@@ -888,16 +895,22 @@ function _submitOrderInternal(body) {
         itemsObj[canonical] = qty;
       });
 
-      // Address fields handling (Sanitized for Pickup)
+      // Address fields handling. Self Pickup clears the address (customer comes to
+      // us). Porter KEEPS the customer address (the courier they book delivers to
+      // them) but is tagged area="Porter" so backend/kitchen know it isn't our
+      // delivery and the cap doesn't count it.
       const wing    = isPickup ? "" : (meal.wing    || profile.wing    || "");
       const flat    = isPickup ? "" : (meal.flat    || profile.flat    || "");
       const floor   = isPickup ? "" : (meal.floor   || profile.floor   || "");
       const society = isPickup ? "" : (meal.society || profile.society || "");
-      const area    = isPickup ? "Self Pickup" : mealArea;
+      const area    = isPickup ? "Self Pickup" : (isPorter ? "Porter" : mealArea);
 
+      const _custAddrLine = [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society].filter(Boolean).join(", ");
       const fullAddr = isPickup
-                        ? "Self Pickup (A 104, Shree laxmi vihar society)"
-                        : [wing && `Wing ${wing}`, flat && `Flat ${flat}`, floor && `${floor} Floor`, society, area].filter(Boolean).join(", ");
+                        ? "Self Pickup (A 104, Shree laxmi vihar society, Hadapsar)"
+                        : isPorter
+                        ? ("Porter (customer-booked courier) → " + (_custAddrLine || "address not provided"))
+                        : [_custAddrLine, area].filter(Boolean).join(", ");
       const mapsLink = isPickup ? "" : (meal.maps || profile.maps || "");
       const landmark = isPickup ? "" : (meal.landmark || profile.landmark || "");
 

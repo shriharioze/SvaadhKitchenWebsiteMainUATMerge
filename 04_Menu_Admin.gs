@@ -49,6 +49,10 @@ function _countActiveMealOrders(rows, dateStr) {
       : String(r.Order_Date || "").trim();
     if (d !== dateStr) continue;
     if (_isOrderCancelled(r.Payment_Status)) continue;
+    // The cap is a DELIVERY limit — Self Pickup / Porter orders don't use a
+    // delivery slot, so they neither count toward the cap nor get blocked by it.
+    const ar = String(r.Area || "").toLowerCase();
+    if (ar.indexOf("pickup") !== -1 || ar === "porter") continue;
     const mt = String(r.Meal_Type || "").trim();
     if (c[mt] !== undefined) c[mt]++;
   }
@@ -238,19 +242,17 @@ function _getMenuUncached(dateStr) {
     });
   });
 
-  // Cap evaluation — reuse the rows already read above (zero extra cost). A
-  // capped-full meal is marked sold_out (distinct customer label) AND
-  // orders_closed (reuses the existing grey-out + submit-block plumbing).
-  // submitOrder re-checks against the FULL sheet, so this display count being
-  // a recent-window approximation can never let an over-cap order through.
+  // Cap evaluation — reuse the rows already read above (zero extra cost). The
+  // cap is a DELIVERY limit: when reached we flag the meal sold_out so the order
+  // page offers Self Pickup / Porter (which bypass the cap). We do NOT set
+  // orders_closed — that path stays open. submitOrder is the authoritative guard:
+  // it rejects DELIVERY orders past the cap (full-sheet count, under lock) while
+  // letting Self Pickup / Porter through.
   const orderCounts = _countActiveMealOrders(ordersRows2, dateStr);
   const soldOut = {};
   ["Breakfast","Lunch","Dinner"].forEach(meal => {
     const cap = Number(orderCaps[meal] || 0);
-    if (cap > 0 && (orderCounts[meal] || 0) >= cap) {
-      soldOut[meal] = true;
-      ordersClosed[meal] = true;
-    }
+    if (cap > 0 && (orderCounts[meal] || 0) >= cap) soldOut[meal] = true;
   });
 
   return {
